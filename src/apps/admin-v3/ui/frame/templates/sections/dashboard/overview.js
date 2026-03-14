@@ -38,6 +38,50 @@ export function renderDashboardOperationsGrid() {
                 </div>
             </article>
 
+            <article class="sony-panel dashboard-card-clinical">
+                <header>
+                    <div>
+                        <h3>Frente clinico</h3>
+                        <small id="dashboardClinicalHistoryMeta">Snapshot clinico operativo del consultorio.</small>
+                    </div>
+                    <span
+                        class="dashboard-signal-chip"
+                        id="dashboardClinicalHistoryChip"
+                        data-state="neutral"
+                    >
+                        Pendiente
+                    </span>
+                </header>
+                <div class="sony-panel-stats">
+                    <div><span>Sesiones</span><strong id="clinicalHistorySessionCount">0</strong></div>
+                    <div><span>Revision</span><strong id="clinicalHistoryReviewCount">0</strong></div>
+                    <div><span>IA pendiente</span><strong id="clinicalHistoryPendingAiCount">0</strong></div>
+                    <div><span>Eventos</span><strong id="clinicalHistoryEventCount">0</strong></div>
+                </div>
+                <p id="dashboardClinicalHistorySummary">
+                    La historia clinica conversacional aparecera aqui cuando existan sesiones o eventos en el flujo interno.
+                </p>
+                <div id="dashboardClinicalHistoryActions" class="operations-action-list"></div>
+                <div class="dashboard-signal-stack">
+                    <article class="dashboard-signal-card">
+                        <span>Cola clinica</span>
+                        <strong id="clinicalHistoryQueueHeadline">Sin casos pendientes</strong>
+                        <small id="clinicalHistoryQueueMeta">
+                            Cuando OpenClaw deje historias o telemedicina en revision apareceran aqui.
+                        </small>
+                    </article>
+                    <article class="dashboard-signal-card">
+                        <span>Ultimo evento</span>
+                        <strong id="clinicalHistoryEventHeadline">Sin actividad reciente</strong>
+                        <small id="clinicalHistoryEventMeta">
+                            El feed operativo resumira conciliaciones y alertas del consultorio.
+                        </small>
+                    </article>
+                </div>
+                <ul id="dashboardClinicalReviewQueue" class="sony-list dashboard-attention-list"></ul>
+                <ul id="dashboardClinicalEventFeed" class="sony-list dashboard-attention-list"></ul>
+            </article>
+
             <article class="sony-panel" id="funnelSummary">
                 <header>
                     <h3>Herramientas secundarias</h3>

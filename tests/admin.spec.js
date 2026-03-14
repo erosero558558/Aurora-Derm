@@ -558,6 +558,64 @@ test.describe('Panel de administracion', () => {
         );
     });
 
+    test('dashboard mantiene una accion clinica util cuando solo hay telemedicina o patient flow pendientes', async ({
+        page,
+    }) => {
+        await setupAuthenticatedAdminMocks(page, {
+            clinicalHistoryMeta: {
+                summary: {
+                    configured: true,
+                    reviewQueueCount: 0,
+                    drafts: {
+                        pendingAiCount: 0,
+                        reviewQueueCount: 0,
+                    },
+                    events: {
+                        unreadCount: 0,
+                    },
+                },
+                reviewQueue: [],
+                events: [],
+            },
+            patientFlowMeta: {
+                casesTotal: 2,
+                casesOpen: 1,
+                pendingApprovals: 1,
+                activeHelpRequests: 0,
+            },
+            telemedicineMeta: {
+                summary: {
+                    reviewQueueCount: 2,
+                },
+            },
+            internalConsoleMeta: {
+                clinicalData: {
+                    ready: false,
+                },
+                overall: {
+                    ready: false,
+                    summary:
+                        'Historias clinicas bloqueadas hasta habilitar almacenamiento cifrado.',
+                },
+            },
+        });
+
+        await page.goto('/admin.html');
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+
+        const clinicalAction = page
+            .locator('#dashboardClinicalHistoryActions .operations-action-item')
+            .filter({ hasText: 'Abrir frente clinico' });
+        await expect(clinicalAction).toContainText(
+            '2 intake(s) telemedicina pausados por gate clinico'
+        );
+
+        await clinicalAction.click();
+
+        await expect(page.locator('#clinical-history')).toHaveClass(/active/);
+        await expect(page.locator('#pageTitle')).toHaveText('Historia clinica');
+    });
+
     test('acciones secundarias del dashboard siguen llevando a triage util', async ({
         page,
     }) => {

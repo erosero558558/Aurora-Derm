@@ -368,7 +368,7 @@ export function renderDashboard(state) {
     );
     setHtml(
         '#dashboardClinicalHistoryActions',
-        buildClinicalHistoryActions(dashboardState.clinicalHistoryMeta)
+        buildClinicalHistoryActions(dashboardState)
     );
     setHtml(
         '#dashboardClinicalReviewQueue',

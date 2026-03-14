@@ -398,7 +398,43 @@ function clinicalActionLabel(item, fallback) {
     return truncateSnippet(`Abrir ${patientName}`, 28);
 }
 
-export function buildClinicalHistoryActions(snapshot) {
+function normalizeClinicalActionContext(input) {
+    if (input && typeof input === 'object' && input.clinicalHistoryMeta) {
+        return {
+            snapshot:
+                input.clinicalHistoryMeta &&
+                typeof input.clinicalHistoryMeta === 'object'
+                    ? input.clinicalHistoryMeta
+                    : {},
+            telemedicineMeta:
+                input.telemedicineMeta &&
+                typeof input.telemedicineMeta === 'object'
+                    ? input.telemedicineMeta
+                    : {},
+            patientFlowMeta:
+                input.patientFlowMeta &&
+                typeof input.patientFlowMeta === 'object'
+                    ? input.patientFlowMeta
+                    : {},
+            internalConsoleMeta:
+                input.internalConsoleMeta &&
+                typeof input.internalConsoleMeta === 'object'
+                    ? input.internalConsoleMeta
+                    : {},
+        };
+    }
+
+    return {
+        snapshot: input && typeof input === 'object' ? input : {},
+        telemedicineMeta: {},
+        patientFlowMeta: {},
+        internalConsoleMeta: {},
+    };
+}
+
+export function buildClinicalHistoryActions(input) {
+    const { snapshot, telemedicineMeta, patientFlowMeta, internalConsoleMeta } =
+        normalizeClinicalActionContext(input);
     const reviewQueue = Array.isArray(snapshot?.reviewQueue)
         ? snapshot.reviewQueue
         : [];
@@ -438,6 +474,40 @@ export function buildClinicalHistoryActions(snapshot) {
                     'Abrir ultimo evento',
                     describeClinicalEventItem(firstEventWithSession),
                     { 'session-id': firstEventWithSession.sessionId }
+                )
+            );
+        }
+    }
+
+    if (actions.length === 0) {
+        const telemedicineReviewQueueCount = Number(
+            telemedicineMeta?.summary?.reviewQueueCount || 0
+        );
+        const pendingApprovals = Number(patientFlowMeta?.pendingApprovals || 0);
+        const activeHelpRequests = Number(
+            patientFlowMeta?.activeHelpRequests || 0
+        );
+        const clinicalReady =
+            internalConsoleMeta?.clinicalData?.ready !== false;
+
+        if (telemedicineReviewQueueCount > 0) {
+            actions.push(
+                clinicalActionItem(
+                    'context-open-clinical-history',
+                    'Abrir frente clinico',
+                    clinicalReady
+                        ? `${telemedicineReviewQueueCount} intake(s) telemedicina pendientes de revision`
+                        : `${telemedicineReviewQueueCount} intake(s) telemedicina pausados por gate clinico`
+                )
+            );
+        } else if (pendingApprovals > 0 || activeHelpRequests > 0) {
+            actions.push(
+                clinicalActionItem(
+                    'context-open-clinical-history',
+                    'Abrir frente clinico',
+                    pendingApprovals > 0
+                        ? `${pendingApprovals} aprobacion(es) pendientes en patient flow`
+                        : `${activeHelpRequests} apoyo(s) activo(s) vinculados al patient flow`
                 )
             );
         }

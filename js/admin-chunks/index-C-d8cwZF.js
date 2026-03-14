@@ -444,7 +444,7 @@ function E() {
         ? `${window.location.pathname || ''}${window.location.hash || ''}`
         : '';
 }
-function T() {
+function M() {
     if (!A()) return null;
     if (
         !(function () {
@@ -572,18 +572,18 @@ function T() {
               reason: 'profile_missing',
           };
 }
-function I(e) {
+function T(e) {
     const t = String(e || '').trim();
     return !(
         !A() ||
         !t.startsWith('queue-') ||
         L.has(t) ||
-        'alert' !== T()?.state
+        'alert' !== M()?.state
     );
 }
-function M(e) {
+function I(e) {
     const t = (function () {
-        const e = T();
+        const e = M();
         return e && 'alert' === e.state
             ? 'route_mismatch' === e.reason
                 ? `No se puede operar esta clínica desde admin: la ruta no coincide con el canon del piloto (${e.expectedRoute || C}). Corrige el acceso antes de operar la cola.`
@@ -793,7 +793,7 @@ function V(e) {
     return `<p class="admin-nav-group__label">${e}</p>`;
 }
 function G() {
-    return `\n        <div class="admin-v3-shell">\n            \n        <aside class="admin-sidebar admin-v3-sidebar" id="adminSidebar" tabindex="-1">\n            <header class="sidebar-header">\n                <div class="admin-v3-sidebar__brand">\n                    <strong>Piel en Armonia</strong>\n                    <small>Consultorio interno</small>\n                </div>\n                <div class="toolbar-group">\n                    <button type="button" id="adminSidebarCollapse" data-action="toggle-sidebar-collapse" aria-pressed="false">${K('menu')}</button>\n                    <button type="button" id="adminMenuClose">Cerrar</button>\n                </div>\n            </header>\n            <nav class="sidebar-nav" id="adminSidebarNav">\n                \n        <div class="admin-nav-group" id="adminPrimaryNav">\n            ${V('Flujo diario')}\n            ${z('dashboard', 'Inicio', 'dashboard', !0)}\n            ${z('appointments', 'Agenda', 'appointments')}\n            ${z('callbacks', 'Pendientes', 'callbacks')}\n            ${z('availability', 'Horarios', 'availability')}\n        </div>\n        <div class="admin-nav-group admin-nav-group-secondary" id="adminSecondaryNav">\n            ${V('Mas herramientas')}\n            ${z('clinical-history', 'Historia clinica', 'dashboard')}\n            ${z('reviews', 'Resenas', 'reviews')}\n            ${z('queue', 'Turnero avanzado', 'queue')}\n        </div>\n    \n            </nav>\n            <footer class="sidebar-footer">\n                <button type="button" class="logout-btn" data-action="logout">${K('logout')}<span>Cerrar sesion</span></button>\n            </footer>\n        </aside>\n        <button type="button" id="adminSidebarBackdrop" class="admin-sidebar-backdrop is-hidden" aria-hidden="true" tabindex="-1"></button>\n    \n            \n        <main class="admin-main admin-v3-main" id="adminMainContent" tabindex="-1" data-admin-frame="sony_v3">\n            \n        <header class="admin-v3-topbar">\n            <div class="admin-v3-topbar__copy">\n                <p class="sony-kicker">Nucleo interno</p>\n                <h2 id="pageTitle">Inicio</h2>\n            </div>\n            <div class="admin-v3-topbar__actions">\n                <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${K('menu')}<span>Menu</span></button>\n                <button type="button" class="admin-v3-agent-btn" data-action="open-agent-panel">Copiloto</button>\n                <button type="button" class="admin-v3-command-btn" data-action="open-command-palette">Acciones</button>\n                <button type="button" id="refreshAdminDataBtn" data-action="refresh-admin-data">Actualizar</button>\n                ${Q('admin-theme-switcher-header')}\n            </div>\n        </header>\n    \n            \n        <section class="admin-v3-context-strip" id="adminProductivityStrip">\n            <div class="admin-v3-context-copy" data-admin-section-hero>\n                <p class="sony-kicker" id="adminSectionEyebrow">Recepcion/Consultorio</p>\n                <h3 id="adminContextTitle">Que requiere atencion ahora</h3>\n                <p id="adminContextSummary">Trabaja con turnero, agenda y seguimiento sin mezclar frentes publicos ni marketing.</p>\n                <div id="adminContextActions" class="sony-context-actions"></div>\n            </div>\n            <div class="admin-v3-status-rail" data-admin-priority-rail>\n                <article class="sony-status-tile">\n                    <span>Push</span>\n                    <strong id="pushStatusIndicator">Inicializando</strong>\n                    <small id="pushStatusMeta">Comprobando permisos del navegador</small>\n                </article>\n                <article class="sony-status-tile" id="adminSessionTile" data-state="neutral">\n                    <span>Sesion</span>\n                    <strong id="adminSessionState">No autenticada</strong>\n                    <small id="adminSessionMeta">Autenticate para operar el panel</small>\n                </article>\n                <article class="sony-status-tile">\n                    <span>Sincronizacion</span>\n                    <strong id="adminRefreshStatus">Datos: sin sincronizar</strong>\n                    <small id="adminSyncState">Listo para primera sincronizacion</small>\n                </article>\n            </div>\n        </section>\n    \n            \n        \n        <section id="dashboard" class="admin-section active" tabindex="-1">\n            <div class="dashboard-stage">\n                \n        <article class="sony-panel dashboard-hero-panel">\n            <div class="dashboard-hero-copy">\n                <p class="sony-kicker">Recepcion/Admin</p>\n                <h3>Inicio operativo</h3>\n                <p id="dashboardHeroSummary">\n                    Agenda, pendientes y horarios en un solo frente simple para el equipo.\n                </p>\n            </div>\n            <div class="dashboard-hero-actions">\n                <button type="button" data-action="context-open-appointments-overview">Ver agenda</button>\n                <button type="button" data-action="context-open-callbacks-pending">Revisar pendientes</button>\n            </div>\n            <div class="dashboard-home-grid">\n                <article class="dashboard-home-card" id="opsTodaySummaryCard">\n                    <span>Pacientes hoy</span>\n                    <strong id="opsTodayCount">0</strong>\n                    <small id="opsTodayMeta">Sin agenda inmediata</small>\n                    <button type="button" data-action="context-open-appointments-overview">Abrir agenda</button>\n                </article>\n                <article class="dashboard-home-card" id="opsPendingSummaryCard">\n                    <span>Pendientes</span>\n                    <strong id="opsPendingCount">0</strong>\n                    <small id="opsPendingMeta">Sin seguimiento pendiente</small>\n                    <button type="button" data-action="context-open-callbacks-pending">Ver pendientes</button>\n                </article>\n                <article class="dashboard-home-card" id="opsAvailabilitySummaryCard">\n                    <span>Horarios</span>\n                    <strong id="opsAvailabilityCount">0</strong>\n                    <small id="opsAvailabilityMeta">Sin horarios publicados</small>\n                    <button type="button" data-action="context-open-availability">Abrir horarios</button>\n                </article>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel dashboard-signal-panel" id="opsQueueLaunchCard">\n            <header>\n                <div>\n                    <h3>Nucleo de consultorio</h3>\n                    <small id="operationRefreshSignal">Turnero al frente, OpenClaw y clinica detras</small>\n                </div>\n                <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>\n            </header>\n            <p id="dashboardLiveMeta">\n                Prioriza recepcion y consultorio antes de abrir herramientas secundarias.\n            </p>\n            <div class="dashboard-signal-stack">\n                <article class="dashboard-signal-card">\n                    <span>Turnero</span>\n                    <strong id="opsQueueStatus">Listo para abrir</strong>\n                    <small id="opsQueueMeta">Sin cola activa</small>\n                </article>\n                <article class="dashboard-signal-card">\n                    <span>Readiness</span>\n                    <strong id="dashboardQueueHealth">Piloto interno en revision</strong>\n                    <small id="dashboardFlowStatus">OpenClaw auth e historias clinicas deben quedar listas antes de uso real.</small>\n                </article>\n            </div>\n            <button\n                type="button"\n                id="openOperatorAppBtn"\n                class="dashboard-launch-btn"\n                data-action="open-operator-app"\n            >\n                Abrir turnero operador\n            </button>\n            <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-grid sony-grid-three dashboard-operations-grid">\n            <article class="sony-panel dashboard-card-operations">\n                <header>\n                    <h3>Siguientes pasos</h3>\n                    <small id="operationDeckMeta">Atajos utiles para el dia</small>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Transferencias</span><strong id="operationPendingReviewCount">0</strong></div>\n                    <div><span>Llamadas</span><strong id="operationPendingCallbacksCount">0</strong></div>\n                    <div><span>Hoy</span><strong id="operationTodayLoadCount">0</strong></div>\n                </div>\n                <p id="operationQueueHealth">Sin pendientes urgentes.</p>\n                <div id="operationActionList" class="operations-action-list"></div>\n            </article>\n\n            <article class="sony-panel dashboard-card-assistant" id="dashboardAssistantUtility">\n                <header>\n                    <div>\n                        <h3>Utilidad del asistente</h3>\n                        <small id="dashboardAssistantMeta">Recepcionista ejecutora en sala</small>\n                    </div>\n                    <span class="dashboard-signal-chip" id="dashboardAssistantStatus" data-state="neutral">Sin uso</span>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Acciones hoy</span><strong id="dashboardAssistantActioned">0</strong></div>\n                    <div><span>Resueltas</span><strong id="dashboardAssistantResolved">0</strong></div>\n                    <div><span>Escaladas</span><strong id="dashboardAssistantEscalated">0</strong></div>\n                    <div><span>Bloqueos</span><strong id="dashboardAssistantBlocked">0</strong></div>\n                </div>\n                <p id="dashboardAssistantSummary">Sin actividad del asistente todavia.</p>\n                <div class="dashboard-assistant-meta">\n                    <p id="dashboardAssistantWindowMeta">7d: 0 sesiones utiles | 0 ms promedio</p>\n                    <p id="dashboardAssistantTopIntent">Intent principal: sin datos</p>\n                    <p id="dashboardAssistantTopReason">Motivo de apoyo: sin datos</p>\n                    <p id="dashboardAssistantTopOutcome">Cierre asistido: sin datos</p>\n                </div>\n            </article>\n\n            <article class="sony-panel" id="funnelSummary">\n                <header>\n                    <h3>Herramientas secundarias</h3>\n                    <small>Analitica y diagnostico fuera del flujo clinico principal</small>\n                </header>\n                <p class="dashboard-secondary-summary">\n                    Resenas, embudo y diagnostico siguen disponibles, pero ya no compiten con el nucleo interno del consultorio.\n                </p>\n                <div class="dashboard-secondary-links">\n                    <a href="#reviews" class="dashboard-secondary-link" data-section="reviews">Abrir resenas</a>\n                    <a href="#queue" class="dashboard-secondary-link" data-section="queue">Turnero avanzado</a>\n                </div>\n                <div class="sony-panel-stats dashboard-secondary-metrics">\n                    <div><span>Reservas</span><strong id="funnelViewBooking">0</strong></div>\n                    <div><span>Checkout</span><strong id="funnelStartCheckout">0</strong></div>\n                    <div><span>Confirmadas</span><strong id="funnelBookingConfirmed">0</strong></div>\n                    <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>\n                </div>\n            </article>\n        </div>\n    \n            \n        <details class="sony-panel dashboard-analytics-disclosure" id="dashboardAdvancedAnalytics">\n            <summary>\n                <span>Analitica avanzada</span>\n                <small>Embudo y detalle operativo secundario</small>\n            </summary>\n            <div class="sony-grid sony-grid-three dashboard-analytics-grid">\n                <article class="sony-panel"><h4>Entry</h4><ul id="funnelEntryList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Source</h4><ul id="funnelSourceList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Payment</h4><ul id="funnelPaymentMethodList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Abandono</h4><ul id="funnelAbandonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Motivo</h4><ul id="funnelAbandonReasonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Paso</h4><ul id="funnelStepList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Error</h4><ul id="funnelErrorCodeList" class="sony-list"></ul></article>\n            </div>\n        </details>\n    \n            <div class="sr-only" id="adminAvgRating"></div>\n        </section>\n    \n        \n        <section id="clinical-history" class="admin-section" tabindex="-1">\n            <div class="clinical-history-stage">\n                <article class="sony-panel clinical-history-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Historia clinica</h3>\n                            <p id="clinicalHistoryHeaderMeta">\n                                Selecciona un caso para revisar la conversacion y el borrador medico.\n                            </p>\n                        </div>\n                        <div class="clinical-history-header-status">\n                            <span\n                                class="clinical-history-status-chip"\n                                id="clinicalHistoryStatusChip"\n                                data-tone="neutral"\n                            >\n                                Sin seleccion\n                            </span>\n                            <span\n                                class="clinical-history-status-meta"\n                                id="clinicalHistoryStatusMeta"\n                            >\n                                Cola lista para revision\n                            </span>\n                        </div>\n                    </header>\n                    <div\n                        id="clinicalHistorySummaryGrid"\n                        class="clinical-history-summary-grid"\n                    ></div>\n                    <div\n                        id="clinicalHistoryAttachmentStrip"\n                        class="clinical-history-attachment-strip"\n                    ></div>\n                </article>\n\n                <article class="sony-panel clinical-history-side-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Cola clinica</h3>\n                            <p id="clinicalHistoryQueueMeta">\n                                Casos listos para revision humana.\n                            </p>\n                        </div>\n                        <button\n                            type="button"\n                            id="clinicalHistoryRefreshBtn"\n                            data-clinical-review-action="refresh-current"\n                        >\n                            Refrescar caso\n                        </button>\n                    </header>\n                    <div\n                        id="clinicalHistoryQueueList"\n                        class="clinical-history-queue-list"\n                    ></div>\n                </article>\n            </div>\n\n            <div class="clinical-history-workbench">\n                <article class="sony-panel clinical-history-transcript-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Conversacion</h3>\n                            <p id="clinicalHistoryTranscriptMeta">\n                                El transcript del paciente aparece aqui.\n                            </p>\n                        </div>\n                        <span\n                            class="clinical-history-panel-meta"\n                            id="clinicalHistoryTranscriptCount"\n                        >\n                            0 mensajes\n                        </span>\n                    </header>\n                    <div\n                        id="clinicalHistoryTranscript"\n                        class="clinical-history-transcript"\n                    ></div>\n                </article>\n\n                <article class="sony-panel clinical-history-draft-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Borrador medico</h3>\n                            <p id="clinicalHistoryDraftSummary">\n                                Ajusta anamnesis, guardrails y plan antes de aprobar.\n                            </p>\n                        </div>\n                        <span\n                            class="clinical-history-panel-meta"\n                            id="clinicalHistoryDraftMeta"\n                        >\n                            Sin cambios\n                        </span>\n                    </header>\n                    <form\n                        id="clinicalHistoryDraftForm"\n                        class="clinical-history-form"\n                    ></form>\n                </article>\n            </div>\n\n            <div class="clinical-history-footer-grid">\n                <article class="sony-panel soft clinical-history-events-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Eventos del caso</h3>\n                            <p id="clinicalHistoryEventsMeta">\n                                Alertas, conciliacion y acciones pendientes.\n                            </p>\n                        </div>\n                    </header>\n                    <div\n                        id="clinicalHistoryEvents"\n                        class="clinical-history-events"\n                    ></div>\n                </article>\n\n                <article class="sony-panel soft clinical-history-followup-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Pregunta adicional</h3>\n                            <p id="clinicalHistoryFollowUpMeta">\n                                Envia una pregunta puntual al paciente sin salir del review.\n                            </p>\n                        </div>\n                    </header>\n                    <textarea\n                        id="clinicalHistoryFollowUpInput"\n                        class="clinical-history-followup-input"\n                        rows="4"\n                        placeholder="Ej.: ¿Puedes decirme si el brote empeora con el sol o el calor?"\n                    ></textarea>\n                    <div class="toolbar-row clinical-history-actions-row">\n                        <button\n                            type="button"\n                            id="clinicalHistorySendFollowUpBtn"\n                            data-clinical-review-action="send-follow-up"\n                        >\n                            Pedir pregunta\n                        </button>\n                        <button\n                            type="button"\n                            id="clinicalHistoryReviewRequiredBtn"\n                            data-clinical-review-action="mark-review-required"\n                        >\n                            Marcar revision\n                        </button>\n                        <button\n                            type="submit"\n                            id="clinicalHistorySaveBtn"\n                            form="clinicalHistoryDraftForm"\n                        >\n                            Guardar borrador\n                        </button>\n                        <button\n                            type="button"\n                            id="clinicalHistoryApproveBtn"\n                            data-clinical-review-action="approve-current"\n                        >\n                            Aprobar\n                        </button>\n                    </div>\n                </article>\n            </div>\n\n            <div class="clinical-media-flow-grid">\n                <article class="sony-panel soft clinical-media-flow-queue-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Media Flow</h3>\n                            <p id="clinicalMediaFlowQueueMeta">\n                                Cola editorial con media clinica privada disponible.\n                            </p>\n                        </div>\n                        <div class="clinical-history-header-status">\n                            <span\n                                class="clinical-history-status-chip"\n                                id="clinicalMediaFlowStatusChip"\n                                data-tone="neutral"\n                            >\n                                Sin caso\n                            </span>\n                            <span\n                                class="clinical-history-status-meta"\n                                id="clinicalMediaFlowStatusMeta"\n                            >\n                                Esperando seleccion\n                            </span>\n                        </div>\n                    </header>\n                    <div\n                        id="clinicalMediaFlowQueueList"\n                        class="clinical-media-flow-queue-list"\n                    ></div>\n                </article>\n\n                <article class="sony-panel clinical-media-flow-workspace-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Workspace editorial</h3>\n                            <p id="clinicalMediaFlowCaseMeta">\n                                OpenClaw prepara comparativas, copy y paquete publico antes de publicar.\n                            </p>\n                        </div>\n                        <div class="toolbar-row clinical-media-flow-toolbar">\n                            <button\n                                type="button"\n                                id="clinicalMediaFlowRefreshBtn"\n                                data-media-flow-action="refresh"\n                            >\n                                Refrescar\n                            </button>\n                            <button\n                                type="button"\n                                id="clinicalMediaFlowGenerateBtn"\n                                data-media-flow-action="generate-proposal"\n                            >\n                                Generar propuesta\n                            </button>\n                        </div>\n                    </header>\n\n                    <div\n                        id="clinicalMediaFlowConsentStrip"\n                        class="clinical-media-flow-consent-strip"\n                    ></div>\n                    <div\n                        id="clinicalMediaFlowAssetGrid"\n                        class="clinical-media-flow-asset-grid"\n                    ></div>\n                    <section\n                        id="clinicalMediaFlowAgentSurface"\n                        class="clinical-media-flow-agent-surface"\n                    ></section>\n                    <form\n                        id="clinicalMediaFlowProposalForm"\n                        class="clinical-media-flow-form"\n                    ></form>\n                    <div\n                        id="clinicalMediaFlowTimeline"\n                        class="clinical-media-flow-timeline"\n                    ></div>\n                </article>\n            </div>\n        </section>\n    \n        \n        <section id="appointments" class="admin-section" tabindex="-1">\n            <div class="appointments-stage">\n                \n        <article class="sony-panel appointments-command-deck">\n            <header class="section-header appointments-command-head">\n                <div>\n                    <p class="sony-kicker">Agenda clinica</p>\n                    <h3>Citas</h3>\n                    <p id="appointmentsDeckSummary">Sin citas cargadas.</p>\n                </div>\n                <span class="appointments-deck-chip" id="appointmentsDeckChip">Agenda estable</span>\n            </header>\n            <div class="appointments-ops-grid">\n                <article class="appointments-ops-card tone-warning">\n                    <span>Transferencias</span>\n                    <strong id="appointmentsOpsPendingTransfer">0</strong>\n                    <small id="appointmentsOpsPendingTransferMeta">Nada por validar</small>\n                </article>\n                <article class="appointments-ops-card tone-neutral">\n                    <span>Proximas 48h</span>\n                    <strong id="appointmentsOpsUpcomingCount">0</strong>\n                    <small id="appointmentsOpsUpcomingMeta">Sin presion inmediata</small>\n                </article>\n                <article class="appointments-ops-card tone-danger">\n                    <span>No show</span>\n                    <strong id="appointmentsOpsNoShowCount">0</strong>\n                    <small id="appointmentsOpsNoShowMeta">Sin incidencias</small>\n                </article>\n                <article class="appointments-ops-card tone-success">\n                    <span>Hoy</span>\n                    <strong id="appointmentsOpsTodayCount">0</strong>\n                    <small id="appointmentsOpsTodayMeta">Carga diaria limpia</small>\n                </article>\n            </div>\n            <div class="appointments-command-actions">\n                <button type="button" data-action="context-open-appointments-transfer">Priorizar transferencias</button>\n                <button type="button" data-action="context-open-callbacks-pending">Cruzar callbacks</button>\n                <button type="button" id="appointmentsExportBtn" data-action="export-csv">Exportar CSV</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel appointments-focus-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="appointmentsFocusLabel">Sin foco activo</p>\n                    <h3 id="appointmentsFocusPatient">Sin citas activas</h3>\n                    <p id="appointmentsFocusMeta">Cuando entren citas accionables apareceran aqui.</p>\n                </div>\n            </header>\n            <div class="appointments-focus-grid">\n                <div class="appointments-focus-stat">\n                    <span>Siguiente ventana</span>\n                    <strong id="appointmentsFocusWindow">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Pago</span>\n                    <strong id="appointmentsFocusPayment">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Estado</span>\n                    <strong id="appointmentsFocusStatus">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Contacto</span>\n                    <strong id="appointmentsFocusContact">-</strong>\n                </div>\n            </div>\n            <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>\n            <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>\n            <div id="appointmentsQueueReview" class="appointments-review-context is-hidden"></div>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel appointments-workbench">\n            <header class="section-header appointments-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p id="appointmentsWorkbenchHint">Filtros, orden y tabla en un workbench unico.</p>\n                </div>\n                <div class="toolbar-group" id="appointmentsDensityToggle">\n                    <button type="button" data-action="appointment-density" data-density="comfortable" class="is-active">Comodo</button>\n                    <button type="button" data-action="appointment-density" data-density="compact">Compacto</button>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="appointment-quick-filter-btn is-active" data-action="appointment-quick-filter" data-filter-value="all">Todas</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="pending_transfer">Transferencias</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="upcoming_48h">48h</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="no_show">No show</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="triage_attention">Triage</button>\n                </div>\n            </div>\n            <div class="toolbar-row appointments-toolbar">\n                <label>\n                    <span class="sr-only">Filtro</span>\n                    <select id="appointmentFilter">\n                        <option value="all">Todas</option>\n                        <option value="pending_transfer">Transferencias por validar</option>\n                        <option value="upcoming_48h">Proximas 48h</option>\n                        <option value="no_show">No show</option>\n                        <option value="triage_attention">Triage accionable</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden</span>\n                    <select id="appointmentSort">\n                        <option value="datetime_desc">Fecha reciente</option>\n                        <option value="datetime_asc">Fecha ascendente</option>\n                        <option value="patient_az">Paciente (A-Z)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchAppointments" placeholder="Buscar paciente" />\n                <button type="button" id="clearAppointmentsFiltersBtn" data-action="clear-appointment-filters" class="is-hidden">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="appointmentsToolbarMeta">Mostrando 0</p>\n                <p id="appointmentsToolbarState">Sin filtros activos</p>\n            </div>\n\n            <div class="table-scroll appointments-table-shell">\n                <table id="appointmentsTable" class="sony-table">\n                    <thead>\n                        <tr>\n                            <th>Paciente</th>\n                            <th>Servicio</th>\n                            <th>Fecha</th>\n                            <th>Pago</th>\n                            <th>Estado</th>\n                            <th>Acciones</th>\n                        </tr>\n                    </thead>\n                    <tbody id="appointmentsTableBody"></tbody>\n                </table>\n            </div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="callbacks" class="admin-section" tabindex="-1">\n            <div class="callbacks-stage">\n                \n        <article class="sony-panel callbacks-command-deck">\n            <header class="section-header callbacks-command-head">\n                <div>\n                    <p class="sony-kicker">SLA telefonico</p>\n                    <h3>Callbacks</h3>\n                    <p id="callbacksDeckSummary">Sin callbacks pendientes.</p>\n                </div>\n                <span class="callbacks-queue-chip" id="callbacksQueueChip">Cola estable</span>\n            </header>\n            <div id="callbacksOpsPanel" class="callbacks-ops-grid">\n                <article class="callbacks-ops-card"><span>Pendientes</span><strong id="callbacksOpsPendingCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hot</span><strong id="callbacksOpsUrgentCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hoy</span><strong id="callbacksOpsTodayCount">0</strong></article>\n                <article class="callbacks-ops-card wide"><span>Estado</span><strong id="callbacksOpsQueueHealth">Cola: estable</strong></article>\n            </div>\n            <div class="callbacks-command-actions">\n                <button type="button" id="callbacksOpsNextBtn" data-action="callbacks-triage-next">Siguiente llamada</button>\n                <button type="button" id="callbacksBulkSelectVisibleBtn">Seleccionar visibles</button>\n                <button type="button" id="callbacksBulkClearBtn">Limpiar seleccion</button>\n                <button type="button" id="callbacksBulkMarkBtn">Marcar contactados</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel callbacks-next-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="callbacksNextEyebrow">Siguiente contacto</p>\n                    <h3 id="callbacksOpsNext">Sin telefono</h3>\n                    <p id="callbacksNextSummary">La siguiente llamada prioritaria aparecera aqui.</p>\n                </div>\n                <span id="callbacksSelectionChip" class="is-hidden">Seleccionados: <strong id="callbacksSelectedCount">0</strong></span>\n            </header>\n            <div class="callbacks-next-grid">\n                <div class="callbacks-next-stat">\n                    <span>Espera</span>\n                    <strong id="callbacksNextWait">0 min</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Servicio</span>\n                    <strong id="callbacksNextPreference">-</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Accion</span>\n                    <strong id="callbacksNextState">Pendiente</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Estado IA</span>\n                    <strong id="callbacksDeckHint">Sin bloqueos</strong>\n                </div>\n            </div>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel callbacks-workbench">\n            <header class="section-header callbacks-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p>Ordena por prioridad comercial, genera borradores IA y registra el outcome sin salir del panel.</p>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>\n                </div>\n            </div>\n            <div class="toolbar-row callbacks-toolbar">\n                <label>\n                    <span class="sr-only">Filtro callbacks</span>\n                    <select id="callbackFilter">\n                        <option value="all">Todos</option>\n                        <option value="pending">Pendientes</option>\n                        <option value="contacted">Contactados</option>\n                        <option value="today">Hoy</option>\n                        <option value="sla_urgent">Urgentes SLA</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden callbacks</span>\n                    <select id="callbackSort">\n                        <option value="priority_desc">Prioridad comercial</option>\n                        <option value="recent_desc">Mas recientes</option>\n                        <option value="waiting_desc">Mayor espera (SLA)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchCallbacks" placeholder="Buscar telefono o servicio" />\n                <button type="button" id="clearCallbacksFiltersBtn" data-action="clear-callback-filters">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="callbacksToolbarMeta">Mostrando 0</p>\n                <p id="callbacksToolbarState">Sin filtros activos</p>\n            </div>\n            <div id="callbacksGrid" class="callbacks-grid"></div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="reviews" class="admin-section" tabindex="-1">\n            <div class="reviews-stage">\n                <article class="sony-panel reviews-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Resenas</h3>\n                            <p id="reviewsSentimentLabel">Sin senal suficiente</p>\n                        </div>\n                        <span class="reviews-score-pill" id="reviewsAverageRating">0.0</span>\n                    </header>\n                    <div class="reviews-summary-grid">\n                        <div class="reviews-summary-stat">\n                            <span>5 estrellas</span>\n                            <strong id="reviewsFiveStarCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Ultimos 30 dias</span>\n                            <strong id="reviewsRecentCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Total</span>\n                            <strong id="reviewsTotalCount">0</strong>\n                        </div>\n                    </div>\n                    <div id="reviewsSummaryRail" class="reviews-summary-rail"></div>\n                </article>\n\n                <article class="sony-panel reviews-spotlight-panel">\n                    <header class="section-header"><h3>Spotlight</h3></header>\n                    <div id="reviewsSpotlight" class="reviews-spotlight"></div>\n                </article>\n            </div>\n            <div class="sony-panel">\n                <div id="reviewsGrid" class="reviews-grid"></div>\n            </div>\n        </section>\n    \n        \n        <section id="availability" class="admin-section" tabindex="-1">\n            <div class="sony-panel availability-container">\n                \n        <header class="section-header availability-header">\n            <div class="availability-calendar">\n                <h3 id="availabilityHeading">Configurar Horarios Disponibles</h3>\n                <div class="availability-badges">\n                    <span id="availabilitySourceBadge" class="availability-badge">Fuente: Local</span>\n                    <span id="availabilityModeBadge" class="availability-badge">Modo: Editable</span>\n                    <span id="availabilityTimezoneBadge" class="availability-badge">TZ: -</span>\n                </div>\n            </div>\n            <div class="toolbar-group calendar-header">\n                <button type="button" data-action="change-month" data-delta="-1">Prev</button>\n                <strong id="calendarMonth"></strong>\n                <button type="button" data-action="change-month" data-delta="1">Next</button>\n                <button type="button" data-action="availability-today">Hoy</button>\n                <button type="button" data-action="availability-prev-with-slots">Anterior con slots</button>\n                <button type="button" data-action="availability-next-with-slots">Siguiente con slots</button>\n            </div>\n        </header>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="availabilitySelectionSummary">Selecciona una fecha</p>\n            <p id="availabilityDraftStatus">Sin cambios pendientes</p>\n            <p id="availabilitySyncStatus">Sincronizado</p>\n        </div>\n    \n                <div id="availabilityReviewContext" class="appointments-review-context availability-review-context is-hidden"></div>\n                <div id="availabilityCalendar" class="availability-calendar-grid"></div>\n                \n        <div id="availabilityDetailGrid" class="availability-detail-grid">\n            <article class="sony-panel soft">\n                <h4 id="selectedDate">-</h4>\n                <div id="timeSlotsList" class="time-slots-list"></div>\n            </article>\n\n            <article class="sony-panel soft">\n                <div id="availabilityQuickSlotPresets" class="slot-presets">\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:00">09:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:30">09:30</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="10:00">10:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:00">16:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:30">16:30</button>\n                </div>\n                <div id="addSlotForm" class="add-slot-form">\n                    <input type="time" id="newSlotTime" />\n                    <button type="button" data-action="add-time-slot">Agregar</button>\n                </div>\n                <div id="availabilityDayActions" class="toolbar-group wrap">\n                    <button type="button" data-action="copy-availability-day">Copiar dia</button>\n                    <button type="button" data-action="paste-availability-day">Pegar dia</button>\n                    <button type="button" data-action="duplicate-availability-day-next">Duplicar +1</button>\n                    <button type="button" data-action="duplicate-availability-next-week">Duplicar +7</button>\n                    <button type="button" data-action="clear-availability-day">Limpiar dia</button>\n                    <button type="button" data-action="clear-availability-week">Limpiar semana</button>\n                </div>\n                <p id="availabilityDayActionsStatus">Sin acciones pendientes</p>\n                <div class="toolbar-group">\n                    <button type="button" id="availabilitySaveDraftBtn" data-action="save-availability-draft" disabled>Guardar</button>\n                    <button type="button" id="availabilityDiscardDraftBtn" data-action="discard-availability-draft" disabled>Descartar</button>\n                </div>\n            </article>\n        </div>\n    \n            </div>\n        </section>\n    \n        \n        <section id="queue" class="admin-section" tabindex="-1">\n            <div class="sony-panel">\n                \n        <header class="section-header">\n            <div>\n                <h3>Turnero Sala</h3>\n                <p>\n                    Apps operativas, cola en vivo y flujo simple para recepción,\n                    kiosco y TV.\n                </p>\n            </div>\n            <div class="queue-admin-header-actions">\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="1">Llamar C1</button>\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="2">Llamar C2</button>\n                <button type="button" data-action="queue-refresh-state">Refrescar</button>\n            </div>\n        </header>\n    \n                \n        <div id="queueAppsHub" class="queue-apps-hub sony-panel soft" data-queue-domain="operations">\n            <div class="queue-apps-hub__header">\n                <div>\n                    <h4>Apps operativas</h4>\n                    <p>\n                        Corte web piloto para operador, kiosco y sala. Las apps\n                        nativas quedan como capa opcional, no como bloqueo del\n                        release.\n                    </p>\n                </div>\n                <div class="queue-apps-hub__header-meta">\n                    <span id="queueAppsPlatformChip" class="queue-apps-platform-chip">\n                        Plataforma detectada\n                    </span>\n                    <span id="queueAppsRefreshShieldChip" class="queue-apps-refresh-shield-chip" data-state="idle">\n                        Refresh sin bloqueo\n                    </span>\n                </div>\n            </div>\n            <div id="queueDomainSwitcher" class="queue-domain-switcher"></div>\n            <div id="queueAdminViewMode" class="queue-admin-view-mode"></div>\n            <div id="queueFocusMode" class="queue-focus-mode" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueNumpadGuide" class="queue-numpad-guide" data-focus-match="opening operations incidents" data-queue-domain-match="operations incidents"></div>\n            <div id="queueConsultorioBoard" class="queue-consultorio-board" data-focus-match="opening operations incidents closing" data-queue-domain-match="operations incidents"></div>\n            <div id="queueAttentionDeck" class="queue-attention-deck" data-focus-match="operations incidents closing"></div>\n            <div id="queueResolutionDeck" class="queue-resolution-deck" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketLookup" class="queue-ticket-lookup" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketRoute" class="queue-ticket-route" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketSimulation" class="queue-ticket-simulation" data-focus-match="operations incidents closing"></div>\n            <div id="queueNextTurns" class="queue-next-turns" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueMasterSequence" class="queue-master-sequence" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueCoverageDeck" class="queue-coverage-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReserveDeck" class="queue-reserve-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueGeneralGuidance" class="queue-general-guidance" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueProjectedDeck" class="queue-projected-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueIncomingDeck" class="queue-incoming-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueScenarioDeck" class="queue-scenario-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReceptionScript" class="queue-reception-script" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReceptionCollision" class="queue-reception-collision" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReceptionLights" class="queue-reception-lights" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueWindowDeck" class="queue-window-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskReply" class="queue-desk-reply" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskFallback" class="queue-desk-fallback" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskObjections" class="queue-desk-objections" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskCloseout" class="queue-desk-closeout" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskRecheck" class="queue-desk-recheck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskShift" class="queue-desk-shift" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskPromise" class="queue-desk-promise" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalation" class="queue-desk-escalation" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationTalk" class="queue-desk-escalation-talk" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationConfirm" class="queue-desk-escalation-confirm" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationFollowup" class="queue-desk-escalation-followup" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationReopen" class="queue-desk-escalation-reopen" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationLimit" class="queue-desk-escalation-limit" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationBridge" class="queue-desk-escalation-bridge" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationBrief" class="queue-desk-escalation-brief" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationReturn" class="queue-desk-escalation-return" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationResolution" class="queue-desk-escalation-resolution" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueBlockers" class="queue-blockers" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueSlaDeck" class="queue-sla-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueWaitRadar" class="queue-wait-radar" data-focus-match="opening operations incidents closing" data-queue-domain-match="operations incidents"></div>\n            <div id="queueLoadBalance" class="queue-load-balance" data-focus-match="opening operations incidents closing"></div>\n            <div id="queuePriorityLane" class="queue-priority-lane" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueQuickTrays" class="queue-quick-trays" data-focus-match="operations incidents closing"></div>\n            <div id="queueActiveTray" class="queue-active-tray" data-focus-match="operations incidents closing"></div>\n            <div id="queueTrayBurst" class="queue-tray-burst" data-focus-match="operations incidents closing"></div>\n            <div id="queueDispatchDeck" class="queue-dispatch-deck" data-focus-match="opening operations incidents" data-queue-domain-match="operations incidents"></div>\n            <div id="queueQuickConsole" class="queue-quick-console" data-focus-match="opening operations incidents closing" data-queue-domain-match="operations incidents"></div>\n            <div id="queuePlaybook" class="queue-playbook" data-focus-match="opening operations incidents closing" data-queue-domain-match="deployment incidents"></div>\n            <div id="queueOpsPilot" class="queue-ops-pilot" data-focus-match="opening operations incidents" data-queue-domain-match="deployment"></div>\n            <div id="queueAppDownloadsCards" class="queue-apps-grid" data-focus-match="opening operations" data-queue-domain-match="deployment"></div>\n            <div id="queueSurfaceTelemetry" class="queue-surface-telemetry" data-focus-match="opening operations incidents closing" data-queue-domain-match="incidents"></div>\n            <div id="queueOpsAlerts" class="queue-ops-alerts" data-focus-match="opening operations incidents closing" data-queue-domain-match="incidents"></div>\n            <div id="queueOpeningChecklist" class="queue-opening-checklist" data-focus-match="opening" data-queue-domain-match="deployment"></div>\n            <div id="queueShiftHandoff" class="queue-shift-handoff" data-focus-match="closing" data-queue-domain-match="operations"></div>\n            <div id="queueOpsLog" class="queue-ops-log" data-focus-match="operations incidents closing" data-queue-domain-match="deployment incidents"></div>\n            <div id="queueContingencyDeck" class="queue-contingency-deck" data-focus-match="incidents operations" data-queue-domain-match="incidents"></div>\n            <div id="queueInstallConfigurator" class="queue-install-configurator" data-focus-match="opening operations" data-queue-domain-match="deployment"></div>\n        </div>\n    \n                \n        <div class="sony-grid sony-grid-kpi slim">\n            <article class="sony-kpi"><h4>Espera</h4><strong id="queueWaitingCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>Llamados</h4><strong id="queueCalledCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>C1</h4><strong id="queueC1Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>C2</h4><strong id="queueC2Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>Sync</h4><strong id="queueSyncStatus" data-state="live">vivo</strong></article>\n        </div>\n    \n                \n        <div id="queueStationControl" class="toolbar-row">\n            <span id="queueStationBadge">Estacion: libre</span>\n            <span id="queueStationModeBadge">Modo: free</span>\n            <span id="queuePracticeModeBadge" hidden>Practice ON</span>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="1">Lock C1</button>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="2">Lock C2</button>\n            <button type="button" data-action="queue-set-station-mode" data-queue-mode="free">Modo libre</button>\n            <button type="button" data-action="queue-toggle-one-tap" aria-pressed="false">1 tecla</button>\n            <button type="button" data-action="queue-toggle-shortcuts">Atajos</button>\n            <button type="button" data-action="queue-capture-call-key">Calibrar tecla</button>\n            <button type="button" data-action="queue-clear-call-key" hidden>Quitar tecla</button>\n            <button type="button" data-action="queue-start-practice">Iniciar practica</button>\n            <button type="button" data-action="queue-stop-practice">Salir practica</button>\n            <button type="button" id="queueReleaseC1" data-action="queue-release-station" data-queue-consultorio="1" hidden>Release C1</button>\n            <button type="button" id="queueReleaseC2" data-action="queue-release-station" data-queue-consultorio="2" hidden>Release C2</button>\n        </div>\n    \n                \n        <div id="queueShortcutPanel" hidden>\n            <p>Numpad Enter llama siguiente.</p>\n            <p>Numpad Decimal prepara completar.</p>\n            <p>Numpad Subtract prepara no_show.</p>\n            <p>Numpad Add re-llama el ticket activo.</p>\n        </div>\n    \n                \n        <div id="queueTriageToolbar" class="toolbar-row">\n            <button type="button" data-queue-filter="all">Todo</button>\n            <button type="button" data-queue-filter="called">Llamados</button>\n            <button type="button" data-queue-filter="sla_risk">Riesgo SLA</button>\n            <input type="search" id="queueSearchInput" placeholder="Buscar ticket" />\n            <button type="button" data-action="queue-clear-search">Limpiar</button>\n            <button type="button" id="queueSelectVisibleBtn" data-action="queue-select-visible">Seleccionar visibles</button>\n            <button type="button" id="queueClearSelectionBtn" data-action="queue-clear-selection">Limpiar seleccion</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="completar">Bulk completar</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="no_show">Bulk no_show</button>\n            <button type="button" data-action="queue-bulk-reprint">Bulk reprint</button>\n        </div>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="queueTriageSummary">Sin riesgo</p>\n            <span id="queueSelectionChip" class="is-hidden">Seleccionados: <strong id="queueSelectedCount">0</strong></span>\n        </div>\n    \n                \n        <ul id="queueNextAdminList" class="sony-list"></ul>\n\n        <div\n            id="queueReceptionGuidancePanel"\n            class="sony-panel soft queue-reception-guidance"\n        >\n            <div class="queue-reception-guidance__header">\n                <div>\n                    <h4>Guia de recepcion</h4>\n                    <p id="queueReceptionGuidanceMeta">\n                        Sin apoyos activos para recepcion.\n                    </p>\n                </div>\n            </div>\n            <ul id="queueReceptionGuidanceList" class="sony-list"></ul>\n        </div>\n\n        <div\n            id="queueReceptionResolutionsPanel"\n            class="sony-panel soft queue-reception-guidance"\n        >\n            <div class="queue-reception-guidance__header">\n                <div>\n                    <h4>Resoluciones recientes</h4>\n                    <p id="queueRecentResolutionsMeta">\n                        Sin cierres asistidos todavia.\n                    </p>\n                </div>\n            </div>\n            <ul id="queueRecentResolutionsList" class="sony-list"></ul>\n        </div>\n\n        <div class="table-scroll">\n            <table class="sony-table queue-admin-table">\n                <thead>\n                    <tr>\n                        <th>Sel</th>\n                        <th>Ticket</th>\n                        <th>Tipo</th>\n                        <th>Estado</th>\n                        <th>Consultorio</th>\n                        <th>Espera</th>\n                        <th>Acciones</th>\n                    </tr>\n                </thead>\n                <tbody id="queueTableBody"></tbody>\n            </table>\n        </div>\n\n        <div id="queueActivityPanel" class="sony-panel soft">\n            <h4>Actividad</h4>\n            <ul id="queueActivityList" class="sony-list"></ul>\n        </div>\n    \n            </div>\n\n            \n        <dialog id="queueSensitiveConfirmDialog" class="queue-sensitive-confirm-dialog">\n            <form method="dialog">\n                <p id="queueSensitiveConfirmMessage">Confirmar accion sensible</p>\n                <div class="toolbar-group">\n                    <button type="button" data-action="queue-sensitive-cancel">Cancelar</button>\n                    <button type="button" data-action="queue-sensitive-confirm">Confirmar</button>\n                </div>\n            </form>\n        </dialog>\n    \n        </section>\n    \n    \n        </main>\n    \n            \n        <aside\n            id="adminAgentPanel"\n            class="admin-agent-panel is-hidden"\n            aria-hidden="true"\n            aria-labelledby="adminAgentPanelTitle"\n        >\n            <div class="admin-agent-panel__shell">\n                <header class="admin-agent-panel__header">\n                    <div>\n                        <p class="sony-kicker">Copiloto operativo</p>\n                        <h3 id="adminAgentPanelTitle">Admin Agent</h3>\n                        <p id="adminAgentPanelSummary">\n                            Sesion inactiva. Abre el copiloto para trabajar con contexto del admin.\n                        </p>\n                    </div>\n                    <div class="admin-agent-panel__header-actions">\n                        <span id="adminAgentRelayBadge" class="admin-agent-badge" data-state="disabled">relay disabled</span>\n                        <button type="button" class="admin-agent-panel__ghost" data-action="admin-agent-refresh">Actualizar</button>\n                        <button type="button" class="admin-agent-panel__close" data-action="close-agent-panel">Cerrar</button>\n                    </div>\n                </header>\n\n                <div class="admin-agent-panel__meta">\n                    <article class="admin-agent-surface">\n                        <span>Contexto activo</span>\n                        <strong id="adminAgentContextSummary">Sincronizando contexto del admin</strong>\n                        <small id="adminAgentContextMeta">El agente usa estado interno y APIs, no el DOM.</small>\n                    </article>\n                    <article class="admin-agent-surface">\n                        <span>Sesion</span>\n                        <strong id="adminAgentSessionState">idle</strong>\n                        <small id="adminAgentSessionMeta">Sin hilo operativo abierto.</small>\n                    </article>\n                    <article class="admin-agent-surface">\n                        <span>Sync</span>\n                        <strong id="adminAgentSyncState">idle</strong>\n                        <small id="adminAgentLiveMeta">Sin sincronizacion activa.</small>\n                    </article>\n                </div>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Conversacion</h4>\n                        <small id="adminAgentConversationMeta">Sin mensajes</small>\n                    </div>\n                    <div id="adminAgentConversation" class="admin-agent-log"></div>\n                </section>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Tool plan</h4>\n                        <small id="adminAgentPlanMeta">Sin ejecuciones</small>\n                    </div>\n                    <div id="adminAgentToolPlan" class="admin-agent-list"></div>\n                </section>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Aprobaciones</h4>\n                        <small id="adminAgentApprovalMeta">Sin pendientes</small>\n                    </div>\n                    <div id="adminAgentApprovalQueue" class="admin-agent-list"></div>\n                </section>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Timeline</h4>\n                        <small id="adminAgentTimelineMeta">Sin eventos</small>\n                    </div>\n                    <div id="adminAgentEventTimeline" class="admin-agent-list"></div>\n                </section>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Outbox</h4>\n                        <small id="adminAgentOutboxMeta">Sin salidas externas</small>\n                    </div>\n                    <div id="adminAgentOutboxList" class="admin-agent-list"></div>\n                </section>\n\n                <div class="admin-agent-panel__composer">\n                    <label class="admin-agent-panel__label" for="adminAgentPrompt">Instruccion para el copiloto</label>\n                    <textarea\n                        id="adminAgentPrompt"\n                        rows="4"\n                        placeholder="Ej. Resume los callbacks pendientes y marca como sin_respuesta el 402"\n                    ></textarea>\n                    <div class="admin-agent-panel__composer-actions">\n                        <button type="button" data-action="admin-agent-cancel">Cancelar sesion</button>\n                        <button type="button" id="adminAgentSubmitBtn" data-action="admin-agent-submit">Ejecutar</button>\n                    </div>\n                </div>\n            </div>\n        </aside>\n    \n            \n        <div id="adminCommandPalette" class="admin-command-palette is-hidden" aria-hidden="true">\n            <button type="button" class="admin-command-palette__backdrop" data-action="close-command-palette" aria-label="Cerrar paleta"></button>\n            <div class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandPaletteTitle">\n                <div class="admin-command-dialog__head">\n                    <div>\n                        <p class="sony-kicker">Acciones rapidas</p>\n                        <h3 id="adminCommandPaletteTitle">Ir a una tarea</h3>\n                    </div>\n                    <button type="button" class="admin-command-dialog__close" data-action="close-command-palette">Cerrar</button>\n                </div>\n                <div class="admin-command-box">\n                    <input id="adminQuickCommand" type="text" placeholder="Ej. agenda, pendientes, horarios, turnero" />\n                    <button id="adminRunQuickCommandBtn" data-action="run-admin-command">Ejecutar</button>\n                </div>\n                <div class="admin-command-dialog__hints">\n                    <span>Ctrl+K abre la barra de comandos</span>\n                    <span>Ctrl+Shift+K abre el copiloto</span>\n                    <span>Alt+Shift+I abre el copiloto</span>\n                    <span>/ enfoca la busqueda de la seccion activa</span>\n                </div>\n            </div>\n        </div>\n    \n        </div>\n    `;
+    return `\n        <div class="admin-v3-shell">\n            \n        <aside class="admin-sidebar admin-v3-sidebar" id="adminSidebar" tabindex="-1">\n            <header class="sidebar-header">\n                <div class="admin-v3-sidebar__brand">\n                    <strong>Piel en Armonia</strong>\n                    <small>Consultorio interno</small>\n                </div>\n                <div class="toolbar-group">\n                    <button type="button" id="adminSidebarCollapse" data-action="toggle-sidebar-collapse" aria-pressed="false">${K('menu')}</button>\n                    <button type="button" id="adminMenuClose">Cerrar</button>\n                </div>\n            </header>\n            <nav class="sidebar-nav" id="adminSidebarNav">\n                \n        <div class="admin-nav-group" id="adminPrimaryNav">\n            ${V('Flujo diario')}\n            ${z('dashboard', 'Inicio', 'dashboard', !0)}\n            ${z('appointments', 'Agenda', 'appointments')}\n            ${z('callbacks', 'Pendientes', 'callbacks')}\n            ${z('availability', 'Horarios', 'availability')}\n        </div>\n        <div class="admin-nav-group admin-nav-group-secondary" id="adminSecondaryNav">\n            ${V('Mas herramientas')}\n            ${z('clinical-history', 'Historia clinica', 'dashboard')}\n            ${z('reviews', 'Resenas', 'reviews')}\n            ${z('queue', 'Turnero avanzado', 'queue')}\n        </div>\n    \n            </nav>\n            <footer class="sidebar-footer">\n                <button type="button" class="logout-btn" data-action="logout">${K('logout')}<span>Cerrar sesion</span></button>\n            </footer>\n        </aside>\n        <button type="button" id="adminSidebarBackdrop" class="admin-sidebar-backdrop is-hidden" aria-hidden="true" tabindex="-1"></button>\n    \n            \n        <main class="admin-main admin-v3-main" id="adminMainContent" tabindex="-1" data-admin-frame="sony_v3">\n            \n        <header class="admin-v3-topbar">\n            <div class="admin-v3-topbar__copy">\n                <p class="sony-kicker">Nucleo interno</p>\n                <h2 id="pageTitle">Inicio</h2>\n            </div>\n            <div class="admin-v3-topbar__actions">\n                <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${K('menu')}<span>Menu</span></button>\n                <button type="button" class="admin-v3-agent-btn" data-action="open-agent-panel">Copiloto</button>\n                <button type="button" class="admin-v3-command-btn" data-action="open-command-palette">Acciones</button>\n                <button type="button" id="refreshAdminDataBtn" data-action="refresh-admin-data">Actualizar</button>\n                ${Q('admin-theme-switcher-header')}\n            </div>\n        </header>\n    \n            \n        <section class="admin-v3-context-strip" id="adminProductivityStrip">\n            <div class="admin-v3-context-copy" data-admin-section-hero>\n                <p class="sony-kicker" id="adminSectionEyebrow">Recepcion/Consultorio</p>\n                <h3 id="adminContextTitle">Que requiere atencion ahora</h3>\n                <p id="adminContextSummary">Trabaja con turnero, agenda y seguimiento sin mezclar frentes publicos ni marketing.</p>\n                <div id="adminContextActions" class="sony-context-actions"></div>\n            </div>\n            <div class="admin-v3-status-rail" data-admin-priority-rail>\n                <article class="sony-status-tile">\n                    <span>Push</span>\n                    <strong id="pushStatusIndicator">Inicializando</strong>\n                    <small id="pushStatusMeta">Comprobando permisos del navegador</small>\n                </article>\n                <article class="sony-status-tile" id="adminSessionTile" data-state="neutral">\n                    <span>Sesion</span>\n                    <strong id="adminSessionState">No autenticada</strong>\n                    <small id="adminSessionMeta">Autenticate para operar el panel</small>\n                </article>\n                <article class="sony-status-tile">\n                    <span>Sincronizacion</span>\n                    <strong id="adminRefreshStatus">Datos: sin sincronizar</strong>\n                    <small id="adminSyncState">Listo para primera sincronizacion</small>\n                </article>\n            </div>\n        </section>\n    \n            \n        \n        <section id="dashboard" class="admin-section active" tabindex="-1">\n            <div class="dashboard-stage">\n                \n        <article class="sony-panel dashboard-hero-panel">\n            <div class="dashboard-hero-copy">\n                <p class="sony-kicker">Recepcion/Admin</p>\n                <h3>Inicio operativo</h3>\n                <p id="dashboardHeroSummary">\n                    Agenda, pendientes y horarios en un solo frente simple para el equipo.\n                </p>\n            </div>\n            <div class="dashboard-hero-actions">\n                <button type="button" data-action="context-open-appointments-overview">Ver agenda</button>\n                <button type="button" data-action="context-open-callbacks-pending">Revisar pendientes</button>\n            </div>\n            <div class="dashboard-home-grid">\n                <article class="dashboard-home-card" id="opsTodaySummaryCard">\n                    <span>Pacientes hoy</span>\n                    <strong id="opsTodayCount">0</strong>\n                    <small id="opsTodayMeta">Sin agenda inmediata</small>\n                    <button type="button" data-action="context-open-appointments-overview">Abrir agenda</button>\n                </article>\n                <article class="dashboard-home-card" id="opsPendingSummaryCard">\n                    <span>Pendientes</span>\n                    <strong id="opsPendingCount">0</strong>\n                    <small id="opsPendingMeta">Sin seguimiento pendiente</small>\n                    <button type="button" data-action="context-open-callbacks-pending">Ver pendientes</button>\n                </article>\n                <article class="dashboard-home-card" id="opsAvailabilitySummaryCard">\n                    <span>Horarios</span>\n                    <strong id="opsAvailabilityCount">0</strong>\n                    <small id="opsAvailabilityMeta">Sin horarios publicados</small>\n                    <button type="button" data-action="context-open-availability">Abrir horarios</button>\n                </article>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel dashboard-signal-panel" id="opsQueueLaunchCard">\n            <header>\n                <div>\n                    <h3>Nucleo de consultorio</h3>\n                    <small id="operationRefreshSignal">Turnero al frente, OpenClaw y clinica detras</small>\n                </div>\n                <span class="dashboard-signal-chip" id="dashboardLiveStatus">Estable</span>\n            </header>\n            <p id="dashboardLiveMeta">\n                Prioriza recepcion y consultorio antes de abrir herramientas secundarias.\n            </p>\n            <div class="dashboard-signal-stack">\n                <article class="dashboard-signal-card">\n                    <span>Turnero</span>\n                    <strong id="opsQueueStatus">Listo para abrir</strong>\n                    <small id="opsQueueMeta">Sin cola activa</small>\n                </article>\n                <article class="dashboard-signal-card">\n                    <span>Readiness</span>\n                    <strong id="dashboardQueueHealth">Piloto interno en revision</strong>\n                    <small id="dashboardFlowStatus">OpenClaw auth e historias clinicas deben quedar listas antes de uso real.</small>\n                </article>\n            </div>\n            <button\n                type="button"\n                id="openOperatorAppBtn"\n                class="dashboard-launch-btn"\n                data-action="open-operator-app"\n            >\n                Abrir turnero operador\n            </button>\n            <ul id="dashboardAttentionList" class="sony-list dashboard-attention-list"></ul>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-grid sony-grid-three dashboard-operations-grid">\n            <article class="sony-panel dashboard-card-operations">\n                <header>\n                    <h3>Siguientes pasos</h3>\n                    <small id="operationDeckMeta">Atajos utiles para el dia</small>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Transferencias</span><strong id="operationPendingReviewCount">0</strong></div>\n                    <div><span>Llamadas</span><strong id="operationPendingCallbacksCount">0</strong></div>\n                    <div><span>Hoy</span><strong id="operationTodayLoadCount">0</strong></div>\n                </div>\n                <p id="operationQueueHealth">Sin pendientes urgentes.</p>\n                <div id="operationActionList" class="operations-action-list"></div>\n            </article>\n\n            <article class="sony-panel dashboard-card-assistant" id="dashboardAssistantUtility">\n                <header>\n                    <div>\n                        <h3>Utilidad del asistente</h3>\n                        <small id="dashboardAssistantMeta">Recepcionista ejecutora en sala</small>\n                    </div>\n                    <span class="dashboard-signal-chip" id="dashboardAssistantStatus" data-state="neutral">Sin uso</span>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Acciones hoy</span><strong id="dashboardAssistantActioned">0</strong></div>\n                    <div><span>Resueltas</span><strong id="dashboardAssistantResolved">0</strong></div>\n                    <div><span>Escaladas</span><strong id="dashboardAssistantEscalated">0</strong></div>\n                    <div><span>Bloqueos</span><strong id="dashboardAssistantBlocked">0</strong></div>\n                </div>\n                <p id="dashboardAssistantSummary">Sin actividad del asistente todavia.</p>\n                <div class="dashboard-assistant-meta">\n                    <p id="dashboardAssistantWindowMeta">7d: 0 sesiones utiles | 0 ms promedio</p>\n                    <p id="dashboardAssistantTopIntent">Intent principal: sin datos</p>\n                    <p id="dashboardAssistantTopReason">Motivo de apoyo: sin datos</p>\n                    <p id="dashboardAssistantTopOutcome">Cierre asistido: sin datos</p>\n                </div>\n            </article>\n\n            <article class="sony-panel dashboard-card-clinical">\n                <header>\n                    <div>\n                        <h3>Frente clinico</h3>\n                        <small id="dashboardClinicalHistoryMeta">Snapshot clinico operativo del consultorio.</small>\n                    </div>\n                    <span\n                        class="dashboard-signal-chip"\n                        id="dashboardClinicalHistoryChip"\n                        data-state="neutral"\n                    >\n                        Pendiente\n                    </span>\n                </header>\n                <div class="sony-panel-stats">\n                    <div><span>Sesiones</span><strong id="clinicalHistorySessionCount">0</strong></div>\n                    <div><span>Revision</span><strong id="clinicalHistoryReviewCount">0</strong></div>\n                    <div><span>IA pendiente</span><strong id="clinicalHistoryPendingAiCount">0</strong></div>\n                    <div><span>Eventos</span><strong id="clinicalHistoryEventCount">0</strong></div>\n                </div>\n                <p id="dashboardClinicalHistorySummary">\n                    La historia clinica conversacional aparecera aqui cuando existan sesiones o eventos en el flujo interno.\n                </p>\n                <div id="dashboardClinicalHistoryActions" class="operations-action-list"></div>\n                <div class="dashboard-signal-stack">\n                    <article class="dashboard-signal-card">\n                        <span>Cola clinica</span>\n                        <strong id="clinicalHistoryQueueHeadline">Sin casos pendientes</strong>\n                        <small id="clinicalHistoryQueueMeta">\n                            Cuando OpenClaw deje historias o telemedicina en revision apareceran aqui.\n                        </small>\n                    </article>\n                    <article class="dashboard-signal-card">\n                        <span>Ultimo evento</span>\n                        <strong id="clinicalHistoryEventHeadline">Sin actividad reciente</strong>\n                        <small id="clinicalHistoryEventMeta">\n                            El feed operativo resumira conciliaciones y alertas del consultorio.\n                        </small>\n                    </article>\n                </div>\n                <ul id="dashboardClinicalReviewQueue" class="sony-list dashboard-attention-list"></ul>\n                <ul id="dashboardClinicalEventFeed" class="sony-list dashboard-attention-list"></ul>\n            </article>\n\n            <article class="sony-panel" id="funnelSummary">\n                <header>\n                    <h3>Herramientas secundarias</h3>\n                    <small>Analitica y diagnostico fuera del flujo clinico principal</small>\n                </header>\n                <p class="dashboard-secondary-summary">\n                    Resenas, embudo y diagnostico siguen disponibles, pero ya no compiten con el nucleo interno del consultorio.\n                </p>\n                <div class="dashboard-secondary-links">\n                    <a href="#reviews" class="dashboard-secondary-link" data-section="reviews">Abrir resenas</a>\n                    <a href="#queue" class="dashboard-secondary-link" data-section="queue">Turnero avanzado</a>\n                </div>\n                <div class="sony-panel-stats dashboard-secondary-metrics">\n                    <div><span>Reservas</span><strong id="funnelViewBooking">0</strong></div>\n                    <div><span>Checkout</span><strong id="funnelStartCheckout">0</strong></div>\n                    <div><span>Confirmadas</span><strong id="funnelBookingConfirmed">0</strong></div>\n                    <div><span>Abandono</span><strong id="funnelAbandonRate">0%</strong></div>\n                </div>\n            </article>\n        </div>\n    \n            \n        <details class="sony-panel dashboard-analytics-disclosure" id="dashboardAdvancedAnalytics">\n            <summary>\n                <span>Analitica avanzada</span>\n                <small>Embudo y detalle operativo secundario</small>\n            </summary>\n            <div class="sony-grid sony-grid-three dashboard-analytics-grid">\n                <article class="sony-panel"><h4>Entry</h4><ul id="funnelEntryList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Source</h4><ul id="funnelSourceList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Payment</h4><ul id="funnelPaymentMethodList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Abandono</h4><ul id="funnelAbandonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Motivo</h4><ul id="funnelAbandonReasonList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Paso</h4><ul id="funnelStepList" class="sony-list"></ul></article>\n                <article class="sony-panel"><h4>Error</h4><ul id="funnelErrorCodeList" class="sony-list"></ul></article>\n            </div>\n        </details>\n    \n            <div class="sr-only" id="adminAvgRating"></div>\n        </section>\n    \n        \n        <section id="clinical-history" class="admin-section" tabindex="-1">\n            <div class="clinical-history-stage">\n                <article class="sony-panel clinical-history-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Historia clinica</h3>\n                            <p id="clinicalHistoryHeaderMeta">\n                                Selecciona un caso para revisar la conversacion y el borrador medico.\n                            </p>\n                        </div>\n                        <div class="clinical-history-header-status">\n                            <span\n                                class="clinical-history-status-chip"\n                                id="clinicalHistoryStatusChip"\n                                data-tone="neutral"\n                            >\n                                Sin seleccion\n                            </span>\n                            <span\n                                class="clinical-history-status-meta"\n                                id="clinicalHistoryStatusMeta"\n                            >\n                                Cola lista para revision\n                            </span>\n                        </div>\n                    </header>\n                    <div\n                        id="clinicalHistorySummaryGrid"\n                        class="clinical-history-summary-grid"\n                    ></div>\n                    <div\n                        id="clinicalHistoryAttachmentStrip"\n                        class="clinical-history-attachment-strip"\n                    ></div>\n                </article>\n\n                <article class="sony-panel clinical-history-side-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Cola clinica</h3>\n                            <p id="clinicalHistoryQueueMeta">\n                                Casos listos para revision humana.\n                            </p>\n                        </div>\n                        <button\n                            type="button"\n                            id="clinicalHistoryRefreshBtn"\n                            data-clinical-review-action="refresh-current"\n                        >\n                            Refrescar caso\n                        </button>\n                    </header>\n                    <div\n                        id="clinicalHistoryQueueList"\n                        class="clinical-history-queue-list"\n                    ></div>\n                </article>\n            </div>\n\n            <div class="clinical-history-workbench">\n                <article class="sony-panel clinical-history-transcript-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Conversacion</h3>\n                            <p id="clinicalHistoryTranscriptMeta">\n                                El transcript del paciente aparece aqui.\n                            </p>\n                        </div>\n                        <span\n                            class="clinical-history-panel-meta"\n                            id="clinicalHistoryTranscriptCount"\n                        >\n                            0 mensajes\n                        </span>\n                    </header>\n                    <div\n                        id="clinicalHistoryTranscript"\n                        class="clinical-history-transcript"\n                    ></div>\n                </article>\n\n                <article class="sony-panel clinical-history-draft-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Borrador medico</h3>\n                            <p id="clinicalHistoryDraftSummary">\n                                Ajusta anamnesis, guardrails y plan antes de aprobar.\n                            </p>\n                        </div>\n                        <span\n                            class="clinical-history-panel-meta"\n                            id="clinicalHistoryDraftMeta"\n                        >\n                            Sin cambios\n                        </span>\n                    </header>\n                    <form\n                        id="clinicalHistoryDraftForm"\n                        class="clinical-history-form"\n                    ></form>\n                </article>\n            </div>\n\n            <div class="clinical-history-footer-grid">\n                <article class="sony-panel soft clinical-history-events-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Eventos del caso</h3>\n                            <p id="clinicalHistoryEventsMeta">\n                                Alertas, conciliacion y acciones pendientes.\n                            </p>\n                        </div>\n                    </header>\n                    <div\n                        id="clinicalHistoryEvents"\n                        class="clinical-history-events"\n                    ></div>\n                </article>\n\n                <article class="sony-panel soft clinical-history-followup-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Pregunta adicional</h3>\n                            <p id="clinicalHistoryFollowUpMeta">\n                                Envia una pregunta puntual al paciente sin salir del review.\n                            </p>\n                        </div>\n                    </header>\n                    <textarea\n                        id="clinicalHistoryFollowUpInput"\n                        class="clinical-history-followup-input"\n                        rows="4"\n                        placeholder="Ej.: ¿Puedes decirme si el brote empeora con el sol o el calor?"\n                    ></textarea>\n                    <div class="toolbar-row clinical-history-actions-row">\n                        <button\n                            type="button"\n                            id="clinicalHistorySendFollowUpBtn"\n                            data-clinical-review-action="send-follow-up"\n                        >\n                            Pedir pregunta\n                        </button>\n                        <button\n                            type="button"\n                            id="clinicalHistoryReviewRequiredBtn"\n                            data-clinical-review-action="mark-review-required"\n                        >\n                            Marcar revision\n                        </button>\n                        <button\n                            type="submit"\n                            id="clinicalHistorySaveBtn"\n                            form="clinicalHistoryDraftForm"\n                        >\n                            Guardar borrador\n                        </button>\n                        <button\n                            type="button"\n                            id="clinicalHistoryApproveBtn"\n                            data-clinical-review-action="approve-current"\n                        >\n                            Aprobar\n                        </button>\n                    </div>\n                </article>\n            </div>\n\n            <div class="clinical-media-flow-grid">\n                <article class="sony-panel soft clinical-media-flow-queue-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Media Flow</h3>\n                            <p id="clinicalMediaFlowQueueMeta">\n                                Cola editorial con media clinica privada disponible.\n                            </p>\n                        </div>\n                        <div class="clinical-history-header-status">\n                            <span\n                                class="clinical-history-status-chip"\n                                id="clinicalMediaFlowStatusChip"\n                                data-tone="neutral"\n                            >\n                                Sin caso\n                            </span>\n                            <span\n                                class="clinical-history-status-meta"\n                                id="clinicalMediaFlowStatusMeta"\n                            >\n                                Esperando seleccion\n                            </span>\n                        </div>\n                    </header>\n                    <div\n                        id="clinicalMediaFlowQueueList"\n                        class="clinical-media-flow-queue-list"\n                    ></div>\n                </article>\n\n                <article class="sony-panel clinical-media-flow-workspace-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Workspace editorial</h3>\n                            <p id="clinicalMediaFlowCaseMeta">\n                                OpenClaw prepara comparativas, copy y paquete publico antes de publicar.\n                            </p>\n                        </div>\n                        <div class="toolbar-row clinical-media-flow-toolbar">\n                            <button\n                                type="button"\n                                id="clinicalMediaFlowRefreshBtn"\n                                data-media-flow-action="refresh"\n                            >\n                                Refrescar\n                            </button>\n                            <button\n                                type="button"\n                                id="clinicalMediaFlowGenerateBtn"\n                                data-media-flow-action="generate-proposal"\n                            >\n                                Generar propuesta\n                            </button>\n                        </div>\n                    </header>\n\n                    <div\n                        id="clinicalMediaFlowConsentStrip"\n                        class="clinical-media-flow-consent-strip"\n                    ></div>\n                    <div\n                        id="clinicalMediaFlowAssetGrid"\n                        class="clinical-media-flow-asset-grid"\n                    ></div>\n                    <section\n                        id="clinicalMediaFlowAgentSurface"\n                        class="clinical-media-flow-agent-surface"\n                    ></section>\n                    <form\n                        id="clinicalMediaFlowProposalForm"\n                        class="clinical-media-flow-form"\n                    ></form>\n                    <div\n                        id="clinicalMediaFlowTimeline"\n                        class="clinical-media-flow-timeline"\n                    ></div>\n                </article>\n            </div>\n        </section>\n    \n        \n        <section id="appointments" class="admin-section" tabindex="-1">\n            <div class="appointments-stage">\n                \n        <article class="sony-panel appointments-command-deck">\n            <header class="section-header appointments-command-head">\n                <div>\n                    <p class="sony-kicker">Agenda clinica</p>\n                    <h3>Citas</h3>\n                    <p id="appointmentsDeckSummary">Sin citas cargadas.</p>\n                </div>\n                <span class="appointments-deck-chip" id="appointmentsDeckChip">Agenda estable</span>\n            </header>\n            <div class="appointments-ops-grid">\n                <article class="appointments-ops-card tone-warning">\n                    <span>Transferencias</span>\n                    <strong id="appointmentsOpsPendingTransfer">0</strong>\n                    <small id="appointmentsOpsPendingTransferMeta">Nada por validar</small>\n                </article>\n                <article class="appointments-ops-card tone-neutral">\n                    <span>Proximas 48h</span>\n                    <strong id="appointmentsOpsUpcomingCount">0</strong>\n                    <small id="appointmentsOpsUpcomingMeta">Sin presion inmediata</small>\n                </article>\n                <article class="appointments-ops-card tone-danger">\n                    <span>No show</span>\n                    <strong id="appointmentsOpsNoShowCount">0</strong>\n                    <small id="appointmentsOpsNoShowMeta">Sin incidencias</small>\n                </article>\n                <article class="appointments-ops-card tone-success">\n                    <span>Hoy</span>\n                    <strong id="appointmentsOpsTodayCount">0</strong>\n                    <small id="appointmentsOpsTodayMeta">Carga diaria limpia</small>\n                </article>\n            </div>\n            <div class="appointments-command-actions">\n                <button type="button" data-action="context-open-appointments-transfer">Priorizar transferencias</button>\n                <button type="button" data-action="context-open-callbacks-pending">Cruzar callbacks</button>\n                <button type="button" id="appointmentsExportBtn" data-action="export-csv">Exportar CSV</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel appointments-focus-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="appointmentsFocusLabel">Sin foco activo</p>\n                    <h3 id="appointmentsFocusPatient">Sin citas activas</h3>\n                    <p id="appointmentsFocusMeta">Cuando entren citas accionables apareceran aqui.</p>\n                </div>\n            </header>\n            <div class="appointments-focus-grid">\n                <div class="appointments-focus-stat">\n                    <span>Siguiente ventana</span>\n                    <strong id="appointmentsFocusWindow">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Pago</span>\n                    <strong id="appointmentsFocusPayment">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Estado</span>\n                    <strong id="appointmentsFocusStatus">-</strong>\n                </div>\n                <div class="appointments-focus-stat">\n                    <span>Contacto</span>\n                    <strong id="appointmentsFocusContact">-</strong>\n                </div>\n            </div>\n            <div id="appointmentsFocusTags" class="appointments-focus-tags"></div>\n            <p id="appointmentsFocusHint" class="appointments-focus-hint">Sin bloqueos operativos.</p>\n            <div id="appointmentsQueueReview" class="appointments-review-context is-hidden"></div>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel appointments-workbench">\n            <header class="section-header appointments-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p id="appointmentsWorkbenchHint">Filtros, orden y tabla en un workbench unico.</p>\n                </div>\n                <div class="toolbar-group" id="appointmentsDensityToggle">\n                    <button type="button" data-action="appointment-density" data-density="comfortable" class="is-active">Comodo</button>\n                    <button type="button" data-action="appointment-density" data-density="compact">Compacto</button>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="appointment-quick-filter-btn is-active" data-action="appointment-quick-filter" data-filter-value="all">Todas</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="pending_transfer">Transferencias</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="upcoming_48h">48h</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="no_show">No show</button>\n                    <button type="button" class="appointment-quick-filter-btn" data-action="appointment-quick-filter" data-filter-value="triage_attention">Triage</button>\n                </div>\n            </div>\n            <div class="toolbar-row appointments-toolbar">\n                <label>\n                    <span class="sr-only">Filtro</span>\n                    <select id="appointmentFilter">\n                        <option value="all">Todas</option>\n                        <option value="pending_transfer">Transferencias por validar</option>\n                        <option value="upcoming_48h">Proximas 48h</option>\n                        <option value="no_show">No show</option>\n                        <option value="triage_attention">Triage accionable</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden</span>\n                    <select id="appointmentSort">\n                        <option value="datetime_desc">Fecha reciente</option>\n                        <option value="datetime_asc">Fecha ascendente</option>\n                        <option value="patient_az">Paciente (A-Z)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchAppointments" placeholder="Buscar paciente" />\n                <button type="button" id="clearAppointmentsFiltersBtn" data-action="clear-appointment-filters" class="is-hidden">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="appointmentsToolbarMeta">Mostrando 0</p>\n                <p id="appointmentsToolbarState">Sin filtros activos</p>\n            </div>\n\n            <div class="table-scroll appointments-table-shell">\n                <table id="appointmentsTable" class="sony-table">\n                    <thead>\n                        <tr>\n                            <th>Paciente</th>\n                            <th>Servicio</th>\n                            <th>Fecha</th>\n                            <th>Pago</th>\n                            <th>Estado</th>\n                            <th>Acciones</th>\n                        </tr>\n                    </thead>\n                    <tbody id="appointmentsTableBody"></tbody>\n                </table>\n            </div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="callbacks" class="admin-section" tabindex="-1">\n            <div class="callbacks-stage">\n                \n        <article class="sony-panel callbacks-command-deck">\n            <header class="section-header callbacks-command-head">\n                <div>\n                    <p class="sony-kicker">SLA telefonico</p>\n                    <h3>Callbacks</h3>\n                    <p id="callbacksDeckSummary">Sin callbacks pendientes.</p>\n                </div>\n                <span class="callbacks-queue-chip" id="callbacksQueueChip">Cola estable</span>\n            </header>\n            <div id="callbacksOpsPanel" class="callbacks-ops-grid">\n                <article class="callbacks-ops-card"><span>Pendientes</span><strong id="callbacksOpsPendingCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hot</span><strong id="callbacksOpsUrgentCount">0</strong></article>\n                <article class="callbacks-ops-card"><span>Hoy</span><strong id="callbacksOpsTodayCount">0</strong></article>\n                <article class="callbacks-ops-card wide"><span>Estado</span><strong id="callbacksOpsQueueHealth">Cola: estable</strong></article>\n            </div>\n            <div class="callbacks-command-actions">\n                <button type="button" id="callbacksOpsNextBtn" data-action="callbacks-triage-next">Siguiente llamada</button>\n                <button type="button" id="callbacksBulkSelectVisibleBtn">Seleccionar visibles</button>\n                <button type="button" id="callbacksBulkClearBtn">Limpiar seleccion</button>\n                <button type="button" id="callbacksBulkMarkBtn">Marcar contactados</button>\n            </div>\n        </article>\n    \n                \n        <article class="sony-panel callbacks-next-panel">\n            <header class="section-header">\n                <div>\n                    <p class="sony-kicker" id="callbacksNextEyebrow">Siguiente contacto</p>\n                    <h3 id="callbacksOpsNext">Sin telefono</h3>\n                    <p id="callbacksNextSummary">La siguiente llamada prioritaria aparecera aqui.</p>\n                </div>\n                <span id="callbacksSelectionChip" class="is-hidden">Seleccionados: <strong id="callbacksSelectedCount">0</strong></span>\n            </header>\n            <div class="callbacks-next-grid">\n                <div class="callbacks-next-stat">\n                    <span>Espera</span>\n                    <strong id="callbacksNextWait">0 min</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Servicio</span>\n                    <strong id="callbacksNextPreference">-</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Accion</span>\n                    <strong id="callbacksNextState">Pendiente</strong>\n                </div>\n                <div class="callbacks-next-stat">\n                    <span>Estado IA</span>\n                    <strong id="callbacksDeckHint">Sin bloqueos</strong>\n                </div>\n            </div>\n        </article>\n    \n            </div>\n\n            \n        <div class="sony-panel callbacks-workbench">\n            <header class="section-header callbacks-workbench-head">\n                <div>\n                    <h3>Workbench</h3>\n                    <p>Ordena por prioridad comercial, genera borradores IA y registra el outcome sin salir del panel.</p>\n                </div>\n            </header>\n            <div class="toolbar-row">\n                <div class="toolbar-group">\n                    <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>\n                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>\n                </div>\n            </div>\n            <div class="toolbar-row callbacks-toolbar">\n                <label>\n                    <span class="sr-only">Filtro callbacks</span>\n                    <select id="callbackFilter">\n                        <option value="all">Todos</option>\n                        <option value="pending">Pendientes</option>\n                        <option value="contacted">Contactados</option>\n                        <option value="today">Hoy</option>\n                        <option value="sla_urgent">Urgentes SLA</option>\n                    </select>\n                </label>\n                <label>\n                    <span class="sr-only">Orden callbacks</span>\n                    <select id="callbackSort">\n                        <option value="priority_desc">Prioridad comercial</option>\n                        <option value="recent_desc">Mas recientes</option>\n                        <option value="waiting_desc">Mayor espera (SLA)</option>\n                    </select>\n                </label>\n                <input type="search" id="searchCallbacks" placeholder="Buscar telefono o servicio" />\n                <button type="button" id="clearCallbacksFiltersBtn" data-action="clear-callback-filters">Limpiar</button>\n            </div>\n            <div class="toolbar-row slim">\n                <p id="callbacksToolbarMeta">Mostrando 0</p>\n                <p id="callbacksToolbarState">Sin filtros activos</p>\n            </div>\n            <div id="callbacksGrid" class="callbacks-grid"></div>\n        </div>\n    \n        </section>\n    \n        \n        <section id="reviews" class="admin-section" tabindex="-1">\n            <div class="reviews-stage">\n                <article class="sony-panel reviews-summary-panel">\n                    <header class="section-header">\n                        <div>\n                            <h3>Resenas</h3>\n                            <p id="reviewsSentimentLabel">Sin senal suficiente</p>\n                        </div>\n                        <span class="reviews-score-pill" id="reviewsAverageRating">0.0</span>\n                    </header>\n                    <div class="reviews-summary-grid">\n                        <div class="reviews-summary-stat">\n                            <span>5 estrellas</span>\n                            <strong id="reviewsFiveStarCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Ultimos 30 dias</span>\n                            <strong id="reviewsRecentCount">0</strong>\n                        </div>\n                        <div class="reviews-summary-stat">\n                            <span>Total</span>\n                            <strong id="reviewsTotalCount">0</strong>\n                        </div>\n                    </div>\n                    <div id="reviewsSummaryRail" class="reviews-summary-rail"></div>\n                </article>\n\n                <article class="sony-panel reviews-spotlight-panel">\n                    <header class="section-header"><h3>Spotlight</h3></header>\n                    <div id="reviewsSpotlight" class="reviews-spotlight"></div>\n                </article>\n            </div>\n            <div class="sony-panel">\n                <div id="reviewsGrid" class="reviews-grid"></div>\n            </div>\n        </section>\n    \n        \n        <section id="availability" class="admin-section" tabindex="-1">\n            <div class="sony-panel availability-container">\n                \n        <header class="section-header availability-header">\n            <div class="availability-calendar">\n                <h3 id="availabilityHeading">Configurar Horarios Disponibles</h3>\n                <div class="availability-badges">\n                    <span id="availabilitySourceBadge" class="availability-badge">Fuente: Local</span>\n                    <span id="availabilityModeBadge" class="availability-badge">Modo: Editable</span>\n                    <span id="availabilityTimezoneBadge" class="availability-badge">TZ: -</span>\n                </div>\n            </div>\n            <div class="toolbar-group calendar-header">\n                <button type="button" data-action="change-month" data-delta="-1">Prev</button>\n                <strong id="calendarMonth"></strong>\n                <button type="button" data-action="change-month" data-delta="1">Next</button>\n                <button type="button" data-action="availability-today">Hoy</button>\n                <button type="button" data-action="availability-prev-with-slots">Anterior con slots</button>\n                <button type="button" data-action="availability-next-with-slots">Siguiente con slots</button>\n            </div>\n        </header>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="availabilitySelectionSummary">Selecciona una fecha</p>\n            <p id="availabilityDraftStatus">Sin cambios pendientes</p>\n            <p id="availabilitySyncStatus">Sincronizado</p>\n        </div>\n    \n                <div id="availabilityReviewContext" class="appointments-review-context availability-review-context is-hidden"></div>\n                <div id="availabilityCalendar" class="availability-calendar-grid"></div>\n                \n        <div id="availabilityDetailGrid" class="availability-detail-grid">\n            <article class="sony-panel soft">\n                <h4 id="selectedDate">-</h4>\n                <div id="timeSlotsList" class="time-slots-list"></div>\n            </article>\n\n            <article class="sony-panel soft">\n                <div id="availabilityQuickSlotPresets" class="slot-presets">\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:00">09:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="09:30">09:30</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="10:00">10:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:00">16:00</button>\n                    <button type="button" class="slot-preset-btn" data-action="prefill-time-slot" data-time="16:30">16:30</button>\n                </div>\n                <div id="addSlotForm" class="add-slot-form">\n                    <input type="time" id="newSlotTime" />\n                    <button type="button" data-action="add-time-slot">Agregar</button>\n                </div>\n                <div id="availabilityDayActions" class="toolbar-group wrap">\n                    <button type="button" data-action="copy-availability-day">Copiar dia</button>\n                    <button type="button" data-action="paste-availability-day">Pegar dia</button>\n                    <button type="button" data-action="duplicate-availability-day-next">Duplicar +1</button>\n                    <button type="button" data-action="duplicate-availability-next-week">Duplicar +7</button>\n                    <button type="button" data-action="clear-availability-day">Limpiar dia</button>\n                    <button type="button" data-action="clear-availability-week">Limpiar semana</button>\n                </div>\n                <p id="availabilityDayActionsStatus">Sin acciones pendientes</p>\n                <div class="toolbar-group">\n                    <button type="button" id="availabilitySaveDraftBtn" data-action="save-availability-draft" disabled>Guardar</button>\n                    <button type="button" id="availabilityDiscardDraftBtn" data-action="discard-availability-draft" disabled>Descartar</button>\n                </div>\n            </article>\n        </div>\n    \n            </div>\n        </section>\n    \n        \n        <section id="queue" class="admin-section" tabindex="-1">\n            <div class="sony-panel">\n                \n        <header class="section-header">\n            <div>\n                <h3>Turnero Sala</h3>\n                <p>\n                    Apps operativas, cola en vivo y flujo simple para recepción,\n                    kiosco y TV.\n                </p>\n            </div>\n            <div class="queue-admin-header-actions">\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="1">Llamar C1</button>\n                <button type="button" data-action="queue-call-next" data-queue-consultorio="2">Llamar C2</button>\n                <button type="button" data-action="queue-refresh-state">Refrescar</button>\n            </div>\n        </header>\n    \n                \n        <div id="queueAppsHub" class="queue-apps-hub sony-panel soft" data-queue-domain="operations">\n            <div class="queue-apps-hub__header">\n                <div>\n                    <h4>Apps operativas</h4>\n                    <p>\n                        Corte web piloto para operador, kiosco y sala. Las apps\n                        nativas quedan como capa opcional, no como bloqueo del\n                        release.\n                    </p>\n                </div>\n                <div class="queue-apps-hub__header-meta">\n                    <span id="queueAppsPlatformChip" class="queue-apps-platform-chip">\n                        Plataforma detectada\n                    </span>\n                    <span id="queueAppsRefreshShieldChip" class="queue-apps-refresh-shield-chip" data-state="idle">\n                        Refresh sin bloqueo\n                    </span>\n                </div>\n            </div>\n            <div id="queueDomainSwitcher" class="queue-domain-switcher"></div>\n            <div id="queueAdminViewMode" class="queue-admin-view-mode"></div>\n            <div id="queueFocusMode" class="queue-focus-mode" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueNumpadGuide" class="queue-numpad-guide" data-focus-match="opening operations incidents" data-queue-domain-match="operations incidents"></div>\n            <div id="queueConsultorioBoard" class="queue-consultorio-board" data-focus-match="opening operations incidents closing" data-queue-domain-match="operations incidents"></div>\n            <div id="queueAttentionDeck" class="queue-attention-deck" data-focus-match="operations incidents closing"></div>\n            <div id="queueResolutionDeck" class="queue-resolution-deck" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketLookup" class="queue-ticket-lookup" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketRoute" class="queue-ticket-route" data-focus-match="operations incidents closing"></div>\n            <div id="queueTicketSimulation" class="queue-ticket-simulation" data-focus-match="operations incidents closing"></div>\n            <div id="queueNextTurns" class="queue-next-turns" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueMasterSequence" class="queue-master-sequence" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueCoverageDeck" class="queue-coverage-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReserveDeck" class="queue-reserve-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueGeneralGuidance" class="queue-general-guidance" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueProjectedDeck" class="queue-projected-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueIncomingDeck" class="queue-incoming-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueScenarioDeck" class="queue-scenario-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReceptionScript" class="queue-reception-script" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReceptionCollision" class="queue-reception-collision" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueReceptionLights" class="queue-reception-lights" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueWindowDeck" class="queue-window-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskReply" class="queue-desk-reply" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskFallback" class="queue-desk-fallback" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskObjections" class="queue-desk-objections" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskCloseout" class="queue-desk-closeout" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskRecheck" class="queue-desk-recheck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskShift" class="queue-desk-shift" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskPromise" class="queue-desk-promise" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalation" class="queue-desk-escalation" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationTalk" class="queue-desk-escalation-talk" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationConfirm" class="queue-desk-escalation-confirm" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationFollowup" class="queue-desk-escalation-followup" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationReopen" class="queue-desk-escalation-reopen" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationLimit" class="queue-desk-escalation-limit" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationBridge" class="queue-desk-escalation-bridge" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationBrief" class="queue-desk-escalation-brief" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationReturn" class="queue-desk-escalation-return" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueDeskEscalationResolution" class="queue-desk-escalation-resolution" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueBlockers" class="queue-blockers" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueSlaDeck" class="queue-sla-deck" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueWaitRadar" class="queue-wait-radar" data-focus-match="opening operations incidents closing" data-queue-domain-match="operations incidents"></div>\n            <div id="queueLoadBalance" class="queue-load-balance" data-focus-match="opening operations incidents closing"></div>\n            <div id="queuePriorityLane" class="queue-priority-lane" data-focus-match="opening operations incidents closing"></div>\n            <div id="queueQuickTrays" class="queue-quick-trays" data-focus-match="operations incidents closing"></div>\n            <div id="queueActiveTray" class="queue-active-tray" data-focus-match="operations incidents closing"></div>\n            <div id="queueTrayBurst" class="queue-tray-burst" data-focus-match="operations incidents closing"></div>\n            <div id="queueDispatchDeck" class="queue-dispatch-deck" data-focus-match="opening operations incidents" data-queue-domain-match="operations incidents"></div>\n            <div id="queueQuickConsole" class="queue-quick-console" data-focus-match="opening operations incidents closing" data-queue-domain-match="operations incidents"></div>\n            <div id="queuePlaybook" class="queue-playbook" data-focus-match="opening operations incidents closing" data-queue-domain-match="deployment incidents"></div>\n            <div id="queueOpsPilot" class="queue-ops-pilot" data-focus-match="opening operations incidents" data-queue-domain-match="deployment"></div>\n            <div id="queueAppDownloadsCards" class="queue-apps-grid" data-focus-match="opening operations" data-queue-domain-match="deployment"></div>\n            <div id="queueSurfaceTelemetry" class="queue-surface-telemetry" data-focus-match="opening operations incidents closing" data-queue-domain-match="incidents"></div>\n            <div id="queueOpsAlerts" class="queue-ops-alerts" data-focus-match="opening operations incidents closing" data-queue-domain-match="incidents"></div>\n            <div id="queueOpeningChecklist" class="queue-opening-checklist" data-focus-match="opening" data-queue-domain-match="deployment"></div>\n            <div id="queueShiftHandoff" class="queue-shift-handoff" data-focus-match="closing" data-queue-domain-match="operations"></div>\n            <div id="queueOpsLog" class="queue-ops-log" data-focus-match="operations incidents closing" data-queue-domain-match="deployment incidents"></div>\n            <div id="queueContingencyDeck" class="queue-contingency-deck" data-focus-match="incidents operations" data-queue-domain-match="incidents"></div>\n            <div id="queueInstallConfigurator" class="queue-install-configurator" data-focus-match="opening operations" data-queue-domain-match="deployment"></div>\n        </div>\n    \n                \n        <div class="sony-grid sony-grid-kpi slim">\n            <article class="sony-kpi"><h4>Espera</h4><strong id="queueWaitingCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>Llamados</h4><strong id="queueCalledCountAdmin">0</strong></article>\n            <article class="sony-kpi"><h4>C1</h4><strong id="queueC1Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>C2</h4><strong id="queueC2Now">Sin llamado</strong></article>\n            <article class="sony-kpi"><h4>Sync</h4><strong id="queueSyncStatus" data-state="live">vivo</strong></article>\n        </div>\n    \n                \n        <div id="queueStationControl" class="toolbar-row">\n            <span id="queueStationBadge">Estacion: libre</span>\n            <span id="queueStationModeBadge">Modo: free</span>\n            <span id="queuePracticeModeBadge" hidden>Practice ON</span>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="1">Lock C1</button>\n            <button type="button" data-action="queue-lock-station" data-queue-consultorio="2">Lock C2</button>\n            <button type="button" data-action="queue-set-station-mode" data-queue-mode="free">Modo libre</button>\n            <button type="button" data-action="queue-toggle-one-tap" aria-pressed="false">1 tecla</button>\n            <button type="button" data-action="queue-toggle-shortcuts">Atajos</button>\n            <button type="button" data-action="queue-capture-call-key">Calibrar tecla</button>\n            <button type="button" data-action="queue-clear-call-key" hidden>Quitar tecla</button>\n            <button type="button" data-action="queue-start-practice">Iniciar practica</button>\n            <button type="button" data-action="queue-stop-practice">Salir practica</button>\n            <button type="button" id="queueReleaseC1" data-action="queue-release-station" data-queue-consultorio="1" hidden>Release C1</button>\n            <button type="button" id="queueReleaseC2" data-action="queue-release-station" data-queue-consultorio="2" hidden>Release C2</button>\n        </div>\n    \n                \n        <div id="queueShortcutPanel" hidden>\n            <p>Numpad Enter llama siguiente.</p>\n            <p>Numpad Decimal prepara completar.</p>\n            <p>Numpad Subtract prepara no_show.</p>\n            <p>Numpad Add re-llama el ticket activo.</p>\n        </div>\n    \n                \n        <div id="queueTriageToolbar" class="toolbar-row">\n            <button type="button" data-queue-filter="all">Todo</button>\n            <button type="button" data-queue-filter="called">Llamados</button>\n            <button type="button" data-queue-filter="sla_risk">Riesgo SLA</button>\n            <input type="search" id="queueSearchInput" placeholder="Buscar ticket" />\n            <button type="button" data-action="queue-clear-search">Limpiar</button>\n            <button type="button" id="queueSelectVisibleBtn" data-action="queue-select-visible">Seleccionar visibles</button>\n            <button type="button" id="queueClearSelectionBtn" data-action="queue-clear-selection">Limpiar seleccion</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="completar">Bulk completar</button>\n            <button type="button" data-action="queue-bulk-action" data-queue-action="no_show">Bulk no_show</button>\n            <button type="button" data-action="queue-bulk-reprint">Bulk reprint</button>\n        </div>\n    \n                \n        <div class="toolbar-row slim">\n            <p id="queueTriageSummary">Sin riesgo</p>\n            <span id="queueSelectionChip" class="is-hidden">Seleccionados: <strong id="queueSelectedCount">0</strong></span>\n        </div>\n    \n                \n        <ul id="queueNextAdminList" class="sony-list"></ul>\n\n        <div\n            id="queueReceptionGuidancePanel"\n            class="sony-panel soft queue-reception-guidance"\n        >\n            <div class="queue-reception-guidance__header">\n                <div>\n                    <h4>Guia de recepcion</h4>\n                    <p id="queueReceptionGuidanceMeta">\n                        Sin apoyos activos para recepcion.\n                    </p>\n                </div>\n            </div>\n            <ul id="queueReceptionGuidanceList" class="sony-list"></ul>\n        </div>\n\n        <div\n            id="queueReceptionResolutionsPanel"\n            class="sony-panel soft queue-reception-guidance"\n        >\n            <div class="queue-reception-guidance__header">\n                <div>\n                    <h4>Resoluciones recientes</h4>\n                    <p id="queueRecentResolutionsMeta">\n                        Sin cierres asistidos todavia.\n                    </p>\n                </div>\n            </div>\n            <ul id="queueRecentResolutionsList" class="sony-list"></ul>\n        </div>\n\n        <div class="table-scroll">\n            <table class="sony-table queue-admin-table">\n                <thead>\n                    <tr>\n                        <th>Sel</th>\n                        <th>Ticket</th>\n                        <th>Tipo</th>\n                        <th>Estado</th>\n                        <th>Consultorio</th>\n                        <th>Espera</th>\n                        <th>Acciones</th>\n                    </tr>\n                </thead>\n                <tbody id="queueTableBody"></tbody>\n            </table>\n        </div>\n\n        <div id="queueActivityPanel" class="sony-panel soft">\n            <h4>Actividad</h4>\n            <ul id="queueActivityList" class="sony-list"></ul>\n        </div>\n    \n            </div>\n\n            \n        <dialog id="queueSensitiveConfirmDialog" class="queue-sensitive-confirm-dialog">\n            <form method="dialog">\n                <p id="queueSensitiveConfirmMessage">Confirmar accion sensible</p>\n                <div class="toolbar-group">\n                    <button type="button" data-action="queue-sensitive-cancel">Cancelar</button>\n                    <button type="button" data-action="queue-sensitive-confirm">Confirmar</button>\n                </div>\n            </form>\n        </dialog>\n    \n        </section>\n    \n    \n        </main>\n    \n            \n        <aside\n            id="adminAgentPanel"\n            class="admin-agent-panel is-hidden"\n            aria-hidden="true"\n            aria-labelledby="adminAgentPanelTitle"\n        >\n            <div class="admin-agent-panel__shell">\n                <header class="admin-agent-panel__header">\n                    <div>\n                        <p class="sony-kicker">Copiloto operativo</p>\n                        <h3 id="adminAgentPanelTitle">Admin Agent</h3>\n                        <p id="adminAgentPanelSummary">\n                            Sesion inactiva. Abre el copiloto para trabajar con contexto del admin.\n                        </p>\n                    </div>\n                    <div class="admin-agent-panel__header-actions">\n                        <span id="adminAgentRelayBadge" class="admin-agent-badge" data-state="disabled">relay disabled</span>\n                        <button type="button" class="admin-agent-panel__ghost" data-action="admin-agent-refresh">Actualizar</button>\n                        <button type="button" class="admin-agent-panel__close" data-action="close-agent-panel">Cerrar</button>\n                    </div>\n                </header>\n\n                <div class="admin-agent-panel__meta">\n                    <article class="admin-agent-surface">\n                        <span>Contexto activo</span>\n                        <strong id="adminAgentContextSummary">Sincronizando contexto del admin</strong>\n                        <small id="adminAgentContextMeta">El agente usa estado interno y APIs, no el DOM.</small>\n                    </article>\n                    <article class="admin-agent-surface">\n                        <span>Sesion</span>\n                        <strong id="adminAgentSessionState">idle</strong>\n                        <small id="adminAgentSessionMeta">Sin hilo operativo abierto.</small>\n                    </article>\n                    <article class="admin-agent-surface">\n                        <span>Sync</span>\n                        <strong id="adminAgentSyncState">idle</strong>\n                        <small id="adminAgentLiveMeta">Sin sincronizacion activa.</small>\n                    </article>\n                </div>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Conversacion</h4>\n                        <small id="adminAgentConversationMeta">Sin mensajes</small>\n                    </div>\n                    <div id="adminAgentConversation" class="admin-agent-log"></div>\n                </section>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Tool plan</h4>\n                        <small id="adminAgentPlanMeta">Sin ejecuciones</small>\n                    </div>\n                    <div id="adminAgentToolPlan" class="admin-agent-list"></div>\n                </section>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Aprobaciones</h4>\n                        <small id="adminAgentApprovalMeta">Sin pendientes</small>\n                    </div>\n                    <div id="adminAgentApprovalQueue" class="admin-agent-list"></div>\n                </section>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Timeline</h4>\n                        <small id="adminAgentTimelineMeta">Sin eventos</small>\n                    </div>\n                    <div id="adminAgentEventTimeline" class="admin-agent-list"></div>\n                </section>\n\n                <section class="admin-agent-surface">\n                    <div class="admin-agent-surface__head">\n                        <h4>Outbox</h4>\n                        <small id="adminAgentOutboxMeta">Sin salidas externas</small>\n                    </div>\n                    <div id="adminAgentOutboxList" class="admin-agent-list"></div>\n                </section>\n\n                <div class="admin-agent-panel__composer">\n                    <label class="admin-agent-panel__label" for="adminAgentPrompt">Instruccion para el copiloto</label>\n                    <textarea\n                        id="adminAgentPrompt"\n                        rows="4"\n                        placeholder="Ej. Resume los callbacks pendientes y marca como sin_respuesta el 402"\n                    ></textarea>\n                    <div class="admin-agent-panel__composer-actions">\n                        <button type="button" data-action="admin-agent-cancel">Cancelar sesion</button>\n                        <button type="button" id="adminAgentSubmitBtn" data-action="admin-agent-submit">Ejecutar</button>\n                    </div>\n                </div>\n            </div>\n        </aside>\n    \n            \n        <div id="adminCommandPalette" class="admin-command-palette is-hidden" aria-hidden="true">\n            <button type="button" class="admin-command-palette__backdrop" data-action="close-command-palette" aria-label="Cerrar paleta"></button>\n            <div class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandPaletteTitle">\n                <div class="admin-command-dialog__head">\n                    <div>\n                        <p class="sony-kicker">Acciones rapidas</p>\n                        <h3 id="adminCommandPaletteTitle">Ir a una tarea</h3>\n                    </div>\n                    <button type="button" class="admin-command-dialog__close" data-action="close-command-palette">Cerrar</button>\n                </div>\n                <div class="admin-command-box">\n                    <input id="adminQuickCommand" type="text" placeholder="Ej. agenda, pendientes, horarios, turnero" />\n                    <button id="adminRunQuickCommandBtn" data-action="run-admin-command">Ejecutar</button>\n                </div>\n                <div class="admin-command-dialog__hints">\n                    <span>Ctrl+K abre la barra de comandos</span>\n                    <span>Ctrl+Shift+K abre el copiloto</span>\n                    <span>Alt+Shift+I abre el copiloto</span>\n                    <span>/ enfoca la busqueda de la seccion activa</span>\n                </div>\n            </div>\n        </div>\n    \n        </div>\n    `;
 }
 const W = {
         dashboard: {
@@ -1555,14 +1555,14 @@ function Ee(e) {
               tags: [],
           };
 }
-function Te(e) {
+function Me(e) {
     return 'attending' === e
         ? 'En atencion'
         : 'resolved' === e
           ? 'Resuelto'
           : 'Pendiente';
 }
-function Ie(e, ...t) {
+function Te(e, ...t) {
     if (!e || 'object' != typeof e) return '';
     for (const a of t) {
         const t = e[a];
@@ -1572,7 +1572,7 @@ function Ie(e, ...t) {
     }
     return '';
 }
-function Me(t, a, i = {}) {
+function Ie(t, a, i = {}) {
     if (!a || 'object' != typeof a) return null;
     const o = (function (e) {
             const t = String(e || 'pending')
@@ -1753,9 +1753,9 @@ function Me(t, a, i = {}) {
                           };
         })(s, l, a),
         u = (function (e, t, a, n) {
-            const i = Ie(a, 'resolutionOutcome').toLowerCase(),
-                o = Ie(a, 'resolutionOutcomeLabel'),
-                s = Ie(a, 'resolutionNote');
+            const i = Te(a, 'resolutionOutcome').toLowerCase(),
+                o = Te(a, 'resolutionOutcomeLabel'),
+                s = Te(a, 'resolutionNote');
             return i || o
                 ? {
                       outcome: i || 'general_resolution',
@@ -1860,7 +1860,7 @@ function Me(t, a, i = {}) {
                     ? 'Contexto resuelto desde sala'
                     : 'Revision desde sala',
             status: o,
-            statusLabel: Te(o),
+            statusLabel: Me(o),
             availabilityAssessment: l,
             summary: `${String(a.reasonLabel || 'Apoyo operativo').trim()} · ${String(a.ticketCode || '--').trim() || '--'}`,
             detail: r
@@ -2132,7 +2132,7 @@ function Ne() {
                 })(e));
         })(c, u.length, a.length),
         (function (t, a, i, o = [], s = {}, c = null) {
-            const u = Me(o, c, s);
+            const u = Ie(o, c, s);
             (r('#appointmentsOpsPendingTransfer', t.pendingTransferCount),
                 r(
                     '#appointmentsOpsPendingTransferMeta',
@@ -2783,7 +2783,7 @@ function Et(e, t = '') {
     }
     return (a.setDate(1), a.setHours(12, 0, 0, 0), a);
 }
-function Tt(e, t) {
+function Mt(e, t) {
     const a = Lt(e);
     if (a) return a;
     const n = Object.keys(t || {})[0];
@@ -2793,7 +2793,7 @@ function Tt(e, t) {
     }
     return u(new Date());
 }
-function It(e) {
+function Tt(e) {
     const t = {};
     return (
         Object.keys(e || {})
@@ -2807,11 +2807,11 @@ function It(e) {
         t
     );
 }
-function Mt(e) {
-    return It(e || {});
+function It(e) {
+    return Tt(e || {});
 }
 function Bt(e) {
-    return JSON.stringify(It(e || {}));
+    return JSON.stringify(Tt(e || {}));
 }
 function Rt() {
     const e = g(),
@@ -2839,17 +2839,17 @@ function Dt() {
     return 'google' === String(e.source || '').toLowerCase();
 }
 function jt(e) {
-    const t = Mt(g().data.availability || {});
+    const t = It(g().data.availability || {});
     return Bt(e) !== Bt(t);
 }
 function Pt() {
-    return Mt(g().availability.draft || {});
+    return It(g().availability.draft || {});
 }
 function Ot() {
     const e = g(),
         t = Lt(e.availability.selectedDate);
     if (t) return t;
-    const a = Mt(e.availability.draft || {});
+    const a = It(e.availability.draft || {});
     return Object.keys(a)[0] || u(new Date());
 }
 function xt(e = 1) {
@@ -2975,7 +2975,7 @@ function Ut() {
                 t = Et(e.availability.monthAnchor, e.availability.selectedDate),
                 a = Ot(),
                 n = t.getMonth(),
-                i = Mt(e.availability.draft),
+                i = It(e.availability.draft),
                 o = u(new Date());
             var s;
             r(
@@ -3015,7 +3015,7 @@ function Ut() {
                         t = Ot();
                     return {
                         selectedDate: t,
-                        slots: Ct(Mt(e.availability.draft)[t] || []),
+                        slots: Ct(It(e.availability.draft)[t] || []),
                     };
                 })(),
                 n = Dt();
@@ -3038,7 +3038,7 @@ function Ut() {
         (function () {
             const e = g(),
                 a = Ot(),
-                n = Mt(e.availability.draft),
+                n = It(e.availability.draft),
                 i = Array.isArray(n[a]) ? Ct(n[a]) : [],
                 o = Dt(),
                 {
@@ -3136,8 +3136,8 @@ function Kt(e, { render: t = !1 } = {}) {
         t ? Ut() : Rt());
 }
 function Qt(e, t = {}) {
-    const a = Mt(e),
-        n = Tt(t.selectedDate || g().availability.selectedDate, a);
+    const a = It(e),
+        n = Mt(t.selectedDate || g().availability.selectedDate, a);
     Kt(
         {
             draft: a,
@@ -3789,7 +3789,7 @@ function Ea() {
                 : ga(t),
     };
 }
-function Ta(e, t) {
+function Ma(e, t) {
     const a = sa(t);
     return 'waiting' === a
         ? e.filter((e) => 'waiting' === e.status)
@@ -3829,7 +3829,7 @@ function Ta(e, t) {
                       )
                     : e;
 }
-function Ia(e, t) {
+function Ta(e, t) {
     const a = sa(t);
     return a
         ? e.filter((e) =>
@@ -3839,10 +3839,10 @@ function Ia(e, t) {
           )
         : e;
 }
-function Ma() {
+function Ia() {
     const e = g(),
         { queueTickets: t } = Ea();
-    return Ia(Ta(t, e.queue.filter), e.queue.search);
+    return Ta(Ma(t, e.queue.filter), e.queue.search);
 }
 function Ba(e, t = null) {
     const a = Array.isArray(t) ? t : Ea().queueTickets,
@@ -3861,7 +3861,7 @@ function Na() {
             ? Ea().queueTickets.filter((t) => e.has(Number(t.id || 0)))
             : [];
     })();
-    return e.length ? e : Ma();
+    return e.length ? e : Ia();
 }
 function Da(e) {
     const t = Number(e || 0);
@@ -5232,11 +5232,11 @@ let An = Ln(
         })
     ),
     En = null,
-    Tn = !1;
-function In(e) {
+    Mn = !1;
+function Tn(e) {
     return An.surfaces[qn(e)] || null;
 }
-function Mn(e) {
+function In(e) {
     const t = String(e || '').trim();
     return t ? t.slice(0, 8) : '';
 }
@@ -5324,13 +5324,13 @@ function Fn(e, t, a) {
         return `public_main_sync sigue ${e.state || 'desconocido'}${a}. Falta estabilizar la publicación antes de abrir ${t}.`;
     }
     if (!0 === e.headDrift) {
-        const t = Mn(e.deployedCommit);
+        const t = In(e.deployedCommit);
         return t
             ? `El host reporta commit ${t}, pero todavía hay drift frente al remoto.`
             : 'El host sigue con drift frente al remoto y no conviene abrir la clínica todavía.';
     }
     return e.deployedCommit
-        ? `public_main_sync sano y commit ${Mn(e.deployedCommit)} ya coincide con la publicación activa de ${t}.`
+        ? `public_main_sync sano y commit ${In(e.deployedCommit)} ya coincide con la publicación activa de ${t}.`
         : 'La publicación no reporta `deployedCommit`; falta una referencia verificable del release activo.';
 }
 function Un(e, t, a, n, i, o, s) {
@@ -5402,14 +5402,14 @@ function Qn(e, t, a) {
             h.length > 0
                 ? Math.max(0, Math.min(100, Math.round((S / h.length) * 100)))
                 : 0,
-        T = l?.() || null,
-        I = c?.() || null,
-        M = u?.() || null,
-        B = String(I?.source || '')
+        M = l?.() || null,
+        T = c?.() || null,
+        I = u?.() || null,
+        B = String(T?.source || '')
             .trim()
             .toLowerCase(),
         R = String(
-            I?.profileFingerprint ||
+            T?.profileFingerprint ||
                 (function (e) {
                     if (!e || 'object' != typeof e) return '';
                     const t = [
@@ -5441,16 +5441,16 @@ function Qn(e, t, a) {
                               return (t >>> 0).toString(16).padStart(8, '0');
                           })(t)
                         : '';
-                })(T)
+                })(M)
         ).trim(),
-        N = T?.release && 'object' == typeof T.release ? T.release : {},
-        D = T?.surfaces && 'object' == typeof T.surfaces ? T.surfaces : {},
-        j = String(T?.branding?.base_url || '').trim(),
+        N = M?.release && 'object' == typeof M.release ? M.release : {},
+        D = M?.surfaces && 'object' == typeof M.surfaces ? M.surfaces : {},
+        j = String(M?.branding?.base_url || '').trim(),
         P =
             'function' == typeof d
                 ? d()
-                : String(T?.branding?.name || 'la clínica').trim(),
-        O = String(T?.clinic_id || '').trim() || 'sin-clinic-id',
+                : String(M?.branding?.name || 'la clínica').trim(),
+        O = String(M?.clinic_id || '').trim() || 'sin-clinic-id',
         x = 'function' == typeof p ? p() : null,
         H = 'function' == typeof m ? m() : null,
         F = ['admin', 'operator', 'kiosk', 'display'],
@@ -5470,7 +5470,7 @@ function Qn(e, t, a) {
                 '' !== String(x?.deployedCommit || '').trim()
             ),
         V = Boolean(
-            M?.catalogAvailable && M?.matchingProfileId && M?.matchesCatalog
+            I?.catalogAvailable && I?.matchingProfileId && I?.matchesCatalog
         ),
         G = F.map((e) => {
             const t = D[e],
@@ -5574,18 +5574,18 @@ function Qn(e, t, a) {
             {
                 id: 'profile',
                 ready:
-                    Boolean(T) &&
+                    Boolean(M) &&
                     'remote' === B &&
-                    '' !== String(T?.clinic_id || '').trim() &&
+                    '' !== String(M?.clinic_id || '').trim() &&
                     'web_pilot' === String(N?.mode || '').trim() &&
                     !0 === N?.separate_deploy &&
                     'basic' === String(N?.admin_mode_default || '').trim(),
                 label: 'Perfil por clínica',
                 detail:
-                    Boolean(T) && 'remote' !== B
+                    Boolean(M) && 'remote' !== B
                         ? 'El admin sigue usando un perfil cacheado localmente. Recupera `/data` o vuelve a publicar antes de abrir esta clínica.'
-                        : Boolean(T) &&
-                            '' !== String(T?.clinic_id || '').trim() &&
+                        : Boolean(M) &&
+                            '' !== String(M?.clinic_id || '').trim() &&
                             'web_pilot' === String(N?.mode || '').trim() &&
                             !0 === N?.separate_deploy &&
                             'basic' ===
@@ -5598,11 +5598,11 @@ function Qn(e, t, a) {
                 id: 'catalog',
                 ready: V,
                 label: 'Perfil catalogado',
-                detail: M?.catalogAvailable
-                    ? M?.matchingProfileId && M?.matchesCatalog
-                        ? `El perfil activo coincide con ${M.matchingProfileId}.json y puede repetirse en otro deploy separado.`
-                        : M?.matchingProfileId
-                          ? `El perfil activo usa clinic_id ${O}, pero ya difiere de ${M.matchingProfileId}.json. Vuelve a stagear el catálogo antes del go-live.`
+                detail: I?.catalogAvailable
+                    ? I?.matchingProfileId && I?.matchesCatalog
+                        ? `El perfil activo coincide con ${I.matchingProfileId}.json y puede repetirse en otro deploy separado.`
+                        : I?.matchingProfileId
+                          ? `El perfil activo usa clinic_id ${O}, pero ya difiere de ${I.matchingProfileId}.json. Vuelve a stagear el catálogo antes del go-live.`
                           : `No existe un perfil catalogado para ${O}. Agrega la entrada a clinic-profiles antes del go-live.`
                     : 'No existe catálogo de perfiles por clínica; el deploy sigue dependiendo de edición manual del perfil activo.',
                 blocker: !0,
@@ -5889,11 +5889,11 @@ function Qn(e, t, a) {
             0 === de.length
                 ? 'Usa este panel como semáforo corto antes de abrir otra clínica.'
                 : 'Resuelve estos puntos en orden; el primer bloqueo debería salir antes de volver al smoke final.',
-        ve = Mn(x?.deployedCommit || ''),
+        ve = In(x?.deployedCommit || ''),
         he =
             'remote' === B
                 ? 'remoto verificado'
-                : T
+                : M
                   ? 'fallback local'
                   : 'sin perfil',
         ke =
@@ -5908,9 +5908,9 @@ function Qn(e, t, a) {
                 id: 'catalog',
                 label: 'Catálogo',
                 value: V
-                    ? `${M?.matchingProfileId}.json verificado`
-                    : M?.matchingProfileId
-                      ? `${M.matchingProfileId}.json desalineado`
+                    ? `${I?.matchingProfileId}.json verificado`
+                    : I?.matchingProfileId
+                      ? `${I.matchingProfileId}.json desalineado`
                       : 'sin entrada catalogada',
             },
             {
@@ -6033,14 +6033,14 @@ function Qn(e, t, a) {
                   })
                 : [],
         Ee = Ae.filter((e) => !e.live),
-        Te =
+        Me =
             String(Ce?.targets?.win?.feedUrl || '')
                 .split('/')
                 .filter(Boolean)
                 .pop() || 'latest.yml',
-        Ie =
+        Te =
             Ae.length > 0 && Ee.length > 0
-                ? `Windows operador pendiente: falta ${Ee.map((e) => e.station.toUpperCase()).join(' y ')} fijo. Usa el mismo TurneroOperadorSetup.exe en ambas PCs y confirma ${Te}.`
+                ? `Windows operador pendiente: falta ${Ee.map((e) => e.station.toUpperCase()).join(' y ')} fijo. Usa el mismo TurneroOperadorSetup.exe en ambas PCs y confirma ${Me}.`
                 : Ae.length > 0
                   ? 'Windows operador visible en C1 y C2.'
                   : '';
@@ -6078,7 +6078,7 @@ function Qn(e, t, a) {
                         : 'El sistema ya detectó los pasos pendientes como listos. Confírmalos para cerrar la apertura.',
                 supportCopy:
                     'Usa este botón cuando ya confías en la telemetría y solo quieres avanzar sin recorrer el checklist uno por uno.' +
-                    (Ie ? ` ${Ie}` : ''),
+                    (Te ? ` ${Te}` : ''),
                 progressPct: E,
                 confirmedCount: S,
                 suggestedCount: w,
@@ -6115,7 +6115,7 @@ function Qn(e, t, a) {
                           : 'Solo queda una validación manual para dejar la apertura lista.',
                   supportCopy: String(
                       k.suggestions[C[0].id]?.reason || C[0].hint || ''
-                  ).concat(Ie ? ` ${Ie}` : ''),
+                  ).concat(Te ? ` ${Te}` : ''),
                   progressPct: E,
                   confirmedCount: S,
                   suggestedCount: w,
@@ -6151,7 +6151,7 @@ function Qn(e, t, a) {
                       'Operador, kiosco y sala ya están confirmados. Puedes seguir atendiendo o hacer un llamado de prueba final desde la cola.',
                   supportCopy:
                       'Si cambia un equipo a warning o alert, este panel volverá a priorizar la acción correcta.' +
-                      (Ie ? ` ${Ie}` : ''),
+                      (Te ? ` ${Te}` : ''),
                   progressPct: E,
                   confirmedCount: S,
                   suggestedCount: w,
@@ -6380,10 +6380,10 @@ let yi = null,
 function Ei() {
     return An.appDownloads;
 }
-function Ti(e) {
+function Mi(e) {
     return (function (e) {
         return (
-            In(e)?.cardCopy || {
+            Tn(e)?.cardCopy || {
                 eyebrow: _n(e),
                 title: _n(e),
                 description: '',
@@ -6393,9 +6393,9 @@ function Ti(e) {
         );
     })(e);
 }
-function Ii(e) {
+function Ti(e) {
     return (function (e) {
-        const t = In(e);
+        const t = Tn(e);
         if (t) return t.telemetryCopy;
         const a = (function (e) {
             const t = qn(e);
@@ -6405,14 +6405,14 @@ function Ii(e) {
                       ?.id || '';
         })(e);
         return (
-            In(a)?.telemetryCopy || {
+            Tn(a)?.telemetryCopy || {
                 title: _n(e),
                 emptySummary: 'Sin senal todavia.',
             }
         );
     })(e);
 }
-function Mi() {
+function Ii() {
     const e = g().data.turneroClinicProfile;
     return e && 'object' == typeof e ? e : null;
 }
@@ -6425,10 +6425,10 @@ function Ri() {
     return e && 'object' == typeof e ? e : null;
 }
 function Ni() {
-    return String(Mi()?.branding?.name || 'Piel en Armonia').trim();
+    return String(Ii()?.branding?.name || 'Piel en Armonia').trim();
 }
 function Di() {
-    return String(Mi()?.clinic_id || 'default-clinic').trim();
+    return String(Ii()?.clinic_id || 'default-clinic').trim();
 }
 function ji(e, t = {}) {
     const { short: a = !1, fallbackGeneral: n = 'Recepcion' } = t || {},
@@ -6437,7 +6437,7 @@ function ji(e, t = {}) {
     const o = (function (e) {
             return 2 === Number(e || 0) ? 'c2' : 'c1';
         })(i),
-        s = Mi(),
+        s = Ii(),
         r =
             s?.consultorios && 'object' == typeof s.consultorios
                 ? s.consultorios[o]
@@ -6527,7 +6527,7 @@ function xi(e) {
         : 'basic';
 }
 function Hi() {
-    return xi(Mi()?.release?.admin_mode_default || 'basic');
+    return xi(Ii()?.release?.admin_mode_default || 'basic');
 }
 function Fi() {
     const e = uo();
@@ -7199,10 +7199,10 @@ function Eo() {
         _i
     );
 }
-function To() {
+function Mo() {
     return on(si, co, uo);
 }
-function Io(e, t) {
+function To(e, t) {
     return (function (e, t, a, n, i) {
         const o = on(e, t, a),
             s = { ...o.reviewed };
@@ -7214,7 +7214,7 @@ function Io(e, t) {
         );
     })(si, co, uo, e, t);
 }
-function Mo(e) {
+function Io(e) {
     return (function (e, t, a, n) {
         const i = Array.isArray(n)
             ? n.map((e) => String(e || '').trim()).filter(Boolean)
@@ -7766,7 +7766,7 @@ function Jo(e, t) {
                 buildOpeningChecklistAssist: Ko,
                 getQueueSyncHealth: Cs,
                 getSurfaceTelemetryState: es,
-                getTurneroClinicProfile: Mi,
+                getTurneroClinicProfile: Ii,
                 getTurneroClinicProfileMeta: Bi,
                 getTurneroClinicProfileCatalogStatus: Ri,
                 getTurneroClinicBrandName: Ni,
@@ -7891,7 +7891,7 @@ function Yo(t, a) {
             appendOpsLogEntry: Lo,
             createToast: s,
             getInstallPresetLabel: ro,
-            renderQueueFocusMode: Ts,
+            renderQueueFocusMode: Ms,
             renderQueueQuickConsole: Nl,
             renderQueuePlaybook: Ol,
             renderQueueOpsPilot: Yo,
@@ -8279,7 +8279,7 @@ function $s(e, t, a) {
         if (e.length > 0)
             return `${a.length} equipos operador reportando: ${e.join(' y ')}.`;
     }
-    return n || Ii(e).emptySummary || 'Sin señal todavía.';
+    return n || Ti(e).emptySummary || 'Sin señal todavía.';
 }
 function Ss(e, t) {
     if (!t || 'object' != typeof t) return ['Sin señal'];
@@ -8365,7 +8365,7 @@ function ws(e, t) {
             });
         return {
             key: e.key,
-            title: Ii(e.key).title || e.key,
+            title: Ti(e.key).title || e.key,
             state:
                 'ready' === s || 'warning' === s || 'alert' === s
                     ? s
@@ -8481,7 +8481,7 @@ function Ls(e, t) {
             };
         })(e, t, a);
     })(e, t, {
-        ensureOpsAlertsState: To,
+        ensureOpsAlertsState: Mo,
         getQueueSyncHealth: Cs,
         getQueueSource: Ea,
         formatHeartbeatAge: Zo,
@@ -8562,12 +8562,12 @@ function As(t, a) {
         setHtml: l,
         escapeHtml: e,
         formatDateTime: i,
-        markOpsAlertsReviewed: Mo,
+        markOpsAlertsReviewed: Io,
         appendOpsLogEntry: Lo,
         getInstallPresetLabel: ro,
         renderQueueOpsAlerts: As,
         renderQueueOpsLog: Fl,
-        setOpsAlertReviewed: Io,
+        setOpsAlertReviewed: To,
     });
 }
 function Es(e, t) {
@@ -8676,7 +8676,7 @@ function Es(e, t) {
         buildShiftHandoffAssist: Qo,
     });
 }
-function Ts(t, a) {
+function Ms(t, a) {
     return ln(t, a, {
         buildQueueFocusMode: Es,
         setHtml: l,
@@ -8688,12 +8688,12 @@ function Ts(t, a) {
         renderQueuePlaybook: Ol,
     });
 }
-function Is(e, t) {
+function Ts(e, t) {
     const a = document.getElementById(e);
     a instanceof HTMLElement &&
         ((a.hidden = !t), a.setAttribute('aria-hidden', t ? 'false' : 'true'));
 }
-function Ms(e) {
+function Is(e) {
     const t = document.getElementById(e);
     t instanceof HTMLElement && (t.innerHTML = '');
 }
@@ -8718,7 +8718,7 @@ function Ns(e) {
         Rs(),
         'expert' === a &&
             fi.forEach((e) => {
-                Is(e, !0);
+                Ts(e, !0);
             }));
 }
 function Ds(e) {
@@ -8730,16 +8730,16 @@ function Ds(e) {
         Rs(),
         'basic' === a &&
             fi.forEach((e) => {
-                Is(e, !1);
+                Ts(e, !1);
             }));
 }
 function js() {
     fi.forEach((e) => {
-        Ms(e);
+        Is(e);
     });
 }
 function Ps(t, a) {
-    (Ts(t, a),
+    (Ms(t, a),
         (function (t, a) {
             if (
                 !(
@@ -10414,12 +10414,12 @@ function Os(t, a) {
                     L = 'Sin proyección calculada',
                     A = 'Sin riesgo inmediato calculado.',
                     E = 'Sin siguiente foco',
-                    T = 'No quedó un pivote útil después de esta acción.',
-                    I = null,
-                    M = null;
+                    M = 'No quedó un pivote útil después de esta acción.',
+                    T = null,
+                    I = null;
                 const B = (e, t, a) => {
-                    if (e) return ((I = e), (E = e.label), void (T = e.detail));
-                    ((I = null), (E = t), (T = a));
+                    if (e) return ((T = e), (E = e.label), void (M = e.detail));
+                    ((T = null), (E = t), (M = a));
                 };
                 if (f) {
                     const e = Hs(f, r),
@@ -10427,7 +10427,7 @@ function Os(t, a) {
                         a = String(f.action || '')
                             .trim()
                             .toLowerCase();
-                    M = s.map((e) =>
+                    I = s.map((e) =>
                         Number(e.id || 0) === Number(r.id || 0)
                             ? {
                                   ...e,
@@ -10448,7 +10448,7 @@ function Os(t, a) {
                               }
                             : e
                     );
-                    const n = Zs(M, t)[0] || null;
+                    const n = Zs(I, t)[0] || null;
                     ((_ = `Simulación retenida para ${m}`),
                         (q =
                             'Ya existe una acción sensible pendiente para este ticket. El siguiente cambio real depende de confirmarla o cancelarla.'),
@@ -10481,7 +10481,7 @@ function Os(t, a) {
                             'No hay otro ticket listo detrás de esta confirmación.'
                         ));
                 } else if ('called' === l && p > 0) {
-                    M = s.map((e) =>
+                    I = s.map((e) =>
                         Number(e.id || 0) === Number(r.id || 0)
                             ? {
                                   ...e,
@@ -10491,7 +10491,7 @@ function Os(t, a) {
                               }
                             : e
                     );
-                    const e = Zs(M, p)[0] || null,
+                    const e = Zs(I, p)[0] || null,
                         t = y[0] || null,
                         a = Zs(o, p).length;
                     ((w = `${m} ocupa C${p} · ${a} detrás`),
@@ -10515,7 +10515,7 @@ function Os(t, a) {
                         ));
                 } else if ('waiting' === l && 0 === p) {
                     const e = Number(n.primaryConsultorio || 0);
-                    M =
+                    I =
                         e > 0
                             ? s.map((t) =>
                                   Number(t.id || 0) === Number(r.id || 0)
@@ -10523,11 +10523,11 @@ function Os(t, a) {
                                       : t
                               )
                             : null;
-                    const t = e > 0 ? Xs(M || o, e) : null,
+                    const t = e > 0 ? Xs(I || o, e) : null,
                         a =
                             ((R = [
-                                ...(e > 0 ? Zs(M || o, e) : []),
-                                ...(M
+                                ...(e > 0 ? Zs(I || o, e) : []),
+                                ...(I
                                     ? []
                                     : [{ ...r, assignedConsultorio: e }]),
                             ]),
@@ -10605,7 +10605,7 @@ function Os(t, a) {
                               'Sin bloqueo directo',
                               'No hay otro ticket visible delante dentro del mismo carril.'
                           ))
-                        : ((M = s.map((e) =>
+                        : ((I = s.map((e) =>
                               Number(e.id || 0) === Number(r.id || 0)
                                   ? {
                                         ...e,
@@ -10667,9 +10667,9 @@ function Os(t, a) {
                     afterLabel: L,
                     riskLabel: A,
                     focusLabel: E,
-                    focusDetail: T,
-                    focusPivot: I,
-                    projectedTickets: M,
+                    focusDetail: M,
+                    focusPivot: T,
+                    projectedTickets: I,
                 };
             })(t, a);
             l(
@@ -11902,8 +11902,8 @@ function Os(t, a) {
                     s = Er(e, t),
                     r = new Map((s.cards || []).map((e) => [e.slotKey, e])),
                     l = [
-                        Ir('Con cita', 'appointment', i, r),
-                        Ir('Sin cita', 'walkin', o, r),
+                        Tr('Con cita', 'appointment', i, r),
+                        Tr('Sin cita', 'walkin', o, r),
                     ].filter(Boolean),
                     c = l.find((e) => 'warning' === e.tone) || l[0] || null;
                 return {
@@ -11981,8 +11981,8 @@ function Os(t, a) {
                     i = a[1] || null,
                     o = String(n?.slotKey || '').toUpperCase(),
                     s = String(i?.slotKey || '').toUpperCase(),
-                    r = Tr(n),
-                    l = Tr(i),
+                    r = Mr(n),
+                    l = Mr(i),
                     c = n && Number(n.etaMinutes || 0) <= pi,
                     u = [];
                 (n &&
@@ -12123,7 +12123,7 @@ function Os(t, a) {
                     c = r[1] || null,
                     u = [];
                 if (o) {
-                    const e = Tr(n.get(o.slotKey) || null);
+                    const e = Mr(n.get(o.slotKey) || null);
                     u.push({
                         key: 'appointment',
                         tone: o.operatorReady ? 'ready' : 'warning',
@@ -12138,7 +12138,7 @@ function Os(t, a) {
                     });
                 }
                 if (s) {
-                    const e = Tr(n.get(s.slotKey) || null);
+                    const e = Mr(n.get(s.slotKey) || null);
                     u.push({
                         key: 'walkin',
                         tone: s.operatorReady ? 'suggested' : 'warning',
@@ -12153,8 +12153,8 @@ function Os(t, a) {
                     });
                 }
                 if (l) {
-                    const e = Tr(l),
-                        t = Tr(c),
+                    const e = Mr(l),
+                        t = Mr(c),
                         a = String(c?.slotKey || '').toUpperCase();
                     u.push({
                         key: 'if_not_called',
@@ -12249,8 +12249,8 @@ function Os(t, a) {
                     s = Er(e, t),
                     r = new Map((s.cards || []).map((e) => [e.slotKey, e])),
                     l = [
-                        Mr('Con cita', 'appointment', i, r),
-                        Mr('Sin cita', 'walkin', o, r),
+                        Ir('Con cita', 'appointment', i, r),
+                        Ir('Sin cita', 'walkin', o, r),
                         Br(s),
                     ].filter(Boolean),
                     c =
@@ -13209,8 +13209,8 @@ function Os(t, a) {
                             if ('general' === a) {
                                 const a = Ws(),
                                     n = a[0] || null,
-                                    i = Il(e, t, 1),
-                                    o = Il(e, t, 2),
+                                    i = Tl(e, t, 1),
+                                    o = Tl(e, t, 2),
                                     s =
                                         [i, o]
                                             .filter(
@@ -13294,7 +13294,7 @@ function Os(t, a) {
                             }
                             const n = 'c2' === a ? 2 : 1,
                                 i = ar(e, t, n),
-                                o = Il(e, t, n),
+                                o = Tl(e, t, n),
                                 s = Js(n),
                                 r = Ws(),
                                 l = ja(n),
@@ -13470,10 +13470,10 @@ function Os(t, a) {
                 const a = [1, 2].map((a) =>
                         (function (e, t, a) {
                             const n = ar(e, t, a),
-                                i = Il(e, t, a),
+                                i = Tl(e, t, a),
                                 o = 2 === a ? 1 : 2,
                                 s = 2 === o ? 'c2' : 'c1',
-                                r = Il(e, t, o),
+                                r = Tl(e, t, o),
                                 l = Js(a),
                                 c = Js(o),
                                 u = Ws(),
@@ -13668,7 +13668,7 @@ function Os(t, a) {
             )
                 return;
             const n = (function (e, t) {
-                const a = { 1: Il(e, t, 1), 2: Il(e, t, 2) },
+                const a = { 1: Tl(e, t, 1), 2: Tl(e, t, 2) },
                     n = (function (e = 4) {
                         return [...Vs()]
                             .sort((e, t) => {
@@ -13997,8 +13997,8 @@ function Os(t, a) {
                         .trim()
                         .toLowerCase(),
                     i = String(a.queue?.search || '').trim(),
-                    o = Ma(),
-                    s = { 1: Il(e, t, 1), 2: Il(e, t, 2) },
+                    o = Ia(),
+                    s = { 1: Tl(e, t, 1), 2: Tl(e, t, 2) },
                     r = o.slice(0, 3).map((e, t) => Ll(0, 0, e, t, s)),
                     l = Cl(n),
                     c = [];
@@ -14106,7 +14106,7 @@ function Os(t, a) {
                             const a = El(e, t);
                             if (a.steps.length)
                                 try {
-                                    for (const n of a.steps) await Tl(n, e, t);
+                                    for (const n of a.steps) await Ml(n, e, t);
                                     Lo({
                                         tone: 'success',
                                         source: 'tray_burst',
@@ -14161,7 +14161,7 @@ function Os(t, a) {
             )
                 return;
             const n = (function (e, t) {
-                const a = [1, 2].map((a) => Il(e, t, a)),
+                const a = [1, 2].map((a) => Tl(e, t, a)),
                     n = a.filter((e) =>
                         ['call', 'assign', 'rebalance'].includes(
                             e.primaryAction
@@ -14220,12 +14220,12 @@ function Os(t, a) {
             (function (t, a) {
                 return Ui()
                     .map((n) => {
-                        const o = In(n),
+                        const o = Tn(n),
                             s = t[n] || Ei()[n];
                         return o && s
                             ? 'android' === o.family
                                 ? (function (t, a) {
-                                      const n = Ti(t),
+                                      const n = Mi(t),
                                           o = so(Ki()),
                                           s =
                                               to(a, eo(0, a, 'android_tv')) ||
@@ -14235,7 +14235,7 @@ function Os(t, a) {
                                       return `\n        <article class="queue-app-card">\n            <div>\n                <p class="queue-app-card__eyebrow">${e(n.eyebrow)}</p>\n                <h5 class="queue-app-card__title">${e(n.title)}</h5>\n                <p class="queue-app-card__description">${e(n.description)}</p>\n            </div>\n            <p class="queue-app-card__meta">\n                v${e(a.version || '0.1.0')} · ${e(i(a.updatedAt || ''))}\n            </p>\n            <span class="queue-app-card__tag">Ideal para ${e(n.recommendedFor)}</span>\n            <div class="queue-app-card__actions">\n                <a\n                    href="${e(l)}"\n                    class="queue-app-card__cta-primary"\n                    target="_blank"\n                    rel="noopener"\n                >\n                    Mostrar QR de instalación\n                </a>\n                <a href="${e(r)}" download>Descargar APK</a>\n            </div>\n            <div class="queue-app-card__links">\n                <a href="${e(a.webFallbackUrl || '/sala-turnos.html')}">\n                    Abrir fallback web\n                </a>\n                <a href="${e(ao('sala_tv', o, a))}">\n                    Centro de instalación\n                </a>\n                <button\n                    type="button"\n                    data-action="queue-copy-install-link"\n                    data-queue-install-url="${e(Zi(r))}"\n                >\n                    Copiar enlace\n                </button>\n            </div>\n            <ul class="queue-app-card__notes">\n                ${(Array.isArray(n.notes) ? n.notes : []).map((t) => `<li>${e(t)}</li>`).join('')}\n            </ul>\n        </article>\n    `;
                                   })(n, s)
                                 : (function (t, a, n) {
-                                      const o = Ti(t),
+                                      const o = Mi(t),
                                           s = so(n),
                                           r = eo(0, a, n),
                                           l = Oo(a, n),
@@ -14422,7 +14422,7 @@ function xs(t, a) {
     const i = Fi(),
         o = Ni(),
         s = (function () {
-            const e = Mi();
+            const e = Ii();
             return String(
                 e?.branding?.short_name ||
                     e?.branding?.name ||
@@ -14430,7 +14430,7 @@ function xs(t, a) {
             ).trim();
         })(),
         r = Di(),
-        c = Mi(),
+        c = Ii(),
         u = Array.isArray(c?.release?.notes)
             ? c.release.notes.filter(Boolean)
             : [],
@@ -15338,7 +15338,7 @@ function br(e, t, a) {
         s = ja(n),
         r = Js(n),
         l = Ws(),
-        c = Il(e, t, n),
+        c = Tl(e, t, n),
         u = [];
     if (s) {
         const e = r[0] || null,
@@ -16313,11 +16313,11 @@ function Er(e, t) {
         cards: s,
     };
 }
-function Tr(e) {
+function Mr(e) {
     const t = Number(e?.etaMinutes);
     return Number.isFinite(t) ? Ar(t) : 'sin ventana visible';
 }
-function Ir(e, t, a, n) {
+function Tr(e, t, a, n) {
     const i = Array.isArray(a) ? a : [],
         o = i[0] || null;
     if (!o) return null;
@@ -16329,8 +16329,8 @@ function Ir(e, t, a, n) {
             null,
         r = n.get(o.slotKey) || null,
         l = (s && n.get(s.slotKey)) || null,
-        c = Tr(r),
-        u = Tr(l),
+        c = Mr(r),
+        u = Mr(l),
         d = String(o.slotKey || '').toUpperCase(),
         p = String(s?.slotKey || '').toUpperCase(),
         m = s
@@ -16353,7 +16353,7 @@ function Ir(e, t, a, n) {
         actionUrl: o.operatorUrl,
     };
 }
-function Mr(e, t, a, n) {
+function Ir(e, t, a, n) {
     const i = Array.isArray(a) ? a : [],
         o = i[0] || null;
     if (!o) return null;
@@ -16365,8 +16365,8 @@ function Mr(e, t, a, n) {
         l = (s && n.get(s.slotKey)) || null,
         c = Number(r?.etaMinutes),
         u = Number(l?.etaMinutes),
-        d = Tr(r),
-        p = Tr(l),
+        d = Mr(r),
+        p = Mr(l),
         m = String(o.slotKey || '').toUpperCase(),
         g = String(s?.slotKey || '').toUpperCase();
     return s && Number.isFinite(c) && Number.isFinite(u) && u + 8 <= c
@@ -16444,8 +16444,8 @@ function Nr(e, t, a, n) {
         l = (s && n.get(s.slotKey)) || null,
         c = Number(r?.etaMinutes),
         u = Number(l?.etaMinutes),
-        d = Tr(r),
-        p = Tr(l),
+        d = Mr(r),
+        p = Mr(l),
         m = String(o.slotKey || '').toUpperCase(),
         g = String(s?.slotKey || '').toUpperCase(),
         b = Rr(c, u),
@@ -18106,8 +18106,8 @@ function El(e, t) {
             .trim()
             .toLowerCase(),
         i = String(a.queue?.search || '').trim(),
-        o = Ma(),
-        s = { 1: Il(e, t, 1), 2: Il(e, t, 2) },
+        o = Ia(),
+        s = { 1: Tl(e, t, 1), 2: Tl(e, t, 2) },
         r = o.slice(0, 3).map((e, t) => Ll(0, 0, e, t, s)),
         l = [];
     ('all' !== n && l.push(Cl(n)), i && l.push(`búsqueda "${i}"`));
@@ -18221,7 +18221,7 @@ function El(e, t) {
         }
     );
 }
-async function Tl(e, t, a) {
+async function Ml(e, t, a) {
     if (!e) return;
     if ('dispatch' === e.kind && e.actionCard)
         return void (await Bl(e.actionCard, t, a, {
@@ -18253,7 +18253,7 @@ async function Tl(e, t, a) {
             summary: `${e.ticketCode} se re-llamó como parte de la ráfaga operativa.`,
         }));
 }
-function Il(e, t, a) {
+function Tl(e, t, a) {
     const n = ar(e, t, a),
         {
             slot: i,
@@ -18283,10 +18283,10 @@ function Il(e, t, a) {
     let L = 'idle',
         A = 'Sin acción inmediata',
         E = `${o.toUpperCase()} sin movimiento urgente`,
-        T =
+        M =
             'No hay ticket listo para mover o llamar desde este consultorio en este momento.',
-        I = 'none',
-        M = 'Sin acción',
+        T = 'none',
+        I = 'Sin acción',
         B = null,
         R = 'Sin ticket pendiente';
     return (
@@ -18294,48 +18294,48 @@ function Il(e, t, a) {
             ? ((L = 'active'),
               (A = 'En atención'),
               (E = `${y.ticketCode} sigue en atención`),
-              (T = `${o.toUpperCase()} está ocupado ahora. Deja visible el operador y prepara el siguiente paso sin cambiar de tarjeta.`),
-              (I = 'open'),
-              (M = `Abrir Operador ${o.toUpperCase()}`),
+              (M = `${o.toUpperCase()} está ocupado ahora. Deja visible el operador y prepara el siguiente paso sin cambiar de tarjeta.`),
+              (T = 'open'),
+              (I = `Abrir Operador ${o.toUpperCase()}`),
               (B = y),
               (R = `${y.ticketCode} · ${Ks(y, 'called')}`))
             : _ && s && l
               ? ((L = 'ready'),
                 (A = 'Llamar ahora'),
                 (E = `${_.ticketCode} listo para ${o.toUpperCase()}`),
-                (T = `El ticket ya está alineado a ${o.toUpperCase()} y el operador correcto está arriba. Puedes llamarlo sin bajar a la tabla.`),
-                (I = 'call'),
-                (M = `Llamar ${_.ticketCode}`),
+                (M = `El ticket ya está alineado a ${o.toUpperCase()} y el operador correcto está arriba. Puedes llamarlo sin bajar a la tabla.`),
+                (T = 'call'),
+                (I = `Llamar ${_.ticketCode}`),
                 (B = _),
                 (R = `${_.ticketCode} · ${Ks(_, 'waiting')}`))
               : q && s && l
                 ? ((L = 'suggested'),
                   (A = 'Tomar de cola general'),
                   (E = `${o.toUpperCase()} puede absorber ${q.ticketCode}`),
-                  (T = `Hay ${C} ticket(s) sin consultorio. Reasigna el más antiguo a ${o.toUpperCase()} para destrabar recepción antes del siguiente pico.`),
-                  (I = 'assign'),
-                  (M = `Asignar ${q.ticketCode}`),
+                  (M = `Hay ${C} ticket(s) sin consultorio. Reasigna el más antiguo a ${o.toUpperCase()} para destrabar recepción antes del siguiente pico.`),
+                  (T = 'assign'),
+                  (I = `Asignar ${q.ticketCode}`),
                   (B = q),
                   (R = `${q.ticketCode} · ${Ks(q, 'waiting')}`))
                 : $ && s && l
                   ? ((L = 'warning'),
                     (A = 'Rebalancear cola'),
                     (E = `${o.toUpperCase()} puede ayudar a C${f}`),
-                    (T = `C${f} ya acumula ${w} en espera. Mueve ${$.ticketCode} a ${o.toUpperCase()} para repartir mejor la carga.`),
-                    (I = 'rebalance'),
-                    (M = `Mover ${$.ticketCode}`),
+                    (M = `C${f} ya acumula ${w} en espera. Mueve ${$.ticketCode} a ${o.toUpperCase()} para repartir mejor la carga.`),
+                    (T = 'rebalance'),
+                    (I = `Mover ${$.ticketCode}`),
                     (B = $),
                     (R = `${$.ticketCode} · ${Ks($, 'waiting')}`))
                   : _ || q || $
                     ? ((L = 'warning'),
                       (A = 'Falta operador'),
                       (E = `Prepara Operador ${o.toUpperCase()}`),
-                      (T =
+                      (M =
                           s && c
                               ? `Hay ticket pendiente para ${o.toUpperCase()}, pero el operador sigue bloqueado: ${c}`
                               : `Hay ticket pendiente para ${o.toUpperCase()}, pero todavía no coincide el operador reportado. Abre la app correcta antes de despachar desde aquí.`),
-                      (I = 'open'),
-                      (M = `Abrir Operador ${o.toUpperCase()}`),
+                      (T = 'open'),
+                      (I = `Abrir Operador ${o.toUpperCase()}`),
                       (B = _ || q || $),
                       (R = B
                           ? `${B.ticketCode} · ${Ks(B, 'waiting')}`
@@ -18344,36 +18344,36 @@ function Il(e, t, a) {
                       ? ((L = 'warning'),
                         (A = 'Operador en otra estación'),
                         (E = `${o.toUpperCase()} sin operador dedicado`),
-                        (T = `El operador vivo no coincide con ${o.toUpperCase()}. Deja abierto el consultorio correcto antes de que vuelva a entrar cola.`),
-                        (I = 'open'),
-                        (M = `Abrir Operador ${o.toUpperCase()}`))
+                        (M = `El operador vivo no coincide con ${o.toUpperCase()}. Deja abierto el consultorio correcto antes de que vuelva a entrar cola.`),
+                        (T = 'open'),
+                        (I = `Abrir Operador ${o.toUpperCase()}`))
                       : s && l
                         ? ((L = 'ready'),
                           (A = 'Equipo listo'),
                           (E = `${o.toUpperCase()} preparado para el próximo ticket`),
-                          (T = `No hay turno esperando ahora, pero ${o.toUpperCase()} ya tiene operador, numpad y heartbeat listos para absorber el siguiente ingreso.`),
-                          (I = 'open'),
-                          (M = `Abrir Operador ${o.toUpperCase()}`))
+                          (M = `No hay turno esperando ahora, pero ${o.toUpperCase()} ya tiene operador, numpad y heartbeat listos para absorber el siguiente ingreso.`),
+                          (T = 'open'),
+                          (I = `Abrir Operador ${o.toUpperCase()}`))
                         : s &&
                           c &&
                           ((L = 'warning'),
                           (A = 'Pendiente de validar'),
                           (E = `${o.toUpperCase()} todavía no está listo`),
-                          (T = `${o.toUpperCase()} no puede absorber la siguiente demanda todavía: ${c}`),
-                          (I = 'open'),
-                          (M = `Abrir Operador ${o.toUpperCase()}`)),
+                          (M = `${o.toUpperCase()} no puede absorber la siguiente demanda todavía: ${c}`),
+                          (T = 'open'),
+                          (I = `Abrir Operador ${o.toUpperCase()}`)),
         {
             slot: i,
             slotKey: o,
             state: L,
             badge: A,
             headline: E,
-            detail: T,
+            detail: M,
             targetTicketId: Number(B?.id || 0),
             targetTicketCode: String(B?.ticketCode || ''),
             targetLabel: R,
-            primaryAction: I,
-            primaryLabel: M,
+            primaryAction: T,
+            primaryLabel: I,
             operatorUrl: d,
             queueMixLabel: `${o.toUpperCase()} ${S} · General ${C}`,
             backlogLabel: `C${f} ${w} · Heartbeat ${g}`,
@@ -18381,7 +18381,7 @@ function Il(e, t, a) {
         }
     );
 }
-function Ml(e) {
+function Il(e) {
     return 'call' === e.primaryAction
         ? {
               title: `Despacho ${e.slotKey.toUpperCase()}: llamado rápido`,
@@ -18423,7 +18423,7 @@ async function Bl(e, t, a, n = {}) {
                             ? n.source
                             : 'dispatch',
                     tone: 'rebalance' === e.primaryAction ? 'warning' : 'info',
-                    ...Ml(e),
+                    ...Il(e),
                 }));
         } catch (e) {
             s('No se pudo ejecutar el despacho sugerido', 'error');
@@ -18751,7 +18751,7 @@ function Nl(t, a) {
             applyOpeningChecklistSuggestions: fo,
             appendOpsLogEntry: Lo,
             getInstallPresetLabel: ro,
-            renderQueueFocusMode: Ts,
+            renderQueueFocusMode: Ms,
             renderQueueQuickConsole: Nl,
             renderQueuePlaybook: Ol,
             renderQueueOpsPilot: Yo,
@@ -18939,15 +18939,15 @@ function jl(e, t) {
                         incidents: C,
                         closing: A,
                     }[d.mode] || {},
-                T = d.steps
+                M = d.steps
                     .filter(
                         (e) => !d.modeState[e.id] && Boolean(E[e.id]?.suggested)
                     )
                     .map((e) => e.id);
             return {
                 suggestions: E,
-                suggestedIds: T,
-                suggestedCount: T.length,
+                suggestedIds: M,
+                suggestedCount: M.length,
                 incidentOpen: w,
             };
         })(e, t, a);
@@ -19163,7 +19163,7 @@ function xl(t, a) {
                                 steps: { ...a.steps, [e]: Boolean(t) },
                             });
                     })(n, !bo().steps[n]),
-                        Ts(t, a),
+                        Ms(t, a),
                         Nl(t, a),
                         Ol(t, a),
                         Yo(t, a),
@@ -19182,7 +19182,7 @@ function xl(t, a) {
                     title: `Apertura: ${s.suggestedIds.length} sugerido(s) confirmados`,
                     summary: `El checklist de apertura quedó actualizado usando telemetría reciente. Perfil activo: ${ro(a)}.`,
                 }),
-                Ts(t, a),
+                Ms(t, a),
                 Nl(t, a),
                 Ol(t, a),
                 Yo(t, a),
@@ -19201,7 +19201,7 @@ function xl(t, a) {
                     summary:
                         'Se limpiaron las confirmaciones de apertura del día para volver a validar operador, kiosco, sala y smoke final.',
                 }),
-                Ts(t, a),
+                Ms(t, a),
                 Nl(t, a),
                 Ol(t, a),
                 Yo(t, a),
@@ -19312,7 +19312,7 @@ function Hl(t, a) {
                     summary:
                         'El cierre del día quedó marcado con pasos validados por telemetría para operador, kiosco y sala.',
                 }),
-                Ts(t, a),
+                Ms(t, a),
                 Nl(t, a),
                 Ol(t, a),
                 Hl(t, a),
@@ -19329,7 +19329,7 @@ function Hl(t, a) {
                     summary:
                         'Se limpiaron las marcas de cierre del día para rehacer el relevo con estado fresco.',
                 }),
-                Ts(t, a),
+                Ms(t, a),
                 Nl(t, a),
                 Ol(t, a),
                 Hl(t, a),
@@ -19347,7 +19347,7 @@ function Hl(t, a) {
                                 steps: { ...a.steps, [e]: Boolean(t) },
                             });
                     })(n, !ko().steps[n]),
-                        Ts(t, a),
+                        Ms(t, a),
                         Nl(t, a),
                         Ol(t, a),
                         Hl(t, a));
@@ -19637,7 +19637,7 @@ function Ul(e, t) {
     const a = Fi();
     (xs(e, t),
         Ps(e, t),
-        'expert' === a ? Os(e, t) : (js(), Ms('queueAppDownloadsCards')),
+        'expert' === a ? Os(e, t) : (js(), Is('queueAppDownloadsCards')),
         Ns(a),
         gn(),
         Ds(a),
@@ -19742,7 +19742,7 @@ function Kl(e = {}) {
                 o
             );
         })(e);
-        return !!t && ((An = t), (Tn = !0), !0);
+        return !!t && ((An = t), (Mn = !0), !0);
     })(g().data.appDownloads) ||
         ((i = () => {
             Kl({
@@ -19753,7 +19753,7 @@ function Kl(e = {}) {
                         : '',
             });
         }),
-        Tn
+        Mn
             ? Promise.resolve(An)
             : null !== En ||
               ('undefined' == typeof window || 'function' != typeof window.fetch
@@ -19768,8 +19768,8 @@ function Kl(e = {}) {
                                 throw new Error(`registry_http_${e.status}`);
                             return e.json();
                         })
-                        .then((e) => ((An = Ln(e)), (Tn = !0), i(), An))
-                        .catch(() => ((Tn = !0), An))
+                        .then((e) => ((An = Ln(e)), (Mn = !0), i(), An))
+                        .catch(() => ((Mn = !0), An))
                         .finally(() => {
                             En = null;
                         }))));
@@ -19794,7 +19794,7 @@ function Kl(e = {}) {
         ko(),
         Co(),
         Eo(),
-        To(),
+        Mo(),
         Bo(),
         Do(),
         Vi());
@@ -19832,7 +19832,7 @@ function Kl(e = {}) {
     const d = Fi();
     (xs(u, s),
         Ps(u, s),
-        'expert' === d ? Os(u, s) : (js(), Ms('queueAppDownloadsCards')),
+        'expert' === d ? Os(u, s) : (js(), Is('queueAppDownloadsCards')),
         Ns(d),
         gn(),
         Ds(d),
@@ -20024,7 +20024,7 @@ function yc(t = () => {}) {
     })();
     const a = g(),
         { queueMeta: n } = Ea(),
-        i = Ma(),
+        i = Ia(),
         o = Ra(),
         s = Na(),
         c = ja(a.queue.stationConsultorio);
@@ -20291,7 +20291,7 @@ function kc(e) {
     hc(a.includes(t) ? a.filter((e) => e !== t) : [...a, t]);
 }
 function _c() {
-    hc(Ma().map((e) => Number(e.id || 0)));
+    hc(Ia().map((e) => Number(e.id || 0)));
 }
 function qc() {
     hc([]);
@@ -20375,7 +20375,7 @@ var Ec = Object.freeze({
     toggleQueueTicketSelection: kc,
     updateQueueUi: wc,
 });
-function Tc(e, t) {
+function Mc(e, t) {
     const a = pa(t.createdAt, t.created_at, e?.createdAt, e?.created_at),
         n = pa(
             t.priorityClass,
@@ -20409,7 +20409,7 @@ function Tc(e, t) {
         patientInitials: o,
     };
 }
-function Ic(e, t = {}) {
+function Tc(e, t = {}) {
     const { queueState: a, payloadTicket: n } = (function (e) {
         const t =
                 e?.data?.queueState ||
@@ -20582,7 +20582,7 @@ function Ic(e, t = {}) {
                 for (const a of t) {
                     const t = wa(a),
                         n = e.get(t) || null;
-                    e.set(t, ya(Tc(n, a), e.size));
+                    e.set(t, ya(Mc(n, a), e.size));
                 }
                 if (a && 'object' == typeof a) {
                     const t = wa(ya(a, e.size)),
@@ -20607,7 +20607,7 @@ function Ic(e, t = {}) {
             }
         ));
 }
-function Mc() {
+function Ic() {
     return lc(ac, sc(), null, (e) => (e && 'object' == typeof e ? e : null));
 }
 function Bc(e, t = '') {
@@ -20623,10 +20623,10 @@ function Bc(e, t = '') {
 }
 async function Rc() {
     try {
-        (Ic(await j('queue-state'), { syncMode: 'live' }),
+        (Tc(await j('queue-state'), { syncMode: 'live' }),
             vc('Queue refresh realizado'));
     } catch (e) {
-        (vc('Queue refresh con error'), Bc(Mc()));
+        (vc('Queue refresh con error'), Bc(Ic()));
     }
 }
 async function Nc() {
@@ -20651,7 +20651,7 @@ async function Nc() {
           })(t) ||
           (await Rc(),
           (g().data.queueTickets || []).length ||
-              Bc(Mc(), 'Queue fallback desde snapshot local') ||
+              Bc(Ic(), 'Queue fallback desde snapshot local') ||
               $c([], null, { fallbackPartial: !1, syncMode: 'live' }));
 }
 const Dc = 'appointments',
@@ -21230,7 +21230,7 @@ async function wu({ ticketId: e, action: t, consultorio: a }) {
     const n = Number(e || 0),
         i = la(t);
     if (n && i) {
-        if (!I('queue-ticket-action'))
+        if (!T('queue-ticket-action'))
             return g().queue.practiceMode
                 ? ((function (e, t, a) {
                       'reasignar' !== t && 're-llamar' !== t
@@ -21244,7 +21244,7 @@ async function wu({ ticketId: e, action: t, consultorio: a }) {
                           : Su(e, 'called', 2 === Number(a || 1) ? 2 : 1);
                   })(n, i, a),
                   void vc(`Practica: accion ${i} en ticket ${n}`))
-                : (Ic(
+                : (Tc(
                       await j('queue-ticket', {
                           method: 'PATCH',
                           body: {
@@ -21256,7 +21256,7 @@ async function wu({ ticketId: e, action: t, consultorio: a }) {
                       { syncMode: 'live', bumpRuntimeRevision: !0 }
                   ),
                   void vc(`Accion ${i} ticket ${n}`));
-        M();
+        I();
     }
 }
 function Cu(e) {
@@ -21297,7 +21297,7 @@ function Eu(e) {
     }
     return '';
 }
-async function Tu({
+async function Mu({
     helpRequestId: e,
     ticketId: t,
     status: a,
@@ -21460,18 +21460,18 @@ async function Tu({
     (o > 0 && (r.id = o),
         s > 0 && (r.ticketId = s),
         n && 'object' == typeof n && Object.keys(n).length && (r.context = n),
-        Ic(await j('queue-help-request', { method: 'PATCH', body: r }), {
+        Tc(await j('queue-help-request', { method: 'PATCH', body: r }), {
             syncMode: 'live',
             bumpRuntimeRevision: !0,
         }));
     const l = Eu(n) ? ` · ${Eu(n)}` : '';
     vc(`Apoyo ${Lu(i)} ${s || o}${l}`);
 }
-async function Iu(e) {
+async function Tu(e) {
     const t = 2 === Number(e || 0) ? 2 : 1,
         a = g();
     if (!nc.get(t))
-        if (I('queue-call-next')) M();
+        if (T('queue-call-next')) I();
         else {
             if (
                 'locked' === a.queue.stationMode &&
@@ -21500,7 +21500,7 @@ async function Iu(e) {
             }
             nc.set(t, !0);
             try {
-                (Ic(
+                (Tc(
                     await j('queue-call-next', {
                         method: 'POST',
                         body: { consultorio: t },
@@ -21516,17 +21516,17 @@ async function Iu(e) {
             }
         }
 }
-async function Mu(e, t, a = 0) {
+async function Iu(e, t, a = 0) {
     const n = {
         ticketId: Number(e || 0),
         action: la(t),
         consultorio: Number(a || 0),
     };
-    if (I('queue-ticket-action')) return void M();
+    if (T('queue-ticket-action')) return void I();
     if ('atender_apoyo' === n.action)
-        return void (await Tu({ ticketId: n.ticketId, status: 'attending' }));
+        return void (await Mu({ ticketId: n.ticketId, status: 'attending' }));
     if ('resolver_apoyo' === n.action)
-        return void (await Tu({ ticketId: n.ticketId, status: 'resolved' }));
+        return void (await Mu({ ticketId: n.ticketId, status: 'resolved' }));
     const i = g(),
         o = Da(n.ticketId);
     if (
@@ -21550,7 +21550,7 @@ async function Bu(e) {
     const t = 2 === Number(e || 0) ? 2 : 1,
         a = ja(t);
     a
-        ? await Mu(a.id, 'liberar', t)
+        ? await Iu(a.id, 'liberar', t)
         : vc(`Sin ticket activo para liberar en C${t}`);
 }
 async function Ru() {
@@ -21573,7 +21573,7 @@ function Du() {
     );
 }
 async function ju(e) {
-    if (I('queue-bulk-action')) return void M();
+    if (T('queue-bulk-action')) return void I();
     const t = Na(),
         a = la(e);
     if (t.length) {
@@ -21604,15 +21604,15 @@ async function ju(e) {
 async function Pu(e) {
     const t = Number(e || 0);
     t &&
-        (I('queue-reprint-ticket')
-            ? M()
+        (T('queue-reprint-ticket')
+            ? I()
             : g().queue.practiceMode
               ? vc(`Practica: reprint ticket ${t}`)
               : (await j('queue-reprint', { method: 'POST', body: { id: t } }),
                 vc(`Reimpresion ticket ${t}`)));
 }
 async function Ou() {
-    if (I('queue-bulk-reprint')) return void M();
+    if (T('queue-bulk-reprint')) return void I();
     const e = Na();
     for (const t of e)
         try {
@@ -21622,7 +21622,7 @@ async function Ou() {
 }
 var xu = Object.freeze({
     __proto__: null,
-    callNextForConsultorio: Iu,
+    callNextForConsultorio: Tu,
     cancelQueueSensitiveAction: Nu,
     confirmQueueSensitiveAction: Ru,
     dismissQueueSensitiveDialog: Du,
@@ -21630,15 +21630,15 @@ var xu = Object.freeze({
     runQueueBulkAction: ju,
     runQueueBulkReprint: Ou,
     runQueueReleaseStation: Bu,
-    runQueueTicketAction: Mu,
-    updateQueueHelpRequestStatus: Tu,
+    runQueueTicketAction: Iu,
+    updateQueueHelpRequestStatus: Mu,
 });
 function Hu() {
     wc({ helpOpen: !g().queue.helpOpen });
 }
 function Fu(e) {
-    if (I(Boolean(e) ? 'queue-start-practice' : 'queue-stop-practice'))
-        return void M();
+    if (T(Boolean(e) ? 'queue-start-practice' : 'queue-stop-practice'))
+        return void I();
     const t = Boolean(e);
     (wc({ practiceMode: t, pendingSensitiveAction: null }),
         vc(t ? 'Modo practica activo' : 'Modo practica desactivado'));
@@ -21678,7 +21678,7 @@ async function Ku(e) {
             );
         })(e, t.queue.customCallKey)
     )
-        return void (await Iu(t.queue.stationConsultorio));
+        return void (await Tu(t.queue.stationConsultorio));
     const a = sa(e.code),
         n = sa(e.key),
         i = (function (e, t, a) {
@@ -21699,7 +21699,7 @@ async function Ku(e) {
     if (!o)
         return i
             ? (t.queue.oneTap && Uu(t) && (await Ru()),
-              void (await Iu(t.queue.stationConsultorio)))
+              void (await Tu(t.queue.stationConsultorio)))
             : void ((function (e, t) {
                   return (
                       'numpaddecimal' === e ||
@@ -21734,7 +21734,7 @@ async function Ku(e) {
                       (await (async function (e) {
                           const t = Oa();
                           t &&
-                              (await Mu(
+                              (await Iu(
                                   t.id,
                                   're-llamar',
                                   e.queue.stationConsultorio
@@ -22244,7 +22244,7 @@ function Ed(e) {
         updatedAt: wd(t.updatedAt),
     };
 }
-function Td(e) {
+function Md(e) {
     const t = e && 'object' == typeof e ? e : {};
     return {
         eventId: wd(t.eventId),
@@ -22273,7 +22273,7 @@ function Td(e) {
         resolvedAt: wd(t.resolvedAt),
     };
 }
-function Id(e) {
+function Td(e) {
     const t = e && 'object' == typeof e ? e : {},
         a = t.summary && 'object' == typeof t.summary ? t.summary : {},
         n = a.sessions && 'object' == typeof a.sessions ? a.sessions : {},
@@ -22320,7 +22320,7 @@ function Id(e) {
             },
         },
         reviewQueue: Sd(t.reviewQueue).map(Ed),
-        events: Sd(t.events).map(Td),
+        events: Sd(t.events).map(Md),
         diagnostics: {
             status: wd(s.status || 'unknown'),
             healthy: !0 === s.healthy,
@@ -22334,10 +22334,10 @@ function Id(e) {
         },
     };
 }
-function Md(e) {
+function Id(e) {
     const t = {
         ...gd(e),
-        clinicalHistoryMeta: Id(e?.data?.clinicalHistoryMeta),
+        clinicalHistoryMeta: Td(e?.data?.clinicalHistoryMeta),
         whatsappOpenclawOps: Ad(e?.data?.whatsappOpenclawOps),
     };
     var a;
@@ -23021,17 +23021,55 @@ function Md(e) {
         l(
             '#dashboardClinicalHistoryActions',
             (function (e) {
-                const t = Array.isArray(e?.reviewQueue) ? e.reviewQueue : [],
-                    a = Array.isArray(e?.events) ? e.events : [],
-                    n =
-                        e?.summary && 'object' == typeof e.summary
-                            ? e.summary
+                const {
+                        snapshot: t,
+                        telemedicineMeta: a,
+                        patientFlowMeta: n,
+                        internalConsoleMeta: i,
+                    } = (function (e) {
+                        return e &&
+                            'object' == typeof e &&
+                            e.clinicalHistoryMeta
+                            ? {
+                                  snapshot:
+                                      e.clinicalHistoryMeta &&
+                                      'object' == typeof e.clinicalHistoryMeta
+                                          ? e.clinicalHistoryMeta
+                                          : {},
+                                  telemedicineMeta:
+                                      e.telemedicineMeta &&
+                                      'object' == typeof e.telemedicineMeta
+                                          ? e.telemedicineMeta
+                                          : {},
+                                  patientFlowMeta:
+                                      e.patientFlowMeta &&
+                                      'object' == typeof e.patientFlowMeta
+                                          ? e.patientFlowMeta
+                                          : {},
+                                  internalConsoleMeta:
+                                      e.internalConsoleMeta &&
+                                      'object' == typeof e.internalConsoleMeta
+                                          ? e.internalConsoleMeta
+                                          : {},
+                              }
+                            : {
+                                  snapshot: e && 'object' == typeof e ? e : {},
+                                  telemedicineMeta: {},
+                                  patientFlowMeta: {},
+                                  internalConsoleMeta: {},
+                              };
+                    })(e),
+                    o = Array.isArray(t?.reviewQueue) ? t.reviewQueue : [],
+                    s = Array.isArray(t?.events) ? t.events : [],
+                    r =
+                        t?.summary && 'object' == typeof t.summary
+                            ? t.summary
                             : {},
-                    i = [];
+                    l = [];
                 if (
-                    (t.slice(0, 2).forEach((e, t) => {
+                    (o.slice(0, 2).forEach((e, t) => {
                         e?.sessionId &&
-                            i.push(
+                            l.push(
                                 ud(
                                     'context-open-clinical-history',
                                     (function (e, t) {
@@ -23050,13 +23088,13 @@ function Md(e) {
                                 )
                             );
                     }),
-                    0 === i.length)
+                    0 === l.length)
                 ) {
-                    const e = a.find(
+                    const e = s.find(
                         (e) => '' !== String(e?.sessionId || '').trim()
                     );
                     e?.sessionId &&
-                        i.push(
+                        l.push(
                             ud(
                                 'context-open-clinical-history',
                                 'Abrir ultimo evento',
@@ -23065,22 +23103,48 @@ function Md(e) {
                             )
                         );
                 }
-                const o = Number(n?.drafts?.pendingAiCount || 0),
-                    s = Number(n?.events?.unreadCount || 0);
+                if (0 === l.length) {
+                    const e = Number(a?.summary?.reviewQueueCount || 0),
+                        t = Number(n?.pendingApprovals || 0),
+                        o = Number(n?.activeHelpRequests || 0),
+                        s = !1 !== i?.clinicalData?.ready;
+                    e > 0
+                        ? l.push(
+                              ud(
+                                  'context-open-clinical-history',
+                                  'Abrir frente clinico',
+                                  s
+                                      ? `${e} intake(s) telemedicina pendientes de revision`
+                                      : `${e} intake(s) telemedicina pausados por gate clinico`
+                              )
+                          )
+                        : (t > 0 || o > 0) &&
+                          l.push(
+                              ud(
+                                  'context-open-clinical-history',
+                                  'Abrir frente clinico',
+                                  t > 0
+                                      ? `${t} aprobacion(es) pendientes en patient flow`
+                                      : `${o} apoyo(s) activo(s) vinculados al patient flow`
+                              )
+                          );
+                }
+                const c = Number(r?.drafts?.pendingAiCount || 0),
+                    u = Number(r?.events?.unreadCount || 0);
                 return (
-                    (o > 0 || s > 0) &&
-                        i.push(
+                    (c > 0 || u > 0) &&
+                        l.push(
                             nd(
                                 'refresh-admin-data',
                                 'Actualizar snapshot',
-                                o > 0
-                                    ? `${o} borrador(es) siguen en reconciliacion`
-                                    : `${s} evento(s) clinicos sin leer`
+                                c > 0
+                                    ? `${c} borrador(es) siguen en reconciliacion`
+                                    : `${u} evento(s) clinicos sin leer`
                             )
                         ),
-                    i.slice(0, 3).join('')
+                    l.slice(0, 3).join('')
                 );
-            })(t.clinicalHistoryMeta)
+            })(t)
         ),
         l(
             '#dashboardClinicalReviewQueue',
@@ -23578,7 +23642,7 @@ function Md(e) {
                                         })(e)
                                     );
                                     (await mu(),
-                                        Md(g()),
+                                        Id(g()),
                                         s(
                                             (function (e, t) {
                                                 switch (e) {
@@ -24929,10 +24993,10 @@ function Ep(e, t) {
         .join(' • ');
     var i;
 }
-function Tp(t, a, n, i = 'neutral') {
+function Mp(t, a, n, i = 'neutral') {
     return `\n        <article class="clinical-history-stat-card" data-tone="${e(i)}">\n            <span>${e(t)}</span>\n            <strong>${e(a)}</strong>\n            <small>${e(n)}</small>\n        </article>\n    `;
 }
-function Ip(t, a, n, i = {}) {
+function Tp(t, a, n, i = {}) {
     const {
         placeholder: o = '',
         rows: s = 4,
@@ -24941,7 +25005,7 @@ function Ip(t, a, n, i = {}) {
     } = i;
     return `\n        <label class="clinical-history-field" for="${e(t)}">\n            <span>${e(a)}</span>\n            <textarea\n                id="${e(t)}"\n                name="${e(t)}"\n                rows="${Number(s) || 4}"\n                placeholder="${e(o)}"\n                ${l ? 'disabled' : ''}\n            >${e(n)}</textarea>\n            ${r ? `<small>${e(r)}</small>` : '<small>&nbsp;</small>'}\n        </label>\n    `;
 }
-function Mp(t, a, n, i = {}) {
+function Ip(t, a, n, i = {}) {
     const {
         type: o = 'text',
         placeholder: s = '',
@@ -25236,7 +25300,7 @@ async function Op(e, t) {
         } catch (e) {}
         return (
             re(g()),
-            Md(g()),
+            Id(g()),
             Up(),
             s(
                 'approve' === e
@@ -25378,13 +25442,13 @@ function Up() {
                         a.clinicianDraft.preguntasFaltantes.length ||
                         a.intake.preguntasFaltantes.length;
                 return [
-                    Tp(
+                    Mp(
                         'Paciente',
                         $p(e),
                         t.email || t.phone || 'Sin contacto documentado'
                     ),
-                    Tp('Estado', fp(a.reviewStatus), n || o, i),
-                    Tp(
+                    Mp('Estado', fp(a.reviewStatus), n || o, i),
+                    Mp(
                         'Guardrails',
                         a.requiresHumanReview ? 'Revisar' : 'Listo',
                         a.reviewReasons.length > 0
@@ -25392,12 +25456,12 @@ function Up() {
                             : 'Sin bloqueo determinista activo',
                         a.requiresHumanReview ? 'warning' : 'success'
                     ),
-                    Tp(
+                    Mp(
                         'Paciente facts',
                         vp(a.confidence),
                         Ep(t, a.intake) || 'Sin datos clinicos base'
                     ),
-                    Tp(
+                    Mp(
                         'Preguntas',
                         String(s),
                         s > 0
@@ -25405,7 +25469,7 @@ function Up() {
                             : 'Sin preguntas abiertas',
                         s > 0 ? 'warning' : 'success'
                     ),
-                    Tp(
+                    Mp(
                         'Actividad',
                         qp(
                             e.session.lastMessageAt ||
@@ -25538,7 +25602,7 @@ function Up() {
                               : '';
                 var i;
                 const o = e.reviewReasons.join(', ');
-                return `\n        <div class="clinical-history-form-grid">\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Intake estructurado</h4>\n                    <p>Motivo de consulta, evolucion y datos del paciente.</p>\n                </header>\n                ${Mp('intake_motivo_consulta', 'Motivo de consulta', e.intake.motivoConsulta, { placeholder: 'Ej. prurito, acne inflamatorio, rash', disabled: a })}\n                ${Ip('intake_enfermedad_actual', 'Enfermedad actual', e.intake.enfermedadActual, { rows: 5, placeholder: 'Evolucion temporal, distribucion, desencadenantes.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Ip('intake_antecedentes', 'Antecedentes', e.intake.antecedentes, { rows: 4, placeholder: 'Dermatologicos, familiares, cronicos.', disabled: a })}\n                    ${Ip('intake_alergias', 'Alergias', e.intake.alergias, { rows: 4, placeholder: 'Medicamentos, alimentos, contacto.', disabled: a })}\n                </div>\n                <div class="clinical-history-inline-grid">\n                    ${Ip('intake_medicacion_actual', 'Medicacion actual', e.intake.medicacionActual, { rows: 4, placeholder: 'Nombre, dosis, frecuencia.', disabled: a })}\n                    ${Ip('intake_ros_red_flags', 'ROS / red flags', kp(e.intake.rosRedFlags), { rows: 4, placeholder: 'Una linea por dato clinico o red flag.', hint: 'Cada linea se guarda como item separado.', disabled: a })}\n                </div>\n                ${Ip('intake_resumen_clinico', 'Resumen clinico', e.intake.resumenClinico, { rows: 4, placeholder: 'Resumen limpio para pasar a la consulta.', disabled: a })}\n                ${Ip('intake_preguntas_faltantes', 'Preguntas faltantes del intake', kp(e.intake.preguntasFaltantes), { rows: 3, placeholder: 'Una pregunta por linea.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Mp('patient_edad_anios', 'Edad (anos)', e.intake.datosPaciente.edadAnios ?? '', { type: 'number', min: '0', step: '1', disabled: a })}\n                    ${Mp('patient_peso_kg', 'Peso (kg)', e.intake.datosPaciente.pesoKg ?? '', { type: 'number', min: '0', step: '0.1', disabled: a })}\n                    ${Rp(
+                return `\n        <div class="clinical-history-form-grid">\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Intake estructurado</h4>\n                    <p>Motivo de consulta, evolucion y datos del paciente.</p>\n                </header>\n                ${Ip('intake_motivo_consulta', 'Motivo de consulta', e.intake.motivoConsulta, { placeholder: 'Ej. prurito, acne inflamatorio, rash', disabled: a })}\n                ${Tp('intake_enfermedad_actual', 'Enfermedad actual', e.intake.enfermedadActual, { rows: 5, placeholder: 'Evolucion temporal, distribucion, desencadenantes.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Tp('intake_antecedentes', 'Antecedentes', e.intake.antecedentes, { rows: 4, placeholder: 'Dermatologicos, familiares, cronicos.', disabled: a })}\n                    ${Tp('intake_alergias', 'Alergias', e.intake.alergias, { rows: 4, placeholder: 'Medicamentos, alimentos, contacto.', disabled: a })}\n                </div>\n                <div class="clinical-history-inline-grid">\n                    ${Tp('intake_medicacion_actual', 'Medicacion actual', e.intake.medicacionActual, { rows: 4, placeholder: 'Nombre, dosis, frecuencia.', disabled: a })}\n                    ${Tp('intake_ros_red_flags', 'ROS / red flags', kp(e.intake.rosRedFlags), { rows: 4, placeholder: 'Una linea por dato clinico o red flag.', hint: 'Cada linea se guarda como item separado.', disabled: a })}\n                </div>\n                ${Tp('intake_resumen_clinico', 'Resumen clinico', e.intake.resumenClinico, { rows: 4, placeholder: 'Resumen limpio para pasar a la consulta.', disabled: a })}\n                ${Tp('intake_preguntas_faltantes', 'Preguntas faltantes del intake', kp(e.intake.preguntasFaltantes), { rows: 3, placeholder: 'Una pregunta por linea.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Ip('patient_edad_anios', 'Edad (anos)', e.intake.datosPaciente.edadAnios ?? '', { type: 'number', min: '0', step: '1', disabled: a })}\n                    ${Ip('patient_peso_kg', 'Peso (kg)', e.intake.datosPaciente.pesoKg ?? '', { type: 'number', min: '0', step: '0.1', disabled: a })}\n                    ${Rp(
                     'patient_sexo_biologico',
                     'Sexo biologico',
                     e.intake.datosPaciente.sexoBiologico,
@@ -25559,7 +25623,7 @@ function Up() {
                         { value: 'yes', label: 'Si' },
                     ],
                     { disabled: a }
-                )}\n                </div>\n            </section>\n\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Sintesis del medico</h4>\n                    <p>Bloque solo interno: resumen, CIE-10, plan y guardrails.</p>\n                </header>\n                ${Ip('clinician_resumen', 'Resumen medico', e.clinicianDraft.resumen, { rows: 4, placeholder: 'Sintesis final para presentar o firmar.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Ip('clinician_preguntas_faltantes', 'Preguntas faltantes', kp(e.clinicianDraft.preguntasFaltantes), { rows: 4, placeholder: 'Una linea por pregunta.', disabled: a })}\n                    ${Ip('clinician_cie10', 'CIE-10 sugeridos', kp(e.clinicianDraft.cie10Sugeridos), { rows: 4, placeholder: 'Ej. L20.9', disabled: a })}\n                </div>\n                ${Ip('clinician_tratamiento', 'Tratamiento borrador', e.clinicianDraft.tratamientoBorrador, { rows: 4, placeholder: 'No se muestra al paciente; requiere firma humana.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Ip('posologia_texto', 'Posologia borrador', e.clinicianDraft.posologiaBorrador.texto, { rows: 4, placeholder: 'Ej. 1 comp cada 12 h por 7 dias.', disabled: a })}\n                    ${Ip('posologia_base_calculo', 'Base de calculo', e.clinicianDraft.posologiaBorrador.baseCalculo, { rows: 4, placeholder: 'Regla, mg/kg, fuente o criterio.', disabled: a })}\n                </div>\n                <div class="clinical-history-inline-grid">\n                    ${Mp('posologia_peso_kg', 'Peso usado (kg)', e.clinicianDraft.posologiaBorrador.pesoKg ?? '', { type: 'number', min: '0', step: '0.1', disabled: a })}\n                    ${Mp('posologia_edad_anios', 'Edad usada (anos)', e.clinicianDraft.posologiaBorrador.edadAnios ?? '', { type: 'number', min: '0', step: '1', disabled: a })}\n                    ${Mp('posologia_units', 'Unidades', e.clinicianDraft.posologiaBorrador.units, { placeholder: 'mg, mg/kg/dia, ml', disabled: a })}\n                </div>\n                ${Bp('posologia_ambiguous', 'La posologia sigue ambigua', !0 === e.clinicianDraft.posologiaBorrador.ambiguous, { hint: 'Mantiene el caso en revisado con cautela.', disabled: a })}\n                ${Bp('requires_human_review', 'Requiere revision humana', !0 === e.requiresHumanReview, { hint: o || 'Toda aprobacion final sigue siendo humana.', disabled: a })}\n            </section>\n        </div>\n    `;
+                )}\n                </div>\n            </section>\n\n            <section class="clinical-history-form-section">\n                <header>\n                    <h4>Sintesis del medico</h4>\n                    <p>Bloque solo interno: resumen, CIE-10, plan y guardrails.</p>\n                </header>\n                ${Tp('clinician_resumen', 'Resumen medico', e.clinicianDraft.resumen, { rows: 4, placeholder: 'Sintesis final para presentar o firmar.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Tp('clinician_preguntas_faltantes', 'Preguntas faltantes', kp(e.clinicianDraft.preguntasFaltantes), { rows: 4, placeholder: 'Una linea por pregunta.', disabled: a })}\n                    ${Tp('clinician_cie10', 'CIE-10 sugeridos', kp(e.clinicianDraft.cie10Sugeridos), { rows: 4, placeholder: 'Ej. L20.9', disabled: a })}\n                </div>\n                ${Tp('clinician_tratamiento', 'Tratamiento borrador', e.clinicianDraft.tratamientoBorrador, { rows: 4, placeholder: 'No se muestra al paciente; requiere firma humana.', disabled: a })}\n                <div class="clinical-history-inline-grid">\n                    ${Tp('posologia_texto', 'Posologia borrador', e.clinicianDraft.posologiaBorrador.texto, { rows: 4, placeholder: 'Ej. 1 comp cada 12 h por 7 dias.', disabled: a })}\n                    ${Tp('posologia_base_calculo', 'Base de calculo', e.clinicianDraft.posologiaBorrador.baseCalculo, { rows: 4, placeholder: 'Regla, mg/kg, fuente o criterio.', disabled: a })}\n                </div>\n                <div class="clinical-history-inline-grid">\n                    ${Ip('posologia_peso_kg', 'Peso usado (kg)', e.clinicianDraft.posologiaBorrador.pesoKg ?? '', { type: 'number', min: '0', step: '0.1', disabled: a })}\n                    ${Ip('posologia_edad_anios', 'Edad usada (anos)', e.clinicianDraft.posologiaBorrador.edadAnios ?? '', { type: 'number', min: '0', step: '1', disabled: a })}\n                    ${Ip('posologia_units', 'Unidades', e.clinicianDraft.posologiaBorrador.units, { placeholder: 'mg, mg/kg/dia, ml', disabled: a })}\n                </div>\n                ${Bp('posologia_ambiguous', 'La posologia sigue ambigua', !0 === e.clinicianDraft.posologiaBorrador.ambiguous, { hint: 'Mantiene el caso en revisado con cautela.', disabled: a })}\n                ${Bp('requires_human_review', 'Requiere revision humana', !0 === e.requiresHumanReview, { hint: o || 'Toda aprobacion final sigue siendo humana.', disabled: a })}\n            </section>\n        </div>\n    `;
             })(o, n.saving)
         ),
         l(
@@ -25949,7 +26013,7 @@ const sm = {
         (await Xp('queue'), Cc('all'));
     },
     queue_call_next: async () => {
-        (await Xp('queue'), await Iu(g().queue.stationConsultorio));
+        (await Xp('queue'), await Tu(g().queue.stationConsultorio));
     },
 };
 async function rm(e) {
@@ -26196,8 +26260,8 @@ function hm(e = g()) {
                 Number.parseInt(String(e).replaceAll('-', ''), 10)
             )));
     } else if ('queue' === t) {
-        const t = Ia(
-                Ta(e.data.queueTickets || [], e.queue.filter),
+        const t = Ta(
+                Ma(e.data.queueTickets || [], e.queue.filter),
                 e.queue.search
             ),
             n = Number(e.queue.selected?.[0] || t[0]?.id || 0),
@@ -26609,7 +26673,7 @@ function Em(e) {
         .slice(0, 2);
     return t.length ? t.map((e) => e.charAt(0).toUpperCase()).join('') : 'AN';
 }
-function Tm(e, t = 220) {
+function Mm(e, t = 220) {
     const a = String(e || '').trim();
     return a
         ? a.length <= t
@@ -26617,7 +26681,7 @@ function Tm(e, t = 220) {
             : `${a.slice(0, t - 1).trim()}...`
         : 'Sin comentario escrito.';
 }
-function Im() {
+function Tm() {
     const t = g(),
         a = Array.isArray(t?.data?.reviews) ? t.data.reviews : [],
         n = (function (e) {
@@ -26735,7 +26799,7 @@ function Im() {
               '#reviewsSpotlight',
               (function (t) {
                   const a = t.item;
-                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${e(Em(a.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${e(t.eyebrow)}</small>\n                    <strong>${e(a.name || 'Anonimo')}</strong>\n                    <small>${e(i(a.date || a.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${e(Am(a.rating))}</p>\n            <p>${e(Tm(a.comment || a.review || '', 320))}</p>\n            <small>${e(t.summary)}</small>\n        </article>\n    `;
+                  return `\n        <article class="reviews-spotlight-card">\n            <div class="reviews-spotlight-top">\n                <span class="review-avatar">${e(Em(a.name || 'Anonimo'))}</span>\n                <div>\n                    <small>${e(t.eyebrow)}</small>\n                    <strong>${e(a.name || 'Anonimo')}</strong>\n                    <small>${e(i(a.date || a.createdAt || ''))}</small>\n                </div>\n            </div>\n            <p class="reviews-spotlight-stars">${e(Am(a.rating))}</p>\n            <p>${e(Mm(a.comment || a.review || '', 320))}</p>\n            <small>${e(t.summary)}</small>\n        </article>\n    `;
               })(u)
           )
         : l(
@@ -26761,7 +26825,7 @@ function Im() {
                                         : n <= 3
                                           ? 'Revisar posible friccion'
                                           : 'Resena util para contexto';
-                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${e(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${e(Em(t.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${e(t.name || 'Anonimo')}</strong>\n                        <small>${e(i(t.date || t.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${e(o)}">${e(Am(n))}</span>\n            </header>\n            <p>${e(Tm(t.comment || t.review || ''))}</p>\n            <small>${e(s)}</small>\n        </article>\n    `;
+                            return `\n        <article class="review-card${a ? ' is-featured' : ''}" data-rating="${e(String(n))}">\n            <header>\n                <div class="review-card-heading">\n                    <span class="review-avatar">${e(Em(t.name || 'Anonimo'))}</span>\n                    <div>\n                        <strong>${e(t.name || 'Anonimo')}</strong>\n                        <small>${e(i(t.date || t.createdAt || ''))}</small>\n                    </div>\n                </div>\n                <span class="review-rating-badge" data-tone="${e(o)}">${e(Am(n))}</span>\n            </header>\n            <p>${e(Mm(t.comment || t.review || ''))}</p>\n            <small>${e(s)}</small>\n        </article>\n    `;
                         })(t, {
                             featured:
                                 a.item &&
@@ -26773,7 +26837,7 @@ function Im() {
             })(n, u)
         ));
 }
-function Mm() {
+function Im() {
     const e = su();
     (r('#adminRefreshStatus', e),
         r(
@@ -26789,8 +26853,8 @@ async function Bm(e = !1) {
     return (
         (function () {
             const e = g(),
-                t = Mt(e.data.availability || {}),
-                a = Tt(e.availability.selectedDate, t);
+                t = It(e.data.availability || {}),
+                a = Mt(e.availability.selectedDate, t);
             (Kt({
                 draft: t,
                 selectedDate: a,
@@ -26802,14 +26866,14 @@ async function Bm(e = !1) {
         })(),
         t?.preservedQueueData || (await Nc()),
         re(g()),
-        Md(g()),
+        Id(g()),
         Up(),
         Ne(),
         ft(),
-        Im(),
+        Tm(),
         Ut(),
         yc(),
-        Mm(),
+        Im(),
         _m(),
         e &&
             s(
@@ -27460,7 +27524,7 @@ async function zm(e, t) {
             const e = String(t.dataset.reviewHelpRequestStatus || '').trim(),
                 a = Qm(t, e);
             return (
-                await Tu({
+                await Mu({
                     helpRequestId:
                         Number(t.dataset.reviewHelpRequestId || 0) || 0,
                     ticketId: Number(t.dataset.reviewTicketId || 0) || 0,
@@ -27493,7 +27557,7 @@ async function zm(e, t) {
         case 'appointment-review-confirm-appointment': {
             const e = Qm(t, 'resolved');
             return (
-                await Tu({
+                await Mu({
                     helpRequestId:
                         Number(t.dataset.reviewHelpRequestId || 0) || 0,
                     ticketId: Number(t.dataset.reviewTicketId || 0) || 0,
@@ -27828,7 +27892,7 @@ async function Vm(e, a) {
                         }),
                         a =
                             t?.data && 'object' == typeof t.data
-                                ? Mt(t.data)
+                                ? It(t.data)
                                 : e,
                         n =
                             t?.meta && 'object' == typeof t.meta
@@ -27867,8 +27931,8 @@ async function Vm(e, a) {
                         )
                     )
                         return;
-                    const t = Mt(e.data.availability || {}),
-                        a = Tt(e.availability.selectedDate, t);
+                    const t = It(e.data.availability || {}),
+                        a = Mt(e.availability.selectedDate, t);
                     Kt(
                         {
                             draft: t,
@@ -28074,15 +28138,15 @@ async function tg(e, t) {
         case 'queue-refresh-state':
             return (await Rc(), !0);
         case 'queue-call-next':
-            return (await Iu(Xm(t)), !0);
+            return (await Tu(Xm(t)), !0);
         case 'queue-release-station':
             return (await Bu(Xm(t)), !0);
         case 'queue-toggle-shortcuts':
             return (Hu(), !0);
         case 'queue-toggle-one-tap':
             return (
-                I('queue-toggle-one-tap')
-                    ? M()
+                T('queue-toggle-one-tap')
+                    ? I()
                     : wc({ oneTap: !g().queue.oneTap }),
                 !0
             );
@@ -28093,7 +28157,7 @@ async function tg(e, t) {
         case 'queue-lock-station':
             return (
                 (function (e) {
-                    if (I('queue-lock-station')) return void M();
+                    if (T('queue-lock-station')) return void I();
                     const t = 2 === Number(e || 0) ? 2 : 1;
                     (wc({ stationMode: 'locked', stationConsultorio: t }),
                         vc(`Estacion bloqueada en C${t}`));
@@ -28103,19 +28167,19 @@ async function tg(e, t) {
         case 'queue-set-station-mode':
             return (
                 (function (e) {
-                    if (!I('queue-set-station-mode'))
+                    if (!T('queue-set-station-mode'))
                         return 'free' === sa(e)
                             ? (wc({ stationMode: 'free' }),
                               void vc('Estacion en modo libre'))
                             : void wc({ stationMode: 'locked' });
-                    M();
+                    I();
                 })(String(t.dataset.queueMode || 'free')),
                 !0
             );
         case 'queue-capture-call-key':
             return (
-                I('queue-capture-call-key')
-                    ? M()
+                T('queue-capture-call-key')
+                    ? I()
                     : (wc({ captureCallKeyMode: !0 }),
                       s(
                           'Calibración activa: presiona la tecla externa',
@@ -28125,8 +28189,8 @@ async function tg(e, t) {
             );
         case 'queue-clear-call-key':
             return (
-                I('queue-clear-call-key')
-                    ? M()
+                T('queue-clear-call-key')
+                    ? I()
                     : window.confirm('¿Quitar tecla externa calibrada?') &&
                       (wc({ customCallKey: null, captureCallKeyMode: !1 }),
                       s('Tecla externa eliminada', 'success')),
@@ -28187,7 +28251,7 @@ async function og(e, t) {
             return (qc(), !0);
         case 'queue-ticket-action':
             return (
-                await Mu(
+                await Iu(
                     eg(t),
                     (function (e, t = '') {
                         return String(e?.dataset?.queueAction || t);
@@ -28201,7 +28265,7 @@ async function og(e, t) {
         case 'queue-help-request-status': {
             const e = String(t?.dataset?.queueHelpRequestStatus || '').trim();
             return (
-                await Tu({
+                await Mu({
                     helpRequestId:
                         Number(t?.dataset?.queueHelpRequestId || 0) || 0,
                     ticketId: eg(t),
@@ -28450,7 +28514,7 @@ async function og(e, t) {
     }
 }
 async function sg(e, t) {
-    if (I(e)) return (M(), !0);
+    if (T(e)) return (I(), !0);
     const a = [tg, og, Jm, Zm, Ym];
     for (const n of a) if (await n(e, t)) return !0;
     return !1;
@@ -28950,8 +29014,8 @@ async function lg() {
                             })(a, e, i);
                     !o ||
                         (!c() &&
-                            (I('queue-admin-numpad')
-                                ? (e.preventDefault(), M())
+                            (T('queue-admin-numpad')
+                                ? (e.preventDefault(), I())
                                 : Promise.resolve(
                                       t({
                                           key: e.key,
@@ -29036,7 +29100,7 @@ async function lg() {
                 }));
         })(),
         window.setInterval(() => {
-            Mm();
+            Im();
         }, 3e4));
 }
 const cg = (
