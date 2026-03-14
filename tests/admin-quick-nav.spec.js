@@ -15,6 +15,11 @@ function jsonResponse(route, payload, status = 200) {
     });
 }
 
+async function handleJsonResponse(route, payload, status = 200) {
+    await jsonResponse(route, payload, status);
+    return true;
+}
+
 function buildDataPayload() {
     return {
         ok: true,
@@ -59,7 +64,94 @@ function buildFunnelPayload() {
     };
 }
 
-async function setupAdminApiMocks(page) {
+function buildAgentStatusPayload(overrides = {}) {
+    return {
+        ok: true,
+        data: {
+            session: null,
+            outbox: [],
+            health: {
+                relay: {
+                    mode: 'disabled',
+                },
+                counts: {
+                    messages: 0,
+                    turns: 0,
+                    toolCalls: 0,
+                    pendingApprovals: 0,
+                    outboxQueued: 0,
+                    outboxTotal: 0,
+                },
+            },
+            tools: [],
+            ...overrides,
+        },
+    };
+}
+
+function buildAgentSnapshot(overrides = {}) {
+    const {
+        session: sessionOverride = {},
+        context: contextOverride = {},
+        messages = [],
+        turns = [],
+        toolCalls = [],
+        approvals = [],
+        events = [],
+        outbox = [],
+        health = {},
+        tools = [],
+        ...rest
+    } = overrides;
+
+    return {
+        session: {
+            sessionId: 'ags_test_001',
+            status: 'active',
+            riskMode: 'autopilot_partial',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            ...sessionOverride,
+        },
+        context: {
+            section: 'callbacks',
+            selectedEntity: {
+                type: 'callback',
+                id: 401,
+                label: 'Lead 401',
+            },
+            visibleIds: [401, 402],
+            ...contextOverride,
+        },
+        messages,
+        turns,
+        toolCalls,
+        approvals,
+        events,
+        outbox,
+        health: {
+            relay: {
+                mode: 'disabled',
+            },
+            counts: {
+                messages: messages.length,
+                turns: turns.length,
+                toolCalls: toolCalls.length,
+                pendingApprovals: approvals.filter(
+                    (item) => item.status === 'pending'
+                ).length,
+                outboxQueued: outbox.filter((item) => item.status === 'queued')
+                    .length,
+                outboxTotal: outbox.length,
+            },
+            ...health,
+        },
+        tools,
+        ...rest,
+    };
+}
+
+async function setupAdminApiMocks(page, options = {}) {
     await installLegacyAdminAuthMock(page, {
         capabilities: {
             adminAgent: true,
@@ -69,6 +161,19 @@ async function setupAdminApiMocks(page) {
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
         const resource = url.searchParams.get('resource') || '';
+        const method = route.request().method().toUpperCase();
+
+        if (typeof options.handleApiRoute === 'function') {
+            const handled = await options.handleApiRoute({
+                route,
+                url,
+                resource,
+                method,
+            });
+            if (handled) {
+                return;
+            }
+        }
 
         if (resource === 'data') {
             return jsonResponse(route, buildDataPayload());
@@ -202,6 +307,154 @@ test.describe('Admin navigation desktop', () => {
         await expect(page.locator('#adminContextTitle')).toContainText(
             'Historia clinica conversacional'
         );
+    });
+
+    test('panel del copiloto permite enviar un prompt y cancelar la sesion', async ({
+        page,
+    }) => {
+        let turnCount = 0;
+
+        await setupAdminApiMocks(page, {
+            handleApiRoute: async ({ route, resource }) => {
+                if (resource === 'admin-agent-status') {
+                    return handleJsonResponse(route, buildAgentStatusPayload());
+                }
+
+                if (resource === 'admin-agent-session-start') {
+                    return handleJsonResponse(
+                        route,
+                        {
+                            ok: true,
+                            data: buildAgentSnapshot(),
+                        },
+                        201
+                    );
+                }
+
+                if (resource === 'admin-agent-turn') {
+                    turnCount += 1;
+                    return handleJsonResponse(route, {
+                        ok: true,
+                        data: {
+                            session: buildAgentSnapshot({
+                                messages: [
+                                    {
+                                        role: 'user',
+                                        content:
+                                            'Resume los callbacks pendientes',
+                                        createdAt: new Date().toISOString(),
+                                    },
+                                    {
+                                        role: 'assistant',
+                                        content:
+                                            'Hay 2 callbacks pendientes y uno esta fuera de SLA.',
+                                        createdAt: new Date().toISOString(),
+                                    },
+                                ],
+                                turns: [
+                                    {
+                                        turnId: 'agt_turn_001',
+                                        status: 'completed',
+                                        finalAnswer:
+                                            'Hay 2 callbacks pendientes y uno esta fuera de SLA.',
+                                    },
+                                ],
+                                toolCalls: [
+                                    {
+                                        toolCallId: 'tool_001',
+                                        tool: 'callbacks.list',
+                                        status: 'completed',
+                                        reason: 'Leer la cola operativa de callbacks',
+                                    },
+                                ],
+                                events: [
+                                    {
+                                        event: 'agent.turn_completed',
+                                        status: 'completed',
+                                        createdAt: new Date().toISOString(),
+                                    },
+                                ],
+                            }),
+                            turn: {
+                                turnId: 'agt_turn_001',
+                                status: 'completed',
+                                finalAnswer:
+                                    'Hay 2 callbacks pendientes y uno esta fuera de SLA.',
+                                toolPlan: [
+                                    {
+                                        tool: 'callbacks.list',
+                                        status: 'completed',
+                                    },
+                                ],
+                            },
+                            clientActions: [],
+                            refreshRecommended: false,
+                        },
+                    });
+                }
+
+                if (resource === 'admin-agent-cancel') {
+                    return handleJsonResponse(route, {
+                        ok: true,
+                        data: buildAgentSnapshot({
+                            session: {
+                                status: 'cancelled',
+                            },
+                            events: [
+                                {
+                                    event: 'agent.session_cancelled',
+                                    status: 'cancelled',
+                                    createdAt: new Date().toISOString(),
+                                },
+                            ],
+                        }),
+                    });
+                }
+
+                return false;
+            },
+        });
+        await page.goto('/admin.html');
+        await waitForAdminRuntimeReady(page);
+
+        await page.locator('[data-action="open-agent-panel"]').click();
+        await expect(page.locator('#adminAgentPanel')).not.toHaveClass(
+            /is-hidden/
+        );
+
+        await page
+            .locator('#adminAgentPrompt')
+            .fill('Resume los callbacks pendientes');
+        await page.locator('#adminAgentSubmitBtn').click();
+
+        await expect(page.locator('#adminAgentSessionState')).toHaveText(
+            'active'
+        );
+        await expect(page.locator('#adminAgentConversationMeta')).toContainText(
+            '2 mensaje(s) auditados'
+        );
+        await expect(page.locator('#adminAgentPlanMeta')).toContainText(
+            '1 tool call(s) en timeline'
+        );
+        await expect(page.locator('#adminAgentConversation')).toContainText(
+            'Resume los callbacks pendientes'
+        );
+        await expect(page.locator('#adminAgentConversation')).toContainText(
+            'Hay 2 callbacks pendientes y uno esta fuera de SLA.'
+        );
+        await expect(page.locator('#adminAgentPanelSummary')).toContainText(
+            'Sesion operativa auditada'
+        );
+
+        await page.locator('[data-action="admin-agent-cancel"]').click();
+        await expect(page.locator('#adminAgentSessionState')).toHaveText(
+            'cancelled'
+        );
+        await expect(page.locator('#adminAgentTimelineMeta')).toContainText(
+            '1 evento(s)'
+        );
+
+        expect(turnCount).toBe(1);
     });
 
     test('boton de copiloto y quick command OpenClaw abren el mismo panel operativo', async ({
