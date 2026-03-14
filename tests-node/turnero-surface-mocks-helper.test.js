@@ -18,6 +18,12 @@ const QUEUE_DISPLAY_SPEC_PATH = resolve(
     'tests',
     'queue-display.spec.js'
 );
+const QUEUE_KIOSK_SPEC_PATH = resolve(
+    __dirname,
+    '..',
+    'tests',
+    'queue-kiosk.spec.js'
+);
 
 function createRouteHarness() {
     const handlers = [];
@@ -158,8 +164,29 @@ test('installTurneroQueueStateMock soporta abort controlado del backend', async 
     assert.equal(session.getQueueStateCalls(), 1);
 });
 
-test('queue-display consume el helper compartido de superficies turnero', () => {
+test('installTurneroQueueStateMock permite side effects en resources no queue-state via handleApiRoute', async () => {
+    const harness = createRouteHarness();
+    let ticketRequests = 0;
+
+    await installTurneroQueueStateMock(harness.target, {
+        handleApiRoute({ resource }) {
+            if (resource === 'queue-ticket') {
+                ticketRequests += 1;
+            }
+            return false;
+        },
+    });
+
+    const ticket = await harness.dispatch(
+        'https://example.test/api.php?resource=queue-ticket'
+    );
+    assert.equal(ticketRequests, 1);
+    assert.deepEqual(ticket.payload, { ok: true, data: {} });
+});
+
+test('queue-display y queue-kiosk consumen el helper compartido de superficies turnero', () => {
     const queueDisplaySpec = readFileSync(QUEUE_DISPLAY_SPEC_PATH, 'utf8');
+    const queueKioskSpec = readFileSync(QUEUE_KIOSK_SPEC_PATH, 'utf8');
 
     assert.match(
         queueDisplaySpec,
@@ -177,4 +204,18 @@ test('queue-display consume el helper compartido de superficies turnero', () => 
         queueDisplaySpec,
         /await installTurneroQueueStateMock\(page, \{/m
     );
+
+    assert.match(
+        queueKioskSpec,
+        /const \{\s+installTurneroClinicProfileFailure,\s+installTurneroClinicProfileMock,\s+installTurneroQueueStateMock,\s+\} = require\('\.\/helpers\/turnero-surface-mocks'\);/m
+    );
+    assert.match(
+        queueKioskSpec,
+        /await installTurneroClinicProfileMock\(page, \{/m
+    );
+    assert.match(
+        queueKioskSpec,
+        /await installTurneroClinicProfileFailure\(page\);/m
+    );
+    assert.match(queueKioskSpec, /await installTurneroQueueStateMock\(page,/m);
 });

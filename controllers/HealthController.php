@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
 require_once __DIR__ . '/../lib/PatientCaseService.php';
 require_once __DIR__ . '/../lib/InternalConsoleReadiness.php';
+require_once __DIR__ . '/../lib/whatsapp_openclaw/bootstrap.php';
 
 class HealthController
 {
@@ -87,6 +88,9 @@ class HealthController
             : [];
         $telemedicineSnapshot = class_exists('TelemedicineOpsSnapshot')
             ? TelemedicineOpsSnapshot::build($store)
+            : ['configured' => false];
+        $whatsappOpenclawSnapshot = function_exists('whatsapp_openclaw_health_snapshot')
+            ? whatsapp_openclaw_health_snapshot($store)
             : ['configured' => false];
         $leadOpsSnapshot = LeadOpsService::buildHealthSnapshot($store);
         $appointments = isset($store['appointments']) && is_array($store['appointments']) ? $store['appointments'] : [];
@@ -203,6 +207,12 @@ class HealthController
             'telemedicineReviewQueueCount' => (int) ($telemedicineSnapshot['reviewQueue']['count'] ?? 0),
             'telemedicineUnlinkedIntakesCount' => (int) ($telemedicineSnapshot['integrity']['unlinkedIntakesCount'] ?? 0),
             'telemedicineStagedLegacyUploadsCount' => (int) ($telemedicineSnapshot['integrity']['stagedLegacyUploadsCount'] ?? 0),
+            'whatsappConfigured' => (bool) ($whatsappOpenclawSnapshot['configured'] ?? false),
+            'whatsappConfiguredMode' => (string) ($whatsappOpenclawSnapshot['configuredMode'] ?? ''),
+            'whatsappBridgeMode' => (string) ($whatsappOpenclawSnapshot['bridgeMode'] ?? ''),
+            'whatsappBookingsClosed' => (int) ($whatsappOpenclawSnapshot['bookingsClosed'] ?? 0),
+            'whatsappPaymentsStarted' => (int) ($whatsappOpenclawSnapshot['paymentsStarted'] ?? 0),
+            'whatsappPaymentsCompleted' => (int) ($whatsappOpenclawSnapshot['paymentsCompleted'] ?? 0),
             'leadOpsMode' => (string) ($leadOpsSnapshot['mode'] ?? 'disabled'),
             'leadOpsPendingCallbacks' => (int) ($leadOpsSnapshot['pendingCallbacks'] ?? 0),
             'leadOpsWorkerDegraded' => (bool) ($leadOpsSnapshot['degraded'] ?? true),
@@ -301,6 +311,7 @@ class HealthController
                 'telemedicine' => class_exists('TelemedicineOpsSnapshot')
                     ? TelemedicineOpsSnapshot::forHealth($telemedicineSnapshot)
                     : ['configured' => false],
+                'whatsappOpenclaw' => $whatsappOpenclawSnapshot,
                 'leadOps' => $leadOpsSnapshot,
                 'backup' => $backupCheck,
                 'publicSync' => $publicSyncCheck,

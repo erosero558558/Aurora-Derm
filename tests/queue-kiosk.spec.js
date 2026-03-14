@@ -1,5 +1,10 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const {
+    installTurneroClinicProfileFailure,
+    installTurneroClinicProfileMock,
+    installTurneroQueueStateMock,
+} = require('./helpers/turnero-surface-mocks');
 
 function json(route, payload, status = 200) {
     return route.fulfill({
@@ -34,45 +39,26 @@ test.describe('Kiosco turnos', () => {
     test('aplica branding del perfil clinico en cabecera y contexto del kiosco', async ({
         page,
     }) => {
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                json(route, {
-                    clinic_id: 'clinica-norte-demo',
-                    branding: {
-                        name: 'Clinica Norte',
-                        short_name: 'Norte',
-                        city: 'Quito',
-                    },
-                    consultorios: {
-                        c1: { label: 'Dermatología 1', short_label: 'D1' },
-                        c2: { label: 'Dermatología 2', short_label: 'D2' },
-                    },
-                    surfaces: {
-                        kiosk: {
-                            enabled: true,
-                            route: '/kiosco-turnos.html',
-                        },
-                    },
-                })
-        );
-
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            if ((url.searchParams.get('resource') || '') === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        updatedAt: new Date().toISOString(),
-                        waitingCount: 0,
-                        calledCount: 0,
-                        callingNow: [],
-                        nextTickets: [],
-                    },
-                });
-            }
-            return json(route, { ok: true, data: {} });
+        await installTurneroClinicProfileMock(page, {
+            clinic_id: 'clinica-norte-demo',
+            branding: {
+                name: 'Clinica Norte',
+                short_name: 'Norte',
+                city: 'Quito',
+            },
+            consultorios: {
+                c1: { label: 'Dermatología 1', short_label: 'D1' },
+                c2: { label: 'Dermatología 2', short_label: 'D2' },
+            },
+            surfaces: {
+                kiosk: {
+                    enabled: true,
+                    route: '/kiosco-turnos.html',
+                },
+            },
         });
+
+        await installTurneroQueueStateMock(page);
 
         await page.goto('/kiosco-turnos.html');
 
@@ -95,43 +81,27 @@ test.describe('Kiosco turnos', () => {
         page,
     }) => {
         let ticketRequests = 0;
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                json(route, {
-                    clinic_id: 'clinica-norte-demo',
-                    branding: {
-                        name: 'Clinica Norte',
-                        short_name: 'Norte',
-                    },
-                    surfaces: {
-                        kiosk: {
-                            enabled: true,
-                            route: '/kiosco-alt.html',
-                        },
-                    },
-                })
-        );
+        await installTurneroClinicProfileMock(page, {
+            clinic_id: 'clinica-norte-demo',
+            branding: {
+                name: 'Clinica Norte',
+                short_name: 'Norte',
+            },
+            surfaces: {
+                kiosk: {
+                    enabled: true,
+                    route: '/kiosco-alt.html',
+                },
+            },
+        });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-            if (resource === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        updatedAt: new Date().toISOString(),
-                        waitingCount: 0,
-                        calledCount: 0,
-                        callingNow: [],
-                        nextTickets: [],
-                    },
-                });
-            }
-            if (resource === 'queue-ticket') {
-                ticketRequests += 1;
-            }
-            return json(route, { ok: true, data: {} });
+        await installTurneroQueueStateMock(page, {
+            handleApiRoute({ resource }) {
+                if (resource === 'queue-ticket') {
+                    ticketRequests += 1;
+                }
+                return false;
+            },
         });
 
         await page.goto('/kiosco-turnos.html');
@@ -163,35 +133,15 @@ test.describe('Kiosco turnos', () => {
         page,
     }) => {
         let checkinRequests = 0;
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                route.fulfill({
-                    status: 404,
-                    contentType: 'application/json; charset=utf-8',
-                    body: JSON.stringify({ ok: false }),
-                })
-        );
+        await installTurneroClinicProfileFailure(page);
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-            if (resource === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        updatedAt: new Date().toISOString(),
-                        waitingCount: 0,
-                        calledCount: 0,
-                        callingNow: [],
-                        nextTickets: [],
-                    },
-                });
-            }
-            if (resource === 'queue-checkin') {
-                checkinRequests += 1;
-            }
-            return json(route, { ok: true, data: {} });
+        await installTurneroQueueStateMock(page, {
+            handleApiRoute({ resource }) {
+                if (resource === 'queue-checkin') {
+                    checkinRequests += 1;
+                }
+                return false;
+            },
         });
 
         await page.goto('/kiosco-turnos.html');
@@ -1034,43 +984,21 @@ test.describe('Kiosco turnos', () => {
             );
         });
 
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                json(route, {
-                    clinic_id: 'clinica-norte-demo',
-                    branding: {
-                        name: 'Clinica Norte',
-                        short_name: 'Norte',
-                    },
-                    surfaces: {
-                        kiosk: {
-                            enabled: true,
-                            route: '/kiosco-turnos.html',
-                        },
-                    },
-                })
-        );
-
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource !== 'queue-state') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, {
-                ok: true,
-                data: {
-                    updatedAt: new Date().toISOString(),
-                    waitingCount: 0,
-                    calledCount: 0,
-                    callingNow: [],
-                    nextTickets: [],
+        await installTurneroClinicProfileMock(page, {
+            clinic_id: 'clinica-norte-demo',
+            branding: {
+                name: 'Clinica Norte',
+                short_name: 'Norte',
+            },
+            surfaces: {
+                kiosk: {
+                    enabled: true,
+                    route: '/kiosco-turnos.html',
                 },
-            });
+            },
         });
+
+        await installTurneroQueueStateMock(page);
 
         await page.goto('/kiosco-turnos.html');
 
@@ -1138,43 +1066,21 @@ test.describe('Kiosco turnos', () => {
             );
         });
 
-        await page.route(
-            /\/content\/turnero\/clinic-profile\.json(\?.*)?$/i,
-            async (route) =>
-                json(route, {
-                    clinic_id: 'clinica-norte-demo',
-                    branding: {
-                        name: 'Clinica Norte',
-                        short_name: 'Norte',
-                    },
-                    surfaces: {
-                        kiosk: {
-                            enabled: true,
-                            route: '/kiosco-turnos.html',
-                        },
-                    },
-                })
-        );
-
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource !== 'queue-state') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, {
-                ok: true,
-                data: {
-                    updatedAt: new Date().toISOString(),
-                    waitingCount: 0,
-                    calledCount: 0,
-                    callingNow: [],
-                    nextTickets: [],
+        await installTurneroClinicProfileMock(page, {
+            clinic_id: 'clinica-norte-demo',
+            branding: {
+                name: 'Clinica Norte',
+                short_name: 'Norte',
+            },
+            surfaces: {
+                kiosk: {
+                    enabled: true,
+                    route: '/kiosco-turnos.html',
                 },
-            });
+            },
         });
+
+        await installTurneroQueueStateMock(page);
 
         await page.goto('/kiosco-turnos.html');
 
@@ -1193,47 +1099,37 @@ test.describe('Kiosco turnos', () => {
     test('acepta payload queue-state con snake_case sin dejar cola vacia', async ({
         page,
     }) => {
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource !== 'queue-state') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, {
-                ok: true,
-                data: {
-                    updated_at: new Date().toISOString(),
-                    waiting_count: 2,
-                    called_count: 1,
-                    calling_now: [
-                        {
-                            id: 31,
-                            ticket_code: 'A-031',
-                            patient_initials: 'KR',
-                            assigned_consultorio: 2,
-                            called_at: new Date().toISOString(),
-                        },
-                    ],
-                    next_tickets: [
-                        {
-                            id: 32,
-                            ticket_code: 'A-032',
-                            patient_initials: 'LP',
-                            queue_type: 'walk_in',
-                            priority_class: 'walk_in',
-                        },
-                        {
-                            id: 33,
-                            ticket_code: 'A-033',
-                            patient_initials: 'RM',
-                            queue_type: 'appointment',
-                            priority_class: 'appt_current',
-                        },
-                    ],
-                },
-            });
+        await installTurneroQueueStateMock(page, {
+            queueState: () => ({
+                updated_at: new Date().toISOString(),
+                waiting_count: 2,
+                called_count: 1,
+                calling_now: [
+                    {
+                        id: 31,
+                        ticket_code: 'A-031',
+                        patient_initials: 'KR',
+                        assigned_consultorio: 2,
+                        called_at: new Date().toISOString(),
+                    },
+                ],
+                next_tickets: [
+                    {
+                        id: 32,
+                        ticket_code: 'A-032',
+                        patient_initials: 'LP',
+                        queue_type: 'walk_in',
+                        priority_class: 'walk_in',
+                    },
+                    {
+                        id: 33,
+                        ticket_code: 'A-033',
+                        patient_initials: 'RM',
+                        queue_type: 'appointment',
+                        priority_class: 'appt_current',
+                    },
+                ],
+            }),
         });
 
         await page.goto('/kiosco-turnos.html');
@@ -1248,41 +1144,16 @@ test.describe('Kiosco turnos', () => {
     test('activa modo degradado por watchdog y recupera con refresh manual', async ({
         page,
     }) => {
-        let queueStateCalls = 0;
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'queue-state') {
-                queueStateCalls += 1;
-                if (queueStateCalls === 1) {
-                    return json(route, {
-                        ok: true,
-                        data: {
-                            updatedAt: new Date(
-                                Date.now() - 90 * 1000
-                            ).toISOString(),
-                            waitingCount: 1,
-                            calledCount: 0,
-                            callingNow: [],
-                            nextTickets: [],
-                        },
-                    });
-                }
-
-                return json(route, {
-                    ok: true,
-                    data: {
-                        updatedAt: new Date().toISOString(),
-                        waitingCount: 1,
-                        calledCount: 0,
-                        callingNow: [],
-                        nextTickets: [],
-                    },
-                });
-            }
-
-            return json(route, { ok: true, data: {} });
+        await installTurneroQueueStateMock(page, {
+            queueState: ({ callCount }) => ({
+                updatedAt: new Date(
+                    Date.now() - (callCount === 1 ? 90 * 1000 : 0)
+                ).toISOString(),
+                waitingCount: 1,
+                calledCount: 0,
+                callingNow: [],
+                nextTickets: [],
+            }),
         });
 
         await page.goto('/kiosco-turnos.html');

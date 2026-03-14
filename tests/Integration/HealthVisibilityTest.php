@@ -48,6 +48,12 @@ final class HealthVisibilityTest extends TestCase
         foreach ([
             'PIELARMONIA_DATA_DIR',
             'PIELARMONIA_AVAILABILITY_SOURCE',
+            'PIELARMONIA_WHATSAPP_OPENCLAW_ENABLED',
+            'PIELARMONIA_WHATSAPP_OPENCLAW_MODE',
+            'PIELARMONIA_WHATSAPP_BRIDGE_TOKEN',
+            'PIELARMONIA_WHATSAPP_BRIDGE_TOKEN_HEADER',
+            'PIELARMONIA_WHATSAPP_BRIDGE_TOKEN_PREFIX',
+            'PIELARMONIA_WHATSAPP_BRIDGE_STALE_AFTER_SECONDS',
         ] as $key) {
             putenv($key);
         }
@@ -108,6 +114,55 @@ final class HealthVisibilityTest extends TestCase
         $this->assertArrayHasKey('twoFactorEnabled', $response['payload']['checks']['auth'] ?? []);
         $this->assertArrayHasKey('overall', $response['payload']['checks']['internalConsole'] ?? []);
         $this->assertArrayHasKey('publicSync', $response['payload']['checks']);
+    }
+
+    public function testAuthorizedHealthIncludesWhatsappOpenclawSnapshot(): void
+    {
+        putenv('PIELARMONIA_WHATSAPP_OPENCLAW_ENABLED=true');
+        putenv('PIELARMONIA_WHATSAPP_OPENCLAW_MODE=live');
+        putenv('PIELARMONIA_WHATSAPP_BRIDGE_TOKEN=test-wa-health-token');
+        putenv('PIELARMONIA_WHATSAPP_BRIDGE_TOKEN_HEADER=Authorization');
+        putenv('PIELARMONIA_WHATSAPP_BRIDGE_TOKEN_PREFIX=Bearer');
+        putenv('PIELARMONIA_WHATSAPP_BRIDGE_STALE_AFTER_SECONDS=900');
+
+        $repository = \whatsapp_openclaw_repository();
+        $repository->touchBridgeStatus('inbound');
+        $conversation = $repository->saveConversation([
+            'id' => 'wa:593981110444',
+            'phone' => '593981110444',
+            'status' => 'booked',
+        ]);
+        $repository->saveBookingDraft([
+            'conversationId' => (string) ($conversation['id'] ?? 'wa:593981110444'),
+            'phone' => '593981110444',
+            'service' => 'consulta',
+            'date' => date('Y-m-d', strtotime('+2 days')),
+            'time' => '10:00',
+            'status' => 'booked',
+            'appointmentId' => 991,
+            'paymentMethod' => 'card',
+            'paymentStatus' => 'paid',
+            'paymentSessionId' => 'cs_health_whatsapp_001',
+        ]);
+
+        $response = $this->captureJsonResponse(static function (): void {
+            \HealthController::check([
+                'store' => \read_store(),
+                'method' => 'GET',
+                'resource' => 'health',
+                'diagnosticsAuthorized' => true,
+            ]);
+        });
+
+        $this->assertSame(200, $response['status']);
+        $this->assertTrue((bool) ($response['payload']['ok'] ?? false));
+        $this->assertArrayHasKey('whatsappOpenclaw', $response['payload']['checks']);
+        $this->assertTrue((bool) ($response['payload']['checks']['whatsappOpenclaw']['configured'] ?? false));
+        $this->assertSame('live', (string) ($response['payload']['checks']['whatsappOpenclaw']['configuredMode'] ?? ''));
+        $this->assertSame('online', (string) ($response['payload']['checks']['whatsappOpenclaw']['bridgeMode'] ?? ''));
+        $this->assertSame(1, (int) ($response['payload']['checks']['whatsappOpenclaw']['bookingsClosed'] ?? 0));
+        $this->assertSame(1, (int) ($response['payload']['checks']['whatsappOpenclaw']['paymentsStarted'] ?? 0));
+        $this->assertSame(1, (int) ($response['payload']['checks']['whatsappOpenclaw']['paymentsCompleted'] ?? 0));
     }
 
     public function testHealthDiagnosticsRejectsUnauthorizedRequest(): void
