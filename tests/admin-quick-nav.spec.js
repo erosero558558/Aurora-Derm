@@ -60,7 +60,11 @@ function buildFunnelPayload() {
 }
 
 async function setupAdminApiMocks(page) {
-    await installLegacyAdminAuthMock(page);
+    await installLegacyAdminAuthMock(page, {
+        capabilities: {
+            adminAgent: true,
+        },
+    });
 
     await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
@@ -160,6 +164,26 @@ test.describe('Admin navigation desktop', () => {
         );
         await expect(page.locator('#adminRefreshStatus')).toContainText(
             /Datos:/
+        );
+    });
+
+    test('Alt+Shift+I abre el copiloto operativo', async ({ page }) => {
+        await setupAdminApiMocks(page);
+        await page.goto('/admin.html');
+
+        await expect(
+            page.locator('[data-action="open-agent-panel"]')
+        ).toBeVisible();
+        await expect(page.locator('#adminAgentPanel')).toHaveClass(/is-hidden/);
+
+        await page.keyboard.press('Alt+Shift+KeyI');
+
+        await expect(page.locator('#adminAgentPanel')).not.toHaveClass(
+            /is-hidden/
+        );
+        await expect(page.locator('#adminAgentPrompt')).toBeFocused();
+        await expect(page.locator('#adminAgentPanelSummary')).toContainText(
+            'Sesion inactiva'
         );
     });
 });

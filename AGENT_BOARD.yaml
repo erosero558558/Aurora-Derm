@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 648
+  revision: 650
   updated_at: 2026-03-14
 
 tasks:
@@ -9962,5 +9962,47 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-232.md"
     depends_on: []
     prompt: "Consolidar primer cluster admin queue api mocks"
+    created_at: 2026-03-14
+    updated_at: 2026-03-14
+
+  - id: AG-233
+    title: "Wire admin copiloto keyboard shortcut"
+    owner: Ernesto
+    executor: codex
+    status: done
+    status_since_at: "2026-03-14T03:58:22.298Z"
+    risk: low
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["src/apps/admin-v3/core/boot.js", "src/apps/admin-v3/shared/core/keyboard/global.js", "src/apps/admin-v3/ui/frame/templates/shell/command-palette.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-14T03:58:22.298Z"
+    lease_cleared_reason: "terminal:done"
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Wire admin copiloto keyboard shortcut"
+    acceptance_ref: "verification/agent-runs/AG-233.md"
+    evidence_ref: "verification/agent-runs/AG-233.md"
+    depends_on: []
+    prompt: "Wire admin copiloto keyboard shortcut"
     created_at: 2026-03-14
     updated_at: 2026-03-14

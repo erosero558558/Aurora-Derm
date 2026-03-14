@@ -194,7 +194,13 @@ This document freezes the active admin frontend contract after the total cutover
 ## Keyboard Contract
 
 - Section shortcuts: `Alt+Shift+Digit1..Digit6`
-- Global: `Ctrl+K`, `/`, `Escape`, `Alt+Shift+M`
+- Global:
+    - `Ctrl+K` abre la barra de comandos
+    - `Ctrl+Shift+K` abre el copiloto
+    - `Alt+Shift+I` abre el copiloto
+    - `/` enfoca la busqueda de la seccion activa
+    - `Escape` cierra overlays activos
+    - `Alt+Shift+M` alterna el menu
 - Quick filters: `Alt+Shift+T`, `Alt+Shift+A`, `Alt+Shift+N`, `Alt+Shift+P`, `Alt+Shift+C`, `Alt+Shift+U`, `Alt+Shift+W`
 - Queue panel: `Alt+Shift+0`
 - Queue numpad flow: `NumpadEnter`, `NumpadDecimal`, `NumpadSubtract`, `Numpad2`

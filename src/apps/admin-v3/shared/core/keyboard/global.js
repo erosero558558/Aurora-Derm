@@ -37,10 +37,40 @@ export function handleGlobalKeyboardShortcut(event, options) {
         return true;
     }
 
-    if (event.ctrlKey && !event.shiftKey && !event.altKey && key === 'k') {
+    if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.shiftKey &&
+        !event.altKey &&
+        key === 'k'
+    ) {
         event.preventDefault();
-        focusAgentPrompt();
-        return true;
+        if (typeof focusQuickCommand === 'function') {
+            focusQuickCommand();
+            return true;
+        }
+        if (typeof focusAgentPrompt === 'function') {
+            focusAgentPrompt();
+            return true;
+        }
+        return false;
+    }
+
+    if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        !event.altKey &&
+        key === 'k'
+    ) {
+        event.preventDefault();
+        if (typeof focusAgentPrompt === 'function') {
+            focusAgentPrompt();
+            return true;
+        }
+        if (typeof focusQuickCommand === 'function') {
+            focusQuickCommand();
+            return true;
+        }
+        return false;
     }
 
     if (!event.ctrlKey && !event.metaKey && !event.altKey && key === '/') {
@@ -65,6 +95,18 @@ export function handleGlobalKeyboardShortcut(event, options) {
         event.preventDefault();
         toggleQueueHelp();
         return true;
+    }
+
+    if (normalized === 'keyi') {
+        if (hasFocusedInput()) {
+            return true;
+        }
+        event.preventDefault();
+        if (typeof focusAgentPrompt === 'function') {
+            focusAgentPrompt();
+            return true;
+        }
+        return false;
     }
 
     const section = SECTION_SHORTCUTS[normalized];

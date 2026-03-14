@@ -18,6 +18,7 @@ import {
     toggleQueueHelpPanel,
 } from '../shared/modules/queue.js';
 import { initPushModule } from '../shared/modules/push.js';
+import { focusAgentPrompt } from '../shared/modules/agent.js';
 import {
     bootAuthenticatedUi,
     handleLoginSubmit,
@@ -76,6 +77,7 @@ export async function bootAdminV3() {
     attachKeyboardShortcuts({
         navigateToSection,
         focusQuickCommand,
+        focusAgentPrompt,
         focusCurrentSearch,
         runQuickAction,
         closeSidebar: () => closeSidebar({ restoreFocus: true }),
