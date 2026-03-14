@@ -1,5 +1,9 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const {
+    buildAdminDataPayload,
+    installBasicAdminApiMocks,
+} = require('./helpers/admin-api-mocks');
 const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
 
 function json(route, payload, status = 200) {
@@ -20,20 +24,6 @@ function adminUrl(query = '') {
 
 function installQueueAdminAuthMock(page, csrfToken) {
     return installLegacyAdminAuthMock(page, { csrfToken });
-}
-
-function parseBody(request) {
-    try {
-        return request.postDataJSON() || {};
-    } catch (_error) {
-        const raw = request.postData() || '';
-        try {
-            return raw ? JSON.parse(raw) : {};
-        } catch (_jsonError) {
-            const params = new URLSearchParams(raw);
-            return Object.fromEntries(params.entries());
-        }
-    }
 }
 
 function buildQueueMetaFromState(state) {
@@ -132,6 +122,81 @@ function buildQueueStateFromTickets(queueTickets) {
     };
 }
 
+function resolveAdminQueueFixture(value) {
+    return typeof value === 'function' ? value() : value;
+}
+
+async function installAdminQueueApiMocks(page, options = {}) {
+    const {
+        appointments = [],
+        callbacks = [],
+        reviews = [],
+        availability = {},
+        availabilityMeta = {},
+        queueTickets = [],
+        queueState = {},
+        featuresPayload = {
+            data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
+        },
+        healthPayload = { ok: true, status: 'ok' },
+        funnelMetrics = {},
+        defaultPayload = {},
+        handleRoute = null,
+    } = options;
+
+    const getQueueState = () => resolveAdminQueueFixture(queueState);
+    const getQueueTickets = () => resolveAdminQueueFixture(queueTickets);
+
+    return installBasicAdminApiMocks(page, {
+        featuresPayload,
+        healthPayload,
+        funnelMetrics,
+        defaultPayload,
+        handleRoute: async (context) => {
+            if (context.resource === 'data') {
+                await context.fulfillJson(context.route, {
+                    ok: true,
+                    data: buildAdminDataPayload({
+                        appointments: resolveAdminQueueFixture(appointments),
+                        callbacks: resolveAdminQueueFixture(callbacks),
+                        reviews: resolveAdminQueueFixture(reviews),
+                        availability: resolveAdminQueueFixture(availability),
+                        availabilityMeta: {
+                            generatedAt:
+                                String(
+                                    getQueueState()?.updatedAt || ''
+                                ).trim() || new Date().toISOString(),
+                            ...availabilityMeta,
+                        },
+                        queue_tickets: getQueueTickets(),
+                        queueMeta: buildQueueMetaFromState(getQueueState()),
+                    }),
+                });
+                return true;
+            }
+
+            if (context.resource === 'queue-state') {
+                await context.fulfillJson(context.route, {
+                    ok: true,
+                    data: getQueueState(),
+                });
+                return true;
+            }
+
+            if (typeof handleRoute === 'function') {
+                const handled = await handleRoute({
+                    ...context,
+                    getQueueState,
+                    getQueueTickets,
+                });
+                return Boolean(handled);
+            }
+
+            return false;
+        },
+    });
+}
+
 function getTodayLocalIsoDateForTest() {
     const now = new Date();
     const year = now.getFullYear();
@@ -219,52 +284,9 @@ test.describe('Admin turnero sala', () => {
             csrfToken: 'csrf_queue_guidance',
         });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const request = route.request();
-            const url = new URL(request.url());
-            const resource = url.searchParams.get('resource') || '';
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        queue_tickets: queueTickets,
-                        queueMeta: buildQueueMetaFromState(queueState),
-                    },
-                });
-            }
-
-            if (resource === 'queue-state') {
-                return json(route, { ok: true, data: queueState });
-            }
-
-            if (resource === 'health') {
-                return json(route, { ok: true, status: 'ok' });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, { ok: true, data: {} });
+        await installAdminQueueApiMocks(page, {
+            queueTickets,
+            queueState,
         });
 
         await page.goto(adminUrl());
@@ -525,126 +547,99 @@ test.describe('Admin turnero sala', () => {
             csrfToken: 'csrf_queue_guidance_shortcuts',
         });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const request = route.request();
-            const url = new URL(request.url());
-            const resource = url.searchParams.get('resource') || '';
+        await installAdminQueueApiMocks(page, {
+            appointments,
+            availability,
+            queueTickets: () => queueTickets,
+            queueState: () => queueState,
+            handleRoute: async ({
+                route,
+                resource,
+                intendedMethod,
+                payload,
+                fulfillJson,
+            }) => {
+                if (
+                    resource === 'queue-help-request' &&
+                    intendedMethod === 'PATCH'
+                ) {
+                    const helpRequestId = Number(payload.id || 0);
+                    const status = String(
+                        payload.status || 'pending'
+                    ).toLowerCase();
+                    const ticketId = Number(
+                        payload.ticketId || payload.ticket_id || 0
+                    );
+                    let updatedRequest = null;
 
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
+                    queueHelpRequests = queueHelpRequests.map((requestItem) => {
+                        const matchesById =
+                            helpRequestId > 0 &&
+                            Number(requestItem.id || 0) === helpRequestId;
+                        const matchesByTicket =
+                            helpRequestId <= 0 &&
+                            ticketId > 0 &&
+                            Number(requestItem.ticketId || 0) === ticketId &&
+                            ['pending', 'attending'].includes(
+                                String(requestItem.status || '')
+                            );
+                        if (!matchesById && !matchesByTicket) {
+                            return requestItem;
+                        }
 
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments,
-                        callbacks: [],
-                        reviews: [],
-                        availability,
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: queueState.updatedAt,
-                        },
-                        queue_tickets: queueTickets,
-                        queueMeta: buildQueueMetaFromState(queueState),
-                    },
-                });
-            }
+                        updatedRequest = {
+                            ...requestItem,
+                            status,
+                            updatedAt: new Date().toISOString(),
+                            context:
+                                payload.context &&
+                                typeof payload.context === 'object'
+                                    ? {
+                                          ...(requestItem.context || {}),
+                                          ...payload.context,
+                                      }
+                                    : requestItem.context || {},
+                            ...(status === 'resolved'
+                                ? { resolvedAt: new Date().toISOString() }
+                                : {}),
+                        };
+                        return updatedRequest;
+                    });
 
-            if (resource === 'queue-state') {
-                return json(route, { ok: true, data: queueState });
-            }
-
-            if (
-                resource === 'queue-help-request' &&
-                request.method() === 'PATCH'
-            ) {
-                const body = parseBody(request);
-                const helpRequestId = Number(body.id || 0);
-                const status = String(body.status || 'pending').toLowerCase();
-                const ticketId = Number(body.ticketId || body.ticket_id || 0);
-                let updatedRequest = null;
-
-                queueHelpRequests = queueHelpRequests.map((requestItem) => {
-                    const matchesById =
-                        helpRequestId > 0 &&
-                        Number(requestItem.id || 0) === helpRequestId;
-                    const matchesByTicket =
-                        helpRequestId <= 0 &&
-                        ticketId > 0 &&
-                        Number(requestItem.ticketId || 0) === ticketId &&
-                        ['pending', 'attending'].includes(
-                            String(requestItem.status || '')
-                        );
-                    if (!matchesById && !matchesByTicket) {
-                        return requestItem;
-                    }
-
-                    updatedRequest = {
-                        ...requestItem,
-                        status,
-                        updatedAt: new Date().toISOString(),
-                        context:
-                            body.context && typeof body.context === 'object'
-                                ? {
-                                      ...(requestItem.context || {}),
-                                      ...body.context,
-                                  }
-                                : requestItem.context || {},
-                        ...(status === 'resolved'
-                            ? { resolvedAt: new Date().toISOString() }
-                            : {}),
-                    };
-                    return updatedRequest;
-                });
-
-                syncQueueHelpState();
-                return json(route, {
-                    ok: true,
-                    data: {
-                        helpRequest: updatedRequest,
-                        queueState,
-                    },
-                });
-            }
-
-            if (resource === 'queue-reprint' && request.method() === 'POST') {
-                reprintRequests += 1;
-                return json(route, {
-                    ok: true,
-                    printed: true,
-                    data: {
-                        ticket: queueTickets.find(
-                            (ticket) =>
-                                Number(ticket.id || 0) ===
-                                Number(parseBody(request).id || 0)
-                        ),
-                    },
-                    print: {
+                    syncQueueHelpState();
+                    await fulfillJson(route, {
                         ok: true,
-                        errorCode: '',
-                        message: 'ok',
-                    },
-                });
-            }
+                        data: {
+                            helpRequest: updatedRequest,
+                            queueState,
+                        },
+                    });
+                    return true;
+                }
 
-            if (resource === 'health') {
-                return json(route, { ok: true, status: 'ok' });
-            }
+                if (resource === 'queue-reprint' && intendedMethod === 'POST') {
+                    reprintRequests += 1;
+                    await fulfillJson(route, {
+                        ok: true,
+                        printed: true,
+                        data: {
+                            ticket: queueTickets.find(
+                                (ticket) =>
+                                    Number(ticket.id || 0) ===
+                                    Number(payload.id || 0)
+                            ),
+                        },
+                        print: {
+                            ok: true,
+                            errorCode: '',
+                            message: 'ok',
+                        },
+                    });
+                    return true;
+                }
 
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, { ok: true, data: {} });
+                return false;
+            },
         });
 
         await page.goto(adminUrl());
@@ -889,99 +884,66 @@ test.describe('Admin turnero sala', () => {
             csrfToken: 'csrf_queue_schedule_conflict',
         });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const request = route.request();
-            const url = new URL(request.url());
-            const resource = url.searchParams.get('resource') || '';
+        await installAdminQueueApiMocks(page, {
+            availability,
+            queueTickets,
+            queueState,
+            handleRoute: async ({
+                route,
+                resource,
+                intendedMethod,
+                payload,
+                fulfillJson,
+            }) => {
+                if (
+                    resource === 'queue-help-request' &&
+                    intendedMethod === 'PATCH'
+                ) {
+                    const nextStatus = String(payload.status || 'pending')
+                        .trim()
+                        .toLowerCase();
+                    const updatedAt = new Date().toISOString();
+                    const requestItem = queueState.activeHelpRequests[0];
+                    const updatedRequest = {
+                        ...requestItem,
+                        status: nextStatus,
+                        updatedAt,
+                        context:
+                            payload.context &&
+                            typeof payload.context === 'object'
+                                ? {
+                                      ...(requestItem.context || {}),
+                                      ...payload.context,
+                                  }
+                                : requestItem.context || {},
+                        ...(nextStatus === 'attending'
+                            ? { attendedAt: updatedAt }
+                            : {}),
+                        ...(nextStatus === 'resolved'
+                            ? { resolvedAt: updatedAt }
+                            : {}),
+                    };
 
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
+                    queueState.activeHelpRequests =
+                        nextStatus === 'resolved' ? [] : [updatedRequest];
+                    queueState.assistancePendingCount =
+                        nextStatus === 'pending' ? 1 : 0;
+                    queueState.recentResolvedHelpRequests =
+                        nextStatus === 'resolved' ? [updatedRequest] : [];
+                    queueState.updatedAt = updatedAt;
 
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability,
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
+                    await fulfillJson(route, {
+                        ok: true,
+                        data: {
+                            helpRequest: updatedRequest,
+                            queueState,
                         },
-                        queue_tickets: queueTickets,
-                        queueMeta: buildQueueMetaFromState(queueState),
-                    },
-                });
-            }
+                    });
+                    return true;
+                }
 
-            if (resource === 'queue-state') {
-                return json(route, { ok: true, data: queueState });
-            }
-
-            if (
-                resource === 'queue-help-request' &&
-                request.method() === 'PATCH'
-            ) {
-                const body = parseBody(request);
-                const nextStatus = String(body.status || 'pending')
-                    .trim()
-                    .toLowerCase();
-                const updatedAt = new Date().toISOString();
-                const requestItem = queueState.activeHelpRequests[0];
-                const updatedRequest = {
-                    ...requestItem,
-                    status: nextStatus,
-                    updatedAt,
-                    context:
-                        body.context && typeof body.context === 'object'
-                            ? {
-                                  ...(requestItem.context || {}),
-                                  ...body.context,
-                              }
-                            : requestItem.context || {},
-                    ...(nextStatus === 'attending'
-                        ? { attendedAt: updatedAt }
-                        : {}),
-                    ...(nextStatus === 'resolved'
-                        ? { resolvedAt: updatedAt }
-                        : {}),
-                };
-
-                queueState.activeHelpRequests =
-                    nextStatus === 'resolved' ? [] : [updatedRequest];
-                queueState.assistancePendingCount =
-                    nextStatus === 'pending' ? 1 : 0;
-                queueState.recentResolvedHelpRequests =
-                    nextStatus === 'resolved' ? [updatedRequest] : [];
-                queueState.updatedAt = updatedAt;
-
-                return json(route, {
-                    ok: true,
-                    data: {
-                        helpRequest: updatedRequest,
-                        queueState,
-                    },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, { ok: true, status: 'ok' });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, { ok: true, data: {} });
+                return false;
+            },
         });
 
         await page.goto(adminUrl());
@@ -1128,131 +1090,92 @@ test.describe('Admin turnero sala', () => {
             csrfToken: 'csrf_queue_admin',
         });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const request = route.request();
-            const url = new URL(request.url());
-            const resource = url.searchParams.get('resource') || '';
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: new Date().toISOString(),
+        await installAdminQueueApiMocks(page, {
+            queueTickets: () => queueTickets,
+            queueState: () => queueState,
+            healthPayload: {
+                ok: true,
+                status: 'ok',
+                checks: {
+                    publicSync: {
+                        configured: true,
+                        healthy: true,
+                        state: 'ok',
+                        deployedCommit:
+                            '3de287e27f2f5034f6f471234567890abcdef12',
+                        headDrift: false,
+                        ageSeconds: 32,
+                        failureReason: '',
+                    },
+                },
+            },
+            handleRoute: async ({ route, resource, fulfillJson }) => {
+                if (resource === 'queue-call-next') {
+                    const calledTicket = {
+                        ...queueTickets[0],
+                        status: 'called',
+                        assignedConsultorio: 1,
+                        calledAt: new Date().toISOString(),
+                    };
+                    queueTickets = [calledTicket, queueTickets[1]];
+                    queueState = {
+                        ...queueState,
+                        updatedAt: new Date().toISOString(),
+                        waitingCount: 1,
+                        calledCount: 1,
+                        counts: {
+                            waiting: 1,
+                            called: 1,
+                            completed: 0,
+                            no_show: 0,
+                            cancelled: 0,
                         },
-                        queue_tickets: queueTickets,
-                        queueMeta: buildQueueMetaFromState(queueState),
-                    },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, {
-                    ok: true,
-                    status: 'ok',
-                    checks: {
-                        publicSync: {
-                            configured: true,
-                            healthy: true,
-                            state: 'ok',
-                            deployedCommit:
-                                '3de287e27f2f5034f6f471234567890abcdef12',
-                            headDrift: false,
-                            ageSeconds: 32,
-                            failureReason: '',
-                        },
-                    },
-                });
-            }
-
-            if (resource === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: queueState,
-                });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            if (resource === 'queue-call-next') {
-                const calledTicket = {
-                    ...queueTickets[0],
-                    status: 'called',
-                    assignedConsultorio: 1,
-                    calledAt: new Date().toISOString(),
-                };
-                queueTickets = [calledTicket, queueTickets[1]];
-                queueState = {
-                    ...queueState,
-                    updatedAt: new Date().toISOString(),
-                    waitingCount: 1,
-                    calledCount: 1,
-                    counts: {
-                        waiting: 1,
-                        called: 1,
-                        completed: 0,
-                        no_show: 0,
-                        cancelled: 0,
-                    },
-                    callingNow: [calledTicket],
-                    nextTickets: [
-                        {
-                            id: 502,
-                            ticketCode: 'A-502',
-                            patientInitials: 'JP',
-                            position: 1,
-                        },
-                    ],
-                };
-                return json(route, {
-                    ok: true,
-                    data: {
-                        ticket: calledTicket,
-                        queueState,
-                    },
-                });
-            }
-
-            if (resource === 'queue-ticket') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        ticket: queueTickets[0],
-                        queueState,
-                    },
-                });
-            }
-
-            if (resource === 'queue-reprint') {
-                return json(route, {
-                    ok: true,
-                    printed: false,
-                    print: {
+                        callingNow: [calledTicket],
+                        nextTickets: [
+                            {
+                                id: 502,
+                                ticketCode: 'A-502',
+                                patientInitials: 'JP',
+                                position: 1,
+                            },
+                        ],
+                    };
+                    await fulfillJson(route, {
                         ok: true,
-                        errorCode: 'printer_disabled',
-                        message: 'disabled',
-                    },
-                });
-            }
+                        data: {
+                            ticket: calledTicket,
+                            queueState,
+                        },
+                    });
+                    return true;
+                }
 
-            return json(route, { ok: true, data: {} });
+                if (resource === 'queue-ticket') {
+                    await fulfillJson(route, {
+                        ok: true,
+                        data: {
+                            ticket: queueTickets[0],
+                            queueState,
+                        },
+                    });
+                    return true;
+                }
+
+                if (resource === 'queue-reprint') {
+                    await fulfillJson(route, {
+                        ok: true,
+                        printed: false,
+                        print: {
+                            ok: true,
+                            errorCode: 'printer_disabled',
+                            message: 'disabled',
+                        },
+                    });
+                    return true;
+                }
+
+                return false;
+            },
         });
 
         await page.goto(adminUrl());
