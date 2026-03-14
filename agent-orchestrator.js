@@ -10,6 +10,7 @@
  *   node agent-orchestrator.js conflicts [--strict]
  *   node agent-orchestrator.js handoffs <status|lint|create|close>
  *   node agent-orchestrator.js policy lint [--json]
+ *   node agent-orchestrator.js strategy <status|set-active|close> [--json]
  *   node agent-orchestrator.js codex-check
  *   node agent-orchestrator.js codex <start|stop> <CDX-ID> [--block C1] [--to done]
  *   node agent-orchestrator.js task <ls|claim|start|finish> [<AG-ID>] [...]
@@ -32,6 +33,7 @@ const coreOutput = require('./tools/agent-orchestrator/core/output');
 const domainConflicts = require('./tools/agent-orchestrator/domain/conflicts');
 const domainHandoffs = require('./tools/agent-orchestrator/domain/handoffs');
 const domainCodexMirror = require('./tools/agent-orchestrator/domain/codex-mirror');
+const domainStrategy = require('./tools/agent-orchestrator/domain/strategy');
 const domainTaskGuards = require('./tools/agent-orchestrator/domain/task-guards');
 const domainTaskCreate = require('./tools/agent-orchestrator/domain/task-create');
 const domainTaskShape = require('./tools/agent-orchestrator/domain/task-shape');
@@ -55,6 +57,7 @@ const closeCommandHandlers = require('./tools/agent-orchestrator/commands/close'
 const taskCommandHandlers = require('./tools/agent-orchestrator/commands/task');
 const leasesCommandHandlers = require('./tools/agent-orchestrator/commands/leases');
 const boardCommandHandlers = require('./tools/agent-orchestrator/commands/board');
+const strategyCommandHandlers = require('./tools/agent-orchestrator/commands/strategy');
 const jobsCommandHandlers = require('./tools/agent-orchestrator/commands/jobs');
 const publishCommandHandlers = require('./tools/agent-orchestrator/commands/publish');
 const runtimeCommandHandlers = require('./tools/agent-orchestrator/commands/runtime');
@@ -430,6 +433,15 @@ function parseCodexActiveBlocks() {
     );
 }
 
+function parseCodexStrategyBlocks() {
+    if (!existsSync(CODEX_PLAN_PATH)) {
+        return [];
+    }
+    return coreParsers.parseCodexStrategyActiveBlocksContent(
+        readFileSync(CODEX_PLAN_PATH, 'utf8')
+    );
+}
+
 function serializeHandoffs(data) {
     return coreSerializers.serializeHandoffs(data);
 }
@@ -547,6 +559,13 @@ function validateTaskGovernancePrechecks(board, task, options = {}) {
         ownershipMatrix: DUAL_CODEX_OWNERSHIP_MATRIX,
         activeStatuses: ACTIVE_STATUSES,
         isExpired,
+    });
+}
+
+function buildStrategyCoverageSummary(board) {
+    return domainStrategy.buildStrategyCoverageSummary(board, {
+        activeStatuses: ACTIVE_STATUSES,
+        findCriticalScopeKeyword,
     });
 }
 
@@ -959,6 +978,20 @@ function writeCodexActiveBlock(block, options = {}) {
     });
 }
 
+function writeStrategyActiveBlock(strategy) {
+    if (!existsSync(CODEX_PLAN_PATH)) {
+        throw new Error(`No existe ${CODEX_PLAN_PATH}`);
+    }
+    const raw = readFileSync(CODEX_PLAN_PATH, 'utf8');
+    const next = domainStrategy.upsertStrategyActiveBlock(raw, strategy, {
+        quote,
+        serializeArrayInline,
+        currentDate,
+    });
+    writeFileSync(CODEX_PLAN_PATH, next, 'utf8');
+    return next;
+}
+
 function nextHandoffId(handoffs) {
     return domainHandoffs.nextHandoffId(handoffs);
 }
@@ -1263,6 +1296,7 @@ async function cmdStatus(args) {
         buildCodexInstanceSummary,
         buildProviderModeSummary,
         buildRuntimeSurfaceSummary,
+        buildStrategyCoverageSummary,
         loadMetricsSnapshot,
         normalizeContributionBaseline,
         buildContributionTrend,
@@ -1385,6 +1419,7 @@ function buildCodexCheckReport() {
         {
             board: parseBoard(),
             blocks: parseCodexActiveBlocks(),
+            strategyBlocks: parseCodexStrategyBlocks(),
             handoffs: parseHandoffs().handoffs,
             codexPlanPath: CODEX_PLAN_PATH,
         },
@@ -1392,6 +1427,7 @@ function buildCodexCheckReport() {
             normalizePathToken,
             activeStatuses: ACTIVE_STATUSES,
             isExpired,
+            findCriticalScopeKeyword,
         }
     );
 }
@@ -1432,6 +1468,7 @@ function cmdBoard(args) {
         loadMetricsSnapshot,
         summarizeDiagnostics: domainDiagnostics.summarizeDiagnostics,
         listBoardLeases: domainBoardLeases.listBoardLeases,
+        buildStrategyCoverageSummary,
         getTaskLeaseSummary,
         makeDiagnostic: domainDiagnostics.makeDiagnostic,
         getWarnPolicyMap: domainDiagnostics.getWarnPolicyMap,
@@ -1445,6 +1482,26 @@ function cmdBoard(args) {
         readJsonlFile: coreIo.readJsonlFile,
         printJson: coreOutput.printJson,
         loadJobsSnapshot,
+    });
+}
+
+async function cmdStrategy(args) {
+    return strategyCommandHandlers.handleStrategyCommand({
+        args,
+        parseFlags,
+        parseBoard,
+        buildStrategyCoverageSummary,
+        buildStrategySeed: domainStrategy.buildStrategySeed,
+        normalizeStrategyActive: domainStrategy.normalizeStrategyActive,
+        validateStrategyConfiguration:
+            domainStrategy.validateStrategyConfiguration,
+        currentDate,
+        detectDefaultOwner,
+        writeBoardAndSync,
+        writeStrategyActiveBlock,
+        parseExpectedBoardRevisionFlag,
+        parseCodexStrategyBlocks,
+        printJson: coreOutput.printJson,
     });
 }
 
@@ -2060,6 +2117,7 @@ const governanceRuntime =
         writeBoard,
         writeCodexActiveBlock,
         parseCodexActiveBlocks,
+        validateTaskGovernancePrechecks,
         buildBoardWipLimitDiagnostics,
     });
 
@@ -2076,6 +2134,7 @@ async function main() {
         dispatch: () => runtimeIntake.dispatch(args),
         handoffs: () => governanceRuntime.handoffs(args),
         policy: () => governanceRuntime.policy(args),
+        strategy: () => cmdStrategy(args),
         'codex-check': () => governanceRuntime.codexCheck(args),
         codex: () => governanceRuntime.codex(args),
         leases: () => cmdLeases(args),
@@ -2111,7 +2170,9 @@ main().catch((error) => {
             error_code: error?.error_code || error?.code || 'command_failed',
         };
         if (
-            ['task', 'handoffs', 'leases', 'codex'].includes(command) &&
+            ['task', 'handoffs', 'leases', 'codex', 'strategy'].includes(
+                command
+            ) &&
             subcommand
         ) {
             payload.action = subcommand;

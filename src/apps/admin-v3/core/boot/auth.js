@@ -2,9 +2,13 @@ import { getState, updateState } from '../../shared/core/store.js';
 import { createToast } from '../../shared/ui/render.js';
 import {
     checkAuthStatus,
+    getActiveLoginSurfaceMode,
+    getVisibleOpenClawState,
     loginWith2FA,
     loginWithPassword,
     startOpenClawLogin,
+    useLegacyFallbackLoginSurface,
+    usePrimaryLoginSurface,
 } from '../../shared/modules/auth.js';
 import { syncQueueAutoRefresh } from '../../shared/modules/queue.js';
 import {
@@ -133,13 +137,18 @@ function buildOpenClawFeedback(auth) {
 
 function buildLegacyFeedback(auth) {
     const status = normalizeAuthStatus(auth.status);
+    const isContingency =
+        String(auth.recommendedMode || '').trim() === 'openclaw_chatgpt';
 
     if (auth.requires2FA) {
         return {
             tone: 'warning',
-            title: 'Codigo 2FA requerido',
-            message:
-                'El backend valido la clave. Ingresa ahora el codigo de seis digitos.',
+            title: isContingency
+                ? '2FA de contingencia requerido'
+                : 'Codigo 2FA requerido',
+            message: isContingency
+                ? 'La clave de contingencia fue validada. Ingresa ahora el codigo de seis digitos.'
+                : 'El backend valido la clave. Ingresa ahora el codigo de seis digitos.',
         };
     }
 
@@ -149,37 +158,61 @@ function buildLegacyFeedback(auth) {
             title: 'Acceso no configurado',
             message:
                 auth.lastError ||
-                'El acceso por clave no esta configurado en este entorno.',
+                (isContingency
+                    ? 'La contingencia por clave + 2FA no esta configurada en este entorno.'
+                    : 'El acceso por clave no esta configurado en este entorno.'),
         };
     }
 
     return {
         tone: 'neutral',
-        title: 'Acceso de respaldo',
-        message:
-            'Usa tu clave solo si necesitas entrar como respaldo al nucleo interno.',
+        title: isContingency ? 'Contingencia web' : 'Acceso de respaldo',
+        message: isContingency
+            ? 'Usa esta ruta solo como contingencia desde cualquier computadora con clave + 2FA.'
+            : 'Usa tu clave solo si necesitas entrar como respaldo al nucleo interno.',
     };
 }
 
 function syncLoginSurfaceFromState() {
     const auth = getState().auth;
-    const mode =
-        String(auth.mode || 'legacy_password').trim() || 'legacy_password';
+    const mode = getActiveLoginSurfaceMode(auth);
+    const recommendedMode =
+        String(auth.recommendedMode || auth.mode || 'legacy_password').trim() ||
+        'legacy_password';
+    const fallbackAvailable =
+        auth.fallbacks?.legacy_password?.available === true;
     const status = normalizeAuthStatus(auth.status);
 
-    setLoginMode(mode);
+    setLoginMode(mode, {
+        recommendedMode,
+        fallbackAvailable,
+    });
 
     if (mode === 'openclaw_chatgpt') {
-        setOpenClawChallenge(auth.challenge, {
-            status,
-            error: auth.lastError,
+        const openClawState = getVisibleOpenClawState(auth);
+        setOpenClawChallenge(openClawState.challenge, {
+            status: normalizeAuthStatus(openClawState.status),
+            error: openClawState.lastError,
         });
-        setLoginSubmittingState(false, { mode, status });
-        setLoginFeedback(buildOpenClawFeedback(auth));
+        setLoginSubmittingState(false, {
+            mode,
+            status: openClawState.status,
+        });
+        setLoginFeedback(
+            buildOpenClawFeedback({
+                ...auth,
+                status: openClawState.status,
+                challenge: openClawState.challenge,
+                lastError: openClawState.lastError,
+            })
+        );
         return;
     }
 
-    setLogin2FAVisibility(Boolean(auth.requires2FA));
+    setLogin2FAVisibility(Boolean(auth.requires2FA), {
+        recommendedMode,
+        fallbackAvailable,
+    });
     setLoginSubmittingState(false, { mode, status });
     setLoginFeedback(buildLegacyFeedback(auth));
 }
@@ -324,7 +357,11 @@ export function resetTwoFactorStage() {
         },
     }));
 
-    setLogin2FAVisibility(false);
+    setLogin2FAVisibility(false, {
+        recommendedMode: getState().auth.recommendedMode,
+        fallbackAvailable:
+            getState().auth.fallbacks?.legacy_password?.available === true,
+    });
     resetLoginForm();
     setLoginFeedback({
         tone: 'neutral',
@@ -338,7 +375,7 @@ export async function handleLoginSubmit(event) {
     event.preventDefault();
 
     const state = getState();
-    if (String(state.auth.mode || '') === 'openclaw_chatgpt') {
+    if (getActiveLoginSurfaceMode(state.auth) === 'openclaw_chatgpt') {
         await handleOpenClawSubmit();
         return;
     }
@@ -372,7 +409,12 @@ export async function handleLoginSubmit(event) {
         } else {
             const result = await loginWithPassword(password);
             if (result.requires2FA) {
-                setLogin2FAVisibility(true);
+                setLogin2FAVisibility(true, {
+                    recommendedMode: getState().auth.recommendedMode,
+                    fallbackAvailable:
+                        getState().auth.fallbacks?.legacy_password
+                            ?.available === true,
+                });
                 setLoginFeedback({
                     tone: 'warning',
                     title: 'Codigo 2FA requerido',
@@ -433,4 +475,34 @@ export function resumeOpenClawPolling() {
 
 export function stopOpenClawPolling() {
     clearOpenClawPollTimer();
+}
+
+export function showLegacyFallbackSurface() {
+    clearOpenClawPollTimer();
+    if (!useLegacyFallbackLoginSurface()) {
+        return false;
+    }
+
+    resetLoginForm({ clearPassword: true });
+    syncLoginSurfaceFromState();
+    focusLoginField('password');
+    return true;
+}
+
+export function showPrimaryLoginSurface() {
+    const nextMode = usePrimaryLoginSurface();
+    resetLoginForm({ clearPassword: true });
+    syncLoginSurfaceFromState();
+
+    if (nextMode === 'openclaw_chatgpt') {
+        const openClawState = getVisibleOpenClawState(getState().auth);
+        if (
+            normalizeAuthStatus(openClawState.status) === 'pending' &&
+            openClawState.challenge
+        ) {
+            scheduleOpenClawPoll(openClawState.challenge.pollAfterMs || 1200);
+        }
+    }
+
+    return nextMode;
 }

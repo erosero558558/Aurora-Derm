@@ -14,6 +14,7 @@ async function handleBoardCommand(ctx) {
         loadMetricsSnapshot,
         summarizeDiagnostics,
         listBoardLeases,
+        buildStrategyCoverageSummary,
         getTaskLeaseSummary,
         makeDiagnostic,
         getWarnPolicyMap,
@@ -65,6 +66,27 @@ async function handleBoardCommand(ctx) {
                 isBroadGlobPath,
             }
         );
+        const strategySummary =
+            typeof buildStrategyCoverageSummary === 'function'
+                ? buildStrategyCoverageSummary(board)
+                : null;
+        const strategyDiagnostics =
+            strategySummary?.active && strategySummary.orphan_tasks > 0
+                ? [
+                      makeDiagnostic({
+                          code: 'warn.board.strategy_orphan_active_task',
+                          severity: 'warning',
+                          source: 'board doctor',
+                          message: `Estrategia activa con ${strategySummary.orphan_tasks} tarea(s) huerfana(s)`,
+                          task_ids: strategySummary.orphan_task_ids,
+                          meta: {
+                              strategy_id: strategySummary.active.id,
+                              validation_errors:
+                                  strategySummary.validation_errors,
+                          },
+                      }),
+                  ]
+                : [];
         const warnFirstDiagnostics = buildWarnFirstDiagnostics({
             source: 'board doctor',
             board,
@@ -80,11 +102,13 @@ async function handleBoardCommand(ctx) {
             ...(Array.isArray(baseReport.diagnostics)
                 ? baseReport.diagnostics
                 : []),
+            ...strategyDiagnostics,
             ...warnFirstDiagnostics,
         ];
         const report = attachDiagnostics(
             {
                 ...baseReport,
+                strategy_summary: strategySummary,
                 leases: listBoardLeases(board, {
                     policy,
                     nowIso: new Date().toISOString(),

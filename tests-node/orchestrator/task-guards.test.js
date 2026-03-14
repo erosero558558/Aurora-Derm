@@ -26,6 +26,56 @@ const CRITICAL_SCOPE_KEYWORDS = [
 const ALLOWED_EXECUTORS = new Set(['codex']);
 const ACTIVE_STATUSES = new Set(['ready', 'in_progress', 'review', 'blocked']);
 
+function boardWithActiveStrategy() {
+    return {
+        strategy: {
+            active: {
+                id: 'STRAT-2026-03-admin-operativo',
+                title: 'Admin operativo',
+                objective: 'Cerrar admin operativo',
+                owner: 'ernesto',
+                status: 'active',
+                started_at: '2026-03-14',
+                review_due_at: '2026-03-21',
+                exit_criteria: ['uno'],
+                success_signal: 'demo',
+                subfronts: [
+                    {
+                        codex_instance: 'codex_frontend',
+                        subfront_id: 'SF-frontend-admin-operativo',
+                        title: 'Admin UX',
+                        allowed_scopes: ['frontend-admin', 'queue'],
+                        support_only_scopes: ['docs'],
+                        blocked_scopes: ['payments'],
+                    },
+                    {
+                        codex_instance: 'codex_backend_ops',
+                        subfront_id: 'SF-backend-admin-operativo',
+                        title: 'Backend soporte',
+                        allowed_scopes: [
+                            'auth',
+                            'backend',
+                            'readiness',
+                            'gates',
+                        ],
+                        support_only_scopes: ['tests'],
+                        blocked_scopes: ['frontend-public'],
+                    },
+                    {
+                        codex_instance: 'codex_transversal',
+                        subfront_id: 'SF-transversal-admin-operativo',
+                        title: 'Runtime soporte',
+                        allowed_scopes: [],
+                        support_only_scopes: ['openclaw_runtime', 'tooling'],
+                        blocked_scopes: ['backend', 'auth'],
+                    },
+                ],
+            },
+        },
+        tasks: [{ id: 'AG-001' }],
+    };
+}
+
 test('task-guards detecta keyword critica en scope', () => {
     assert.equal(
         findCriticalScopeKeyword(
@@ -317,4 +367,112 @@ test('task-guards completa defaults OpenClaw cuando scope es openclaw_runtime', 
     assert.equal(task.provider_mode, 'openclaw_chatgpt');
     assert.equal(task.runtime_transport, 'hybrid_http_cli');
     assert.equal(task.runtime_surface, 'leadops_worker');
+});
+
+test('task-guards exige campos explicitos de estrategia para tareas activas', () => {
+    const board = boardWithActiveStrategy();
+
+    assert.throws(
+        () =>
+            validateTaskGovernancePrechecks(
+                board,
+                {
+                    id: 'AG-400',
+                    status: 'ready',
+                    executor: 'codex',
+                    scope: 'frontend-admin',
+                    files: ['src/apps/admin-v3/app.js'],
+                    depends_on: [],
+                    runtime_impact: 'low',
+                    critical_zone: false,
+                },
+                {
+                    criticalScopeKeywords: CRITICAL_SCOPE_KEYWORDS,
+                    allowedExecutors: ALLOWED_EXECUTORS,
+                }
+            ),
+        /requiere strategy_id=STRAT-2026-03-admin-operativo/i
+    );
+});
+
+test('task-guards bloquea subfrente ajeno al codex_instance de la tarea', () => {
+    const board = boardWithActiveStrategy();
+
+    assert.throws(
+        () =>
+            validateTaskGovernancePrechecks(
+                board,
+                {
+                    id: 'AG-401',
+                    status: 'ready',
+                    executor: 'codex',
+                    scope: 'frontend-admin',
+                    strategy_id: 'STRAT-2026-03-admin-operativo',
+                    subfront_id: 'SF-backend-admin-operativo',
+                    strategy_role: 'primary',
+                    files: ['src/apps/admin-v3/app.js'],
+                    depends_on: [],
+                    runtime_impact: 'low',
+                    critical_zone: false,
+                },
+                {
+                    criticalScopeKeywords: CRITICAL_SCOPE_KEYWORDS,
+                    allowedExecutors: ALLOWED_EXECUTORS,
+                }
+            ),
+        /requiere codex_instance=codex_backend_ops/i
+    );
+});
+
+test('task-guards exige strategy_reason para exception activa', () => {
+    const board = boardWithActiveStrategy();
+
+    assert.throws(
+        () =>
+            validateTaskGovernancePrechecks(
+                board,
+                {
+                    id: 'AG-402',
+                    status: 'ready',
+                    executor: 'codex',
+                    scope: 'frontend-admin',
+                    strategy_id: 'STRAT-2026-03-admin-operativo',
+                    subfront_id: 'SF-frontend-admin-operativo',
+                    strategy_role: 'exception',
+                    files: ['src/apps/admin-v3/app.js'],
+                    depends_on: [],
+                    runtime_impact: 'low',
+                    critical_zone: false,
+                },
+                {
+                    criticalScopeKeywords: CRITICAL_SCOPE_KEYWORDS,
+                    allowedExecutors: ALLOWED_EXECUTORS,
+                }
+            ),
+        /strategy_role=exception requiere strategy_reason/i
+    );
+});
+
+test('task-guards tolera tareas terminales historicas sin backfill de estrategia', () => {
+    const board = boardWithActiveStrategy();
+
+    assert.doesNotThrow(() =>
+        validateTaskGovernancePrechecks(
+            board,
+            {
+                id: 'AG-403',
+                status: 'done',
+                executor: 'codex',
+                scope: 'docs',
+                files: ['docs/strategy.md'],
+                depends_on: [],
+                runtime_impact: 'low',
+                critical_zone: false,
+            },
+            {
+                criticalScopeKeywords: CRITICAL_SCOPE_KEYWORDS,
+                allowedExecutors: ALLOWED_EXECUTORS,
+            }
+        )
+    );
 });

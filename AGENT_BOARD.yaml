@@ -7,8 +7,39 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 672
+  revision: 673
   updated_at: 2026-03-14
+
+strategy:
+  active:
+    id: STRAT-2026-03-admin-operativo
+    title: "Admin operativo"
+    objective: "Convertir el frente admin clinico, queue/turnero y OpenClaw UX en una entrega operable y visible, con soporte backend y runtime estrictamente alineado."
+    owner: Ernesto
+    status: active
+    started_at: "2026-03-14"
+    review_due_at: "2026-03-21"
+    exit_criteria: ["Admin clinico y queue/turnero navegables sin flujos rotos", "Auth/readiness/gates en verde para el frente activo", "Runtime OpenClaw solo usado como desbloqueo directo del mismo objetivo"]
+    success_signal: "Un mismo corte operativo puede demostrarse de punta a punta sin abrir trabajo fuera del frente admin operativo."
+    subfronts:
+      - codex_instance: codex_frontend
+        subfront_id: SF-frontend-admin-operativo
+        title: "Admin clinico, queue/turnero y OpenClaw UX"
+        allowed_scopes: ["frontend-admin", "queue", "turnero"]
+        support_only_scopes: ["docs", "tests", "frontend-qa"]
+        blocked_scopes: ["frontend-public", "payments", "calendar"]
+      - codex_instance: codex_backend_ops
+        subfront_id: SF-backend-admin-operativo
+        title: "Auth, readiness, gates y backend de soporte directo"
+        allowed_scopes: ["auth", "backend", "readiness", "gates"]
+        support_only_scopes: ["deploy", "ops", "monitoring", "tests"]
+        blocked_scopes: ["frontend-public", "frontend-admin", "payments", "calendar"]
+      - codex_instance: codex_transversal
+        subfront_id: SF-transversal-admin-operativo
+        title: "Runtime/orquestacion solo como desbloqueo del frente"
+        allowed_scopes: []
+        support_only_scopes: ["openclaw_runtime", "codex-governance", "tooling"]
+        blocked_scopes: ["frontend-public", "frontend-admin", "backend", "deploy", "auth"]
 
 tasks:
   - id: AG-001

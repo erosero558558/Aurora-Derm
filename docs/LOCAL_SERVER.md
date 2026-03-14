@@ -40,15 +40,17 @@ Arranque recomendado:
 
 ```powershell
 php -S 127.0.0.1:8011 -t .
-npm run auth:operator:bridge
+npm run openclaw:auth:start
 ```
+
+Script canonico del launcher local: `scripts/ops/admin/INICIAR-OPENCLAW-AUTH-HELPER.ps1`.
 
 Validaciones previas:
 
-- `openclaw models status --json` debe mostrar un perfil OAuth `openai-codex`
-  en estado `ok`.
+- `npm run openclaw:auth-preflight -- --json` debe devolver `ok=true` y
+  usar el mismo `OPENCLAW_RUNTIME_BASE_URL` que el helper y el smoke local.
 - `GET http://127.0.0.1:4173/health` debe devolver
-  `service=operator-auth-bridge`.
+  `service=openclaw-auth-helper`.
 - `POST http://127.0.0.1:8011/admin-auth.php?action=start` debe devolver
   `helperUrl` apuntando a `127.0.0.1:4173`.
 
@@ -65,26 +67,40 @@ Variables usadas por este flujo:
 - `PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS`
 - `PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS`
 - `PIELARMONIA_OPERATOR_AUTH_BRIDGE_MAX_SKEW_SECONDS`
+- `OPENCLAW_HELPER_DEVICE_ID`
 
 Notas:
 
-- `npm run auth:operator:bridge` lee `env.php` si esas variables no vienen ya
-  exportadas en la shell.
+- `npm run openclaw:auth:start` es el launcher canonico y lee `env.php` si esas
+  variables no vienen ya exportadas en la shell.
+- `npm run auth:operator:bridge` queda como alias deprecated y delega al
+  launcher canonico.
 - `admin.html` y `operador-turnos.html` reutilizan la misma sesion del
   operador.
-- Si OpenClaw no muestra un OAuth valido, ejecuta
-  `openclaw models auth login --provider openai-codex` y reintenta.
+- Si el preflight reporta `readyForLogin=false`, completa el login en OpenClaw
+  y vuelve a ejecutar `npm run openclaw:auth:start`.
 
 ## Login legacy por clave
 
-Solo aplica si desactivas operator auth y vuelves a un modo legacy.
+Solo aplica como modo principal legacy o como contingencia web explicita en el
+modo OpenClaw.
 
 - `PIELARMONIA_ADMIN_PASSWORD`
 - `PIELARMONIA_ADMIN_PASSWORD_HASH`
+- `PIELARMONIA_ADMIN_2FA_SECRET`
+- `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true`
 - `PIELARMONIA_EMAIL_FROM`
 - `PIELARMONIA_DATA_DIR`
 - `FIGO_CHAT_ENDPOINT`
 - `FIGO_CHAT_TOKEN`
+
+Notas:
+
+- En produccion con `PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=openclaw_chatgpt`,
+  la clave solo funciona como contingencia si tambien hay `2FA`.
+- `admin.html` mantiene OpenClaw como acceso principal del operador local y
+  solo muestra `clave + 2FA` cuando el backend anuncia el fallback como
+  disponible.
 
 Alternativa sin variables de entorno:
 

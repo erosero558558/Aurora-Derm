@@ -110,6 +110,114 @@ Relacion con Operativo 2026:
     );
 }
 
+function writeFixtureFilesWithStrategy(dir) {
+    const board = `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  updated_at: ${DATE}
+strategy:
+  active:
+    id: STRAT-2026-03-admin-operativo
+    title: "Admin operativo"
+    objective: "Cerrar admin operativo"
+    owner: ernesto
+    status: active
+    started_at: "2026-03-14"
+    review_due_at: "2026-03-21"
+    exit_criteria: ["uno"]
+    success_signal: "demo"
+    subfronts:
+      - codex_instance: codex_frontend
+        subfront_id: SF-frontend-admin-operativo
+        title: "Admin UX"
+        allowed_scopes: ["frontend-admin", "queue"]
+        support_only_scopes: ["docs"]
+        blocked_scopes: ["payments"]
+      - codex_instance: codex_backend_ops
+        subfront_id: SF-backend-admin-operativo
+        title: "Backend soporte"
+        allowed_scopes: ["auth", "backend", "readiness", "gates"]
+        support_only_scopes: ["tests"]
+        blocked_scopes: ["frontend-public"]
+      - codex_instance: codex_transversal
+        subfront_id: SF-transversal-admin-operativo
+        title: "Runtime soporte"
+        allowed_scopes: []
+        support_only_scopes: ["openclaw_runtime", "tooling"]
+        blocked_scopes: ["backend"]
+tasks:
+  - id: AG-001
+    title: "Fixture task"
+    owner: ernesto
+    executor: jules
+    status: done
+    risk: low
+    scope: docs
+    files: ["README.md"]
+    acceptance: "Fixture"
+    acceptance_ref: "README.md"
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+
+  - id: CDX-001
+    title: "Codex fixture"
+    owner: ernesto
+    executor: codex
+    status: done
+    risk: medium
+    scope: codex-governance
+    files: ["AGENTS.md", "agent-orchestrator.js"]
+    acceptance: "Fixture"
+    acceptance_ref: "PLAN_MAESTRO_CODEX_2026.md"
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`;
+
+    const handoffs = `
+version: 1
+handoffs: []
+`;
+
+    const plan = `
+# Plan Maestro Codex 2026 (Fixture)
+
+<!-- CODEX_STRATEGY_ACTIVE
+id: STRAT-2026-03-admin-operativo
+title: "Admin operativo"
+status: active
+owner: ernesto
+objective: "Cerrar admin operativo"
+started_at: "2026-03-14"
+review_due_at: "2026-03-21"
+success_signal: "demo"
+subfront_ids: ["SF-frontend-admin-operativo", "SF-backend-admin-operativo", "SF-transversal-admin-operativo"]
+updated_at: ${DATE}
+-->
+
+Relacion con Operativo 2026:
+- Fixture.
+`;
+
+    writeFileSync(join(dir, 'AGENT_BOARD.yaml'), `${board.trim()}\n`, 'utf8');
+    writeFileSync(
+        join(dir, 'AGENT_HANDOFFS.yaml'),
+        `${handoffs.trim()}\n`,
+        'utf8'
+    );
+    writeFileSync(
+        join(dir, 'PLAN_MAESTRO_CODEX_2026.md'),
+        `${plan.trim()}\n`,
+        'utf8'
+    );
+}
+
 function writeFixtureFilesWithChatFailure(dir) {
     const board = `
 version: 1
@@ -388,6 +496,32 @@ test('agent-governance-summary mantiene contrato JSON minimo estable', (t) => {
 
     const parsed = JSON.parse(result.stdout);
     assertSummaryJsonContractShape(parsed);
+});
+
+test('agent-governance-summary expone estrategia activa en JSON y Markdown', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+    writeFixtureFilesWithStrategy(dir);
+
+    let result = runSummary(dir, ['--format', 'json']);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    let parsed = JSON.parse(result.stdout);
+    assert.equal(
+        parsed.status.strategy.active.id,
+        'STRAT-2026-03-admin-operativo'
+    );
+    assert.equal(
+        parsed.board_doctor.strategy_summary.active.id,
+        'STRAT-2026-03-admin-operativo'
+    );
+
+    result = runSummary(dir, ['--format', 'markdown']);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Strategy:\s+`STRAT-2026-03-admin-operativo`/);
+    assert.match(
+        result.stdout,
+        /Strategy doctor:\s+`STRAT-2026-03-admin-operativo`/
+    );
 });
 
 test('agent-governance-summary alerta regresion de dominio GREEN->RED en PR summary', (t) => {

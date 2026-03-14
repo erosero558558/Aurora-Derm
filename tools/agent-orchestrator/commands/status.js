@@ -13,6 +13,7 @@ async function handleStatusCommand(ctx) {
         buildCodexInstanceSummary,
         buildProviderModeSummary,
         buildRuntimeSurfaceSummary,
+        buildStrategyCoverageSummary,
         loadMetricsSnapshot,
         normalizeContributionBaseline,
         buildContributionTrend,
@@ -52,6 +53,7 @@ async function handleStatusCommand(ctx) {
         contribution,
         contributionBaseline
     );
+    const strategy = buildStrategyCoverageSummary(board);
     const domainHealth = buildDomainHealth(
         board.tasks,
         conflictAnalysis,
@@ -79,6 +81,7 @@ async function handleStatusCommand(ctx) {
             byStatus: getStatusCounts(board.tasks),
             byExecutor: getExecutorCounts(board.tasks),
         },
+        strategy,
         codex_instances: codexInstances,
         provider_modes: providerModes,
         runtime_surfaces: runtimeSurfaces,

@@ -146,6 +146,9 @@ Interpretacion rapida del preflight:
 - `smoke:admin:openclaw-auth:local` ejecuta el smoke no interactivo `start -> helper -> status -> logout`.
 - Implementacion canonica del smoke local: `scripts/ops/admin/SMOKE-OPENCLAW-AUTH-LOCAL.ps1`.
 - `npm run openclaw:auth:start` usa la implementacion canonica en `scripts/ops/admin/INICIAR-OPENCLAW-AUTH-HELPER.ps1`, corre `openclaw:auth-preflight` y solo despues levanta `openclaw:auth-helper`.
+- OpenClaw sigue siendo el acceso primario del operador local.
+- Si hace falta contingencia web desde cualquier PC, habilitar `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` y `PIELARMONIA_ADMIN_2FA_SECRET`.
+- La UI solo debe mostrar `Clave + 2FA de contingencia` cuando el backend anuncie `fallbacks.legacy_password.available=true`.
 
 Flujo esperado:
 

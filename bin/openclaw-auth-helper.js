@@ -43,7 +43,7 @@ function bridgeSecret() {
 }
 
 function buildDeviceId() {
-    const explicit = env('OPENCLAW_HELPER_DEVICE_ID');
+    const explicit = loadOpenClawOperatorAuthConfig().helperDeviceId;
     if (explicit) {
         return explicit;
     }
@@ -504,6 +504,9 @@ function createOpenClawAuthHelperServer(options = {}) {
     const resolvePath = config.helperBasePath
         ? `${config.helperBasePath}/resolve`
         : '/resolve';
+    const healthPath = config.helperBasePath
+        ? `${config.helperBasePath}/health`
+        : '/health';
 
     const server = http.createServer(async (req, res) => {
         const method = String(req.method || 'GET').toUpperCase();
@@ -511,6 +514,18 @@ function createOpenClawAuthHelperServer(options = {}) {
             req.url || '/',
             `http://${req.headers.host || '127.0.0.1'}`
         );
+
+        if (method === 'GET' && url.pathname === healthPath) {
+            sendJson(res, {
+                ok: true,
+                service: 'openclaw-auth-helper',
+                helperBaseUrl: trimTrailingSlash(config.helperBaseUrl),
+                runtimeBaseUrl: trimTrailingSlash(config.runtimeBaseUrl),
+                resolvePath,
+                deviceId: buildDeviceId(),
+            });
+            return;
+        }
 
         if (method !== 'GET' || url.pathname !== resolvePath) {
             sendJson(
@@ -615,4 +630,5 @@ module.exports = {
     operatorAuthSignaturePayload,
     resolveOperatorChallenge,
     signBridgePayload,
+    startCliServer,
 };

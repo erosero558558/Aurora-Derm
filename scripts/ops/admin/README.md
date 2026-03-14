@@ -19,10 +19,15 @@ Superficies npm:
 - `npm run checklist:admin:openclaw-auth:local`
 - `npm run diagnose:admin:openclaw-auth:rollout`
 - `npm run openclaw:auth:start`
+- `npm run auth:operator:bridge` (alias deprecated)
 - `npm run smoke:admin:openclaw-auth:local`
 
 `openclaw:auth:start` corre el preflight local del operador y, si el bridge
 minimo esta sano, arranca el helper HTTP de OpenClaw para el login admin.
+OpenClaw sigue siendo el acceso primario del operador local.
+
+`auth:operator:bridge` queda solo como alias de compatibilidad y delega al
+launcher canonico `openclaw:auth:start`.
 
 `checklist:admin:openclaw-auth:local` imprime el smoke canonico del laptop del
 operador para validar env local, preflight, helper, facade `admin-auth.php` y
@@ -37,6 +42,13 @@ calcula `diagnosis` + `nextAction` y deja un reporte en
 `start -> helper -> status -> logout` contra `admin-auth.php` usando el helper
 real por codigo. Requiere que el preflight ya este en `ok=true`.
 Implementacion canonica: `scripts/ops/admin/SMOKE-OPENCLAW-AUTH-LOCAL.ps1`.
+
+Si hace falta contingencia web desde cualquier PC, habilitar
+`PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con
+`PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` y
+`PIELARMONIA_ADMIN_2FA_SECRET`.
+La UI solo debe mostrar `Clave + 2FA de contingencia` cuando el backend anuncie
+`fallbacks.legacy_password.available=true`.
 
 `gate:admin:rollout:openclaw` endurece el gate del shell para exigir que
 `api.php?resource=operator-auth-status` publique `mode=openclaw_chatgpt` y

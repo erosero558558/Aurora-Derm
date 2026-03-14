@@ -34,6 +34,7 @@ test.describe('Admin OpenClaw login', () => {
         await expect(page.locator('#legacyLoginStage')).toBeHidden();
         await expect(page.locator('#adminPassword')).toBeHidden();
         await expect(page.locator('#group2FA')).toBeHidden();
+        await expect(page.locator('#loginFallbackToggleBtn')).toBeHidden();
         await expect(page.locator('#loginBtn')).toHaveText(
             'Continuar con OpenClaw'
         );
@@ -121,6 +122,114 @@ test.describe('Admin OpenClaw login', () => {
         );
         await expect(page.locator('#loginBtn')).toHaveText(
             'Generar nuevo codigo'
+        );
+    });
+
+    test('conserva el challenge y permite alternar a contingencia cuando expira el codigo', async ({
+        page,
+    }) => {
+        await installBasicAdminApiMocks(page, {
+            healthPayload: {
+                status: 'ok',
+            },
+        });
+        await installOpenClawAdminAuthMock(page, {
+            fallbackAvailable: true,
+            terminalStatus: 'challenge_expirado',
+            terminalError:
+                'El codigo ya expiro. Genera un nuevo challenge para continuar.',
+            pollsBeforeTerminal: 1,
+        });
+
+        await page.goto('/admin.html');
+        await page.locator('#loginBtn').click();
+
+        await expect(page.locator('#adminLoginStatusTitle')).toHaveText(
+            'Challenge expirado'
+        );
+        await expect(page.locator('#adminOpenClawChallengeCard')).toBeVisible();
+        await expect(page.locator('#adminOpenClawManualCode')).toHaveText(
+            '9F38F7-D8D6D4'
+        );
+        await expect(page.locator('#adminOpenClawHelperLink')).toBeVisible();
+        await expect(page.locator('#loginFallbackToggleBtn')).toBeVisible();
+
+        await page.locator('#loginFallbackToggleBtn').click();
+
+        await expect(page.locator('#legacyLoginStage')).toBeVisible();
+        await expect(page.locator('#openclawLoginStage')).toBeHidden();
+        await expect(page.locator('#loginPrimaryToggleBtn')).toBeVisible();
+        await expect(page.locator('#adminLoginStepTitle')).toHaveText(
+            'Clave + 2FA de contingencia'
+        );
+
+        await page.locator('#loginPrimaryToggleBtn').click();
+
+        await expect(page.locator('#openclawLoginStage')).toBeVisible();
+        await expect(page.locator('#legacyLoginStage')).toBeHidden();
+        await expect(page.locator('#adminOpenClawChallengeCard')).toBeVisible();
+        await expect(page.locator('#adminOpenClawManualCode')).toHaveText(
+            '9F38F7-D8D6D4'
+        );
+    });
+
+    test('muestra la contingencia web solo cuando el backend la anuncia y permite entrar con clave + 2FA', async ({
+        page,
+    }) => {
+        await installBasicAdminApiMocks(page, {
+            healthPayload: {
+                status: 'ok',
+            },
+        });
+        await installOpenClawAdminAuthMock(page, {
+            fallbackAvailable: true,
+            terminalStatus: 'helper_no_disponible',
+            terminalError:
+                'No se pudo contactar al helper local de OpenClaw en este equipo.',
+            pollsBeforeTerminal: 1,
+        });
+
+        await page.goto('/admin.html');
+
+        await expect(page.locator('#loginFallbackToggleBtn')).toBeVisible();
+        await expect(page.locator('#adminLoginContingencyCopy')).toContainText(
+            'OpenClaw es el acceso principal del operador local'
+        );
+
+        await page.locator('#loginBtn').click();
+
+        await expect(page.locator('#adminLoginStatusTitle')).toHaveText(
+            'Helper local no disponible'
+        );
+        await expect(page.locator('#adminOpenClawChallengeCard')).toBeVisible();
+        await expect(page.locator('#loginFallbackToggleBtn')).toBeVisible();
+
+        await page.locator('#loginFallbackToggleBtn').click();
+
+        await expect(page.locator('#legacyLoginStage')).toBeVisible();
+        await expect(page.locator('#openclawLoginStage')).toBeHidden();
+        await expect(page.locator('#loginPrimaryToggleBtn')).toBeVisible();
+        await expect(page.locator('#adminLoginStepTitle')).toHaveText(
+            'Clave + 2FA de contingencia'
+        );
+
+        await page.locator('#adminPassword').fill('contingencia-segura');
+        await page.locator('#loginBtn').click();
+
+        await expect(page.locator('#group2FA')).toBeVisible();
+        await expect(page.locator('#adminLoginStepTitle')).toHaveText(
+            'Confirma el 2FA de contingencia'
+        );
+
+        await page.locator('#admin2FACode').fill('123456');
+        await page.locator('#loginBtn').click();
+
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await expect(page.locator('#adminSessionState')).toHaveText(
+            'Sesion activa'
+        );
+        await expect(page.locator('#adminSessionMeta')).toContainText(
+            '2FA validado'
         );
     });
 });

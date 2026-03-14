@@ -70,7 +70,8 @@ function loadOpenClawOperatorAuthConfig(overrides = {}) {
         ),
         helperDeviceId: firstNonEmpty(
             overrides.helperDeviceId,
-            env('OPENCLAW_HELPER_DEVICE_ID')
+            env('OPENCLAW_HELPER_DEVICE_ID'),
+            env('PIELARMONIA_OPERATOR_AUTH_DEVICE_ID')
         ),
     };
 }

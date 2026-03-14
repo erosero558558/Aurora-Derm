@@ -8,6 +8,24 @@ function fulfillJson(route, payload, status = 200) {
     });
 }
 
+function buildLegacyFallbackPayload(overrides = {}) {
+    const legacyOverrides =
+        overrides && typeof overrides.legacy_password === 'object'
+            ? overrides.legacy_password
+            : {};
+
+    return {
+        legacy_password: {
+            enabled: false,
+            configured: false,
+            requires2FA: true,
+            available: false,
+            reason: 'fallback_disabled',
+            ...legacyOverrides,
+        },
+    };
+}
+
 function buildOperatorAuthChallenge(overrides = {}, defaults = {}) {
     const challengeId = String(
         overrides.challengeId ||
@@ -113,6 +131,7 @@ function buildLegacyAdminAuthPayload(overrides = {}) {
         recommendedMode: 'legacy_password',
         twoFactorEnabled: false,
         csrfToken: authenticated ? 'csrf_test_token' : '',
+        fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
     };
 }
@@ -123,6 +142,8 @@ function buildOperatorOpenClawAnonymousPayload(overrides = {}) {
         authenticated: false,
         mode: 'openclaw_chatgpt',
         status: 'anonymous',
+        recommendedMode: 'openclaw_chatgpt',
+        fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
     };
 }
@@ -134,6 +155,8 @@ function buildOperatorOpenClawPendingPayload(challenge, overrides = {}) {
         mode: 'openclaw_chatgpt',
         status: 'pending',
         challenge,
+        recommendedMode: 'openclaw_chatgpt',
+        fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
     };
 }
@@ -144,11 +167,13 @@ function buildOperatorOpenClawAuthenticatedPayload(overrides = {}) {
         authenticated: true,
         mode: 'openclaw_chatgpt',
         status: 'autenticado',
+        recommendedMode: 'openclaw_chatgpt',
         csrfToken: 'csrf_operator_auth',
         operator: {
             email: 'operator@example.com',
             source: 'openclaw_chatgpt',
         },
+        fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
     };
 }
@@ -501,7 +526,9 @@ function buildOpenClawAdminAuthPayload(overrides = {}) {
         authenticated,
         configured: true,
         mode: 'openclaw_chatgpt',
+        recommendedMode: 'openclaw_chatgpt',
         status: authenticated ? 'autenticado' : 'pending',
+        fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
     };
 
@@ -537,6 +564,23 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
         : 2;
     const challenge = buildOpenClawAdminChallenge(options.challenge);
     let statusCalls = 0;
+    let legacyFallbackAuthenticated = false;
+    let legacyFallbackPending2FA = false;
+    const fallbackEnabled = options.fallbackAvailable === true;
+    const fallbackTwoFactorRequired =
+        options.fallbackTwoFactorRequired !== false;
+    const fallbackPayload = buildLegacyFallbackPayload(
+        fallbackEnabled
+            ? {
+                  legacy_password: {
+                      enabled: true,
+                      configured: true,
+                      available: true,
+                      reason: 'fallback_available',
+                  },
+              }
+            : {}
+    );
 
     await page.route(/\/admin-auth\.php(\?.*)?$/i, async (route) => {
         const url = new URL(route.request().url());
@@ -547,12 +591,39 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
         if (action === 'status') {
             statusCalls += 1;
 
+            if (legacyFallbackAuthenticated) {
+                return fulfillJson(
+                    route,
+                    buildLegacyAdminAuthPayload({
+                        authenticated: true,
+                        recommendedMode: 'openclaw_chatgpt',
+                        twoFactorEnabled: true,
+                        fallbacks: fallbackPayload,
+                        ...options.fallbackAuthenticatedPayload,
+                    })
+                );
+            }
+
+            if (legacyFallbackPending2FA) {
+                return fulfillJson(
+                    route,
+                    buildLegacyAdminAuthPayload({
+                        authenticated: false,
+                        status: 'two_factor_required',
+                        recommendedMode: 'openclaw_chatgpt',
+                        twoFactorEnabled: true,
+                        fallbacks: fallbackPayload,
+                    })
+                );
+            }
+
             if (statusCalls === 1) {
                 return fulfillJson(
                     route,
                     buildOpenClawAdminAuthPayload({
                         authenticated: false,
                         status: 'anonymous',
+                        fallbacks: fallbackPayload,
                         ...options.anonymousPayload,
                     })
                 );
@@ -568,6 +639,7 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
                         authenticated: true,
                         status: 'autenticado',
                         operator: buildOpenClawAdminOperator(options.operator),
+                        fallbacks: fallbackPayload,
                         ...options.authenticatedPayload,
                     })
                 );
@@ -581,6 +653,7 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
                         status: terminalStatus,
                         error: terminalError,
                         challenge,
+                        fallbacks: fallbackPayload,
                         ...options.terminalPayload,
                     })
                 );
@@ -592,6 +665,7 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
                     authenticated: false,
                     status: 'pending',
                     challenge,
+                    fallbacks: fallbackPayload,
                     ...options.pendingPayload,
                 })
             );
@@ -604,18 +678,73 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
                     authenticated: false,
                     status: 'pending',
                     challenge,
+                    fallbacks: fallbackPayload,
                     ...options.startPayload,
                 }),
                 202
             );
         }
 
+        if (action === 'login') {
+            if (!fallbackEnabled) {
+                return fulfillJson(
+                    route,
+                    {
+                        ok: false,
+                        code: 'legacy_auth_disabled',
+                        error: 'El acceso por clave de contingencia no esta disponible en este entorno.',
+                        fallbacks: fallbackPayload,
+                    },
+                    401
+                );
+            }
+
+            legacyFallbackPending2FA = fallbackTwoFactorRequired;
+            legacyFallbackAuthenticated = !fallbackTwoFactorRequired;
+            return fulfillJson(
+                route,
+                buildLegacyAdminAuthPayload({
+                    authenticated: !fallbackTwoFactorRequired,
+                    status: fallbackTwoFactorRequired
+                        ? 'two_factor_required'
+                        : 'authenticated',
+                    recommendedMode: 'openclaw_chatgpt',
+                    twoFactorEnabled: true,
+                    twoFactorRequired: fallbackTwoFactorRequired,
+                    csrfToken: fallbackTwoFactorRequired
+                        ? ''
+                        : 'csrf-openclaw-fallback',
+                    fallbacks: fallbackPayload,
+                    ...options.fallbackLoginPayload,
+                })
+            );
+        }
+
+        if (action === 'login-2fa') {
+            legacyFallbackPending2FA = false;
+            legacyFallbackAuthenticated = true;
+            return fulfillJson(
+                route,
+                buildLegacyAdminAuthPayload({
+                    authenticated: true,
+                    recommendedMode: 'openclaw_chatgpt',
+                    twoFactorEnabled: true,
+                    csrfToken: 'csrf-openclaw-fallback',
+                    fallbacks: fallbackPayload,
+                    ...options.fallback2faPayload,
+                })
+            );
+        }
+
         if (action === 'logout') {
+            legacyFallbackAuthenticated = false;
+            legacyFallbackPending2FA = false;
             return fulfillJson(
                 route,
                 buildOpenClawAdminAuthPayload({
                     authenticated: false,
                     status: 'logout',
+                    fallbacks: fallbackPayload,
                     ...options.logoutPayload,
                 })
             );
@@ -628,6 +757,9 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
         challenge,
         getStatusCalls() {
             return statusCalls;
+        },
+        isLegacyFallbackPending2FA() {
+            return legacyFallbackPending2FA;
         },
     };
 }

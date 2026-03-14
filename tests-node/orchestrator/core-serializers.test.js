@@ -55,6 +55,29 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
             revision: 7,
             updated_at: '2026-02-25',
         },
+        strategy: {
+            active: {
+                id: 'STRAT-2026-03-admin-operativo',
+                title: 'Admin operativo',
+                objective: 'Cerrar admin operativo',
+                owner: 'ernesto',
+                status: 'active',
+                started_at: '2026-03-14',
+                review_due_at: '2026-03-21',
+                exit_criteria: ['uno', 'dos'],
+                success_signal: 'demo',
+                subfronts: [
+                    {
+                        codex_instance: 'codex_frontend',
+                        subfront_id: 'SF-frontend-admin-operativo',
+                        title: 'Admin UX',
+                        allowed_scopes: ['frontend-admin'],
+                        support_only_scopes: ['docs'],
+                        blocked_scopes: ['payments'],
+                    },
+                ],
+            },
+        },
         tasks: [
             {
                 id: 'AG-001',
@@ -64,6 +87,10 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
                 status: 'ready',
                 risk: 'medium',
                 scope: 'governance',
+                strategy_id: 'STRAT-2026-03-admin-operativo',
+                subfront_id: 'SF-frontend-admin-operativo',
+                strategy_role: 'support',
+                strategy_reason: 'soporte directo al frente activo',
                 files: ['agent-orchestrator.js'],
                 acceptance: 'ok',
                 acceptance_ref: 'verification/agent-runs/AG-001.md',
@@ -81,6 +108,8 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
 
     assert.match(yaml, /^version: 1/m);
     assert.match(yaml, /revision:\s+7/);
+    assert.match(yaml, /strategy:/);
+    assert.match(yaml, /subfront_id:\s+SF-frontend-admin-operativo/);
     assert.match(yaml, /title:\s+"Task \\"uno\\""/);
     assert.match(yaml, /files:\s+\["agent-orchestrator\.js"\]/);
 
@@ -89,10 +118,18 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
     });
     assert.equal(parsed.tasks.length, 1);
     assert.equal(parsed.policy.revision, '7');
+    assert.equal(parsed.strategy.active.id, 'STRAT-2026-03-admin-operativo');
     assert.equal(parsed.tasks[0].title, 'Task "uno"');
     assert.deepEqual(parsed.tasks[0].files, ['agent-orchestrator.js']);
     assert.equal(parsed.tasks[0].codex_instance, 'codex_backend_ops');
     assert.equal(parsed.tasks[0].domain_lane, 'backend_ops');
     assert.equal(parsed.tasks[0].lane_lock, 'strict');
     assert.equal(parsed.tasks[0].cross_domain, false);
+    assert.equal(parsed.tasks[0].strategy_id, 'STRAT-2026-03-admin-operativo');
+    assert.equal(parsed.tasks[0].subfront_id, 'SF-frontend-admin-operativo');
+    assert.equal(parsed.tasks[0].strategy_role, 'support');
+    assert.equal(
+        parsed.tasks[0].strategy_reason,
+        'soporte directo al frente activo'
+    );
 });

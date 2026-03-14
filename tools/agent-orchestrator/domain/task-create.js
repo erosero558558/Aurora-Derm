@@ -331,6 +331,12 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
         runtime_last_transport: String(rawTask.runtime_last_transport || '')
             .trim()
             .toLowerCase(),
+        strategy_id: String(rawTask.strategy_id || '').trim(),
+        subfront_id: String(rawTask.subfront_id || '').trim(),
+        strategy_role: String(rawTask.strategy_role || '')
+            .trim()
+            .toLowerCase(),
+        strategy_reason: String(rawTask.strategy_reason || '').trim(),
         files: Array.isArray(rawTask.files)
             ? rawTask.files.map((v) => String(v || '').trim()).filter(Boolean)
             : [],
@@ -605,6 +611,10 @@ function buildTaskCreatePreviewDiff(existingTask, previewTask, options = {}) {
         'acceptance',
         'acceptance_ref',
         'evidence_ref',
+        'strategy_id',
+        'subfront_id',
+        'strategy_role',
+        'strategy_reason',
         'depends_on',
         'prompt',
     ];

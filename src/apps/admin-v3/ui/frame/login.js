@@ -1,5 +1,53 @@
 import { qs } from '../../shared/ui/render.js';
 
+function normalizeRecommendedMode(mode = 'legacy_password') {
+    return String(mode || '')
+        .trim()
+        .toLowerCase() === 'openclaw_chatgpt'
+        ? 'openclaw_chatgpt'
+        : 'legacy_password';
+}
+
+function syncContingencyActions({
+    mode = 'legacy_password',
+    recommendedMode = 'legacy_password',
+    fallbackAvailable = false,
+} = {}) {
+    const fallbackBtn = qs('#loginFallbackToggleBtn');
+    const primaryBtn = qs('#loginPrimaryToggleBtn');
+    const copy = qs('#adminLoginContingencyCopy');
+    const openClawPrimary =
+        normalizeRecommendedMode(recommendedMode) === 'openclaw_chatgpt';
+    const showFallback =
+        openClawPrimary &&
+        fallbackAvailable === true &&
+        mode !== 'legacy_password';
+    const showPrimary =
+        openClawPrimary &&
+        fallbackAvailable === true &&
+        mode === 'legacy_password';
+
+    fallbackBtn?.classList.toggle('is-hidden', !showFallback);
+    primaryBtn?.classList.toggle('is-hidden', !showPrimary);
+    if (fallbackBtn instanceof HTMLButtonElement) {
+        fallbackBtn.disabled = false;
+    }
+    if (primaryBtn instanceof HTMLButtonElement) {
+        primaryBtn.disabled = false;
+    }
+
+    copy?.classList.toggle(
+        'is-hidden',
+        !(openClawPrimary && fallbackAvailable)
+    );
+    if (copy) {
+        copy.textContent =
+            mode === 'legacy_password'
+                ? 'Clave + 2FA es una contingencia segura para entrar desde cualquier PC. OpenClaw sigue siendo el acceso principal del operador local.'
+                : 'OpenClaw es el acceso principal del operador local. Si necesitas entrar desde cualquier PC, usa la contingencia con clave + 2FA.';
+    }
+}
+
 function formatOpenClawExpiry(expiresAt) {
     const value = String(expiresAt || '').trim();
     if (!value) {
@@ -22,13 +70,18 @@ function formatOpenClawExpiry(expiresAt) {
     }
 }
 
-export function setLoginMode(mode = 'legacy_password') {
+export function setLoginMode(mode = 'legacy_password', options = {}) {
     const normalized =
         String(mode || '')
             .trim()
             .toLowerCase() === 'openclaw_chatgpt'
             ? 'openclaw_chatgpt'
             : 'legacy_password';
+    const recommendedMode = normalizeRecommendedMode(
+        options.recommendedMode || normalized
+    );
+    const fallbackAvailable = options.fallbackAvailable === true;
+    const openClawPrimary = recommendedMode === 'openclaw_chatgpt';
     const legacyStage = qs('#legacyLoginStage');
     const openclawStage = qs('#openclawLoginStage');
     const summary = qs('#adminLoginStepSummary');
@@ -48,34 +101,56 @@ export function setLoginMode(mode = 'legacy_password') {
     );
     form?.classList.remove('is-2fa-stage');
     resetBtn?.classList.add('is-hidden');
+    syncContingencyActions({
+        mode: normalized,
+        recommendedMode,
+        fallbackAvailable,
+    });
 
     if (normalized === 'openclaw_chatgpt') {
-        if (eyebrow) eyebrow.textContent = 'Acceso delegado';
+        if (eyebrow) {
+            eyebrow.textContent = openClawPrimary
+                ? 'Acceso principal'
+                : 'Acceso delegado';
+        }
         if (title) title.textContent = 'Entrar con OpenClaw';
         if (summary) {
-            summary.textContent =
-                'Usa tu sesion local de OpenClaw para abrir el nucleo interno del consultorio.';
+            summary.textContent = openClawPrimary
+                ? 'OpenClaw es el acceso principal del operador local en este laptop.'
+                : 'Usa tu sesion local de OpenClaw para abrir el nucleo interno del consultorio.';
         }
         if (support) {
             support.textContent =
-                'El panel abrira el helper local y esperara la confirmacion del operador autorizado.';
+                fallbackAvailable && openClawPrimary
+                    ? 'El panel abrira el helper local y esperara la confirmacion del operador autorizado. Tambien puedes usar la contingencia web cuando aplique.'
+                    : 'El panel abrira el helper local y esperara la confirmacion del operador autorizado.';
         }
         return;
     }
 
-    if (eyebrow) eyebrow.textContent = 'Ingreso de respaldo';
-    if (title) title.textContent = 'Acceso administrativo';
+    if (eyebrow) {
+        eyebrow.textContent = openClawPrimary
+            ? 'Contingencia web'
+            : 'Ingreso de respaldo';
+    }
+    if (title) {
+        title.textContent = openClawPrimary
+            ? 'Clave + 2FA de contingencia'
+            : 'Acceso administrativo';
+    }
     if (summary) {
-        summary.textContent =
-            'Usa tu clave solo como respaldo para entrar al centro interno.';
+        summary.textContent = openClawPrimary
+            ? 'Usa esta ruta solo si necesitas entrar desde cualquier computadora.'
+            : 'Usa tu clave solo como respaldo para entrar al centro interno.';
     }
     if (support) {
-        support.textContent =
-            'Si el backend solicita un segundo paso, veras el campo 2FA en esta misma tarjeta.';
+        support.textContent = openClawPrimary
+            ? 'OpenClaw sigue siendo el acceso principal del operador local; este formulario exige clave + 2FA.'
+            : 'Si el backend solicita un segundo paso, veras el campo 2FA en esta misma tarjeta.';
     }
 }
 
-export function setLogin2FAVisibility(visible) {
+export function setLogin2FAVisibility(visible, options = {}) {
     const group = qs('#group2FA');
     const summary = qs('#adminLoginStepSummary');
     const eyebrow = qs('#adminLoginStepEyebrow');
@@ -83,32 +158,58 @@ export function setLogin2FAVisibility(visible) {
     const support = qs('#adminLoginSupportCopy');
     const resetBtn = qs('#loginReset2FABtn');
     const form = qs('#loginForm');
+    const recommendedMode = normalizeRecommendedMode(
+        options.recommendedMode || 'legacy_password'
+    );
+    const fallbackAvailable = options.fallbackAvailable === true;
+    const openClawPrimary = recommendedMode === 'openclaw_chatgpt';
 
     if (!group) return;
 
     group.classList.toggle('is-hidden', !visible);
     form?.classList.toggle('is-2fa-stage', Boolean(visible));
     resetBtn?.classList.toggle('is-hidden', !visible);
+    syncContingencyActions({
+        mode: 'legacy_password',
+        recommendedMode,
+        fallbackAvailable,
+    });
 
     if (eyebrow) {
         eyebrow.textContent = visible
-            ? 'Verificacion secundaria'
-            : 'Ingreso de respaldo';
+            ? openClawPrimary
+                ? 'Contingencia web'
+                : 'Verificacion secundaria'
+            : openClawPrimary
+              ? 'Contingencia web'
+              : 'Ingreso de respaldo';
     }
     if (title) {
         title.textContent = visible
-            ? 'Confirma el codigo 2FA'
-            : 'Acceso administrativo';
+            ? openClawPrimary
+                ? 'Confirma el 2FA de contingencia'
+                : 'Confirma el codigo 2FA'
+            : openClawPrimary
+              ? 'Clave + 2FA de contingencia'
+              : 'Acceso administrativo';
     }
     if (summary) {
         summary.textContent = visible
-            ? 'Ingresa el codigo de seis digitos para terminar la autenticacion.'
-            : 'Usa tu clave solo como respaldo para entrar al centro interno.';
+            ? openClawPrimary
+                ? 'Ingresa el codigo de seis digitos para terminar el acceso de contingencia.'
+                : 'Ingresa el codigo de seis digitos para terminar la autenticacion.'
+            : openClawPrimary
+              ? 'Usa esta ruta solo si necesitas entrar desde cualquier computadora.'
+              : 'Usa tu clave solo como respaldo para entrar al centro interno.';
     }
     if (support) {
         support.textContent = visible
-            ? 'El backend ya valido la clave. Falta la segunda verificacion.'
-            : 'Si el backend solicita un segundo paso, veras el campo 2FA en esta misma tarjeta.';
+            ? openClawPrimary
+                ? 'La clave de contingencia ya fue validada. OpenClaw sigue siendo el acceso principal del operador local.'
+                : 'El backend ya valido la clave. Falta la segunda verificacion.'
+            : openClawPrimary
+              ? 'OpenClaw sigue siendo el acceso principal del operador local; este formulario exige clave + 2FA.'
+              : 'Si el backend solicita un segundo paso, veras el campo 2FA en esta misma tarjeta.';
     }
 
     setLoginSubmittingState(false);
@@ -204,6 +305,8 @@ export function setLoginFeedback({
 export function setLoginSubmittingState(submitting, options = {}) {
     const button = qs('#loginBtn');
     const resetBtn = qs('#loginReset2FABtn');
+    const fallbackBtn = qs('#loginFallbackToggleBtn');
+    const primaryBtn = qs('#loginPrimaryToggleBtn');
     const passwordInput = qs('#adminPassword');
     const codeInput = qs('#admin2FACode');
     const group = qs('#group2FA');
@@ -262,6 +365,13 @@ export function setLoginSubmittingState(submitting, options = {}) {
             'is-hidden',
             mode === 'openclaw_chatgpt' || !requires2FA
         );
+    }
+
+    if (fallbackBtn instanceof HTMLButtonElement) {
+        fallbackBtn.disabled = Boolean(submitting);
+    }
+    if (primaryBtn instanceof HTMLButtonElement) {
+        primaryBtn.disabled = Boolean(submitting);
     }
 }
 

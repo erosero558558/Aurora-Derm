@@ -31,6 +31,27 @@ Metas de operacion:
 - Lead time en tareas no criticas: < 1 dia.
 - Gate rojo por coordinacion: < 10% semanal.
 
+## Estrategia madre activa
+
+Cuando `AGENT_BOARD.yaml.strategy.active.status=active`, esa estrategia pasa a
+ser el marco obligatorio de direccion para toda ejecucion nueva.
+
+Reglas:
+
+- Solo se permite una `strategy.active` a la vez.
+- La estrategia activa define exactamente un subfrente por
+  `codex_instance` (`codex_backend_ops`, `codex_frontend`,
+  `codex_transversal`).
+- Todo hilo nuevo de Codex debe leer `strategy.active`, tomar un
+  `subfront_id` valido para su lane y rechazar trabajo fuera de ese frente.
+- Las tareas en `ready`, `in_progress`, `review` o `blocked` deben declarar
+  `strategy_id`, `subfront_id`, `strategy_role` y, si aplica,
+  `strategy_reason`.
+- `strategy_role=exception` solo se permite para hotfix critico o soporte
+  directo al frente activo, y siempre requiere `strategy_reason` explicito.
+- Las tareas historicas terminales (`done`, `failed`) no requieren backfill
+  obligatorio de estrategia.
+
 ## Arbol de decision oficial (v2)
 
 ```text
@@ -138,6 +159,7 @@ Campos obligatorios por tarea:
 
 - `id`, `title`, `owner`, `executor`, `status`, `risk`, `scope`, `files`,
   `codex_instance`, `domain_lane`, `lane_lock`, `cross_domain`,
+  `strategy_id`, `subfront_id`, `strategy_role`, `strategy_reason`,
   `provider_mode`, `runtime_surface`, `runtime_transport`,
   `runtime_last_transport`,
   `source_signal`, `source_ref`, `priority_score`, `sla_due_at`,
@@ -161,6 +183,9 @@ Regla adicional:
   `domain_lane=transversal_runtime`,
   `codex_instance=codex_transversal`,
   `provider_mode=openclaw_chatgpt` y surface/transport validos.
+- Si existe `strategy.active` y la tarea esta en estado activo
+  (`ready|in_progress|review|blocked`), debe alinearse con la estrategia
+  activa y con el `subfront_id` correspondiente a su `codex_instance`.
 
 Estados permitidos:
 
@@ -179,6 +204,10 @@ Comandos canonicos:
 node agent-orchestrator.js status
 node agent-orchestrator.js status --explain-red
 node agent-orchestrator.js status --json --explain-red
+node agent-orchestrator.js strategy status
+node agent-orchestrator.js strategy status --json
+node agent-orchestrator.js strategy set-active --seed admin-operativo --expect-rev 12 --json
+node agent-orchestrator.js strategy close --reason review_complete --expect-rev 12 --json
 node agent-orchestrator.js intake --strict
 node agent-orchestrator.js score
 node agent-orchestrator.js stale --strict
@@ -301,6 +330,9 @@ Nota:
 - `metrics --dry-run` muestra preview de archivos runtime que escribiria y no persiste cambios.
 - `metrics baseline <show|set|reset>` permite gestionar baseline explicito en `verification/agent-metrics.json` (recomendado usar `set --from current` tras cambios estructurales del board/politica).
 - `task create`, `task claim` (si cambia `status` a activo) y `task start` aplican guardrails locales de gobernanza: validan `depends_on` (IDs existentes, sin duplicados) y bloquean scopes criticos asignados a ejecutores no permitidos (`codex`).
+- `task create`, `task claim` (si activa trabajo), `task start` y `codex start`
+  bloquean tareas fuera de `strategy.active`, subfrentes ajenos a su lane y
+  excepciones sin `strategy_reason`.
 - `task create --template <docs|bugfix|critical>` aplica defaults de `executor/status/risk/scope`; los flags explicitos sobreescriben la plantilla. `critical` exige `--scope` con keyword critica (`payments|auth|calendar|deploy|env|security`).
 - `task create --template <docs|bugfix|critical|runtime>` aplica defaults de `executor/status/risk/scope`; la plantilla `runtime` fija `scope=openclaw_runtime`, `domain_lane=transversal_runtime`, `codex_instance=codex_transversal`, `provider_mode=openclaw_chatgpt` y `runtime_transport=hybrid_http_cli`. Los flags explicitos sobreescriben la plantilla. `critical` exige `--scope` con keyword critica (`payments|auth|calendar|deploy|env|security`).
 - `task create --from-files` infiere `scope` y `risk` desde rutas de `files` (precedencia: flags explicitos > inferencia por files > template > defaults). Si detecta scope critico y no se paso `--executor`, puede autoajustar `executor` a `codex` para evitar fallo por guardrail.
@@ -348,12 +380,16 @@ Nota:
 
 - `AGENT_BOARD.yaml` sigue siendo el tablero canonico de locks/ejecucion para todos los agentes, incluida la linea Codex.
 - `PLAN_MAESTRO_CODEX_2026.md` sigue siendo la fuente de estrategia/evidencia de la linea Codex.
+- El bloque `CODEX_STRATEGY_ACTIVE` del plan debe espejar exactamente la
+  `strategy.active` vigente del board.
 - Toda ejecucion activa de Codex debe tener tarea espejo `CDX-*` en `AGENT_BOARD.yaml` con `executor: codex`.
 - Maximo una tarea `CDX-*` activa por `codex_instance`.
 - Maximo tres tareas `CDX-*` activas en total, una por lane.
 - El bloqueo por solape se decide por `files` en tareas activas del board (`ready`, `in_progress`, `review`, `blocked`).
 - Excepcion permitida: handoff temporal y explicito en `AGENT_HANDOFFS.yaml` (TTL + archivos acotados).
 - Si hay drift entre el bloque `CODEX_ACTIVE` del plan Codex y el task `CDX-*` espejo, CI debe fallar.
+- Si hay drift entre `CODEX_STRATEGY_ACTIVE` y `AGENT_BOARD.yaml.strategy.active`,
+  CI debe fallar.
 - `codex-check` debe bloquear si una tarea activa en `codex_transversal`
   depende de una `runtime_surface` no saludable.
 
@@ -368,6 +404,8 @@ CI valida automaticamente:
 - Asignacion de tareas criticas a ejecutor permitido.
 - Solape de archivos entre tareas activas.
 - Integridad del espejo Codex (`PLAN_MAESTRO_CODEX_2026.md` <-> `AGENT_BOARD.yaml`).
+- Integridad del espejo de estrategia madre (`CODEX_STRATEGY_ACTIVE` <->
+  `AGENT_BOARD.yaml.strategy.active`).
 - Push directo a `main/staging` con cambio en `AGENT_BOARD.yaml` sin PR asociado (bloqueante).
 - Drift legacy de dual-lane/tri-lane en `AGENT_BOARD.yaml` (detector/normalizador en gobernanza).
 

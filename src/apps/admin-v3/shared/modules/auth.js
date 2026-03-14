@@ -44,6 +44,61 @@ function normalizeAuthMode(payload, fallback = 'legacy_password') {
     return fallback;
 }
 
+function normalizeRecommendedMode(payload, fallback = 'legacy_password') {
+    return normalizeAuthMode(
+        {
+            mode: payload?.recommendedMode,
+        },
+        fallback
+    );
+}
+
+const DEFAULT_LEGACY_FALLBACK = Object.freeze({
+    enabled: false,
+    configured: false,
+    requires2FA: true,
+    available: false,
+    reason: 'fallback_disabled',
+});
+
+function normalizeFallbacks(fallbacks, previousFallbacks = null) {
+    const previousLegacy =
+        previousFallbacks &&
+        previousFallbacks.legacy_password &&
+        typeof previousFallbacks.legacy_password === 'object'
+            ? previousFallbacks.legacy_password
+            : DEFAULT_LEGACY_FALLBACK;
+    const nextLegacySource =
+        fallbacks &&
+        fallbacks.legacy_password &&
+        typeof fallbacks.legacy_password === 'object'
+            ? fallbacks.legacy_password
+            : {};
+
+    const legacy = {
+        ...DEFAULT_LEGACY_FALLBACK,
+        ...previousLegacy,
+        ...nextLegacySource,
+    };
+
+    legacy.enabled = legacy.enabled === true;
+    legacy.configured = legacy.configured === true;
+    legacy.requires2FA = legacy.requires2FA !== false;
+    legacy.available = legacy.available === true;
+    legacy.reason = String(
+        legacy.reason ||
+            (legacy.available ? 'fallback_available' : 'fallback_disabled')
+    ).trim();
+
+    return {
+        legacy_password: legacy,
+    };
+}
+
+function hasLegacyFallbackAvailable(auth = getState().auth) {
+    return auth?.fallbacks?.legacy_password?.available === true;
+}
+
 function normalizeChallenge(challenge) {
     if (!challenge || typeof challenge !== 'object') {
         return null;
@@ -85,6 +140,92 @@ function normalizeOperator(operator) {
     };
 }
 
+function buildOpenClawSnapshot(status, challenge, lastError) {
+    return {
+        status: String(status || 'anonymous').trim() || 'anonymous',
+        challenge: normalizeChallenge(challenge),
+        lastError: String(lastError || '').trim(),
+    };
+}
+
+export function getVisibleOpenClawState(auth = getState().auth) {
+    if (
+        normalizeAuthMode(auth, auth?.recommendedMode || 'legacy_password') ===
+        'openclaw_chatgpt'
+    ) {
+        return buildOpenClawSnapshot(
+            auth.status,
+            auth.challenge,
+            auth.lastError
+        );
+    }
+
+    return buildOpenClawSnapshot(
+        auth?.openClawSnapshot?.status,
+        auth?.openClawSnapshot?.challenge,
+        auth?.openClawSnapshot?.lastError
+    );
+}
+
+function resolveLoginSurfaceMode({
+    authenticated,
+    requires2FA,
+    mode,
+    recommendedMode,
+    fallbackAvailable,
+    preferLegacySurface,
+}) {
+    if (authenticated) {
+        return mode;
+    }
+
+    if (requires2FA) {
+        return 'legacy_password';
+    }
+
+    if (recommendedMode === 'openclaw_chatgpt') {
+        if (fallbackAvailable && preferLegacySurface) {
+            return 'legacy_password';
+        }
+
+        return 'openclaw_chatgpt';
+    }
+
+    return 'legacy_password';
+}
+
+export function getActiveLoginSurfaceMode(auth = getState().auth) {
+    const recommendedMode = normalizeAuthMode(
+        {
+            mode: auth?.recommendedMode,
+        },
+        auth?.mode || 'legacy_password'
+    );
+    const mode = normalizeAuthMode(auth, recommendedMode);
+    const currentSurface = normalizeAuthMode(
+        {
+            mode: auth?.loginSurfaceMode,
+        },
+        recommendedMode
+    );
+
+    return resolveLoginSurfaceMode({
+        authenticated: auth?.authenticated === true,
+        requires2FA: auth?.requires2FA === true,
+        mode,
+        recommendedMode,
+        fallbackAvailable: hasLegacyFallbackAvailable(auth),
+        preferLegacySurface:
+            currentSurface === 'legacy_password' &&
+            normalizeAuthMode(
+                {
+                    mode: auth?.recommendedMode,
+                },
+                'legacy_password'
+            ) === 'openclaw_chatgpt',
+    });
+}
+
 function normalizeCapabilities(
     capabilities,
     authenticated,
@@ -108,17 +249,33 @@ function normalizeCapabilities(
 function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     const authenticated = payload?.authenticated === true;
     const mode = normalizeAuthMode(payload, fallbackMode);
+    const recommendedMode = normalizeRecommendedMode(payload, mode);
     const csrfToken = authenticated ? String(payload?.csrfToken || '') : '';
     const status = String(
         payload?.status || (authenticated ? 'autenticado' : 'anonymous')
     ).trim();
     const currentAuth = getState().auth;
+    const fallbackPayload = normalizeFallbacks(
+        payload?.fallbacks,
+        currentAuth.fallbacks
+    );
     const nextChallenge = normalizeChallenge(payload?.challenge);
     const challenge =
         nextChallenge ||
         (authenticated || mode !== 'openclaw_chatgpt'
             ? null
             : currentAuth.challenge);
+    const payloadError = authenticated
+        ? ''
+        : String(payload?.error || '').trim();
+    const openClawSnapshot =
+        mode === 'openclaw_chatgpt'
+            ? buildOpenClawSnapshot(status, challenge, payloadError)
+            : buildOpenClawSnapshot(
+                  currentAuth.openClawSnapshot?.status,
+                  currentAuth.openClawSnapshot?.challenge,
+                  currentAuth.openClawSnapshot?.lastError
+              );
     const operator = normalizeOperator(payload?.operator);
     const configured =
         payload?.configured !== false &&
@@ -134,6 +291,31 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
             ? 'openclaw'
             : getState().auth.authMethod || 'session'
         : '';
+    const requires2FA =
+        !authenticated &&
+        mode === 'legacy_password' &&
+        status === 'two_factor_required';
+    const currentSurface = normalizeAuthMode(
+        {
+            mode: currentAuth.loginSurfaceMode,
+        },
+        recommendedMode
+    );
+    const loginSurfaceMode = resolveLoginSurfaceMode({
+        authenticated,
+        requires2FA,
+        mode,
+        recommendedMode,
+        fallbackAvailable: fallbackPayload.legacy_password.available === true,
+        preferLegacySurface:
+            currentSurface === 'legacy_password' &&
+            normalizeAuthMode(
+                {
+                    mode: currentAuth.recommendedMode,
+                },
+                'legacy_password'
+            ) === 'openclaw_chatgpt',
+    });
 
     setApiCsrfToken(csrfToken);
 
@@ -143,13 +325,12 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
             ...state.auth,
             authenticated,
             csrfToken,
-            requires2FA:
-                !authenticated &&
-                mode === 'legacy_password' &&
-                status === 'two_factor_required',
+            requires2FA,
             lastAuthAt: authenticated ? Date.now() : 0,
             authMethod,
             mode,
+            recommendedMode,
+            loginSurfaceMode,
             status,
             configured,
             challenge,
@@ -158,8 +339,10 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
                     ? false
                     : currentAuth.helperUrlOpened === true,
             operator,
+            fallbacks: fallbackPayload,
+            openClawSnapshot,
             capabilities,
-            lastError: authenticated ? '' : String(payload?.error || ''),
+            lastError: payloadError,
         },
     }));
 
@@ -176,6 +359,61 @@ export function isOperatorAuthMode(auth = getState().auth) {
         normalizeAuthMode(auth, getState().auth.mode || 'legacy_password') ===
         'openclaw_chatgpt'
     );
+}
+
+export function useLegacyFallbackLoginSurface() {
+    if (!hasLegacyFallbackAvailable()) {
+        return false;
+    }
+
+    updateState((state) => ({
+        ...state,
+        auth: {
+            ...state.auth,
+            loginSurfaceMode: 'legacy_password',
+            requires2FA: false,
+        },
+    }));
+
+    return true;
+}
+
+export function usePrimaryLoginSurface() {
+    const auth = getState().auth;
+    const recommendedMode = normalizeAuthMode(
+        {
+            mode: auth.recommendedMode,
+        },
+        auth.mode || 'legacy_password'
+    );
+
+    if (recommendedMode !== 'openclaw_chatgpt') {
+        updateState((state) => ({
+            ...state,
+            auth: {
+                ...state.auth,
+                loginSurfaceMode: 'legacy_password',
+                requires2FA: false,
+            },
+        }));
+        return recommendedMode;
+    }
+
+    const snapshot = getVisibleOpenClawState(auth);
+
+    updateState((state) => ({
+        ...state,
+        auth: {
+            ...state.auth,
+            loginSurfaceMode: 'openclaw_chatgpt',
+            requires2FA: false,
+            status: snapshot.status,
+            challenge: snapshot.challenge,
+            lastError: snapshot.lastError,
+        },
+    }));
+
+    return recommendedMode;
 }
 
 export async function checkAuthStatus() {
@@ -264,6 +502,15 @@ export async function loginWithPassword(password) {
     });
 
     const requires2FA = payload.twoFactorRequired === true;
+    const currentAuth = getState().auth;
+    const recommendedMode = normalizeRecommendedMode(
+        payload,
+        currentAuth.recommendedMode || currentAuth.mode || 'legacy_password'
+    );
+    const fallbacks = normalizeFallbacks(
+        payload?.fallbacks,
+        currentAuth.fallbacks
+    );
     if (requires2FA) {
         updateState((state) => ({
             ...state,
@@ -272,11 +519,14 @@ export async function loginWithPassword(password) {
                 requires2FA: true,
                 authMethod: 'password',
                 mode: 'legacy_password',
+                recommendedMode,
+                loginSurfaceMode: 'legacy_password',
                 status: 'two_factor_required',
-                configured: true,
+                configured: payload?.configured !== false,
                 challenge: null,
                 helperUrlOpened: false,
                 operator: null,
+                fallbacks,
                 capabilities: {
                     adminAgent: false,
                 },
@@ -299,11 +549,14 @@ export async function loginWithPassword(password) {
             lastAuthAt: Date.now(),
             authMethod: 'password',
             mode: 'legacy_password',
+            recommendedMode,
+            loginSurfaceMode: 'legacy_password',
             status: 'authenticated',
-            configured: true,
+            configured: payload?.configured !== false,
             challenge: null,
             helperUrlOpened: false,
             operator: null,
+            fallbacks,
             capabilities: normalizeCapabilities(
                 payload?.capabilities,
                 true,
@@ -326,6 +579,15 @@ export async function loginWith2FA(code) {
         method: 'POST',
         body: { code: tokenCode },
     });
+    const currentAuth = getState().auth;
+    const recommendedMode = normalizeRecommendedMode(
+        payload,
+        currentAuth.recommendedMode || currentAuth.mode || 'legacy_password'
+    );
+    const fallbacks = normalizeFallbacks(
+        payload?.fallbacks,
+        currentAuth.fallbacks
+    );
 
     const csrfToken = String(payload.csrfToken || '');
     setApiCsrfToken(csrfToken);
@@ -340,11 +602,14 @@ export async function loginWith2FA(code) {
             lastAuthAt: Date.now(),
             authMethod: '2fa',
             mode: 'legacy_password',
+            recommendedMode,
+            loginSurfaceMode: 'legacy_password',
             status: 'authenticated',
-            configured: true,
+            configured: payload?.configured !== false,
             challenge: null,
             helperUrlOpened: false,
             operator: null,
+            fallbacks,
             capabilities: normalizeCapabilities(
                 payload?.capabilities,
                 true,
@@ -365,7 +630,20 @@ export async function logoutSession() {
     } catch (_error) {
         // no-op
     }
-    const mode = normalizeAuthMode(payload, previousMode);
+    if (payload) {
+        applyAuthPayload(payload, previousMode);
+        const primarySurface = normalizeRecommendedMode(payload, previousMode);
+        updateState((state) => ({
+            ...state,
+            auth: {
+                ...state.auth,
+                requires2FA: false,
+                loginSurfaceMode: primarySurface,
+            },
+        }));
+        return;
+    }
+
     setApiCsrfToken('');
     updateState((state) => ({
         ...state,
@@ -376,12 +654,20 @@ export async function logoutSession() {
             requires2FA: false,
             lastAuthAt: 0,
             authMethod: '',
-            mode,
+            mode: normalizeAuthMode(
+                {
+                    mode: state.auth.recommendedMode,
+                },
+                previousMode
+            ),
+            loginSurfaceMode: normalizeAuthMode(
+                {
+                    mode: state.auth.recommendedMode,
+                },
+                previousMode
+            ),
             status: 'anonymous',
-            configured:
-                payload?.configured !== false &&
-                String(payload?.status || '') !==
-                    'operator_auth_not_configured',
+            configured: false,
             challenge: null,
             helperUrlOpened: false,
             operator: null,

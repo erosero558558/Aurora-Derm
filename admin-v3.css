@@ -217,6 +217,7 @@ body.admin-v3-mode .availability-header {
 body.admin-v3-mode .toolbar-group,
 body.admin-v3-mode .toolbar-row,
 body.admin-v3-mode .admin-login-actions,
+body.admin-v3-mode .admin-login-alt-actions,
 body.admin-v3-mode .dashboard-hero-actions,
 body.admin-v3-mode .appointments-command-actions,
 body.admin-v3-mode .callbacks-command-actions,
@@ -403,6 +404,10 @@ body.admin-v3-mode .admin-openclaw-challenge p,
 body.admin-v3-mode .admin-login-support-copy {
     margin: 0;
     color: var(--admin3-muted);
+}
+
+body.admin-v3-mode .admin-login-support-copy-secondary {
+    font-size: 0.92rem;
 }
 
 body.admin-v3-mode .admin-openclaw-challenge__head {

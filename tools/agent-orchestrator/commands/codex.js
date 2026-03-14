@@ -119,9 +119,11 @@ async function handleCodexCommand(ctx) {
         parseFlags,
         ensureTask,
         parseBoard,
+        parseHandoffs,
         ACTIVE_STATUSES,
         ALLOWED_STATUSES,
         parseCsvList,
+        validateTaskGovernancePrechecks,
         currentDate,
         writeBoard,
         writeCodexActiveBlock,
@@ -191,6 +193,18 @@ async function handleCodexCommand(ctx) {
         }
         task.status = 'in_progress';
         task.updated_at = currentDate();
+        const handoffData =
+            typeof parseHandoffs === 'function'
+                ? parseHandoffs()
+                : { handoffs: [] };
+        if (typeof validateTaskGovernancePrechecks === 'function') {
+            validateTaskGovernancePrechecks(board, task, {
+                allowSelf: true,
+                handoffs: Array.isArray(handoffData?.handoffs)
+                    ? handoffData.handoffs
+                    : [],
+            });
+        }
         writeBoard(board, {
             command: 'codex start',
             actor: task.owner || task.executor || '',

@@ -15,6 +15,76 @@ $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $action = strtolower(trim((string) ($_GET['action'] ?? 'status')));
 const ADMIN_LOGIN_ACTION = 'admin-login';
 const ADMIN_LOGIN_FAIL_ACTION = 'admin-login-failed';
+
+function admin_auth_fallbacks_payload(): array
+{
+    if (function_exists('internal_console_auth_fallbacks_payload')) {
+        return internal_console_auth_fallbacks_payload();
+    }
+
+    return [
+        'legacy_password' => [
+            'enabled' => false,
+            'configured' => false,
+            'requires2FA' => true,
+            'available' => false,
+            'reason' => 'fallback_disabled',
+        ],
+    ];
+}
+
+function admin_auth_legacy_disabled_response(): array
+{
+    $fallback = admin_auth_fallbacks_payload()['legacy_password'] ?? [];
+    $reason = (string) ($fallback['reason'] ?? 'fallback_disabled');
+    $error = 'El acceso por clave esta deshabilitado en este entorno.';
+
+    if ($reason === 'admin_password_not_configured') {
+        $error = 'El acceso por clave de contingencia requiere PIELARMONIA_ADMIN_PASSWORD o PIELARMONIA_ADMIN_PASSWORD_HASH.';
+    } elseif ($reason === 'admin_2fa_not_configured') {
+        $error = 'El acceso por clave de contingencia requiere PIELARMONIA_ADMIN_2FA_SECRET.';
+    } else {
+        $error = 'El acceso por clave de contingencia requiere PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true y 2FA configurado en este entorno.';
+    }
+
+    return [
+        'ok' => false,
+        'code' => 'legacy_auth_disabled',
+        'error' => $error,
+        'fallbacks' => admin_auth_fallbacks_payload(),
+    ];
+}
+
+function admin_auth_legacy_status_payload(bool $authenticated, array $overrides = []): array
+{
+    $legacyConfigured = admin_password_is_configured();
+    $twoFactorEnabled = admin_two_factor_is_configured();
+    $recommendedMode = internal_console_primary_auth_mode();
+    $payload = [
+        'ok' => true,
+        'authenticated' => $authenticated,
+        'status' => $authenticated
+            ? 'authenticated'
+            : ($legacyConfigured ? 'anonymous' : 'legacy_auth_not_configured'),
+        'mode' => 'legacy_password',
+        'configured' => $legacyConfigured,
+        'twoFactorEnabled' => $twoFactorEnabled,
+        'recommendedMode' => $recommendedMode,
+        'capabilities' => $authenticated
+            ? admin_agent_capabilities_payload()
+            : [
+                'adminAgent' => false,
+            ],
+        'fallbacks' => admin_auth_fallbacks_payload(),
+    ];
+
+    if ($authenticated) {
+        $payload['csrfToken'] = generate_csrf_token();
+    }
+
+    return array_merge($payload, $overrides);
+}
+
 $prefersOpenClawAuth = function_exists('internal_console_prefers_openclaw_auth')
     ? internal_console_prefers_openclaw_auth()
     : operator_auth_is_enabled();
@@ -24,6 +94,17 @@ $legacyPasswordEnabled = function_exists('internal_console_allows_legacy_passwor
 
 if ($method === 'GET' && $action === 'status') {
     if ($prefersOpenClawAuth && operator_auth_is_enabled()) {
+        if (legacy_admin_is_authenticated()) {
+            audit_log_event('admin.status', [
+                'authenticated' => true,
+                'mode' => 'legacy_password',
+                'configured' => admin_password_is_configured(),
+                'preferred' => true,
+                'fallback' => true,
+            ]);
+            json_response(admin_auth_legacy_status_payload(true));
+        }
+
         $isAuth = operator_auth_is_authenticated();
         audit_log_event('admin.status', [
             'authenticated' => $isAuth,
@@ -44,29 +125,12 @@ if ($method === 'GET' && $action === 'status') {
         json_response($payload);
     }
 
-    $legacyConfigured = admin_password_is_configured();
-    $twoFactorEnabled = trim((string) getenv('PIELARMONIA_ADMIN_2FA_SECRET')) !== '';
     audit_log_event('admin.status', [
         'authenticated' => $isAuth,
         'mode' => 'legacy_password',
-        'configured' => $legacyConfigured,
+        'configured' => admin_password_is_configured(),
     ]);
-    $resp = [
-        'ok' => true,
-        'authenticated' => $isAuth,
-        'status' => $isAuth ? 'authenticated' : ($legacyConfigured ? 'anonymous' : 'legacy_auth_not_configured'),
-        'mode' => 'legacy_password',
-        'configured' => $legacyConfigured,
-        'twoFactorEnabled' => $twoFactorEnabled,
-        'recommendedMode' => $prefersOpenClawAuth
-            ? OPERATOR_AUTH_SOURCE
-            : 'legacy_password',
-        'capabilities' => admin_agent_capabilities_payload(),
-    ];
-    if ($isAuth) {
-        $resp['csrfToken'] = generate_csrf_token();
-    }
-    json_response($resp);
+    json_response(admin_auth_legacy_status_payload($isAuth));
 }
 
 if ($method === 'POST' && $action === 'start') {
@@ -80,11 +144,7 @@ if ($method === 'POST' && $action === 'login') {
             'action' => $action,
             'mode' => internal_console_primary_auth_mode(),
         ]);
-        json_response([
-            'ok' => false,
-            'code' => 'legacy_auth_disabled',
-            'error' => 'El acceso por clave ya no esta disponible por defecto. Solo esta disponible cuando PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password en este entorno.'
-        ], 401);
+        json_response(admin_auth_legacy_disabled_response(), 401);
     }
 
     // Limite de intentos globales por IP para el endpoint de login.
@@ -97,6 +157,7 @@ if ($method === 'POST' && $action === 'login') {
         json_response([
             'ok' => false,
             'error' => 'Acceso admin no configurado en este entorno.',
+            'fallbacks' => admin_auth_fallbacks_payload(),
         ], 503);
     }
 
@@ -108,7 +169,8 @@ if ($method === 'POST' && $action === 'login') {
         header('Retry-After: 900');
         json_response([
             'ok' => false,
-            'error' => 'Demasiados intentos fallidos. Intenta nuevamente en 15 minutos.'
+            'error' => 'Demasiados intentos fallidos. Intenta nuevamente en 15 minutos.',
+            'fallbacks' => admin_auth_fallbacks_payload(),
         ], 429);
     }
 
@@ -117,7 +179,8 @@ if ($method === 'POST' && $action === 'login') {
     if ($password === '') {
         json_response([
             'ok' => false,
-            'error' => 'Contraseña requerida'
+            'error' => 'Contrasena requerida',
+            'fallbacks' => admin_auth_fallbacks_payload(),
         ], 400);
     }
 
@@ -128,7 +191,8 @@ if ($method === 'POST' && $action === 'login') {
         ]);
         json_response([
             'ok' => false,
-            'error' => 'Credenciales inválidas'
+            'error' => 'Credenciales invalidas',
+            'fallbacks' => admin_auth_fallbacks_payload(),
         ], 401);
     }
 
@@ -152,6 +216,7 @@ if ($method === 'POST' && $action === 'login') {
             'capabilities' => [
                 'adminAgent' => false,
             ],
+            'fallbacks' => admin_auth_fallbacks_payload(),
         ]);
     }
 
@@ -171,6 +236,7 @@ if ($method === 'POST' && $action === 'login') {
         'recommendedMode' => internal_console_primary_auth_mode(),
         'csrfToken' => generate_csrf_token(),
         'capabilities' => admin_agent_capabilities_payload(),
+        'fallbacks' => admin_auth_fallbacks_payload(),
     ]);
 }
 
@@ -180,36 +246,48 @@ if ($method === 'POST' && $action === 'login-2fa') {
             'action' => $action,
             'mode' => internal_console_primary_auth_mode(),
         ]);
-        json_response([
-            'ok' => false,
-            'code' => 'legacy_auth_disabled',
-            'error' => 'El acceso por clave ya no esta disponible por defecto. Solo esta disponible cuando PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password en este entorno.'
-        ], 401);
+        json_response(admin_auth_legacy_disabled_response(), 401);
     }
 
     require_rate_limit('admin-login-2fa', 6, 300);
 
     if (!isset($_SESSION['admin_partial_login']) || ($_SESSION['admin_partial_login'] !== true)) {
-        json_response(['ok' => false, 'error' => 'Sesión expirada'], 401);
+        json_response([
+            'ok' => false,
+            'error' => 'Sesion expirada',
+            'fallbacks' => admin_auth_fallbacks_payload(),
+        ], 401);
     }
 
     if (time() > ($_SESSION['admin_partial_login_expires'] ?? 0)) {
         unset($_SESSION['admin_partial_login']);
-        json_response(['ok' => false, 'error' => 'Tiempo expirado, vuelve a ingresar'], 401);
+        json_response([
+            'ok' => false,
+            'error' => 'Tiempo expirado, vuelve a ingresar',
+            'fallbacks' => admin_auth_fallbacks_payload(),
+        ], 401);
     }
 
     $payload = require_json_body();
     $code = isset($payload['code']) ? trim((string) $payload['code']) : '';
 
     if ($code === '') {
-        json_response(['ok' => false, 'error' => 'Código requerido'], 400);
+        json_response([
+            'ok' => false,
+            'error' => 'Codigo requerido',
+            'fallbacks' => admin_auth_fallbacks_payload(),
+        ], 400);
     }
 
     if (!verify_2fa_code($code)) {
         audit_log_event('admin.login_2fa_failed', [
             'reason' => 'invalid_code'
         ]);
-        json_response(['ok' => false, 'error' => 'Código inválido'], 401);
+        json_response([
+            'ok' => false,
+            'error' => 'Codigo invalido',
+            'fallbacks' => admin_auth_fallbacks_payload(),
+        ], 401);
     }
 
     // Success
@@ -234,6 +312,7 @@ if ($method === 'POST' && $action === 'login-2fa') {
         'recommendedMode' => internal_console_primary_auth_mode(),
         'csrfToken' => generate_csrf_token(),
         'capabilities' => admin_agent_capabilities_payload(),
+        'fallbacks' => admin_auth_fallbacks_payload(),
     ]);
 }
 
@@ -257,6 +336,7 @@ if ($method === 'POST' && $action === 'logout') {
         'capabilities' => [
             'adminAgent' => false,
         ],
+        'fallbacks' => admin_auth_fallbacks_payload(),
     ]);
 }
 

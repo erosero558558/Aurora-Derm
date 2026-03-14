@@ -8,6 +8,7 @@ const http = require('node:http');
 const {
     buildConfig,
     createBridgeServer,
+    detectOpenClawIdentity,
     operatorAuthSignaturePayload,
     parsePhpEnvFile,
     resolveChallenge,
@@ -87,7 +88,8 @@ test('resolveIdentityFromModelsStatus usa el perfil OAuth openai-codex vigente',
                         status: 'ok',
                         profiles: [
                             {
-                                profileId: 'openai-codex:javier.rosero94@gmail.com',
+                                profileId:
+                                    'openai-codex:javier.rosero94@gmail.com',
                                 provider: 'openai-codex',
                                 type: 'oauth',
                                 status: 'ok',
@@ -106,6 +108,62 @@ test('resolveIdentityFromModelsStatus usa el perfil OAuth openai-codex vigente',
         result.identity.profileId,
         'openai-codex:javier.rosero94@gmail.com'
     );
+});
+
+test('detectOpenClawIdentity consulta /v1/session y normaliza la sesion activa', async () => {
+    const runtime = http.createServer((request, response) => {
+        if (request.method === 'GET' && request.url === '/v1/session') {
+            response.writeHead(200, {
+                'Content-Type': 'application/json; charset=utf-8',
+            });
+            response.end(
+                JSON.stringify({
+                    loggedIn: true,
+                    email: 'operator@example.com',
+                    profileId: 'openai-codex:operator@example.com',
+                    accountId: 'acct-test-operator',
+                    provider: 'openclaw_chatgpt',
+                })
+            );
+            return;
+        }
+
+        response.writeHead(404, {
+            'Content-Type': 'application/json; charset=utf-8',
+        });
+        response.end(JSON.stringify({ ok: false }));
+    });
+
+    const address = await listen(runtime);
+
+    try {
+        const result = await detectOpenClawIdentity({
+            runtimeBaseUrl: `http://${address.address}:${address.port}`,
+            gatewayApiKey: '',
+            gatewayKeyHeader: 'Authorization',
+            gatewayKeyPrefix: 'Bearer',
+        });
+
+        assert.equal(result.ok, true);
+        assert.equal(result.identity.email, 'operator@example.com');
+        assert.equal(
+            result.identity.profileId,
+            'openai-codex:operator@example.com'
+        );
+        assert.equal(result.identity.accountId, 'acct-test-operator');
+    } finally {
+        await closeServer(runtime);
+    }
+});
+
+test('buildConfig prefiere OPENCLAW_HELPER_DEVICE_ID sobre el alias legacy', () => {
+    const config = buildConfig({
+        PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL: 'http://127.0.0.1:4173',
+        OPENCLAW_HELPER_DEVICE_ID: 'device-canonico',
+        PIELARMONIA_OPERATOR_AUTH_DEVICE_ID: 'device-legacy',
+    });
+
+    assert.equal(config.deviceId, 'device-canonico');
 });
 
 test('resolveChallenge firma y publica completion payload al backend PHP', async () => {
@@ -209,8 +267,7 @@ test('createBridgeServer expone health y resolve HTML', async () => {
             PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN: 'bridge-token',
             PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET: 'bridge-secret',
             PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL: serverBaseUrl,
-            PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL:
-                'http://127.0.0.1:4173',
+            PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL: 'http://127.0.0.1:4173',
         }),
         serverBaseUrl,
         deviceId: 'device-test-bridge',
@@ -235,6 +292,7 @@ test('createBridgeServer expone health y resolve HTML', async () => {
         assert.equal(health.status, 200);
         assert.equal(health.body.ok, true);
         assert.equal(health.body.service, 'operator-auth-bridge');
+        assert.equal(health.body.deviceId, 'device-test-bridge');
 
         const resolve = await getText(
             `${helperBaseUrl}/resolve?challengeId=${'c'.repeat(32)}&nonce=${'d'.repeat(

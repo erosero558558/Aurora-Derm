@@ -18,6 +18,8 @@ import { syncQueueAutoRefresh } from '../../../../shared/modules/queue.js';
 import {
     primeLoginSurface,
     resetTwoFactorStage,
+    showLegacyFallbackSurface,
+    showPrimaryLoginSurface,
     stopOpenClawPolling,
 } from '../../auth.js';
 import {
@@ -120,6 +122,14 @@ export async function handleShellAction(action, element) {
             return true;
         case 'reset-login-2fa':
             resetTwoFactorStage();
+            return true;
+        case 'show-login-fallback':
+            stopOpenClawPolling();
+            showLegacyFallbackSurface();
+            return true;
+        case 'show-login-primary':
+            stopOpenClawPolling();
+            showPrimaryLoginSurface();
             return true;
         default:
             return false;

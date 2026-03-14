@@ -64,6 +64,10 @@ class OperatorAuthControllerTest extends TestCase
         putenv('PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL');
         putenv('PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS');
         putenv('PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS');
+        putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK');
+        putenv('PIELARMONIA_ADMIN_PASSWORD');
+        putenv('PIELARMONIA_ADMIN_PASSWORD_HASH');
+        putenv('PIELARMONIA_ADMIN_2FA_SECRET');
         unset($GLOBALS['__TEST_RESPONSE'], $GLOBALS['__TEST_JSON_BODY']);
         $_GET = [];
         $_POST = [];
@@ -186,6 +190,42 @@ class OperatorAuthControllerTest extends TestCase
             'bridge_token',
             $response['payload']['configuration']['missing'] ?? []
         );
+    }
+
+    public function testStatusAdvertisesLegacyContingencyWhenEnabledAndConfigured(): void
+    {
+        putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true');
+        putenv('PIELARMONIA_ADMIN_PASSWORD_HASH=' . password_hash('contingencia-segura', PASSWORD_DEFAULT));
+        putenv('PIELARMONIA_ADMIN_2FA_SECRET=JBSWY3DPEHPK3PXP');
+
+        $status = $this->captureResponse(static fn () => \OperatorAuthController::status([]));
+
+        self::assertSame(200, $status['status']);
+        self::assertSame('openclaw_chatgpt', (string) ($status['payload']['mode'] ?? ''));
+        self::assertSame('openclaw_chatgpt', (string) ($status['payload']['recommendedMode'] ?? ''));
+        self::assertFalse((bool) ($status['payload']['authenticated'] ?? true));
+
+        $fallback = $status['payload']['fallbacks']['legacy_password'] ?? [];
+        self::assertTrue((bool) ($fallback['enabled'] ?? false));
+        self::assertTrue((bool) ($fallback['configured'] ?? false));
+        self::assertTrue((bool) ($fallback['requires2FA'] ?? false));
+        self::assertTrue((bool) ($fallback['available'] ?? false));
+        self::assertSame('fallback_available', (string) ($fallback['reason'] ?? ''));
+    }
+
+    public function testStatusDoesNotAdvertiseLegacyContingencyWhenTwoFactorIsMissing(): void
+    {
+        putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true');
+        putenv('PIELARMONIA_ADMIN_PASSWORD_HASH=' . password_hash('contingencia-segura', PASSWORD_DEFAULT));
+        putenv('PIELARMONIA_ADMIN_2FA_SECRET');
+
+        $status = $this->captureResponse(static fn () => \OperatorAuthController::status([]));
+
+        self::assertSame(200, $status['status']);
+        $fallback = $status['payload']['fallbacks']['legacy_password'] ?? [];
+        self::assertTrue((bool) ($fallback['enabled'] ?? false));
+        self::assertFalse((bool) ($fallback['available'] ?? true));
+        self::assertSame('admin_2fa_not_configured', (string) ($fallback['reason'] ?? ''));
     }
 
     public function testInvalidBridgeSignatureIsRejected(): void

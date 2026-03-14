@@ -50,6 +50,49 @@ function normalizeTaskScore(value, fallback = 0) {
     return Math.round(parsed);
 }
 
+function serializeStrategy(board, lines) {
+    const active = board?.strategy?.active;
+    if (!active || typeof active !== 'object') {
+        return;
+    }
+    lines.push('');
+    lines.push('strategy:');
+    lines.push('  active:');
+    lines.push(`    id: ${active.id || ''}`);
+    lines.push(`    title: ${quote(active.title || '')}`);
+    lines.push(`    objective: ${quote(active.objective || '')}`);
+    lines.push(`    owner: ${active.owner || ''}`);
+    lines.push(`    status: ${active.status || 'active'}`);
+    lines.push(`    started_at: ${quote(active.started_at || '')}`);
+    lines.push(`    review_due_at: ${quote(active.review_due_at || '')}`);
+    if (active.closed_at) {
+        lines.push(`    closed_at: ${quote(active.closed_at)}`);
+    }
+    if (active.close_reason) {
+        lines.push(`    close_reason: ${quote(active.close_reason)}`);
+    }
+    lines.push(
+        `    exit_criteria: ${serializeArrayInline(active.exit_criteria || [])}`
+    );
+    lines.push(`    success_signal: ${quote(active.success_signal || '')}`);
+    lines.push('    subfronts:');
+    const subfronts = Array.isArray(active.subfronts) ? active.subfronts : [];
+    for (const subfront of subfronts) {
+        lines.push(`      - codex_instance: ${subfront.codex_instance || ''}`);
+        lines.push(`        subfront_id: ${subfront.subfront_id || ''}`);
+        lines.push(`        title: ${quote(subfront.title || '')}`);
+        lines.push(
+            `        allowed_scopes: ${serializeArrayInline(subfront.allowed_scopes || [])}`
+        );
+        lines.push(
+            `        support_only_scopes: ${serializeArrayInline(subfront.support_only_scopes || [])}`
+        );
+        lines.push(
+            `        blocked_scopes: ${serializeArrayInline(subfront.blocked_scopes || [])}`
+        );
+    }
+}
+
 function serializeBoard(board, options = {}) {
     const getDate = options.currentDate || currentDate;
     const lines = [];
@@ -74,6 +117,7 @@ function serializeBoard(board, options = {}) {
     );
     lines.push(`  revision: ${normalizeTaskInt(board.policy.revision, 0)}`);
     lines.push(`  updated_at: ${board.policy.updated_at || getDate()}`);
+    serializeStrategy(board, lines);
     lines.push('');
     lines.push('tasks:');
 
@@ -133,6 +177,32 @@ function serializeBoard(board, options = {}) {
         lines.push(
             `    evidence_ref: ${quote(task.evidence_ref || task.acceptance_ref || '')}`
         );
+        const shouldEmitStrategyFields =
+            ['ready', 'in_progress', 'review', 'blocked'].includes(
+                String(task.status || '').trim()
+            ) ||
+            Boolean(
+                String(task.strategy_id || '').trim() ||
+                String(task.subfront_id || '').trim() ||
+                String(task.strategy_role || '').trim() ||
+                String(task.strategy_reason || '').trim()
+            );
+        if (shouldEmitStrategyFields) {
+            lines.push(
+                `    strategy_id: ${quote(String(task.strategy_id || '').trim())}`
+            );
+            lines.push(
+                `    subfront_id: ${quote(String(task.subfront_id || '').trim())}`
+            );
+            lines.push(
+                `    strategy_role: ${quote(String(task.strategy_role || '').trim())}`
+            );
+            if (String(task.strategy_reason || '').trim()) {
+                lines.push(
+                    `    strategy_reason: ${quote(String(task.strategy_reason || '').trim())}`
+                );
+            }
+        }
         lines.push(
             `    depends_on: ${serializeArrayInline(task.depends_on || [])}`
         );

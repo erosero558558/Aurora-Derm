@@ -294,6 +294,9 @@ function isMutatingCommandArgs(args = []) {
     if (command === 'handoffs') {
         return ['create', 'close'].includes(subcommand);
     }
+    if (command === 'strategy') {
+        return ['set-active', 'close'].includes(subcommand);
+    }
     if (command === 'task') {
         if (['claim', 'start', 'finish'].includes(subcommand)) return true;
         if (subcommand !== 'create') return false;
@@ -663,6 +666,100 @@ Relacion con Operativo 2026:
 `;
 }
 
+function activeAdminStrategyYaml() {
+    return `
+strategy:
+  active:
+    id: STRAT-2026-03-admin-operativo
+    title: "Admin operativo"
+    objective: "Cerrar admin operativo"
+    owner: ernesto
+    status: active
+    started_at: "2026-03-14"
+    review_due_at: "2026-03-21"
+    exit_criteria: ["uno"]
+    success_signal: "demo"
+    subfronts:
+      - codex_instance: codex_frontend
+        subfront_id: SF-frontend-admin-operativo
+        title: "Admin UX"
+        allowed_scopes: ["frontend-admin", "queue"]
+        support_only_scopes: ["docs", "tests", "frontend-qa"]
+        blocked_scopes: ["payments"]
+      - codex_instance: codex_backend_ops
+        subfront_id: SF-backend-admin-operativo
+        title: "Backend soporte"
+        allowed_scopes: ["auth", "backend", "readiness", "gates"]
+        support_only_scopes: ["tests", "ops"]
+        blocked_scopes: ["frontend-public"]
+      - codex_instance: codex_transversal
+        subfront_id: SF-transversal-admin-operativo
+        title: "Runtime soporte"
+        allowed_scopes: []
+        support_only_scopes: ["openclaw_runtime", "codex-governance", "tooling"]
+        blocked_scopes: ["backend", "auth"]
+`;
+}
+
+function boardForStrategySeedableFixture() {
+    return `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  revision: 0
+  updated_at: ${DATE}
+tasks:
+`;
+}
+
+function boardForStrategyGuardFixture() {
+    return `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  revision: 0
+  updated_at: ${DATE}
+${activeAdminStrategyYaml().trim()}
+tasks:
+`;
+}
+
+function basePlanWithStrategyBlock(options = {}) {
+    const title = String(options.title || 'Admin operativo');
+    const owner = String(options.owner || 'ernesto');
+    const status = String(options.status || 'active');
+    const subfrontIds = Array.isArray(options.subfrontIds)
+        ? options.subfrontIds
+        : [
+              'SF-frontend-admin-operativo',
+              'SF-backend-admin-operativo',
+              'SF-transversal-admin-operativo',
+          ];
+    return `
+# Plan Maestro Codex 2026 (Fixture)
+
+<!-- CODEX_STRATEGY_ACTIVE
+id: STRAT-2026-03-admin-operativo
+title: "${title}"
+status: ${status}
+owner: ${owner}
+objective: "Cerrar admin operativo"
+started_at: "2026-03-14"
+review_due_at: "2026-03-21"
+success_signal: "demo"
+subfront_ids: [${subfrontIds.map((value) => `"${value}"`).join(', ')}]
+updated_at: ${DATE}
+-->
+
+Relacion con Operativo 2026:
+- Fixture de pruebas para estrategia activa.
+`;
+}
+
 function boardForCodexLifecycle() {
     return `
 version: 1
@@ -866,6 +963,229 @@ test('codex-check falla si hay drift entre CODEX_ACTIVE y el board', (t) => {
     const result = runCli(dir, ['codex-check'], 1);
     assert.match(result.stderr, /ERROR: Codex mirror invalido/);
     assert.match(result.stderr, /status desalineado/i);
+});
+
+test('strategy set-active/status/close mantiene board y mirror del plan', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForStrategySeedableFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    let result = runCli(dir, [
+        'strategy',
+        'set-active',
+        '--seed',
+        'admin-operativo',
+        '--owner',
+        'ernesto',
+        '--json',
+    ]);
+    let json = parseJsonStdout(result);
+    assert.equal(json.ok, true);
+    assert.equal(json.strategy.id, 'STRAT-2026-03-admin-operativo');
+
+    result = runCli(dir, ['strategy', 'status', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.strategy.active.id, 'STRAT-2026-03-admin-operativo');
+
+    let board = readBoard(dir);
+    let plan = readPlan(dir);
+    assert.match(board, /strategy:\s*\n {2}active:/);
+    assert.match(board, /revision:\s+1/);
+    assert.match(plan, /<!-- CODEX_STRATEGY_ACTIVE/);
+    assert.match(plan, /title: "Admin operativo"/);
+
+    result = runCli(dir, [
+        'strategy',
+        'close',
+        '--reason',
+        'review_complete',
+        '--json',
+    ]);
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, true);
+    assert.equal(json.strategy.status, 'closed');
+    assert.equal(json.strategy.close_reason, 'review_complete');
+
+    result = runCli(dir, ['strategy', 'status', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.strategy.active, null);
+    assert.equal(json.strategy.configured.status, 'closed');
+
+    board = readBoard(dir);
+    plan = readPlan(dir);
+    assert.match(board, /status:\s+closed/);
+    assert.match(board, /close_reason:\s+"review_complete"/);
+    assert.match(plan, /status: closed/);
+});
+
+test('task create exige campos de estrategia cuando hay estrategia activa', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForStrategyGuardFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+
+    let result = runCli(
+        dir,
+        [
+            'task',
+            'create',
+            '--title',
+            'Frontend strat fixture',
+            '--executor',
+            'codex',
+            '--status',
+            'ready',
+            '--risk',
+            'low',
+            '--scope',
+            'frontend-admin',
+            '--files',
+            'src/apps/admin-v3/app.js',
+            '--json',
+        ],
+        1
+    );
+    let json = parseJsonStdout(result);
+    assert.equal(json.ok, false);
+    assert.match(json.error || '', /requiere strategy_id/i);
+
+    result = runCli(dir, [
+        'task',
+        'create',
+        '--title',
+        'Frontend strat fixture',
+        '--executor',
+        'codex',
+        '--status',
+        'ready',
+        '--risk',
+        'low',
+        '--scope',
+        'frontend-admin',
+        '--files',
+        'src/apps/admin-v3/app.js',
+        '--strategy-id',
+        'STRAT-2026-03-admin-operativo',
+        '--subfront-id',
+        'SF-frontend-admin-operativo',
+        '--strategy-role',
+        'primary',
+        '--json',
+    ]);
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, true);
+    assert.equal(json.task.strategy_id, 'STRAT-2026-03-admin-operativo');
+    assert.equal(json.task.subfront_id, 'SF-frontend-admin-operativo');
+    assert.equal(json.task.strategy_role, 'primary');
+
+    const statusJson = parseJsonStdout(runCli(dir, ['status', '--json']));
+    assert.equal(
+        statusJson.strategy.active.id,
+        'STRAT-2026-03-admin-operativo'
+    );
+    assert.equal(statusJson.strategy.aligned_tasks, 1);
+});
+
+test('task create bloquea subfrente ajeno y excepciones sin reason', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForStrategyGuardFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+
+    let result = runCli(
+        dir,
+        [
+            'task',
+            'create',
+            '--title',
+            'Wrong subfront fixture',
+            '--executor',
+            'codex',
+            '--status',
+            'ready',
+            '--risk',
+            'low',
+            '--scope',
+            'frontend-admin',
+            '--files',
+            'src/apps/admin-v3/app.js',
+            '--strategy-id',
+            'STRAT-2026-03-admin-operativo',
+            '--subfront-id',
+            'SF-backend-admin-operativo',
+            '--strategy-role',
+            'primary',
+            '--json',
+        ],
+        1
+    );
+    let json = parseJsonStdout(result);
+    assert.equal(json.ok, false);
+    assert.match(json.error || '', /requiere codex_instance=codex_backend_ops/i);
+
+    result = runCli(
+        dir,
+        [
+            'task',
+            'create',
+            '--title',
+            'Exception fixture',
+            '--executor',
+            'codex',
+            '--status',
+            'ready',
+            '--risk',
+            'low',
+            '--scope',
+            'frontend-admin',
+            '--files',
+            'src/apps/admin-v3/app.js',
+            '--strategy-id',
+            'STRAT-2026-03-admin-operativo',
+            '--subfront-id',
+            'SF-frontend-admin-operativo',
+            '--strategy-role',
+            'exception',
+            '--json',
+        ],
+        1
+    );
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, false);
+    assert.match(json.error || '', /strategy_role=exception requiere strategy_reason/i);
+});
+
+test('codex-check falla si CODEX_STRATEGY_ACTIVE deriva del board', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForStrategyGuardFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock({
+            owner: 'otro-owner',
+            subfrontIds: ['SF-frontend-admin-operativo'],
+        }),
+    });
+
+    const result = runCli(dir, ['codex-check', '--json'], 1);
+    const json = parseJsonStdout(result);
+    assert.equal(json.ok, false);
+    assert.ok(json.error_count >= 1);
+    assert.match(json.errors.join(' | '), /CODEX_STRATEGY_ACTIVE/i);
 });
 
 test('handoffs create rechaza files fuera del solape real (incluye wildcard amplio)', (t) => {

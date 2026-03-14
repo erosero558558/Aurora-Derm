@@ -4,6 +4,7 @@ const {
     isOpenClawRuntimeTask,
     mapLaneToCodexInstance,
 } = require('./task-guards');
+const domainStrategy = require('./strategy');
 
 const MAX_CODEX_ACTIVE_BLOCKS = 3;
 
@@ -111,12 +112,21 @@ function buildCodexCheckReport(input = {}, deps = {}) {
     const {
         board,
         blocks,
+        strategyBlocks,
         handoffs,
         codexPlanPath = 'PLAN_MAESTRO_CODEX_2026.md',
     } = input;
-    const { normalizePathToken, activeStatuses, isExpired } = deps;
+    const {
+        normalizePathToken,
+        activeStatuses,
+        isExpired,
+        findCriticalScopeKeyword = () => null,
+    } = deps;
     const tasks = Array.isArray(board?.tasks) ? board.tasks : [];
     const codexBlocks = Array.isArray(blocks) ? blocks : [];
+    const codexStrategyBlocks = Array.isArray(strategyBlocks)
+        ? strategyBlocks
+        : [];
     const safeHandoffs = Array.isArray(handoffs) ? handoffs : [];
     const isExpiredFn =
         typeof isExpired === 'function'
@@ -127,6 +137,13 @@ function buildCodexCheckReport(input = {}, deps = {}) {
                   return parsed <= Date.now();
               };
     const errors = [];
+    const strategyConfigErrors = domainStrategy.validateStrategyConfiguration(
+        board,
+        {
+            allowedCodexInstances: domainStrategy.DEFAULT_CODEX_INSTANCES,
+        }
+    );
+    errors.push(...strategyConfigErrors);
     const codexTasks = tasks.filter((task) =>
         /^CDX-\d+$/.test(String(task.id || ''))
     );
@@ -336,6 +353,83 @@ function buildCodexCheckReport(input = {}, deps = {}) {
         }
     }
 
+    const strategySummary = domainStrategy.buildStrategyCoverageSummary(board, {
+        activeStatuses,
+        findCriticalScopeKeyword,
+    });
+    const activeStrategy = strategySummary.active;
+    if (codexStrategyBlocks.length > 1) {
+        errors.push(
+            `Mas de un bloque CODEX_STRATEGY_ACTIVE en ${codexPlanPath}`
+        );
+    }
+    const planStrategyBlock =
+        codexStrategyBlocks.length > 0 ? codexStrategyBlocks[0] : null;
+    if (activeStrategy) {
+        if (!planStrategyBlock) {
+            errors.push(
+                `Falta bloque CODEX_STRATEGY_ACTIVE para ${activeStrategy.id} en ${codexPlanPath}`
+            );
+        } else {
+            const boardSubfrontIds = activeStrategy.subfronts
+                .map((subfront) => String(subfront.subfront_id || '').trim())
+                .filter(Boolean)
+                .sort();
+            const planSubfrontIds = (
+                Array.isArray(planStrategyBlock.subfront_ids)
+                    ? planStrategyBlock.subfront_ids
+                    : []
+            )
+                .map((value) => String(value || '').trim())
+                .filter(Boolean)
+                .sort();
+            if (String(planStrategyBlock.id || '') !== activeStrategy.id) {
+                errors.push(
+                    `CODEX_STRATEGY_ACTIVE.id desalineado plan(${String(planStrategyBlock.id || '')}) != board(${activeStrategy.id})`
+                );
+            }
+            if (
+                String(planStrategyBlock.title || '') !== activeStrategy.title
+            ) {
+                errors.push(
+                    `CODEX_STRATEGY_ACTIVE.title desalineado plan(${String(planStrategyBlock.title || '')}) != board(${activeStrategy.title})`
+                );
+            }
+            if (
+                String(planStrategyBlock.status || '') !==
+                String(activeStrategy.status || '')
+            ) {
+                errors.push(
+                    `CODEX_STRATEGY_ACTIVE.status desalineado plan(${String(planStrategyBlock.status || '')}) != board(${String(activeStrategy.status || '')})`
+                );
+            }
+            if (
+                String(planStrategyBlock.owner || '') !== activeStrategy.owner
+            ) {
+                errors.push(
+                    `CODEX_STRATEGY_ACTIVE.owner desalineado plan(${String(planStrategyBlock.owner || '')}) != board(${activeStrategy.owner})`
+                );
+            }
+            if (
+                JSON.stringify(planSubfrontIds) !==
+                JSON.stringify(boardSubfrontIds)
+            ) {
+                errors.push(
+                    `CODEX_STRATEGY_ACTIVE.subfront_ids desalineado plan(${planSubfrontIds.join(',') || 'vacio'}) != board(${boardSubfrontIds.join(',') || 'vacio'})`
+                );
+            }
+        }
+        if (strategySummary.orphan_tasks > 0) {
+            errors.push(
+                `Estrategia activa con tareas huerfanas (${strategySummary.orphan_task_ids.join(', ')})`
+            );
+        }
+    } else if (planStrategyBlock) {
+        errors.push(
+            `CODEX_STRATEGY_ACTIVE presente en ${codexPlanPath} pero AGENT_BOARD.yaml no tiene strategy.active en status=active`
+        );
+    }
+
     return {
         version: 1,
         ok: errors.length === 0,
@@ -358,6 +452,32 @@ function buildCodexCheckReport(input = {}, deps = {}) {
                 return acc;
             }, {}),
         },
+        strategy: {
+            configured: strategySummary.configured,
+            active: strategySummary.active,
+            active_tasks_total: strategySummary.active_tasks_total,
+            aligned_tasks: strategySummary.aligned_tasks,
+            primary_tasks: strategySummary.primary_tasks,
+            support_tasks: strategySummary.support_tasks,
+            exception_tasks: strategySummary.exception_tasks,
+            orphan_tasks: strategySummary.orphan_tasks,
+            orphan_task_ids: strategySummary.orphan_task_ids,
+            validation_errors: strategySummary.validation_errors,
+            plan_block: planStrategyBlock
+                ? {
+                      id: String(planStrategyBlock.id || ''),
+                      title: String(planStrategyBlock.title || ''),
+                      status: String(planStrategyBlock.status || ''),
+                      owner: String(planStrategyBlock.owner || ''),
+                      subfront_ids: Array.isArray(
+                          planStrategyBlock.subfront_ids
+                      )
+                          ? planStrategyBlock.subfront_ids
+                          : [],
+                  }
+                : null,
+            rows: strategySummary.rows,
+        },
         codex_task_ids: codexTasks.map((task) => String(task.id)),
         codex_in_progress_ids: codexInProgress.map((task) => String(task.id)),
         codex_active_ids: activeCodexTasks.map((task) => String(task.id)),
@@ -368,6 +488,15 @@ function buildCodexCheckReport(input = {}, deps = {}) {
             status: String(block.status || ''),
             files: Array.isArray(block.files) ? block.files : [],
             updated_at: String(block.updated_at || ''),
+        })),
+        plan_strategy_blocks: codexStrategyBlocks.map((block) => ({
+            id: String(block.id || ''),
+            title: String(block.title || ''),
+            status: String(block.status || ''),
+            owner: String(block.owner || ''),
+            subfront_ids: Array.isArray(block.subfront_ids)
+                ? block.subfront_ids
+                : [],
         })),
     };
 }

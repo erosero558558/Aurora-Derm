@@ -153,6 +153,9 @@
 // Modo principal del nucleo interno. Default recomendado: OpenClaw.
 // Usa `legacy_password` solo si necesitas exponer el login clasico en la pantalla principal.
 // putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=openclaw_chatgpt');
+// Fallback web de contingencia: deja OpenClaw como primario y permite clave + 2FA
+// solo cuando este flag se habilita explicitamente en el entorno.
+// putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=false');
 // Lista blanca de correos permitidos para operar el admin.
 // Si no defines allowlist explicita, el backend puede reutilizar `PIELARMONIA_ADMIN_EMAIL` como fallback minimo.
 // putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=operador@pielarmonia.com,otra.persona@pielarmonia.com');
@@ -175,10 +178,14 @@
 // putenv('OPENCLAW_GATEWAY_KEY_PREFIX=Bearer');
 // Device label opcional reportado al bridge firmado.
 // putenv('OPENCLAW_HELPER_DEVICE_ID=operator-laptop-c1');
+// Alias temporal soportado por compatibilidad; preferir OPENCLAW_HELPER_DEVICE_ID.
+// putenv('PIELARMONIA_OPERATOR_AUTH_DEVICE_ID=operator-laptop-c1');
 // TTL del challenge, sesion interna y tolerancia del timestamp firmado.
 // putenv('PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS=300');
 // putenv('PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS=1800');
 // putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_MAX_SKEW_SECONDS=300');
+// Segundo factor requerido para el fallback web de contingencia.
+// putenv('PIELARMONIA_ADMIN_2FA_SECRET=BASE32_TOTP_SECRET');
 
 // ── Cron (recordatorios automáticos) ────────────────
 // putenv('PIELARMONIA_CRON_SECRET=un_token_secreto_largo');

@@ -14,6 +14,24 @@ policy:
   autonomy: semi_autonomous_guardrails
   kpi: reduce_rework
   updated_at: 2026-02-25
+strategy:
+  active:
+    id: STRAT-2026-03-admin-operativo
+    title: "Admin operativo"
+    objective: "Cerrar admin operativo"
+    owner: ernesto
+    status: active
+    started_at: "2026-03-14"
+    review_due_at: "2026-03-21"
+    exit_criteria: ["uno", "dos"]
+    success_signal: "demo"
+    subfronts:
+      - codex_instance: codex_frontend
+        subfront_id: SF-frontend-admin-operativo
+        title: "Admin UX"
+        allowed_scopes: ["frontend-admin", "queue"]
+        support_only_scopes: ["docs"]
+        blocked_scopes: ["payments"]
 
 tasks:
   - id: AG-001
@@ -27,6 +45,10 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: exception
+    strategy_reason: "hotfix critico"
     files: ["lib/calendar/A.php", "lib/calendar/B.php"]
     acceptance: "ok"
     acceptance_ref: "verification/agent-runs/AG-001.md"
@@ -43,6 +65,12 @@ tasks:
     assert.equal(board.version, '1');
     assert.equal(board.policy.canonical, 'AGENTS.md');
     assert.equal(board.tasks.length, 1);
+    assert.equal(board.strategy.active.id, 'STRAT-2026-03-admin-operativo');
+    assert.equal(board.strategy.active.subfronts.length, 1);
+    assert.equal(
+        board.strategy.active.subfronts[0].subfront_id,
+        'SF-frontend-admin-operativo'
+    );
     assert.deepEqual(board.tasks[0].files, [
         'lib/calendar/A.php',
         'lib/calendar/B.php',
@@ -53,6 +81,10 @@ tasks:
     assert.equal(board.tasks[0].domain_lane, 'backend_ops');
     assert.equal(board.tasks[0].lane_lock, 'strict');
     assert.equal(board.tasks[0].cross_domain, false);
+    assert.equal(board.tasks[0].strategy_id, 'STRAT-2026-03-admin-operativo');
+    assert.equal(board.tasks[0].subfront_id, 'SF-backend-admin-operativo');
+    assert.equal(board.tasks[0].strategy_role, 'exception');
+    assert.equal(board.tasks[0].strategy_reason, 'hotfix critico');
 });
 
 test('core-parsers parseBoardContent valida status permitido', () => {
@@ -124,4 +156,26 @@ updated_at: 2026-02-26
     assert.equal(blocks[0].task_id, 'CDX-001');
     assert.deepEqual(blocks[0].files, ['AGENTS.md', 'agent-orchestrator.js']);
     assert.equal(blocks[1].status, 'review');
+});
+
+test('core-parsers parseCodexStrategyActiveBlocksContent parsea bloque de estrategia', () => {
+    const raw = `
+<!-- CODEX_STRATEGY_ACTIVE
+id: STRAT-2026-03-admin-operativo
+title: "Admin operativo"
+status: ACTIVE
+owner: ernesto
+subfront_ids: ["SF-frontend-admin-operativo", "SF-backend-admin-operativo"]
+updated_at: "2026-03-14"
+-->
+`;
+
+    const blocks = parsers.parseCodexStrategyActiveBlocksContent(raw);
+    assert.equal(blocks.length, 1);
+    assert.equal(blocks[0].id, 'STRAT-2026-03-admin-operativo');
+    assert.equal(blocks[0].status, 'active');
+    assert.deepEqual(blocks[0].subfront_ids, [
+        'SF-frontend-admin-operativo',
+        'SF-backend-admin-operativo',
+    ]);
 });

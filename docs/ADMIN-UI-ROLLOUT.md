@@ -54,6 +54,9 @@ Para local QA:
 - Si ya existe un servidor levantado, usar `TEST_BASE_URL=http://127.0.0.1:8011`.
 - `TEST_REUSE_EXISTING_SERVER` queda como opt-in explicito.
 - Si el runtime usa `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt`, levantar el helper del operador con `npm run openclaw:auth:start`.
+- OpenClaw sigue siendo el acceso primario del operador local.
+- Si hace falta contingencia web desde otra PC, habilitar `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` y `PIELARMONIA_ADMIN_2FA_SECRET`.
+- La UI solo debe mostrar `Clave + 2FA de contingencia` cuando el backend anuncie `fallbacks.legacy_password.available=true`.
 
 ## Gate operativo
 

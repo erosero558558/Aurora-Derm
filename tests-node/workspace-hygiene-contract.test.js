@@ -737,6 +737,8 @@ test('frontera de directorios en raiz queda explicita y limitada', () => {
         'js',
         'k8s',
         'lib',
+        'ops',
+        'release',
         'scripts',
         'servicios',
         'src',

@@ -41,7 +41,7 @@ gobernanza operativa de Piel en Armonia.
 1. `npm install`
 2. `npx playwright install`
 3. Terminal 1: `php -S 127.0.0.1:8011 -t .`
-4. Terminal 2: `npm run auth:operator:bridge`
+4. Terminal 2: `npm run openclaw:auth:start`
 5. Abrir:
     - Publico gateway: `http://127.0.0.1:8011`
     - Publico ES: `http://127.0.0.1:8011/es/`
@@ -57,7 +57,10 @@ Notas de testing local:
 - La reutilizacion de servidor queda en opt-in con `TEST_REUSE_EXISTING_SERVER=1`.
 - `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` si no le pasas host.
 - El login OpenClaw/ChatGPT local necesita dos procesos vivos: backend PHP en `8011` y helper local en `4173`.
-- Antes de abrir `admin.html`, valida el OAuth local con `openclaw models status --json`.
+- Script canonico del helper local: `scripts/ops/admin/INICIAR-OPENCLAW-AUTH-HELPER.ps1`.
+- Antes de abrir `admin.html`, valida el runtime local con `npm run openclaw:auth-preflight -- --json`.
+- `npm run auth:operator:bridge` queda solo como alias de compatibilidad y delega al launcher canonico.
+- Si necesitas contingencia web desde cualquier PC, habilita `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` y `PIELARMONIA_ADMIN_2FA_SECRET`.
 
 Variable minima recomendada:
 

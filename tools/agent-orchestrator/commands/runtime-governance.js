@@ -78,10 +78,13 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 parseFlags: ctx.parseFlags,
                 ensureTask: ctx.ensureTask,
                 parseBoard: ctx.parseBoard,
+                parseHandoffs: ctx.parseHandoffs,
                 ACTIVE_STATUSES: ctx.ACTIVE_STATUSES,
                 ALLOWED_STATUSES: ctx.ALLOWED_STATUSES,
                 parseCsvList: ctx.parseCsvList,
                 currentDate: ctx.currentDate,
+                validateTaskGovernancePrechecks:
+                    ctx.validateTaskGovernancePrechecks,
                 writeBoard: ctx.writeBoard,
                 writeCodexActiveBlock: ctx.writeCodexActiveBlock,
                 parseCodexActiveBlocks: ctx.parseCodexActiveBlocks,

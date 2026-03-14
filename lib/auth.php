@@ -111,6 +111,55 @@ function admin_password_is_configured(): bool
     return is_string($plain) && trim($plain) !== '';
 }
 
+function admin_two_factor_is_configured(): bool
+{
+    $secret = getenv('PIELARMONIA_ADMIN_2FA_SECRET');
+    return is_string($secret) && trim($secret) !== '';
+}
+
+function internal_console_legacy_fallback_enabled(): bool
+{
+    $raw = getenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK');
+    if (!is_string($raw)) {
+        return false;
+    }
+
+    return in_array(strtolower(trim($raw)), ['1', 'true', 'yes', 'on'], true);
+}
+
+function internal_console_legacy_fallback_payload(): array
+{
+    $enabled = internal_console_legacy_fallback_enabled();
+    $passwordConfigured = admin_password_is_configured();
+    $twoFactorConfigured = admin_two_factor_is_configured();
+    $configured = $passwordConfigured && $twoFactorConfigured;
+    $available = $enabled && $configured;
+    $reason = 'fallback_available';
+
+    if (!$enabled) {
+        $reason = 'fallback_disabled';
+    } elseif (!$passwordConfigured) {
+        $reason = 'admin_password_not_configured';
+    } elseif (!$twoFactorConfigured) {
+        $reason = 'admin_2fa_not_configured';
+    }
+
+    return [
+        'enabled' => $enabled,
+        'configured' => $configured,
+        'requires2FA' => true,
+        'available' => $available,
+        'reason' => $reason,
+    ];
+}
+
+function internal_console_auth_fallbacks_payload(): array
+{
+    return [
+        'legacy_password' => internal_console_legacy_fallback_payload(),
+    ];
+}
+
 function verify_2fa_code(string $code): bool
 {
     $secret = getenv('PIELARMONIA_ADMIN_2FA_SECRET');
@@ -526,6 +575,7 @@ function operator_auth_config_error_payload(): array
         'capabilities' => [
             'adminAgent' => false,
         ],
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
         'configuration' => $snapshot,
         'error' => $error,
     ];
@@ -555,6 +605,7 @@ function operator_auth_authenticated_payload(array $operator, string $status = '
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
         'csrfToken' => generate_csrf_token(),
         'capabilities' => admin_agent_capabilities_payload(),
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
         'operator' => [
             'email' => (string) ($operator['email'] ?? ''),
             'profileId' => (string) ($operator['profileId'] ?? ''),
@@ -578,6 +629,7 @@ function operator_auth_error_payload(array $challenge, string $status, string $e
         'capabilities' => [
             'adminAgent' => false,
         ],
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
         'error' => $error,
         'challenge' => operator_auth_challenge_public_payload($challenge),
     ];
@@ -964,6 +1016,7 @@ function operator_auth_status_payload(): array
             'capabilities' => [
                 'adminAgent' => false,
             ],
+            'fallbacks' => internal_console_auth_fallbacks_payload(),
         ];
     }
 
@@ -980,6 +1033,7 @@ function operator_auth_status_payload(): array
             'capabilities' => [
                 'adminAgent' => false,
             ],
+            'fallbacks' => internal_console_auth_fallbacks_payload(),
         ];
     }
 
@@ -1037,6 +1091,7 @@ function operator_auth_status_payload(): array
             'capabilities' => [
                 'adminAgent' => false,
             ],
+            'fallbacks' => internal_console_auth_fallbacks_payload(),
         ];
     }
 
@@ -1050,6 +1105,7 @@ function operator_auth_status_payload(): array
         'capabilities' => [
             'adminAgent' => false,
         ],
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
         'challenge' => operator_auth_challenge_public_payload($challenge),
     ];
 }
@@ -1081,6 +1137,7 @@ function operator_auth_logout_payload(): array
         'capabilities' => [
             'adminAgent' => false,
         ],
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
     ];
 }
 

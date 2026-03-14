@@ -4,6 +4,19 @@ Inicio: 2026-02-24
 Cadencia: por commit (cada commit deja evidencia verificable)
 Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite por control)
 
+<!-- CODEX_STRATEGY_ACTIVE
+id: STRAT-2026-03-admin-operativo
+title: "Admin operativo"
+status: active
+owner: Ernesto
+objective: "Convertir el frente admin clinico, queue/turnero y OpenClaw UX en una entrega operable y visible, con soporte backend y runtime estrictamente alineado."
+started_at: "2026-03-14"
+review_due_at: "2026-03-21"
+success_signal: "Un mismo corte operativo puede demostrarse de punta a punta sin abrir trabajo fuera del frente admin operativo."
+subfront_ids: ["SF-frontend-admin-operativo", "SF-backend-admin-operativo", "SF-transversal-admin-operativo"]
+updated_at: "2026-03-14"
+-->
+
 ## Proposito
 
 - Blindar confiabilidad de reserva/chat/reprogramacion.
@@ -13,25 +26,36 @@ Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite po
 ## Gobernanza
 
 - Este archivo es la fuente de control de la linea Codex.
+- Maximo un bloque `CODEX_STRATEGY_ACTIVE`.
 - Maximo un bloque `CODEX_ACTIVE` por `codex_instance`.
-- Maximo dos bloques `CODEX_ACTIVE` activos en total, uno por lane.
+- Maximo tres bloques `CODEX_ACTIVE` activos en total, uno por lane.
 - No se toman tareas del Operativo que ya esten `IN_PROGRESS`, salvo soporte de calidad (tests/guardrails).
 - Definicion de done por commit:
 - objetivo tecnico explicito.
 - evidencia en CI o prueba local reproducible.
 - actualizacion del estado en este plan.
 
-## Carril operativo backend-only (permanente)
+## Estrategia madre activa
 
-- Esta instancia Codex opera solo en `codex_backend_ops`.
-- Alcance permitido: `controllers/**`, `lib/**`, `api.php`, `figo-*.php`,
-  `.github/workflows/**`, `cron.php`, `env*.php`, `bin/**`, tests backend.
-- Alcance fuera de carril: `src/apps/**`, `js/**`, `styles*.css`,
-  `templates/**`, `content/**`, `*.html`.
-- Excepcion unica: cruce de dominio con `cross_domain=true` + `lane_lock=handoff_allowed`
-    - handoff `active` con expiracion en `AGENT_HANDOFFS.yaml`.
-- Regla critica: `critical_zone=true` solo en `codex_backend_ops`.
-- Prioridad tecnica inmediata: `C1 -> C3 -> C4 -> C2`.
+- Estrategia activa: `STRAT-2026-03-admin-operativo`.
+- Objetivo: convertir `admin clinico + queue/turnero + OpenClaw UX` en una entrega operable, con soporte backend/runtime solo cuando desbloquea ese mismo frente.
+- Revision vigente: semanal; `carry-over` permitido si la salida sigue siendo la misma entrega operativa.
+- Regla de foco: cada hilo Codex toma un solo `subfront_id` valido y rechaza trabajo fuera del frente salvo `strategy_role=exception`.
+
+## Tri-lane operativo vigente
+
+- `codex_frontend`:
+  admin clinico, queue/turnero, quick-nav y OpenClaw UX.
+- `codex_backend_ops`:
+  auth, readiness, gates y backend estrictamente necesario para ese mismo frente.
+- `codex_transversal`:
+  runtime/orquestacion solo como soporte directo del objetivo activo.
+- Excepcion unica:
+  `strategy_role=exception` con `strategy_reason` explicito para hotfix critico o desbloqueo directo del frente activo.
+- Regla critica:
+  `critical_zone=true` sigue yendo a `codex_backend_ops`, salvo runtime OpenClaw canonico de `codex_transversal`.
+- Prioridad tecnica inmediata:
+  cerrar `admin operativo` antes de abrir nuevos frentes visibles.
 
 ## Distribucion de esfuerzo
 

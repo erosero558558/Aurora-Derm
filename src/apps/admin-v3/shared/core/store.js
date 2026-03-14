@@ -8,11 +8,27 @@ const initialState = {
         lastAuthAt: 0,
         authMethod: '',
         mode: 'legacy_password',
+        recommendedMode: 'legacy_password',
+        loginSurfaceMode: 'legacy_password',
         status: 'anonymous',
         configured: false,
         challenge: null,
         helperUrlOpened: false,
         operator: null,
+        fallbacks: {
+            legacy_password: {
+                enabled: false,
+                configured: false,
+                requires2FA: true,
+                available: false,
+                reason: 'fallback_disabled',
+            },
+        },
+        openClawSnapshot: {
+            status: 'anonymous',
+            challenge: null,
+            lastError: '',
+        },
         capabilities: {
             adminAgent: false,
         },

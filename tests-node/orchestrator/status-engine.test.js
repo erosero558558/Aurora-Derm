@@ -69,6 +69,27 @@ test('status-engine buildStatusReport y renderStatusText conservan campos clave'
             debt_count: 1,
             sample_task_ids: ['AG-152'],
         },
+        strategy: {
+            active: {
+                id: 'STRAT-2026-03-admin-operativo',
+                title: 'Admin operativo',
+            },
+            aligned_tasks: 1,
+            support_tasks: 0,
+            exception_tasks: 0,
+            orphan_tasks: 0,
+            rows: [
+                {
+                    subfront_id: 'SF-frontend-admin-operativo',
+                    active_tasks: 1,
+                    aligned_tasks: 1,
+                    primary_tasks: 1,
+                    support_tasks: 0,
+                    exception_tasks: 0,
+                    orphan_tasks: 0,
+                },
+            ],
+        },
         byStatus: { in_progress: 1 },
         byExecutor: { codex: 1 },
         codex_instances: {
@@ -119,6 +140,7 @@ test('status-engine buildStatusReport y renderStatusText conservan campos clave'
     assert.equal(data.conflicts_breakdown.blocking, 1);
     assert.equal(data.totals.byExecutor.codex, 1);
     assert.equal(data.evidence_summary.debt_count, 1);
+    assert.equal(data.strategy.active.id, 'STRAT-2026-03-admin-operativo');
     assert.equal(
         data.codex_instances.rows[0].codex_instance,
         'codex_transversal'
@@ -133,9 +155,19 @@ test('status-engine buildStatusReport y renderStatusText conservan campos clave'
     });
 
     assert.match(output, /Agent Orchestrator Status/);
+    assert.match(output, /Estrategia activa: STRAT-2026-03-admin-operativo/);
+    assert.match(
+        output,
+        /Cobertura estrategia: aligned=1, support=0, exception=0, orphan=0/
+    );
     assert.match(output, /Semaforo por dominio/);
     assert.match(output, /Aporte \(ranking por completado ponderado\)/);
     assert.match(output, /Evidence terminal:/);
+    assert.match(output, /Por subfrente:/);
+    assert.match(
+        output,
+        /SF-frontend-admin-operativo: active=1, aligned=1, primary=1, support=0, exception=0, orphan=0/
+    );
     assert.match(output, /Por codex_instance:/);
     assert.match(
         output,

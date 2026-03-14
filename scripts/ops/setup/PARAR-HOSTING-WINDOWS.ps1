@@ -53,7 +53,8 @@ function Stop-ProcessesByNeedle {
     }
 }
 
-Stop-ProcessesByNeedle -Needles @('operator-auth-bridge.js') -Label 'operator auth bridge'
+Stop-ProcessesByNeedle -Needles @('openclaw-auth-helper.js') -Label 'OpenClaw auth helper'
+Stop-ProcessesByNeedle -Needles @('OPENCLAW-OPERATOR-AUTH-BRIDGE.ps1') -Label 'legacy OpenClaw auth alias'
 Stop-ProcessesByNeedle -Needles @('php-cgi.exe', '-b 127.0.0.1:9000') -Label 'PHP-CGI'
 Stop-ProcessesByNeedle -Needles @('cloudflared.exe', $TunnelId) -Label 'Cloudflare tunnel'
 Stop-ProcessesByNeedle -Needles @('ops\caddy\Caddyfile', 'caddy.exe', 'run') -Label 'Caddy edge'

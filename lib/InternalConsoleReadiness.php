@@ -28,7 +28,15 @@ function internal_console_prefers_openclaw_auth(): bool
 
 function internal_console_allows_legacy_password_auth(): bool
 {
-    return internal_console_primary_auth_mode() === 'legacy_password';
+    if (internal_console_primary_auth_mode() === 'legacy_password') {
+        return true;
+    }
+
+    $fallback = function_exists('internal_console_legacy_fallback_payload')
+        ? internal_console_legacy_fallback_payload()
+        : ['available' => false];
+
+    return (bool) ($fallback['available'] ?? false);
 }
 
 function internal_console_readiness_snapshot(): array

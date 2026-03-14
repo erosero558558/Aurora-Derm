@@ -252,6 +252,7 @@ Lista aprobada actual:
 - `.vscode`
 - `app-downloads`
 - `bin`
+- `components`
 - `content`
 - `controllers`
 - `data`
@@ -264,7 +265,10 @@ Lista aprobada actual:
 - `js`
 - `k8s`
 - `lib`
+- `ops`
+- `release`
 - `scripts`
+- `servicios`
 - `src`
 - `styles`
 - `templates`

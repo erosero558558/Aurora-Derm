@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/test_framework.php';
 require_once __DIR__ . '/operator_auth_test_helper.php';
+require_once __DIR__ . '/../lib/totp.php';
 
 function admin_auth_openclaw_request(
     string $method,
@@ -77,6 +78,15 @@ function admin_auth_openclaw_cleanup_cookie(string $path): void
     if ($path !== '' && file_exists($path)) {
         @unlink($path);
     }
+}
+
+function admin_auth_current_totp_code(string $secret): string
+{
+    $reflection = new ReflectionClass(TOTP::class);
+    $method = $reflection->getMethod('getCode');
+    $method->setAccessible(true);
+
+    return (string) $method->invoke(null, $secret, time());
 }
 
 $dataDir = sys_get_temp_dir() . '/pielarmonia-test-admin-auth-openclaw-' . uniqid('', true);
@@ -162,10 +172,75 @@ try {
 
         assert_equals(401, $response['code'], 'legacy login should be disabled');
         assert_false($response['body']['ok'] ?? true, 'disabled legacy login should not return ok');
+        assert_equals('legacy_auth_disabled', $response['body']['code'] ?? '', 'disabled legacy login should expose legacy_auth_disabled');
         assert_true(
-            str_contains((string) ($response['body']['error'] ?? ''), 'ya no esta disponible'),
-            'error should explain that password auth is disabled'
+            str_contains((string) ($response['body']['error'] ?? ''), 'PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true'),
+            'error should explain that the fallback flag is required'
         );
+    });
+
+    run_test('admin-auth allows legacy contingency login with 2FA when fallback is enabled under openclaw primary', function () {
+        $overrideDataDir = sys_get_temp_dir() . '/pielarmonia-test-admin-auth-openclaw-fallback-' . uniqid('', true);
+        $overrideServer = [];
+        $totpSecret = 'JBSWY3DPEHPK3PXP';
+        ensure_clean_directory($overrideDataDir);
+
+        try {
+            $overrideServer = start_test_php_server([
+                'docroot' => __DIR__ . '/..',
+                'env' => [
+                    'PIELARMONIA_DATA_DIR' => $overrideDataDir,
+                    'PIELARMONIA_AVAILABILITY_SOURCE' => 'store',
+                    'PIELARMONIA_ADMIN_PASSWORD' => 'legacy-fallback-secret',
+                    'PIELARMONIA_ADMIN_2FA_SECRET' => $totpSecret,
+                    'PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK' => 'true',
+                ] + operator_auth_test_env(),
+                'startup_timeout_ms' => 12000,
+            ]);
+
+            $baseUrl = $overrideServer['base_url'];
+            $cookieFile = admin_auth_openclaw_cookie_file();
+            try {
+                $status = admin_auth_openclaw_request('GET', $baseUrl, 'status', null, $cookieFile);
+                assert_equals(200, $status['code'], 'status should respond 200');
+                assert_equals('openclaw_chatgpt', $status['body']['mode'] ?? '', 'openclaw should remain primary');
+                assert_true(
+                    $status['body']['fallbacks']['legacy_password']['available'] ?? false,
+                    'fallback should be advertised when it is fully configured'
+                );
+
+                $login = admin_auth_openclaw_request('POST', $baseUrl, 'login', [
+                    'password' => 'legacy-fallback-secret',
+                ], $cookieFile);
+                assert_equals(200, $login['code'], 'legacy contingency should reach the 2FA stage');
+                assert_true($login['body']['twoFactorRequired'] ?? false, 'fallback should require 2FA');
+                assert_equals('legacy_password', $login['body']['mode'] ?? '', 'login step should switch to legacy mode');
+                assert_equals('openclaw_chatgpt', $login['body']['recommendedMode'] ?? '', 'openclaw should remain the recommended mode');
+
+                $login2fa = admin_auth_openclaw_request('POST', $baseUrl, 'login-2fa', [
+                    'code' => admin_auth_current_totp_code($totpSecret),
+                ], $cookieFile);
+                assert_equals(200, $login2fa['code'], '2FA should complete the fallback login');
+                assert_true($login2fa['body']['authenticated'] ?? false, '2FA should authenticate the legacy fallback session');
+                assert_equals('legacy_password', $login2fa['body']['mode'] ?? '', 'authenticated fallback should expose legacy mode');
+                assert_equals('openclaw_chatgpt', $login2fa['body']['recommendedMode'] ?? '', 'authenticated fallback should preserve openclaw as primary');
+                assert_true(
+                    $login2fa['body']['capabilities']['adminAgent'] ?? false,
+                    'authenticated fallback should still expose admin capabilities'
+                );
+
+                $statusAfterLogin = admin_auth_openclaw_request('GET', $baseUrl, 'status', null, $cookieFile);
+                assert_equals(200, $statusAfterLogin['code'], 'status should respond after fallback login');
+                assert_true($statusAfterLogin['body']['authenticated'] ?? false, 'status should restore the fallback session');
+                assert_equals('legacy_password', $statusAfterLogin['body']['mode'] ?? '', 'status should expose the active fallback session mode');
+                assert_equals('openclaw_chatgpt', $statusAfterLogin['body']['recommendedMode'] ?? '', 'status should preserve openclaw as the recommended mode');
+            } finally {
+                admin_auth_openclaw_cleanup_cookie($cookieFile);
+            }
+        } finally {
+            stop_test_php_server($overrideServer);
+            delete_path_recursive($overrideDataDir);
+        }
     });
 
     run_test('admin-auth honors explicit legacy override even when openclaw mode is configured', function () {

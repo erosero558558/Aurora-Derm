@@ -1,5 +1,7 @@
 'use strict';
 
+const domainStrategy = require('./strategy');
+
 const DEFAULT_CRITICAL_SCOPE_KEYWORDS = [
     'payments',
     'auth',
@@ -699,9 +701,55 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
 }
 
 function validateTaskGovernancePrechecks(board, task, options = {}) {
+    const criticalScopeKeywords = Array.isArray(options.criticalScopeKeywords)
+        ? options.criticalScopeKeywords
+        : DEFAULT_CRITICAL_SCOPE_KEYWORDS;
+    const activeStatuses = options.activeStatuses || DEFAULT_ACTIVE_STATUSES;
+    ensureTaskDualCodexDefaults(task, options);
+    const activeStrategy = domainStrategy.getActiveStrategy(board);
+    const taskStatus = String(task?.status || '').trim();
+    if (activeStrategy && activeStatuses.has(taskStatus)) {
+        const taskId = String(task?.id || '(sin id)').trim();
+        const strategyId = String(task?.strategy_id || '').trim();
+        const subfrontId = String(task?.subfront_id || '').trim();
+        const strategyRole = normalizeOptionalToken(task?.strategy_role);
+        const strategyReason = String(task?.strategy_reason || '').trim();
+        if (!strategyId) {
+            throw new Error(
+                `task ${taskId}: estrategia activa requiere strategy_id=${activeStrategy.id}`
+            );
+        }
+        if (!subfrontId) {
+            throw new Error(
+                `task ${taskId}: estrategia activa requiere subfront_id`
+            );
+        }
+        if (!strategyRole) {
+            throw new Error(
+                `task ${taskId}: estrategia activa requiere strategy_role`
+            );
+        }
+        if (strategyRole === 'exception' && !strategyReason) {
+            throw new Error(
+                `task ${taskId}: strategy_role=exception requiere strategy_reason`
+            );
+        }
+    }
+    domainStrategy.ensureTaskStrategyDefaults(board, task, {
+        ...options,
+        activeStatuses,
+        findCriticalScopeKeyword: (scopeValue) =>
+            findCriticalScopeKeyword(scopeValue, criticalScopeKeywords),
+    });
     validateTaskExecutorScopeGuard(task, options);
     validateTaskDependsOn(board, task, options);
     validateTaskDualCodexGuard(board, task, options);
+    domainStrategy.validateTaskStrategyAlignment(board, task, {
+        ...options,
+        activeStatuses,
+        findCriticalScopeKeyword: (scopeValue) =>
+            findCriticalScopeKeyword(scopeValue, criticalScopeKeywords),
+    });
 }
 
 module.exports = {

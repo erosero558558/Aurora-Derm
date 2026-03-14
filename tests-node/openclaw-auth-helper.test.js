@@ -342,3 +342,32 @@ test('helper local responde helper_no_disponible cuando el gateway no esta dispo
         }
     );
 });
+
+test('helper local expone /health y acepta el alias legacy de deviceId', async (t) => {
+    await withEnv(
+        {
+            OPENCLAW_HELPER_DEVICE_ID: '',
+            PIELARMONIA_OPERATOR_AUTH_DEVICE_ID: 'legacy-device-alias',
+        },
+        async () => {
+            const helper = createOpenClawAuthHelperServer({
+                helperBaseUrl: 'http://127.0.0.1:4173',
+                hostname: '127.0.0.1',
+                port: 0,
+                runtimeBaseUrl: 'http://127.0.0.1:4141',
+            });
+            t.after(async () => closeServer(helper.server));
+            await new Promise((resolve) => {
+                helper.server.listen(0, '127.0.0.1', resolve);
+            });
+
+            const response = await fetch(`${helper.listeningBaseUrl()}/health`);
+            const payload = await response.json();
+
+            assert.equal(response.status, 200);
+            assert.equal(payload.ok, true);
+            assert.equal(payload.service, 'openclaw-auth-helper');
+            assert.equal(payload.deviceId, 'legacy-device-alias');
+        }
+    );
+});

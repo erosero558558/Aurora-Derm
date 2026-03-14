@@ -79,3 +79,29 @@ test('operator auth bridge headers respetan header configurado y fallback de pre
         }
     );
 });
+
+test('operator auth config acepta alias legacy de deviceId pero prefiere OPENCLAW_HELPER_DEVICE_ID', async () => {
+    await withEnv(
+        {
+            OPENCLAW_HELPER_DEVICE_ID: 'device-openclaw-primary',
+            PIELARMONIA_OPERATOR_AUTH_DEVICE_ID: 'device-legacy-alias',
+        },
+        async () => {
+            const config = loadOpenClawOperatorAuthConfig();
+
+            assert.equal(config.helperDeviceId, 'device-openclaw-primary');
+        }
+    );
+
+    await withEnv(
+        {
+            OPENCLAW_HELPER_DEVICE_ID: '',
+            PIELARMONIA_OPERATOR_AUTH_DEVICE_ID: 'device-legacy-alias',
+        },
+        async () => {
+            const config = loadOpenClawOperatorAuthConfig();
+
+            assert.equal(config.helperDeviceId, 'device-legacy-alias');
+        }
+    );
+});

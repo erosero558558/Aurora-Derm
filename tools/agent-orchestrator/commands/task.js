@@ -72,7 +72,7 @@ async function handleTaskCommand(ctx) {
         )
     ) {
         throw new Error(
-            'Uso: node agent-orchestrator.js task <ls|create|claim|start|finish> [AG-001] [--owner x] [--executor y] [--status z] [--files a,b] [--template docs|bugfix|critical|runtime] [--codex-instance codex_backend_ops|codex_frontend|codex_transversal] [--domain-lane backend_ops|frontend_content|transversal_runtime] [--lane-lock strict|handoff_allowed] [--provider-mode openclaw_chatgpt] [--runtime-surface figo_queue|leadops_worker|operator_auth] [--runtime-transport hybrid_http_cli|http_bridge|cli_helper] [--cross-domain true|false] [--evidence path] [--active|--mine]'
+            'Uso: node agent-orchestrator.js task <ls|create|claim|start|finish> [AG-001] [--owner x] [--executor y] [--status z] [--files a,b] [--template docs|bugfix|critical|runtime] [--codex-instance codex_backend_ops|codex_frontend|codex_transversal] [--domain-lane backend_ops|frontend_content|transversal_runtime] [--lane-lock strict|handoff_allowed] [--provider-mode openclaw_chatgpt] [--runtime-surface figo_queue|leadops_worker|operator_auth] [--runtime-transport hybrid_http_cli|http_bridge|cli_helper] [--strategy-id STRAT-...] [--subfront-id SF-...] [--strategy-role primary|support|exception] [--strategy-reason "..."] [--cross-domain true|false] [--evidence path] [--active|--mine]'
         );
     }
 
@@ -445,6 +445,13 @@ function printTaskJsonError(printJson, error, action = null) {
 }
 
 function readStringFlag(flags = {}, kebabName, snakeName) {
+    const value = readLiteralStringFlag(flags, kebabName, snakeName);
+    return String(value || '')
+        .trim()
+        .toLowerCase();
+}
+
+function readLiteralStringFlag(flags = {}, kebabName, snakeName) {
     const kebabValue = flags[kebabName];
     const snakeValue = flags[snakeName];
     const value =
@@ -453,9 +460,7 @@ function readStringFlag(flags = {}, kebabName, snakeName) {
             : snakeValue !== undefined && snakeValue !== true
               ? snakeValue
               : '';
-    return String(value || '')
-        .trim()
-        .toLowerCase();
+    return String(value || '').trim();
 }
 
 function hasFlag(flags = {}, kebabName, snakeName) {
@@ -570,6 +575,43 @@ function applyDualCodexOverrides(task, flags = {}, helpers = {}) {
     ensureTaskDualCodexDefaults(task);
 }
 
+function applyStrategyOverrides(task, flags = {}) {
+    if (!task || typeof task !== 'object') return;
+    const strategyId = readLiteralStringFlag(
+        flags,
+        'strategy-id',
+        'strategy_id'
+    );
+    const subfrontId = readLiteralStringFlag(
+        flags,
+        'subfront-id',
+        'subfront_id'
+    );
+    const strategyRole = readStringFlag(
+        flags,
+        'strategy-role',
+        'strategy_role'
+    );
+    const strategyReason = readLiteralStringFlag(
+        flags,
+        'strategy-reason',
+        'strategy_reason'
+    );
+
+    if (strategyId) {
+        task.strategy_id = strategyId;
+    }
+    if (subfrontId) {
+        task.subfront_id = subfrontId;
+    }
+    if (strategyRole) {
+        task.strategy_role = strategyRole;
+    }
+    if (strategyReason) {
+        task.strategy_reason = strategyReason;
+    }
+}
+
 function handleTaskClaim(ctx) {
     const {
         flags,
@@ -641,6 +683,7 @@ function handleTaskClaim(ctx) {
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
     });
+    applyStrategyOverrides(task, flags);
     if (isRetiredExecutor(task.executor, RETIRED_TASK_EXECUTORS)) {
         throw createRetiredExecutorError(task.executor, 'task claim');
     }
@@ -795,6 +838,7 @@ function handleTaskStart(ctx) {
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
     });
+    applyStrategyOverrides(task, flags);
     if (isRetiredExecutor(task.executor, RETIRED_TASK_EXECUTORS)) {
         throw createRetiredExecutorError(task.executor, 'task start');
     }
@@ -1048,6 +1092,7 @@ async function handleTaskCreate(ctx) {
                 ensureTaskDualCodexDefaults,
             }
         );
+        applyStrategyOverrides(task, {});
 
         const errors = [];
         const duplicateTask =
@@ -1370,6 +1415,7 @@ async function handleTaskCreate(ctx) {
             inferDomainLaneFromFiles,
             ensureTaskDualCodexDefaults,
         });
+        applyStrategyOverrides(task, flags);
         validateTaskGovernancePrechecks(board, task, {
             handoffs: handoffData.handoffs,
         });
@@ -1757,6 +1803,10 @@ async function handleTaskCreate(ctx) {
         evidence_ref: '',
         depends_on: dependsOn,
         prompt,
+        strategy_id: '',
+        subfront_id: '',
+        strategy_role: '',
+        strategy_reason: '',
         created_at: today,
         updated_at: today,
     };
@@ -1779,6 +1829,7 @@ async function handleTaskCreate(ctx) {
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
     });
+    applyStrategyOverrides(task, flags);
     validateTaskGovernancePrechecks(board, task, {
         handoffs: handoffData.handoffs,
     });

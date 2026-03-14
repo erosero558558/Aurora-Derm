@@ -74,8 +74,32 @@ export function renderLoginPanel() {
                         Volver
                     </button>
                 </div>
+                <div class="admin-login-alt-actions">
+                    <button
+                        id="loginFallbackToggleBtn"
+                        type="button"
+                        class="admin-login-inline-link is-hidden"
+                        data-action="show-login-fallback"
+                    >
+                        Usar clave de contingencia
+                    </button>
+                    <button
+                        id="loginPrimaryToggleBtn"
+                        type="button"
+                        class="admin-login-inline-link is-hidden"
+                        data-action="show-login-primary"
+                    >
+                        Volver a OpenClaw
+                    </button>
+                </div>
                 <p id="adminLoginSupportCopy" class="admin-login-support-copy">
                     Esta tarjeta se adapta al modo de autenticacion y al gate clinico del backend.
+                </p>
+                <p
+                    id="adminLoginContingencyCopy"
+                    class="admin-login-support-copy admin-login-support-copy-secondary is-hidden"
+                >
+                    OpenClaw es el acceso principal del operador local.
                 </p>
             </form>
 

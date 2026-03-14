@@ -7,13 +7,14 @@ const http = require('node:http');
 const https = require('node:https');
 const os = require('node:os');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { loadOpenClawOperatorAuthConfig } = require('./operator-auth-config.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_HELPER_BASE_URL = 'http://127.0.0.1:4173';
 const DEFAULT_LOGIN_COMMAND =
     'openclaw models auth login --provider openai-codex';
-const DEFAULT_OPENCLAW_BIN = process.platform === 'win32' ? 'openclaw.cmd' : 'openclaw';
+const DEFAULT_OPENCLAW_BIN =
+    process.platform === 'win32' ? 'openclaw.cmd' : 'openclaw';
 
 function trimToString(value) {
     return typeof value === 'string' ? value.trim() : '';
@@ -64,9 +65,30 @@ function buildConfig(env = process.env, repoRoot = REPO_ROOT) {
         ...phpEnv,
         ...env,
     };
+    const operatorAuthConfig = loadOpenClawOperatorAuthConfig({
+        helperBaseUrl: trimToString(
+            mergedEnv.PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL
+        ),
+        runtimeBaseUrl: trimToString(mergedEnv.OPENCLAW_RUNTIME_BASE_URL),
+        bridgeToken: trimToString(
+            mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN
+        ),
+        bridgeSecret: trimToString(
+            mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET
+        ),
+        bridgeHeader: trimToString(
+            mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER
+        ),
+        bridgePrefix: trimToString(
+            mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_PREFIX
+        ),
+        helperDeviceId:
+            trimToString(mergedEnv.OPENCLAW_HELPER_DEVICE_ID) ||
+            trimToString(mergedEnv.PIELARMONIA_OPERATOR_AUTH_DEVICE_ID),
+    });
 
     const helperBaseUrlRaw =
-        trimToString(mergedEnv.PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL) ||
+        trimToString(operatorAuthConfig.helperBaseUrl) ||
         DEFAULT_HELPER_BASE_URL;
     const helperBaseUrl = helperBaseUrlRaw.replace(/\/+$/, '');
     const helperUrl = new URL(helperBaseUrl);
@@ -82,33 +104,34 @@ function buildConfig(env = process.env, repoRoot = REPO_ROOT) {
         helperBaseUrl,
         helperHost: helperUrl.hostname || '127.0.0.1',
         helperPort: Number.isFinite(helperPort) ? helperPort : 4173,
-        bridgeToken: trimToString(
-            mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN
-        ),
-        bridgeSecret:
-            trimToString(mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET) ||
-            trimToString(mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN),
+        runtimeBaseUrl: trimToString(operatorAuthConfig.runtimeBaseUrl),
+        bridgeToken: trimToString(operatorAuthConfig.bridgeToken),
+        bridgeSecret: trimToString(operatorAuthConfig.bridgeSecret),
         bridgeTokenHeader:
-            trimToString(
-                mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER
-            ) || 'Authorization',
+            trimToString(operatorAuthConfig.bridgeHeader) || 'Authorization',
         bridgeTokenPrefix:
-            trimToString(
-                mergedEnv.PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_PREFIX
-            ) || 'Bearer',
+            trimToString(operatorAuthConfig.bridgePrefix) || 'Bearer',
         serverBaseUrl,
-        openclawBin: trimToString(mergedEnv.OPENCLAW_BIN) || DEFAULT_OPENCLAW_BIN,
+        openclawBin:
+            trimToString(mergedEnv.OPENCLAW_BIN) || DEFAULT_OPENCLAW_BIN,
         openclawLoginCommand:
             trimToString(mergedEnv.OPENCLAW_LOGIN_COMMAND) ||
             DEFAULT_LOGIN_COMMAND,
+        gatewayApiKey: trimToString(mergedEnv.OPENCLAW_GATEWAY_API_KEY),
+        gatewayKeyHeader:
+            trimToString(mergedEnv.OPENCLAW_GATEWAY_KEY_HEADER) ||
+            'Authorization',
+        gatewayKeyPrefix:
+            trimToString(mergedEnv.OPENCLAW_GATEWAY_KEY_PREFIX) || 'Bearer',
         deviceId:
-            trimToString(mergedEnv.PIELARMONIA_OPERATOR_AUTH_DEVICE_ID) ||
+            trimToString(operatorAuthConfig.helperDeviceId) ||
             buildDefaultDeviceId(),
     };
 }
 
 function buildDefaultDeviceId() {
-    const hostname = trimToString(os.hostname()).toLowerCase() || 'unknown-host';
+    const hostname =
+        trimToString(os.hostname()).toLowerCase() || 'unknown-host';
     return `operator-auth-bridge:${hostname.replace(/[^a-z0-9._:-]+/g, '-')}`;
 }
 
@@ -140,20 +163,20 @@ function resolveIdentityFromModelsStatus(statusPayload) {
         return {
             ok: false,
             errorCode: 'openclaw_oauth_missing',
-            error:
-                'OpenClaw no tiene un perfil OAuth activo para openai-codex.',
+            error: 'OpenClaw no tiene un perfil OAuth activo para openai-codex.',
         };
     }
 
     const profiles = Array.isArray(provider.profiles) ? provider.profiles : [];
-    const usableProfile = profiles.find((entry) => isOkStatus(entry && entry.status));
+    const usableProfile = profiles.find((entry) =>
+        isOkStatus(entry && entry.status)
+    );
 
     if (!usableProfile) {
         return {
             ok: false,
             errorCode: 'openclaw_login_required',
-            error:
-                'OpenClaw requiere iniciar sesion con ChatGPT/OpenAI antes de resolver este challenge.',
+            error: 'OpenClaw requiere iniciar sesion con ChatGPT/OpenAI antes de resolver este challenge.',
         };
     }
 
@@ -184,70 +207,149 @@ function resolveIdentityFromModelsStatus(statusPayload) {
     };
 }
 
-function detectOpenClawIdentity(config, execFileSyncImpl = execFileSync) {
-    try {
-        const raw =
-            process.platform === 'win32'
-                ? execFileSyncImpl(
-                      process.env.ComSpec || 'cmd.exe',
-                      [
-                          '/d',
-                          '/s',
-                          '/c',
-                          `${config.openclawBin.includes(' ') ? `"${config.openclawBin}"` : config.openclawBin} models status --json`,
-                      ],
-                      {
-                          cwd: config.repoRoot,
-                          encoding: 'utf8',
-                          windowsHide: true,
-                      }
-                  )
-                : execFileSyncImpl(
-                      config.openclawBin,
-                      ['models', 'status', '--json'],
-                      {
-                          cwd: config.repoRoot,
-                          encoding: 'utf8',
-                          windowsHide: true,
-                      }
-                  );
+function resolveIdentityFromRuntimeSession(sessionPayload) {
+    const payload =
+        sessionPayload && typeof sessionPayload === 'object'
+            ? sessionPayload
+            : {};
 
-        return resolveIdentityFromModelsStatus(JSON.parse(String(raw || '{}')));
-    } catch (error) {
-        const stdout = trimToString(error && error.stdout);
-        const stderr = trimToString(error && error.stderr);
-        const combined = `${stdout}\n${stderr}\n${error && error.message ? error.message : ''}`
-            .trim()
-            .toLowerCase();
-
-        if (
-            combined.includes('not recognized') ||
-            combined.includes('enoent') ||
-            combined.includes('no se reconoce') ||
-            combined.includes('cannot find')
-        ) {
-            return {
-                ok: false,
-                errorCode: 'helper_no_disponible',
-                error:
-                    'No se pudo ejecutar OpenClaw desde este entorno. Verifica que el CLI este instalado y disponible en PATH.',
-            };
-        }
-
-        if (combined.includes('openai-codex') && combined.includes('oauth')) {
+    if (payload.loggedIn !== true) {
+        const errorCode = trimToString(payload.errorCode || payload.code);
+        if (errorCode === 'openclaw_oauth_missing') {
             return {
                 ok: false,
                 errorCode: 'openclaw_oauth_missing',
-                error:
-                    'OpenClaw no encontro un perfil OAuth valido para openai-codex.',
+                error: 'OpenClaw no encontro un perfil OAuth valido para openai-codex.',
             };
         }
 
         return {
             ok: false,
             errorCode: 'openclaw_login_required',
+            error: 'OpenClaw requiere iniciar sesion con ChatGPT/OpenAI antes de resolver este challenge.',
+        };
+    }
+
+    const email = extractEmail(payload.email);
+    if (email === '') {
+        return {
+            ok: false,
+            errorCode: 'openclaw_email_missing',
+            error: 'OpenClaw no expuso un email resoluble para este perfil.',
+        };
+    }
+
+    const profileId =
+        trimToString(payload.profileId) ||
+        trimToString(payload.accountId) ||
+        `openai-codex:${email}`;
+    const accountId = trimToString(payload.accountId) || profileId;
+
+    return {
+        ok: true,
+        identity: {
+            email,
+            profileId,
+            accountId,
+        },
+    };
+}
+
+function buildGatewayHeaders(config) {
+    const headers = {
+        Accept: 'application/json',
+    };
+    if (config.gatewayApiKey === '') {
+        return headers;
+    }
+
+    headers[config.gatewayKeyHeader] = config.gatewayKeyPrefix
+        ? `${config.gatewayKeyPrefix} ${config.gatewayApiKey}`
+        : config.gatewayApiKey;
+    return headers;
+}
+
+function requestJson(urlString, options = {}) {
+    return new Promise((resolve, reject) => {
+        const target = new URL(urlString);
+        const transport = target.protocol === 'https:' ? https : http;
+        const request = transport.request(
+            {
+                method: String(options.method || 'GET').toUpperCase(),
+                protocol: target.protocol,
+                hostname: target.hostname,
+                port: target.port || undefined,
+                path: `${target.pathname}${target.search}`,
+                headers: {
+                    Accept: 'application/json',
+                    ...(options.headers || {}),
+                },
+            },
+            (response) => {
+                let raw = '';
+                response.setEncoding('utf8');
+                response.on('data', (chunk) => {
+                    raw += chunk;
+                });
+                response.on('end', () => {
+                    let body = null;
+                    try {
+                        body = raw === '' ? null : JSON.parse(raw);
+                    } catch (_error) {
+                        body = null;
+                    }
+
+                    resolve({
+                        ok:
+                            Number(response.statusCode || 0) >= 200 &&
+                            Number(response.statusCode || 0) < 300,
+                        status: Number(response.statusCode || 0),
+                        headers: response.headers || {},
+                        rawBody: raw,
+                        body,
+                    });
+                });
+            }
+        );
+
+        request.on('error', reject);
+        request.end();
+    });
+}
+
+async function detectOpenClawIdentity(config, requestJsonImpl = requestJson) {
+    try {
+        const response = await requestJsonImpl(
+            `${config.runtimeBaseUrl}/v1/session`,
+            {
+                headers: buildGatewayHeaders(config),
+            }
+        );
+        const payload =
+            response.body && typeof response.body === 'object'
+                ? response.body
+                : {};
+
+        if (Array.isArray(payload?.auth?.oauth?.providers)) {
+            return resolveIdentityFromModelsStatus(payload);
+        }
+
+        if (!response.ok && !payload.errorCode && !payload.code) {
+            return {
+                ok: false,
+                errorCode: 'helper_no_disponible',
+                error: 'No se pudo consultar la sesion del runtime OpenClaw local.',
+            };
+        }
+
+        return resolveIdentityFromRuntimeSession(payload);
+    } catch (error) {
+        return {
+            ok: false,
+            errorCode: 'helper_no_disponible',
             error:
-                'OpenClaw no devolvio una sesion OAuth util para ChatGPT/OpenAI.',
+                trimToString(error && error.message) ||
+                'No se pudo consultar la sesion del runtime OpenClaw local.',
         };
     }
 }
@@ -529,15 +631,18 @@ async function resolveChallenge(input, options = {}) {
         return {
             ok: false,
             status: 'helper_not_configured',
-            error:
-                'Faltan PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN/SECRET para completar el challenge.',
+            error: 'Faltan PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN/SECRET para completar el challenge.',
             input: normalizedInput,
         };
     }
 
     const identityResult = await Promise.resolve(detectIdentityImpl(config));
     const payload = identityResult.ok
-        ? buildCompletionPayload(normalizedInput, identityResult.identity, config)
+        ? buildCompletionPayload(
+              normalizedInput,
+              identityResult.identity,
+              config
+          )
         : buildErrorPayload(
               normalizedInput,
               identityResult.errorCode,
@@ -554,21 +659,21 @@ async function resolveChallenge(input, options = {}) {
             payload
         );
 
-        const body = response.body && typeof response.body === 'object'
-            ? response.body
-            : {};
+        const body =
+            response.body && typeof response.body === 'object'
+                ? response.body
+                : {};
         const status = trimToString(body.status) || 'helper_no_disponible';
         const accepted = response.status === 202 && body.accepted === true;
 
         return {
             ok: accepted,
             status,
-            error:
-                accepted
-                    ? ''
-                    : trimToString(body.error) ||
-                      trimToString(identityResult.error) ||
-                      'No se pudo completar el login',
+            error: accepted
+                ? ''
+                : trimToString(body.error) ||
+                  trimToString(identityResult.error) ||
+                  'No se pudo completar el login',
             input: normalizedInput,
             identity: identityResult.ok ? identityResult.identity : null,
             response: {
@@ -595,10 +700,7 @@ function sendJson(response, statusCode, payload) {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': 'no-store',
     });
-    response.end(
-        JSON.stringify(payload, null, 2) + '\n',
-        'utf8'
-    );
+    response.end(JSON.stringify(payload, null, 2) + '\n', 'utf8');
 }
 
 function sendHtml(response, statusCode, html) {
@@ -641,6 +743,8 @@ function createBridgeServer(config = buildConfig(), options = {}) {
                 ok: true,
                 service: 'operator-auth-bridge',
                 helperBaseUrl: config.helperBaseUrl,
+                runtimeBaseUrl: config.runtimeBaseUrl,
+                deviceId: config.deviceId,
                 serverBaseUrlConfigured: config.serverBaseUrl !== '',
             });
             return;
@@ -850,6 +954,7 @@ module.exports = {
     renderSuccessPage,
     resolveChallenge,
     resolveIdentityFromModelsStatus,
+    resolveIdentityFromRuntimeSession,
     runCli,
     signBridgePayload,
 };

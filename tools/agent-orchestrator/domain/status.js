@@ -34,6 +34,7 @@ function buildStatusReport(input = {}) {
             byStatus,
             byExecutor,
         },
+        strategy: input.strategy || null,
         codex_instances: input.codex_instances || null,
         provider_modes: input.provider_modes || null,
         runtime_surfaces: input.runtime_surfaces || null,
@@ -78,6 +79,14 @@ function renderStatusText(data, options = {}) {
     lines.push(
         `Conflicts eximidos por handoff: ${data?.conflicts_breakdown?.handoff ?? 0}`
     );
+    if (data?.strategy?.active) {
+        lines.push(
+            `Estrategia activa: ${data.strategy.active.id} (${data.strategy.active.title || 'sin titulo'})`
+        );
+        lines.push(
+            `Cobertura estrategia: aligned=${data.strategy.aligned_tasks ?? 0}, support=${data.strategy.support_tasks ?? 0}, exception=${data.strategy.exception_tasks ?? 0}, orphan=${data.strategy.orphan_tasks ?? 0}`
+        );
+    }
     if (data?.jobs) {
         lines.push(
             `Jobs: tracked=${data.jobs.tracked ?? 0}, healthy=${data.jobs.healthy ?? 0}, failing=${data.jobs.failing ?? 0}`
@@ -131,6 +140,15 @@ function renderStatusText(data, options = {}) {
         for (const row of data.runtime_surfaces.rows) {
             lines.push(
                 `- ${row.runtime_surface}: tasks=${row.tasks}, active=${row.active_tasks}, in_progress=${row.in_progress_tasks}, done=${row.done_tasks}`
+            );
+        }
+    }
+    if (Array.isArray(data?.strategy?.rows) && data.strategy.rows.length > 0) {
+        lines.push('');
+        lines.push('Por subfrente:');
+        for (const row of data.strategy.rows) {
+            lines.push(
+                `- ${row.subfront_id}: active=${row.active_tasks}, aligned=${row.aligned_tasks}, primary=${row.primary_tasks}, support=${row.support_tasks}, exception=${row.exception_tasks}, orphan=${row.orphan_tasks}`
             );
         }
     }

@@ -17,7 +17,7 @@ $runtimeRoot = Join-Path $repoRoot 'data\runtime\hosting'
 $logRoot = Join-Path $runtimeRoot 'logs'
 $pidRoot = Join-Path $runtimeRoot 'pids'
 $caddyConfigPath = Join-Path $repoRoot 'ops\caddy\Caddyfile'
-$bridgeScriptPath = Join-Path $repoRoot 'scripts\ops\admin\OPENCLAW-OPERATOR-AUTH-BRIDGE.ps1'
+$helperScriptPath = Join-Path $repoRoot 'scripts\ops\admin\INICIAR-OPENCLAW-AUTH-HELPER.ps1'
 $resolvedOperatorUserProfile = if ([string]::IsNullOrWhiteSpace($OperatorUserProfile)) {
     $env:USERPROFILE
 } else {
@@ -265,8 +265,8 @@ $caddyStdOutPath = Join-Path $logRoot 'caddy-stdout.log'
 $caddyStdErrPath = Join-Path $logRoot 'caddy-stderr.log'
 $phpStdOutPath = Join-Path $logRoot 'php-cgi-stdout.log'
 $phpStdErrPath = Join-Path $logRoot 'php-cgi-stderr.log'
-$bridgeStdOutPath = Join-Path $logRoot 'operator-auth-bridge-stdout.log'
-$bridgeStdErrPath = Join-Path $logRoot 'operator-auth-bridge-stderr.log'
+$bridgeStdOutPath = Join-Path $logRoot 'openclaw-auth-helper-stdout.log'
+$bridgeStdErrPath = Join-Path $logRoot 'openclaw-auth-helper-stderr.log'
 $cloudflaredPidPath = Join-Path $pidRoot 'cloudflared.pid'
 $cloudflaredLogPath = Join-Path $logRoot 'cloudflared.log'
 
@@ -306,18 +306,18 @@ Start-ManagedProcess `
 if (-not $SkipBridge) {
     Start-ManagedProcess `
         -FilePath $powershellExe `
-        -Arguments @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $bridgeScriptPath) `
+        -Arguments @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $helperScriptPath) `
         -WorkingDirectory $repoRoot `
         -StdOutPath $bridgeStdOutPath `
         -StdErrPath $bridgeStdErrPath `
-        -AlreadyRunningNeedles @('operator-auth-bridge.js') `
-        -Label 'Operator auth bridge' | Out-Null
+        -AlreadyRunningNeedles @('openclaw-auth-helper.js') `
+        -Label 'OpenClaw auth helper' | Out-Null
 
     if (-not (Wait-ForHttp -Url 'http://127.0.0.1:4173/health')) {
-        throw 'El operator auth bridge no responde en 127.0.0.1:4173'
+        throw 'El helper local de OpenClaw no responde en 127.0.0.1:4173/health'
     }
 } else {
-    Write-Info 'Operator auth bridge omitido en modo boot/public stack.'
+    Write-Info 'OpenClaw auth helper omitido en modo boot/public stack.'
 }
 
 Write-Info ("Stack listo. Public domain esperado: https://{0}" -f $PublicDomain)
