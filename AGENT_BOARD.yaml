@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 650
+  revision: 651
   updated_at: 2026-03-14
 
 tasks:
@@ -10004,5 +10004,47 @@ tasks:
     evidence_ref: "verification/agent-runs/AG-233.md"
     depends_on: []
     prompt: "Wire admin copiloto keyboard shortcut"
+    created_at: 2026-03-14
+    updated_at: 2026-03-14
+
+  - id: AG-234
+    title: "Make Windows hosting stack boot without interactive login"
+    owner: ernes
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-14T03:54:04.209Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["scripts/ops/setup/CONFIGURAR-HOSTING-WINDOWS.ps1", "scripts/ops/setup/ARRANCAR-HOSTING-WINDOWS.ps1", "scripts/ops/setup/PARAR-HOSTING-WINDOWS.ps1", "docs/DEPLOY_HOSTING_PLAYBOOK.md", "verification/agent-runs/AG-234.md"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-232_20260314035404209_776746"
+    lease_owner: "ernes"
+    lease_created_at: "2026-03-14T03:54:04.209Z"
+    heartbeat_at: "2026-03-14T03:54:04.209Z"
+    lease_expires_at: "2026-03-14T07:54:04.209Z"
+    lease_reason: "board_write"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: high
+    critical_zone: true
+    acceptance: "Make Windows hosting stack boot without interactive login"
+    acceptance_ref: "verification/agent-runs/AG-234.md"
+    evidence_ref: "verification/agent-runs/AG-234.md"
+    depends_on: []
+    prompt: "Make Windows hosting stack boot without interactive login"
     created_at: 2026-03-14
     updated_at: 2026-03-14

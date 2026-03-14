@@ -1,7 +1,12 @@
 param(
     [string]$PublicDomain = 'pielarmonia.com',
     [string]$TunnelId = 'a2067e67-a462-41de-9d43-97cd7df4bda0',
+    [string]$OperatorUserProfile = '',
+    [string]$CaddyExePath = '',
+    [string]$CloudflaredExePath = '',
+    [string]$PhpCgiExePath = '',
     [switch]$StopLegacy,
+    [switch]$SkipBridge,
     [switch]$Quiet
 )
 
@@ -13,7 +18,12 @@ $logRoot = Join-Path $runtimeRoot 'logs'
 $pidRoot = Join-Path $runtimeRoot 'pids'
 $caddyConfigPath = Join-Path $repoRoot 'ops\caddy\Caddyfile'
 $bridgeScriptPath = Join-Path $repoRoot 'scripts\ops\admin\OPENCLAW-OPERATOR-AUTH-BRIDGE.ps1'
-$cloudflaredCredPath = Join-Path $env:USERPROFILE ".cloudflared\$TunnelId.json"
+$resolvedOperatorUserProfile = if ([string]::IsNullOrWhiteSpace($OperatorUserProfile)) {
+    $env:USERPROFILE
+} else {
+    [System.IO.Path]::GetFullPath($OperatorUserProfile)
+}
+$cloudflaredCredPath = Join-Path $resolvedOperatorUserProfile ".cloudflared\$TunnelId.json"
 
 foreach ($path in @($runtimeRoot, $logRoot, $pidRoot)) {
     if (-not (Test-Path -LiteralPath $path)) {
@@ -27,6 +37,24 @@ function Write-Info {
     if (-not $Quiet) {
         Write-Host "[hosting] $Message"
     }
+}
+
+function Resolve-ExecutablePath {
+    param(
+        [string]$ConfiguredPath,
+        [string]$CommandName
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($ConfiguredPath)) {
+        $resolvedConfiguredPath = [System.IO.Path]::GetFullPath($ConfiguredPath)
+        if (-not (Test-Path -LiteralPath $resolvedConfiguredPath)) {
+            throw "No existe el binario configurado para ${CommandName}: $resolvedConfiguredPath"
+        }
+
+        return $resolvedConfiguredPath
+    }
+
+    return (Get-Command $CommandName -ErrorAction Stop).Source
 }
 
 function Test-CommandLineMatch {
@@ -153,9 +181,9 @@ if (-not (Test-Path -LiteralPath $cloudflaredCredPath)) {
     throw "No existe el archivo de credenciales del tunnel: $cloudflaredCredPath"
 }
 
-$caddyExe = (Get-Command caddy -ErrorAction Stop).Source
-$cloudflaredExe = (Get-Command cloudflared -ErrorAction Stop).Source
-$phpCgiExe = (Get-Command 'php-cgi' -ErrorAction Stop).Source
+$caddyExe = Resolve-ExecutablePath -ConfiguredPath $CaddyExePath -CommandName 'caddy'
+$cloudflaredExe = Resolve-ExecutablePath -ConfiguredPath $CloudflaredExePath -CommandName 'cloudflared'
+$phpCgiExe = Resolve-ExecutablePath -ConfiguredPath $PhpCgiExePath -CommandName 'php-cgi'
 $powershellExe = (Get-Command powershell -ErrorAction Stop).Source
 
 $caddyStdOutPath = Join-Path $logRoot 'caddy-stdout.log'
@@ -207,17 +235,21 @@ Start-ManagedProcess `
     -AlreadyRunningNeedles @('cloudflared.exe', $TunnelId, '--url http://127.0.0.1') `
     -Label 'Cloudflare tunnel' | Out-Null
 
-Start-ManagedProcess `
-    -FilePath $powershellExe `
-    -Arguments @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $bridgeScriptPath) `
-    -WorkingDirectory $repoRoot `
-    -StdOutPath $bridgeStdOutPath `
-    -StdErrPath $bridgeStdErrPath `
-    -AlreadyRunningNeedles @('operator-auth-bridge.js') `
-    -Label 'Operator auth bridge' | Out-Null
+if (-not $SkipBridge) {
+    Start-ManagedProcess `
+        -FilePath $powershellExe `
+        -Arguments @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $bridgeScriptPath) `
+        -WorkingDirectory $repoRoot `
+        -StdOutPath $bridgeStdOutPath `
+        -StdErrPath $bridgeStdErrPath `
+        -AlreadyRunningNeedles @('operator-auth-bridge.js') `
+        -Label 'Operator auth bridge' | Out-Null
 
-if (-not (Wait-ForHttp -Url 'http://127.0.0.1:4173/health')) {
-    throw 'El operator auth bridge no responde en 127.0.0.1:4173'
+    if (-not (Wait-ForHttp -Url 'http://127.0.0.1:4173/health')) {
+        throw 'El operator auth bridge no responde en 127.0.0.1:4173'
+    }
+} else {
+    Write-Info 'Operator auth bridge omitido en modo boot/public stack.'
 }
 
 Write-Info ("Stack listo. Public domain esperado: https://{0}" -f $PublicDomain)

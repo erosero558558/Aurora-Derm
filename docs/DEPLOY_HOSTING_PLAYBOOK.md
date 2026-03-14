@@ -58,8 +58,12 @@ Notas:
   `https://pielarmonia.com`; el helper OpenClaw sigue local en `127.0.0.1:4173`.
 - El entrypoint publico sale por Cloudflare Tunnel; no hace falta publicar
   `8011`, `4173` ni `9000`.
-- El startup shim y la tarea `Pielarmonia Hosting Stack` dejan el stack
-  arrancando al iniciar sesion en Windows.
+- El configurador deja dos capas de arranque:
+  `Startup` + `HKCU\Run` para la sesion del operador, y una tarea `ONSTART`
+  para el stack publico solo cuando se ejecuta con PowerShell elevada.
+- El boot task publico arranca `Caddy + php-cgi + cloudflared` sin bridge; el
+  bridge OpenClaw sigue siendo de login del operador porque depende de su
+  sesion OAuth local.
 
 ## Archivos a subir
 
