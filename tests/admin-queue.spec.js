@@ -75,6 +75,207 @@ function buildTurneroClinicProfileCatalogStatus(options = {}) {
     };
 }
 
+function buildQueueIdleState(updatedAt, overrides = {}) {
+    return {
+        updatedAt: updatedAt || new Date().toISOString(),
+        waitingCount: 0,
+        calledCount: 0,
+        counts: {
+            waiting: 0,
+            called: 0,
+            completed: 0,
+            no_show: 0,
+            cancelled: 0,
+        },
+        callingNow: [],
+        nextTickets: [],
+        ...overrides,
+    };
+}
+
+function buildQueuePilotClinicProfile(options = {}) {
+    const clinicId = String(options.clinicId || 'clinica-demo').trim();
+    const surfacesOverride =
+        options.surfaces && typeof options.surfaces === 'object'
+            ? options.surfaces
+            : {};
+    const releaseOverride =
+        options.release && typeof options.release === 'object'
+            ? options.release
+            : {};
+    const brandingOverride =
+        options.branding && typeof options.branding === 'object'
+            ? options.branding
+            : {};
+
+    return {
+        schema: 'turnero-clinic-profile/v1',
+        clinic_id: clinicId,
+        branding: {
+            name: clinicId,
+            short_name: clinicId,
+            base_url: `https://${clinicId}.example`,
+            ...brandingOverride,
+        },
+        consultorios: options.consultorios || {
+            c1: {
+                label: 'Consultorio 1',
+                short_label: 'C1',
+            },
+            c2: {
+                label: 'Consultorio 2',
+                short_label: 'C2',
+            },
+        },
+        surfaces: {
+            admin: {
+                enabled: true,
+                label: 'Admin web',
+                route: '/admin.html#queue',
+                ...(surfacesOverride.admin || {}),
+            },
+            operator: {
+                enabled: true,
+                label: 'Operador web',
+                route: '/operador-turnos.html',
+                ...(surfacesOverride.operator || {}),
+            },
+            kiosk: {
+                enabled: true,
+                label: 'Kiosco web',
+                route: '/kiosco-turnos.html',
+                ...(surfacesOverride.kiosk || {}),
+            },
+            display: {
+                enabled: true,
+                label: 'Sala web',
+                route: '/sala-turnos.html',
+                ...(surfacesOverride.display || {}),
+            },
+        },
+        release: {
+            mode: 'web_pilot',
+            admin_mode_default: 'basic',
+            separate_deploy: true,
+            native_apps_blocking: false,
+            ...releaseOverride,
+        },
+    };
+}
+
+function buildQueuePilotSurfaceStatusEntry(surface, options = {}) {
+    const defaultsBySurface = {
+        operator: {
+            label: 'Operador',
+            summary: 'Operador listo.',
+            route: '/operador-turnos.html',
+            deviceLabel: 'Operador principal',
+        },
+        kiosk: {
+            label: 'Kiosco',
+            summary: 'Kiosco listo.',
+            route: '/kiosco-turnos.html',
+            deviceLabel: 'Kiosco principal',
+        },
+        display: {
+            label: 'Sala',
+            summary: 'Sala lista.',
+            route: '/sala-turnos.html',
+            deviceLabel: 'Sala principal',
+        },
+    };
+
+    const defaults = defaultsBySurface[surface];
+    const {
+        clinicId = '',
+        ageSec = surface === 'operator' ? 6 : surface === 'kiosk' ? 7 : 8,
+        latest: latestOverride = {},
+        details: detailsOverride = {},
+        instances = [],
+        ...rest
+    } = options;
+    const latestDetailsOverride =
+        latestOverride.details && typeof latestOverride.details === 'object'
+            ? latestOverride.details
+            : {};
+
+    return {
+        surface,
+        label: defaults.label,
+        status: 'ready',
+        updatedAt: options.updatedAt || new Date().toISOString(),
+        ageSec,
+        stale: false,
+        summary: defaults.summary,
+        latest: {
+            deviceLabel: defaults.deviceLabel,
+            appMode: 'browser',
+            ageSec,
+            ...latestOverride,
+            details: {
+                clinicId,
+                surfaceContractState: 'ready',
+                surfaceRouteExpected: defaults.route,
+                surfaceRouteCurrent: defaults.route,
+                ...detailsOverride,
+                ...latestDetailsOverride,
+            },
+        },
+        instances,
+        ...rest,
+    };
+}
+
+function buildQueuePilotSurfaceStatus(options = {}) {
+    const updatedAt = options.updatedAt || new Date().toISOString();
+    return {
+        operator: buildQueuePilotSurfaceStatusEntry('operator', {
+            updatedAt,
+            clinicId: options.clinicId || '',
+            ...(options.operator || {}),
+        }),
+        kiosk: buildQueuePilotSurfaceStatusEntry('kiosk', {
+            updatedAt,
+            clinicId: options.clinicId || '',
+            ...(options.kiosk || {}),
+        }),
+        display: buildQueuePilotSurfaceStatusEntry('display', {
+            updatedAt,
+            clinicId: options.clinicId || '',
+            ...(options.display || {}),
+        }),
+    };
+}
+
+function buildQueuePilotHealthPayload(options = {}) {
+    const checksOverride =
+        options.checks && typeof options.checks === 'object'
+            ? options.checks
+            : {};
+    const publicSyncOverride =
+        options.publicSync && typeof options.publicSync === 'object'
+            ? options.publicSync
+            : {};
+
+    return {
+        ok: true,
+        status: 'ok',
+        checks: {
+            publicSync: {
+                configured: true,
+                healthy: true,
+                state: 'ok',
+                deployedCommit: '8c4ee5cb7f2f5034f6f471234567890abcdef12',
+                headDrift: false,
+                ageSeconds: 18,
+                failureReason: '',
+                ...publicSyncOverride,
+            },
+            ...checksOverride,
+        },
+    };
+}
+
 function buildQueueStateFromTickets(queueTickets) {
     const waiting = queueTickets.filter(
         (ticket) => ticket.status === 'waiting'
@@ -133,6 +334,7 @@ async function installAdminQueueApiMocks(page, options = {}) {
         reviews = [],
         availability = {},
         availabilityMeta = {},
+        dataOverrides = {},
         queueTickets = [],
         queueState = {},
         featuresPayload = {
@@ -146,6 +348,7 @@ async function installAdminQueueApiMocks(page, options = {}) {
 
     const getQueueState = () => resolveAdminQueueFixture(queueState);
     const getQueueTickets = () => resolveAdminQueueFixture(queueTickets);
+    const getDataOverrides = () => resolveAdminQueueFixture(dataOverrides);
 
     return installBasicAdminApiMocks(page, {
         featuresPayload,
@@ -170,6 +373,10 @@ async function installAdminQueueApiMocks(page, options = {}) {
                         },
                         queue_tickets: getQueueTickets(),
                         queueMeta: buildQueueMetaFromState(getQueueState()),
+                        ...((getDataOverrides() &&
+                            typeof getDataOverrides() === 'object' &&
+                            getDataOverrides()) ||
+                            {}),
                     }),
                 });
                 return true;
@@ -194,6 +401,53 @@ async function installAdminQueueApiMocks(page, options = {}) {
 
             return false;
         },
+    });
+}
+
+async function installQueuePilotApiMocks(page, options = {}) {
+    const clinicProfile = options.clinicProfile || null;
+    const updatedAt =
+        String(
+            options.queueState?.updatedAt ||
+                options.clinicProfileMeta?.fetchedAt ||
+                ''
+        ).trim() || new Date().toISOString();
+    const queueState = options.queueState || buildQueueIdleState(updatedAt);
+    const queueTickets = options.queueTickets || [];
+    const clinicId =
+        String(
+            options.clinicId ||
+                clinicProfile?.clinic_id ||
+                options.clinicProfileMeta?.clinicId ||
+                ''
+        ).trim() || '';
+    const clinicProfileCatalogStatus =
+        options.clinicProfileCatalogStatus === undefined
+            ? clinicId
+                ? buildTurneroClinicProfileCatalogStatus({ clinicId })
+                : null
+            : options.clinicProfileCatalogStatus;
+
+    return installAdminQueueApiMocks(page, {
+        queueTickets,
+        queueState,
+        healthPayload: options.healthPayload || buildQueuePilotHealthPayload(),
+        dataOverrides: {
+            ...(clinicProfile ? { turneroClinicProfile: clinicProfile } : {}),
+            ...(options.clinicProfileMeta
+                ? { turneroClinicProfileMeta: options.clinicProfileMeta }
+                : {}),
+            ...(clinicProfileCatalogStatus
+                ? {
+                      turneroClinicProfileCatalogStatus:
+                          clinicProfileCatalogStatus,
+                  }
+                : {}),
+            ...(options.queueSurfaceStatus
+                ? { queueSurfaceStatus: options.queueSurfaceStatus }
+                : {}),
+        },
+        handleRoute: options.handleRoute || null,
     });
 }
 
@@ -12462,220 +12716,90 @@ test.describe('Admin turnero sala', () => {
             { today: todayLocal, now: nowIso }
         );
 
+        const clinicProfile = buildQueuePilotClinicProfile({
+            clinicId: 'clinica-norte-demo',
+            branding: {
+                name: 'Clinica Norte',
+                short_name: 'Norte',
+                base_url: 'https://clinica-norte.example',
+            },
+            consultorios: {
+                c1: {
+                    label: 'Dermatología 1',
+                    short_label: 'D1',
+                },
+                c2: {
+                    label: 'Dermatología 2',
+                    short_label: 'D2',
+                },
+            },
+            release: {
+                notes: ['Canon web piloto por clínica.'],
+            },
+        });
+
         await installQueueAdminAuthMock(page, 'csrf_queue_clinic_scope_reset');
-
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        turneroClinicProfile: {
-                            schema: 'turnero-clinic-profile/v1',
-                            clinic_id: 'clinica-norte-demo',
-                            branding: {
-                                name: 'Clinica Norte',
-                                short_name: 'Norte',
-                                base_url: 'https://clinica-norte.example',
-                            },
-                            consultorios: {
-                                c1: {
-                                    label: 'Dermatología 1',
-                                    short_label: 'D1',
-                                },
-                                c2: {
-                                    label: 'Dermatología 2',
-                                    short_label: 'D2',
-                                },
-                            },
-                            surfaces: {
-                                admin: {
-                                    enabled: true,
-                                    label: 'Admin web',
-                                    route: '/admin.html#queue',
-                                },
-                                operator: {
-                                    enabled: true,
-                                    label: 'Operador web',
-                                    route: '/operador-turnos.html',
-                                },
-                                kiosk: {
-                                    enabled: true,
-                                    label: 'Kiosco web',
-                                    route: '/kiosco-turnos.html',
-                                },
-                                display: {
-                                    enabled: true,
-                                    label: 'Sala web',
-                                    route: '/sala-turnos.html',
-                                },
-                            },
-                            release: {
-                                mode: 'web_pilot',
-                                admin_mode_default: 'basic',
-                                separate_deploy: true,
-                                native_apps_blocking: false,
-                                notes: ['Canon web piloto por clínica.'],
-                            },
-                        },
-                        turneroClinicProfileMeta: {
-                            source: 'remote',
-                            cached: false,
-                            clinicId: 'clinica-norte-demo',
-                            fetchedAt: nowIso,
-                        },
-                        turneroClinicProfileCatalogStatus:
-                            buildTurneroClinicProfileCatalogStatus({
-                                clinicId: 'clinica-norte-demo',
-                            }),
-                        queue_tickets: [],
-                        queueMeta: buildQueueMetaFromState({
-                            updatedAt: nowIso,
-                            waitingCount: 0,
-                            calledCount: 0,
-                            counts: {
-                                waiting: 0,
-                                called: 0,
-                                completed: 0,
-                                no_show: 0,
-                                cancelled: 0,
-                            },
-                            callingNow: [],
-                            nextTickets: [],
-                        }),
-                        queueSurfaceStatus: {
-                            operator: {
-                                surface: 'operator',
-                                label: 'Operador',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 8,
-                                stale: false,
-                                summary: 'Operador listo para D1.',
-                                latest: {
-                                    deviceLabel: 'Operador D1',
-                                    appMode: 'desktop',
-                                    ageSec: 8,
-                                    details: {
-                                        station: 'c1',
-                                        stationMode: 'locked',
-                                        oneTap: false,
-                                        numpadSeen: true,
-                                        clinicId: 'clinica-norte-demo',
-                                        profileSource: 'remote',
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/operador-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/operador-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                            kiosk: {
-                                surface: 'kiosk',
-                                label: 'Kiosco',
-                                status: 'warning',
-                                updatedAt: nowIso,
-                                ageSec: 12,
-                                stale: false,
-                                summary: 'Falta validar una impresión.',
-                                latest: {
-                                    deviceLabel: 'Kiosco principal',
-                                    appMode: 'browser',
-                                    ageSec: 12,
-                                    details: {
-                                        connection: 'live',
-                                        pendingOffline: 0,
-                                        printerPrinted: false,
-                                        clinicId: 'clinica-norte-demo',
-                                        profileSource: 'remote',
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/kiosco-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/kiosco-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                            display: {
-                                surface: 'display',
-                                label: 'Sala',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 10,
-                                stale: false,
-                                summary: 'Sala lista con audio activo.',
-                                latest: {
-                                    deviceLabel: 'Sala principal',
-                                    appMode: 'browser',
-                                    ageSec: 10,
-                                    details: {
-                                        connection: 'live',
-                                        bellMuted: false,
-                                        bellPrimed: true,
-                                        clinicId: 'clinica-norte-demo',
-                                        profileSource: 'remote',
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/sala-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/sala-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                        },
+        await installQueuePilotApiMocks(page, {
+            queueState: buildQueueIdleState(nowIso),
+            clinicProfile,
+            clinicProfileMeta: {
+                source: 'remote',
+                cached: false,
+                clinicId: clinicProfile.clinic_id,
+                fetchedAt: nowIso,
+            },
+            queueSurfaceStatus: buildQueuePilotSurfaceStatus({
+                updatedAt: nowIso,
+                clinicId: clinicProfile.clinic_id,
+                operator: {
+                    ageSec: 8,
+                    summary: 'Operador listo para D1.',
+                    latest: {
+                        deviceLabel: 'Operador D1',
+                        appMode: 'desktop',
                     },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, {
-                    ok: true,
-                    status: 'ok',
-                    checks: {
-                        publicSync: {
-                            configured: true,
-                            healthy: true,
-                            state: 'ok',
-                            deployedCommit:
-                                '3de287e27f2f5034f6f471234567890abcdef12',
-                            headDrift: false,
-                            ageSeconds: 32,
-                            failureReason: '',
-                        },
+                    details: {
+                        station: 'c1',
+                        stationMode: 'locked',
+                        oneTap: false,
+                        numpadSeen: true,
+                        profileSource: 'remote',
                     },
-                });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, { ok: true, data: {} });
+                },
+                kiosk: {
+                    status: 'warning',
+                    ageSec: 12,
+                    summary: 'Falta validar una impresión.',
+                    latest: {
+                        deviceLabel: 'Kiosco principal',
+                    },
+                    details: {
+                        connection: 'live',
+                        pendingOffline: 0,
+                        printerPrinted: false,
+                        profileSource: 'remote',
+                    },
+                },
+                display: {
+                    ageSec: 10,
+                    summary: 'Sala lista con audio activo.',
+                    latest: {
+                        deviceLabel: 'Sala principal',
+                    },
+                    details: {
+                        connection: 'live',
+                        bellMuted: false,
+                        bellPrimed: true,
+                        profileSource: 'remote',
+                    },
+                },
+            }),
+            healthPayload: buildQueuePilotHealthPayload({
+                publicSync: {
+                    deployedCommit: '3de287e27f2f5034f6f471234567890abcdef12',
+                    ageSeconds: 32,
+                },
+            }),
         });
 
         await page.goto(adminUrl());
@@ -12821,207 +12945,71 @@ test.describe('Admin turnero sala', () => {
         page,
     }) => {
         const nowIso = new Date().toISOString();
+        const clinicProfile = buildQueuePilotClinicProfile({
+            clinicId: 'clinica-sur-alerta',
+            branding: {
+                name: 'Clínica Sur',
+                legal_name: 'Clínica Sur Piloto',
+                short_name: 'Sur',
+                base_url: 'https://clinica-sur.example',
+            },
+            consultorios: {
+                c1: {
+                    label: 'Consultorio 1',
+                    short_label: 'S1',
+                },
+                c2: {
+                    label: 'Consultorio 2',
+                    short_label: 'S2',
+                },
+            },
+        });
 
         await installQueueAdminAuthMock(page, 'csrf_queue_pilot_route_alert');
-
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        turneroClinicProfile: {
-                            schema: 'turnero-clinic-profile/v1',
-                            clinic_id: 'clinica-sur-alerta',
-                            branding: {
-                                name: 'Clínica Sur',
-                                legal_name: 'Clínica Sur Piloto',
-                                short_name: 'Sur',
-                                base_url: 'https://clinica-sur.example',
-                            },
-                            consultorios: {
-                                c1: {
-                                    label: 'Consultorio 1',
-                                    short_label: 'S1',
-                                },
-                                c2: {
-                                    label: 'Consultorio 2',
-                                    short_label: 'S2',
-                                },
-                            },
-                            surfaces: {
-                                admin: {
-                                    enabled: true,
-                                    label: 'Admin web',
-                                    route: '/admin.html#queue',
-                                },
-                                operator: {
-                                    enabled: true,
-                                    label: 'Operador web',
-                                    route: '/operador-turnos.html',
-                                },
-                                kiosk: {
-                                    enabled: true,
-                                    label: 'Kiosco web',
-                                    route: '/kiosco-turnos.html',
-                                },
-                                display: {
-                                    enabled: true,
-                                    label: 'Sala web',
-                                    route: '/sala-turnos.html',
-                                },
-                            },
-                            release: {
-                                mode: 'web_pilot',
-                                admin_mode_default: 'basic',
-                                separate_deploy: true,
-                                native_apps_blocking: false,
-                            },
-                        },
-                        turneroClinicProfileMeta: {
-                            source: 'remote',
-                            cached: false,
-                            clinicId: 'clinica-sur-alerta',
-                            fetchedAt: nowIso,
-                        },
-                        turneroClinicProfileCatalogStatus:
-                            buildTurneroClinicProfileCatalogStatus({
-                                clinicId: 'clinica-sur-alerta',
-                            }),
-                        queue_tickets: [],
-                        queueMeta: buildQueueMetaFromState({
-                            updatedAt: nowIso,
-                            waitingCount: 0,
-                            calledCount: 0,
-                            counts: {
-                                waiting: 0,
-                                called: 0,
-                                completed: 0,
-                                no_show: 0,
-                                cancelled: 0,
-                            },
-                            callingNow: [],
-                            nextTickets: [],
-                        }),
-                        queueSurfaceStatus: {
-                            operator: {
-                                surface: 'operator',
-                                label: 'Operador',
-                                status: 'alert',
-                                updatedAt: nowIso,
-                                ageSec: 7,
-                                stale: false,
-                                summary:
-                                    'Operador abrió una ruta distinta al canon del piloto.',
-                                latest: {
-                                    deviceLabel: 'Operador Sur',
-                                    appMode: 'browser',
-                                    ageSec: 7,
-                                    details: {
-                                        station: 'c1',
-                                        surfaceContractState: 'alert',
-                                        surfaceRouteExpected:
-                                            '/operador-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/operador-alt.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                            kiosk: {
-                                surface: 'kiosk',
-                                label: 'Kiosco',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 10,
-                                stale: false,
-                                summary: 'Kiosco listo.',
-                                latest: {
-                                    deviceLabel: 'Kiosco Sur',
-                                    appMode: 'browser',
-                                    ageSec: 10,
-                                    details: {
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/kiosco-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/kiosco-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                            display: {
-                                surface: 'display',
-                                label: 'Sala',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 9,
-                                stale: false,
-                                summary: 'Sala lista.',
-                                latest: {
-                                    deviceLabel: 'Sala Sur',
-                                    appMode: 'browser',
-                                    ageSec: 9,
-                                    details: {
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/sala-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/sala-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                        },
+        await installQueuePilotApiMocks(page, {
+            queueState: buildQueueIdleState(nowIso),
+            clinicProfile,
+            clinicProfileMeta: {
+                source: 'remote',
+                cached: false,
+                clinicId: clinicProfile.clinic_id,
+                fetchedAt: nowIso,
+            },
+            queueSurfaceStatus: buildQueuePilotSurfaceStatus({
+                updatedAt: nowIso,
+                clinicId: clinicProfile.clinic_id,
+                operator: {
+                    status: 'alert',
+                    ageSec: 7,
+                    summary:
+                        'Operador abrió una ruta distinta al canon del piloto.',
+                    latest: {
+                        deviceLabel: 'Operador Sur',
                     },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, {
-                    ok: true,
-                    status: 'ok',
-                    checks: {
-                        publicSync: {
-                            configured: true,
-                            healthy: true,
-                            state: 'ok',
-                            deployedCommit:
-                                '8c4ee5cb7f2f5034f6f471234567890abcdef12',
-                            headDrift: false,
-                            ageSeconds: 12,
-                            failureReason: '',
-                        },
+                    details: {
+                        station: 'c1',
+                        surfaceContractState: 'alert',
+                        surfaceRouteCurrent: '/operador-alt.html',
                     },
-                });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, { ok: true, data: {} });
+                },
+                kiosk: {
+                    ageSec: 10,
+                    latest: {
+                        deviceLabel: 'Kiosco Sur',
+                    },
+                },
+                display: {
+                    ageSec: 9,
+                    latest: {
+                        deviceLabel: 'Sala Sur',
+                    },
+                },
+            }),
+            healthPayload: buildQueuePilotHealthPayload({
+                publicSync: {
+                    ageSeconds: 12,
+                },
+            }),
         });
 
         await page.goto(adminUrl());
@@ -13126,149 +13114,39 @@ test.describe('Admin turnero sala', () => {
         );
 
         await installQueueAdminAuthMock(page, 'csrf_queue_pilot_local_profile');
-
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        turneroClinicProfileCatalogStatus:
-                            buildTurneroClinicProfileCatalogStatus({
-                                clinicId: 'clinica-cache-demo',
-                            }),
-                        queue_tickets: [],
-                        queueMeta: buildQueueMetaFromState({
-                            updatedAt: nowIso,
-                            waitingCount: 0,
-                            calledCount: 0,
-                            counts: {
-                                waiting: 0,
-                                called: 0,
-                                completed: 0,
-                                no_show: 0,
-                                cancelled: 0,
-                            },
-                            callingNow: [],
-                            nextTickets: [],
-                        }),
-                        queueSurfaceStatus: {
-                            operator: {
-                                surface: 'operator',
-                                label: 'Operador',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 6,
-                                stale: false,
-                                summary: 'Operador listo.',
-                                latest: {
-                                    deviceLabel: 'Operador Cache',
-                                    appMode: 'browser',
-                                    ageSec: 6,
-                                    details: {
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/operador-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/operador-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                            kiosk: {
-                                surface: 'kiosk',
-                                label: 'Kiosco',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 7,
-                                stale: false,
-                                summary: 'Kiosco listo.',
-                                latest: {
-                                    deviceLabel: 'Kiosco Cache',
-                                    appMode: 'browser',
-                                    ageSec: 7,
-                                    details: {
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/kiosco-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/kiosco-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                            display: {
-                                surface: 'display',
-                                label: 'Sala',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 8,
-                                stale: false,
-                                summary: 'Sala lista.',
-                                latest: {
-                                    deviceLabel: 'Sala Cache',
-                                    appMode: 'browser',
-                                    ageSec: 8,
-                                    details: {
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/sala-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/sala-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                        },
+        await installQueuePilotApiMocks(page, {
+            queueState: buildQueueIdleState(nowIso),
+            clinicId: 'clinica-cache-demo',
+            clinicProfileCatalogStatus: buildTurneroClinicProfileCatalogStatus({
+                clinicId: 'clinica-cache-demo',
+            }),
+            queueSurfaceStatus: buildQueuePilotSurfaceStatus({
+                updatedAt: nowIso,
+                clinicId: 'clinica-cache-demo',
+                operator: {
+                    ageSec: 6,
+                    latest: {
+                        deviceLabel: 'Operador Cache',
                     },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, {
-                    ok: true,
-                    status: 'ok',
-                    checks: {
-                        publicSync: {
-                            configured: true,
-                            healthy: true,
-                            state: 'ok',
-                            deployedCommit:
-                                '8c4ee5cb7f2f5034f6f471234567890abcdef12',
-                            headDrift: false,
-                            ageSeconds: 18,
-                            failureReason: '',
-                        },
+                },
+                kiosk: {
+                    ageSec: 7,
+                    latest: {
+                        deviceLabel: 'Kiosco Cache',
                     },
-                });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, { ok: true, data: {} });
+                },
+                display: {
+                    ageSec: 8,
+                    latest: {
+                        deviceLabel: 'Sala Cache',
+                    },
+                },
+            }),
+            healthPayload: buildQueuePilotHealthPayload({
+                publicSync: {
+                    ageSeconds: 18,
+                },
+            }),
         });
 
         await page.goto(adminUrl());
@@ -13296,207 +13174,66 @@ test.describe('Admin turnero sala', () => {
         page,
     }) => {
         const nowIso = new Date().toISOString();
+        const clinicProfile = buildQueuePilotClinicProfile({
+            clinicId: 'clinica-centro-demo',
+            branding: {
+                name: 'Clínica Centro',
+                short_name: 'Centro',
+                base_url: 'https://clinica-centro.example',
+            },
+            consultorios: {
+                c1: {
+                    label: 'Consultorio Centro 1',
+                    short_label: 'C1',
+                },
+                c2: {
+                    label: 'Consultorio Centro 2',
+                    short_label: 'C2',
+                },
+            },
+        });
 
         await installQueueAdminAuthMock(page, 'csrf_queue_pilot_clinic_drift');
-
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        turneroClinicProfile: {
-                            schema: 'turnero-clinic-profile/v1',
-                            clinic_id: 'clinica-centro-demo',
-                            branding: {
-                                name: 'Clínica Centro',
-                                short_name: 'Centro',
-                                base_url: 'https://clinica-centro.example',
-                            },
-                            consultorios: {
-                                c1: {
-                                    label: 'Consultorio Centro 1',
-                                    short_label: 'C1',
-                                },
-                                c2: {
-                                    label: 'Consultorio Centro 2',
-                                    short_label: 'C2',
-                                },
-                            },
-                            surfaces: {
-                                admin: {
-                                    enabled: true,
-                                    label: 'Admin web',
-                                    route: '/admin.html#queue',
-                                },
-                                operator: {
-                                    enabled: true,
-                                    label: 'Operador web',
-                                    route: '/operador-turnos.html',
-                                },
-                                kiosk: {
-                                    enabled: true,
-                                    label: 'Kiosco web',
-                                    route: '/kiosco-turnos.html',
-                                },
-                                display: {
-                                    enabled: true,
-                                    label: 'Sala web',
-                                    route: '/sala-turnos.html',
-                                },
-                            },
-                            release: {
-                                mode: 'web_pilot',
-                                admin_mode_default: 'basic',
-                                separate_deploy: true,
-                                native_apps_blocking: false,
-                            },
-                        },
-                        turneroClinicProfileMeta: {
-                            source: 'remote',
-                            cached: false,
-                            clinicId: 'clinica-centro-demo',
-                            fetchedAt: nowIso,
-                        },
-                        turneroClinicProfileCatalogStatus:
-                            buildTurneroClinicProfileCatalogStatus({
-                                clinicId: 'clinica-centro-demo',
-                            }),
-                        queue_tickets: [],
-                        queueMeta: buildQueueMetaFromState({
-                            updatedAt: nowIso,
-                            waitingCount: 0,
-                            calledCount: 0,
-                            counts: {
-                                waiting: 0,
-                                called: 0,
-                                completed: 0,
-                                no_show: 0,
-                                cancelled: 0,
-                            },
-                            callingNow: [],
-                            nextTickets: [],
-                        }),
-                        queueSurfaceStatus: {
-                            operator: {
-                                surface: 'operator',
-                                label: 'Operador',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 5,
-                                stale: false,
-                                summary: 'Operador reporta otra clínica.',
-                                latest: {
-                                    deviceLabel: 'Operador Centro',
-                                    appMode: 'browser',
-                                    ageSec: 5,
-                                    details: {
-                                        clinicId: 'clinica-sur-demo',
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/operador-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/operador-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                            kiosk: {
-                                surface: 'kiosk',
-                                label: 'Kiosco',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 7,
-                                stale: false,
-                                summary: 'Kiosco listo.',
-                                latest: {
-                                    deviceLabel: 'Kiosco Centro',
-                                    appMode: 'browser',
-                                    ageSec: 7,
-                                    details: {
-                                        clinicId: 'clinica-centro-demo',
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/kiosco-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/kiosco-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                            display: {
-                                surface: 'display',
-                                label: 'Sala',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 8,
-                                stale: false,
-                                summary: 'Sala lista.',
-                                latest: {
-                                    deviceLabel: 'Sala Centro',
-                                    appMode: 'browser',
-                                    ageSec: 8,
-                                    details: {
-                                        clinicId: 'clinica-centro-demo',
-                                        surfaceContractState: 'ready',
-                                        surfaceRouteExpected:
-                                            '/sala-turnos.html',
-                                        surfaceRouteCurrent:
-                                            '/sala-turnos.html',
-                                    },
-                                },
-                                instances: [],
-                            },
-                        },
+        await installQueuePilotApiMocks(page, {
+            queueState: buildQueueIdleState(nowIso),
+            clinicProfile,
+            clinicProfileMeta: {
+                source: 'remote',
+                cached: false,
+                clinicId: clinicProfile.clinic_id,
+                fetchedAt: nowIso,
+            },
+            queueSurfaceStatus: buildQueuePilotSurfaceStatus({
+                updatedAt: nowIso,
+                clinicId: clinicProfile.clinic_id,
+                operator: {
+                    ageSec: 5,
+                    summary: 'Operador reporta otra clínica.',
+                    latest: {
+                        deviceLabel: 'Operador Centro',
                     },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, {
-                    ok: true,
-                    status: 'ok',
-                    checks: {
-                        publicSync: {
-                            configured: true,
-                            healthy: true,
-                            state: 'ok',
-                            deployedCommit:
-                                '8c4ee5cb7f2f5034f6f471234567890abcdef12',
-                            headDrift: false,
-                            ageSeconds: 14,
-                            failureReason: '',
-                        },
+                    details: {
+                        clinicId: 'clinica-sur-demo',
                     },
-                });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            return json(route, { ok: true, data: {} });
+                },
+                kiosk: {
+                    ageSec: 7,
+                    latest: {
+                        deviceLabel: 'Kiosco Centro',
+                    },
+                },
+                display: {
+                    ageSec: 8,
+                    latest: {
+                        deviceLabel: 'Sala Centro',
+                    },
+                },
+            }),
+            healthPayload: buildQueuePilotHealthPayload({
+                publicSync: {
+                    ageSeconds: 14,
+                },
+            }),
         });
 
         await page.goto(adminUrl());

@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 657
+  revision: 658
   updated_at: 2026-03-14
 
 tasks:
@@ -10137,8 +10137,8 @@ tasks:
     title: "Consolidar mocks del piloto web en admin queue spec"
     owner: Ernesto
     executor: codex
-    status: in_progress
-    status_since_at: "2026-03-14T04:11:01.654Z"
+    status: done
+    status_since_at: "2026-03-14T04:17:06.040Z"
     risk: low
     scope: frontend-qa
     codex_instance: codex_backend_ops
@@ -10157,19 +10157,19 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: "lease_AG-237_20260314041101654_43bafa"
-    lease_owner: "Ernesto"
-    lease_created_at: "2026-03-14T04:11:01.654Z"
-    heartbeat_at: "2026-03-14T04:11:01.654Z"
-    lease_expires_at: "2026-03-14T08:11:01.654Z"
-    lease_reason: "board_write"
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-14T04:17:06.040Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
     acceptance: "Consolidar mocks del piloto web en admin queue spec"
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-237.md"
+    evidence_ref: "verification/agent-runs/AG-237.md"
     depends_on: []
     prompt: "Consolidar mocks del piloto web en admin queue spec"
     created_at: 2026-03-14
