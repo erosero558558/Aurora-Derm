@@ -49,7 +49,7 @@ http://pielarmonia.com, http://127.0.0.1, http://localhost {
 
 	@blockedFiles path /.editorconfig /.gitattributes /.gitignore /.htaccess /.lighthouserc.json /.php-cs-fixer.cache /.php-cs-fixer.dist.php /.prettierignore /.prettierrc /AGENT_BOARD.yaml /AGENT_HANDOFFS.yaml /AGENT_JOBS.yaml /AGENT_SIGNALS.yaml /AGENTS.md /CLAUDE.md /JULES_TASKS.md /KIMI_TASKS.md /README.md /SERVIDOR-LOCAL.md /composer.json /composer.lock /env.example.php /env.php /eslint.config.js /governance-policy.json /package-lock.json /package.json /phpunit.xml /playwright.config.js /psalm.xml /rollup.config.mjs /api-lib.php /api-router.php /figo-brain.php /payment-lib.php
 	@blockedRootArtifacts path_regexp blockedRootArtifacts ^/(?:[^/]+\.(?:log|md|ps1)|Dockerfile|docker-compose(?:\.[^/]+)?\.yml)$
-	@blockedDirs path_regexp blockedDirs ^/(?:\.claude|\.codex|\.git|\.github|\.husky|\.vscode|app-downloads|bin|components|content|controllers|data|docs|grafana|k8s|lib|node_modules|release|scripts|src|templates|tests|tools|vendor|verification)(?:/.*)?$
+	@blockedDirs path_regexp blockedDirs ^/(?:\.claude|\.codex|\.git|\.github|\.husky|\.vscode|bin|components|content|controllers|data|docs|grafana|k8s|lib|node_modules|release|scripts|src|templates|tests|tools|vendor|verification)(?:/.*)?$
 
 	@health path /healthz
 	@root path /

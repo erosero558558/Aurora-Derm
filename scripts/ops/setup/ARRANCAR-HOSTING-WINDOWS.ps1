@@ -18,6 +18,11 @@ $logRoot = Join-Path $runtimeRoot 'logs'
 $pidRoot = Join-Path $runtimeRoot 'pids'
 $caddyConfigPath = Join-Path $repoRoot 'ops\caddy\Caddyfile'
 $helperScriptPath = Join-Path $repoRoot 'scripts\ops\admin\INICIAR-OPENCLAW-AUTH-HELPER.ps1'
+$turneroReleaseRoot = Join-Path $repoRoot 'release\turnero-apps-pilot-local'
+$turneroAppDownloadsSource = Join-Path $turneroReleaseRoot 'app-downloads\pilot'
+$turneroDesktopUpdatesSource = Join-Path $turneroReleaseRoot 'desktop-updates\pilot'
+$turneroAppDownloadsTarget = Join-Path $repoRoot 'app-downloads\pilot'
+$turneroDesktopUpdatesTarget = Join-Path $repoRoot 'desktop-updates\pilot'
 $resolvedOperatorUserProfile = if ([string]::IsNullOrWhiteSpace($OperatorUserProfile)) {
     $env:USERPROFILE
 } else {
@@ -171,6 +176,27 @@ function Stop-ProcessesById {
     }
 }
 
+function Sync-DirectoryTree {
+    param(
+        [string]$SourcePath,
+        [string]$TargetPath,
+        [string]$Label
+    )
+
+    if (-not (Test-Path -LiteralPath $SourcePath)) {
+        Write-Info ("{0} source missing: {1}" -f $Label, $SourcePath)
+        return
+    }
+
+    if (Test-Path -LiteralPath $TargetPath) {
+        Remove-Item -LiteralPath $TargetPath -Recurse -Force
+    }
+
+    New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
+    Copy-Item -Path (Join-Path $SourcePath '*') -Destination $TargetPath -Recurse -Force
+    Write-Info ("{0} synced: {1} -> {2}" -f $Label, $SourcePath, $TargetPath)
+}
+
 function Ensure-PhpCgiListener {
     param(
         [string]$PhpCgiExecutable,
@@ -179,7 +205,9 @@ function Ensure-PhpCgiListener {
         [string]$StdErrPath
     )
 
-    $phpNeedles = @('php-cgi.exe', '-b 127.0.0.1:9000')
+    $phpNeedles = @('php-cgi.exe', '-b 127.0.0.1:9000', 'cgi.force_redirect=0')
+    $phpFallbackNeedles = @('php-cgi.exe', '-b 127.0.0.1:9000')
+    $phpArguments = @('-d', 'cgi.force_redirect=0', '-b', '127.0.0.1:9000')
     $listener = Get-ListeningTcpProcess -Port 9000
     if ($null -ne $listener) {
         $listenerProcess = Get-ProcessByIdSafe -ProcessId $listener.OwningProcess
@@ -188,14 +216,27 @@ function Ensure-PhpCgiListener {
         }
 
         if ([string]::Equals([string]$listenerProcess.Name, 'php-cgi.exe', [System.StringComparison]::OrdinalIgnoreCase)) {
-            Write-Info ("PHP-CGI listener already active ({0})" -f $listener.OwningProcess)
+            if (Test-CommandLineMatch -CommandLine ([string]$listenerProcess.CommandLine) -Needles $phpNeedles) {
+                Write-Info ("PHP-CGI listener already active ({0})" -f $listener.OwningProcess)
+            } else {
+                Stop-ProcessesById -ProcessIds @([int]$listener.OwningProcess) -Label 'stale PHP-CGI listener'
+                $listener = $null
+            }
         } else {
             throw ("El puerto 9000 ya esta ocupado por {0} (pid={1})." -f $listenerProcess.Name, $listener.OwningProcess)
         }
-    } else {
+    }
+
+    if ($null -eq $listener) {
+        $stalePhp = Get-ProcessesByNeedle -Needles $phpFallbackNeedles |
+            Where-Object { -not (Test-CommandLineMatch -CommandLine ([string]$_.CommandLine) -Needles $phpNeedles) }
+        if ($stalePhp.Count -gt 0) {
+            Stop-ProcessesById -ProcessIds ($stalePhp | ForEach-Object { [int]$_.ProcessId }) -Label 'stale PHP-CGI fallback'
+        }
+
         Start-ManagedProcess `
             -FilePath $PhpCgiExecutable `
-            -Arguments @('-b', '127.0.0.1:9000') `
+            -Arguments $phpArguments `
             -WorkingDirectory $WorkingDirectory `
             -StdOutPath $StdOutPath `
             -StdErrPath $StdErrPath `
@@ -255,6 +296,9 @@ if (-not (Test-Path -LiteralPath $caddyConfigPath)) {
 if (-not (Test-Path -LiteralPath $cloudflaredCredPath)) {
     throw "No existe el archivo de credenciales del tunnel: $cloudflaredCredPath"
 }
+
+Sync-DirectoryTree -SourcePath $turneroAppDownloadsSource -TargetPath $turneroAppDownloadsTarget -Label 'Turnero app-downloads pilot'
+Sync-DirectoryTree -SourcePath $turneroDesktopUpdatesSource -TargetPath $turneroDesktopUpdatesTarget -Label 'Turnero desktop-updates pilot'
 
 $caddyExe = Resolve-ExecutablePath -ConfiguredPath $CaddyExePath -CommandName 'caddy'
 $cloudflaredExe = Resolve-ExecutablePath -ConfiguredPath $CloudflaredExePath -CommandName 'cloudflared'
