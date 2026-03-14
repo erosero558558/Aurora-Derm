@@ -103,6 +103,17 @@ final class AdminAgentService
 
     /**
      * @param array<string,mixed> $payload
+     */
+    public static function requiresClinicalStorage(array $payload = []): bool
+    {
+        self::ensureStorage();
+
+        $context = self::resolveGuardContext($payload);
+        return self::isClinicalWorkspaceContext($context);
+    }
+
+    /**
+     * @param array<string,mixed> $payload
      * @return array<string,mixed>
      */
     public static function events(array $payload = []): array
@@ -2485,6 +2496,24 @@ final class AdminAgentService
         ];
     }
 
+    /**
+     * @param array<string,mixed> $payload
+     * @return array<string,mixed>
+     */
+    private static function resolveGuardContext(array $payload): array
+    {
+        $sessionId = trim((string) ($payload['sessionId'] ?? ($_GET['sessionId'] ?? '')));
+        $session = $sessionId !== ''
+            ? self::readSession($sessionId)
+            : self::findLatestSessionForOperator(self::resolveOperator());
+
+        $sessionContext = is_array($session['context'] ?? null) ? $session['context'] : [];
+        $payloadContext = is_array($payload['context'] ?? null) ? $payload['context'] : [];
+        $mergedContext = array_merge($sessionContext, $payloadContext);
+
+        return self::normalizeContext($mergedContext, $payload);
+    }
+
     private static function entityRefFromContext(array $context): string
     {
         $selectedEntity = is_array($context['selectedEntity'] ?? null) ? $context['selectedEntity'] : [];
@@ -2508,6 +2537,18 @@ final class AdminAgentService
     {
         $normalized = self::normalizeText($section);
         return in_array($normalized, self::knownSections(), true) ? $normalized : 'dashboard';
+    }
+
+    /**
+     * @param array<string,mixed> $context
+     */
+    private static function isClinicalWorkspaceContext(array $context): bool
+    {
+        if (self::isMediaFlowContext($context)) {
+            return true;
+        }
+
+        return self::normalizeSection((string) ($context['section'] ?? 'dashboard')) === 'clinical-history';
     }
 
     /**

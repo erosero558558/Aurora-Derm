@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/AdminAgentService.php';
+require_once __DIR__ . '/../lib/InternalConsoleReadiness.php';
 
 class AdminAgentController
 {
@@ -10,6 +11,7 @@ class AdminAgentController
     {
         self::requireAgentAccess($context);
         $payload = require_json_body();
+        self::requireClinicalStorageReadyForPayload($payload);
 
         json_response([
             'ok' => true,
@@ -24,6 +26,7 @@ class AdminAgentController
     {
         self::requireAgentAccess($context);
         $payload = require_json_body();
+        self::requireClinicalStorageReadyForPayload($payload);
 
         json_response([
             'ok' => true,
@@ -37,6 +40,7 @@ class AdminAgentController
     public static function status(array $context): void
     {
         self::requireAgentAccess($context);
+        self::requireClinicalStorageReadyForPayload($_GET);
 
         json_response([
             'ok' => true,
@@ -47,6 +51,7 @@ class AdminAgentController
     public static function events(array $context): void
     {
         self::requireAgentAccess($context);
+        self::requireClinicalStorageReadyForPayload($_GET);
 
         json_response([
             'ok' => true,
@@ -58,6 +63,7 @@ class AdminAgentController
     {
         self::requireAgentAccess($context);
         $payload = require_json_body();
+        self::requireClinicalStorageReadyForPayload($payload);
 
         json_response([
             'ok' => true,
@@ -72,6 +78,7 @@ class AdminAgentController
     {
         self::requireAgentAccess($context);
         $payload = require_json_body();
+        self::requireClinicalStorageReadyForPayload($payload);
 
         json_response([
             'ok' => true,
@@ -100,5 +107,50 @@ class AdminAgentController
                 'error' => 'OpenClaw disponible solo para admin/editorial',
             ], 403);
         }
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    private static function requireClinicalStorageReadyForPayload(array $payload): void
+    {
+        if (!AdminAgentService::requiresClinicalStorage($payload)) {
+            return;
+        }
+
+        $readiness = function_exists('internal_console_readiness_snapshot')
+            ? internal_console_readiness_snapshot()
+            : null;
+        $clinicalReady = function_exists('internal_console_clinical_data_ready')
+            ? internal_console_clinical_data_ready($readiness)
+            : (bool) ($readiness['clinicalData']['ready'] ?? true);
+
+        if ($clinicalReady) {
+            return;
+        }
+
+        $response = function_exists('internal_console_clinical_guard_payload')
+            ? internal_console_clinical_guard_payload([
+                'surface' => 'admin_agent',
+                'data' => [
+                    'session' => null,
+                    'turn' => null,
+                    'clientActions' => [],
+                ],
+            ])
+            : [
+                'ok' => false,
+                'code' => 'clinical_storage_not_ready',
+                'error' => 'Historias clinicas bloqueadas hasta habilitar almacenamiento cifrado.',
+                'readiness' => $readiness,
+                'surface' => 'admin_agent',
+                'data' => [
+                    'session' => null,
+                    'turn' => null,
+                    'clientActions' => [],
+                ],
+            ];
+
+        json_response($response, 409);
     }
 }

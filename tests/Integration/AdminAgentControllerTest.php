@@ -203,6 +203,9 @@ final class AdminAgentControllerTest extends TestCase
         putenv('PIELARMONIA_ADMIN_AGENT_EXTERNAL_ALLOWLIST');
         putenv('PIELARMONIA_ADMIN_AGENT_EXTERNAL_TEMPLATE_ALLOWLIST');
         putenv('PIELARMONIA_ADMIN_AGENT_RELAY_MOCK_RESPONSE');
+        putenv('PIELARMONIA_REQUIRE_DATA_ENCRYPTION');
+        putenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE');
+        putenv('PIELARMONIA_DATA_ENCRYPTION_KEY');
         unset($GLOBALS['__TEST_RESPONSE'], $GLOBALS['__TEST_JSON_BODY']);
         $_GET = [];
         $_SESSION = [];
@@ -779,6 +782,131 @@ final class AdminAgentControllerTest extends TestCase
         );
     }
 
+    public function testClinicalAgentSessionStartBlocksWhenClinicalStorageIsNotReady(): void
+    {
+        $this->enableClinicalStorageGate();
+
+        $GLOBALS['__TEST_JSON_BODY'] = json_encode([
+            'context' => [
+                'section' => 'clinical-history',
+                'workspace' => 'media-flow',
+                'selectedEntity' => [
+                    'type' => 'case_media',
+                    'id' => 0,
+                    'ref' => 'CASE-MEDIA-701',
+                    'label' => 'Ana Test',
+                ],
+                'caseId' => 'CASE-MEDIA-701',
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+
+        $response = $this->captureResponse(static function (): void {
+            \AdminAgentController::start([
+                'store' => \read_store(),
+                'isAdmin' => true,
+            ]);
+        }, 'POST');
+
+        self::assertSame(409, $response['status']);
+        self::assertFalse((bool) ($response['payload']['ok'] ?? true));
+        self::assertSame('clinical_storage_not_ready', (string) ($response['payload']['code'] ?? ''));
+        self::assertSame('admin_agent', (string) ($response['payload']['surface'] ?? ''));
+        self::assertFalse((bool) ($response['payload']['readiness']['clinicalData']['ready'] ?? true));
+        self::assertNull($response['payload']['data']['session'] ?? null);
+    }
+
+    public function testClinicalAgentTurnBlocksWhenExistingSessionRequiresClinicalStorage(): void
+    {
+        $sessionId = $this->startAgentSession([
+            'section' => 'clinical-history',
+            'workspace' => 'media-flow',
+            'selectedEntity' => [
+                'type' => 'case_media',
+                'id' => 0,
+                'ref' => 'CASE-MEDIA-701',
+                'label' => 'Ana Test',
+            ],
+            'caseId' => 'CASE-MEDIA-701',
+        ]);
+
+        $this->enableClinicalStorageGate();
+
+        $GLOBALS['__TEST_JSON_BODY'] = json_encode([
+            'sessionId' => $sessionId,
+            'message' => 'Regenera la propuesta editorial de este caso',
+        ], JSON_UNESCAPED_UNICODE);
+
+        $response = $this->captureResponse(static function (): void {
+            \AdminAgentController::turn([
+                'store' => \read_store(),
+                'isAdmin' => true,
+            ]);
+        }, 'POST');
+
+        self::assertSame(409, $response['status']);
+        self::assertFalse((bool) ($response['payload']['ok'] ?? true));
+        self::assertSame('clinical_storage_not_ready', (string) ($response['payload']['code'] ?? ''));
+        self::assertSame('admin_agent', (string) ($response['payload']['surface'] ?? ''));
+        self::assertNull($response['payload']['data']['turn'] ?? null);
+    }
+
+    public function testClinicalAgentStatusBlocksWhenExistingSessionRequiresClinicalStorage(): void
+    {
+        $sessionId = $this->startAgentSession([
+            'section' => 'clinical-history',
+            'workspace' => 'media-flow',
+            'selectedEntity' => [
+                'type' => 'case_media',
+                'id' => 0,
+                'ref' => 'CASE-MEDIA-701',
+                'label' => 'Ana Test',
+            ],
+            'caseId' => 'CASE-MEDIA-701',
+        ]);
+
+        $this->enableClinicalStorageGate();
+        $_GET = ['sessionId' => $sessionId];
+
+        $response = $this->captureResponse(static function (): void {
+            \AdminAgentController::status([
+                'store' => \read_store(),
+                'isAdmin' => true,
+            ]);
+        }, 'GET');
+
+        self::assertSame(409, $response['status']);
+        self::assertSame('clinical_storage_not_ready', (string) ($response['payload']['code'] ?? ''));
+        self::assertSame('admin_agent', (string) ($response['payload']['surface'] ?? ''));
+        self::assertNull($response['payload']['data']['session'] ?? null);
+    }
+
+    public function testNonClinicalAgentSessionStillStartsWhenClinicalStorageIsNotReady(): void
+    {
+        $this->enableClinicalStorageGate();
+
+        $GLOBALS['__TEST_JSON_BODY'] = json_encode([
+            'context' => [
+                'section' => 'callbacks',
+                'selectedEntity' => [
+                    'type' => 'callback',
+                    'id' => 901,
+                    'label' => 'Lead 901',
+                ],
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+
+        $response = $this->captureResponse(static function (): void {
+            \AdminAgentController::start([
+                'store' => \read_store(),
+                'isAdmin' => true,
+            ]);
+        }, 'POST');
+
+        self::assertSame(201, $response['status']);
+        self::assertTrue((bool) ($response['payload']['ok'] ?? false));
+        self::assertNotSame('', (string) ($response['payload']['data']['session']['sessionId'] ?? ''));
+    }
+
     public function testAgentControllerRejectsAdminWithoutEditorialAccess(): void
     {
         $GLOBALS['__TEST_JSON_BODY'] = json_encode([
@@ -812,6 +940,17 @@ final class AdminAgentControllerTest extends TestCase
                 'label' => 'Lead ' . $callbackId,
             ],
         ]);
+    }
+
+    private function enableClinicalStorageGate(): void
+    {
+        putenv('PIELARMONIA_REQUIRE_DATA_ENCRYPTION=1');
+        putenv('PIELARMONIA_FORCE_SQLITE_UNAVAILABLE=1');
+        putenv('PIELARMONIA_DATA_ENCRYPTION_KEY');
+
+        if (\function_exists('get_db_connection')) {
+            \get_db_connection(null, true);
+        }
     }
 
     /**
