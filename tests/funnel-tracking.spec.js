@@ -47,14 +47,12 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
         await openPublicRoute(page, '/en/');
 
         const newsStrip = page.locator('[data-v6-news-strip]');
-        await expect(newsStrip).toContainText(
-            'Even with online booking paused, your first step does not have to wait.'
-        );
+        await expect(newsStrip).toContainText('online booking is paused');
 
         await page.locator('[data-v6-news-toggle]').click();
         await expect(page.locator('[data-v6-news-panel]')).toBeVisible();
         await expect(page.locator('[data-v6-news-panel]')).toContainText(
-            'telemedicine'
+            'teledermatology'
         );
 
         await page.locator('[data-v6-search-open]').first().click();
@@ -67,7 +65,7 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
             '[data-v6-search-results] a[href="/en/telemedicine/"]'
         );
         await expect(telemedicineResult).toBeVisible();
-        await expect(telemedicineResult).toContainText('Telemedicine');
+        await expect(telemedicineResult).toContainText('Teledermatology');
 
         await Promise.all([
             page.waitForURL(/\/en\/telemedicine\/$/),
@@ -103,7 +101,7 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
         );
 
         const telemedicineLink = bookingStatus.getByRole('link', {
-            name: 'Open telemedicine',
+            name: 'Open teledermatology',
         });
         await expect(telemedicineLink).toHaveAttribute(
             'href',
@@ -137,7 +135,9 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
         ]);
 
         await expect(page).toHaveURL(/\/en\/services\/$/);
-        await expect(page.locator('h1')).toContainText('Dermatology services');
+        await expect(page.locator('h1')).toContainText(
+            'Dermatology specialties'
+        );
         await expect(
             page.locator('[data-v6-hub-featured-card]').first()
         ).toBeVisible();

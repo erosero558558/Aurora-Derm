@@ -20,6 +20,7 @@ async function setupAdminApiMocks(page, options = {}) {
     });
 
     await installBasicAdminApiMocks(page, {
+        dataOverrides: options.dataOverrides || {},
         handleRoute: async ({ route, url, resource, method, fulfillJson }) => {
             if (typeof options.handleApiRoute === 'function') {
                 return (
@@ -152,10 +153,35 @@ test.describe('Admin navigation desktop', () => {
         );
     });
 
-    test('quick command no expone queue ni resenas en el shell RC1', async ({
+    test('quick command expone queue piloto pero mantiene resenas fuera del shell', async ({
         page,
     }) => {
-        await setupAdminApiMocks(page);
+        await setupAdminApiMocks(page, {
+            dataOverrides: {
+                queue_tickets: [
+                    {
+                        id: 900,
+                        ticketCode: 'A-900',
+                        patientInitials: 'AR',
+                        status: 'waiting',
+                        queueType: 'general',
+                        createdAt: new Date(
+                            Date.now() - 25 * 60 * 1000
+                        ).toISOString(),
+                    },
+                    {
+                        id: 901,
+                        ticketCode: 'A-901',
+                        patientInitials: 'BL',
+                        status: 'waiting',
+                        queueType: 'general',
+                        createdAt: new Date(
+                            Date.now() - 5 * 60 * 1000
+                        ).toISOString(),
+                    },
+                ],
+            },
+        });
         await page.goto('/admin.html');
         await waitForAdminRuntimeReady(page);
 
@@ -164,7 +190,7 @@ test.describe('Admin navigation desktop', () => {
         ).toHaveCount(0);
         await expect(
             page.locator('.nav-item[data-section="queue"]')
-        ).toHaveCount(0);
+        ).toHaveCount(1);
 
         await page.keyboard.press('Control+K');
         await expect(page.locator('#adminCommandPalette')).not.toHaveClass(
@@ -175,8 +201,12 @@ test.describe('Admin navigation desktop', () => {
         await commandInput.fill('turnero');
         await page.keyboard.press('Enter');
 
-        await expect(page.locator('#dashboard')).toHaveClass(/active/);
-        await expect(page).not.toHaveURL(/#queue$/);
+        await expect(page.locator('#queue')).toHaveClass(/active/);
+        await expect(page).toHaveURL(/#queue$/);
+        await expect(page.locator('#queueTableBody')).toContainText('A-900');
+        await expect(page.locator('#queueTableBody')).not.toContainText(
+            'A-901'
+        );
         await expect(page).not.toHaveURL(/#reviews$/);
     });
 

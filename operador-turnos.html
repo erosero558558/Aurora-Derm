@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-ops-tone="light">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,141 +11,166 @@
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link
             rel="stylesheet"
-            href="admin-v3.css?v=admin-v3-20260309-v3-only"
+            href="admin-v3.css?v=admin-v3-20260314-sony150"
         />
         <link
             rel="stylesheet"
-            href="queue-ops.css?v=queue-ops-20260313-runtimepilot1"
+            href="queue-ops.css?v=queue-ops-20260314-sony150"
         />
     </head>
     <body
         class="admin-v3-mode queue-operator-body"
         data-queue-surface="operator"
+        data-ops-tone="light"
     >
         <div id="operatorLoginView" class="queue-operator-login-shell">
-            <section class="queue-operator-login-card">
-                <div class="queue-operator-login-copy">
-                    <p class="queue-operator-kicker">Turnero Operador</p>
-                    <p id="operatorClinicMeta" class="queue-operator-clinic-meta">
-                        Piloto web por clínica · clínica activa
-                    </p>
-                    <p class="queue-operator-profile-status" data-state="warning">
-                        Perfil por clínica: cargando...
-                    </p>
-                    <h1>Operación simple para recepción y consultorio</h1>
-                    <p>
-                        Usa el numpad Genius 1000 para llamar, completar y
-                        re-llamar turnos sin abrir todo el panel administrativo.
-                    </p>
-                </div>
+            <div class="queue-operator-login-stage">
+                <section class="queue-operator-login-card">
+                    <div class="queue-operator-login-copy">
+                        <p class="queue-operator-kicker">Turnero Operador</p>
+                        <p id="operatorClinicMeta" class="queue-operator-clinic-meta">
+                            Piloto web por clínica · clínica activa
+                        </p>
+                        <p class="queue-operator-profile-status" data-state="warning">
+                            Perfil por clínica: cargando...
+                        </p>
+                        <h1>Operación simple para recepción y consultorio</h1>
+                        <p>
+                            Usa el numpad Genius 1000 para llamar, completar y
+                            re-llamar turnos sin abrir todo el panel administrativo.
+                        </p>
+                    </div>
 
-                <div
-                    id="operatorLoginStatus"
-                    class="queue-operator-status-card"
-                    data-state="neutral"
-                >
-                    <strong id="operatorLoginStatusTitle">
-                        Acceso protegido
-                    </strong>
-                    <p id="operatorLoginStatusMessage">
-                        Inicia sesión para abrir la consola operativa del
-                        turnero.
-                    </p>
-                </div>
+                    <div
+                        id="operatorLoginStatus"
+                        class="queue-operator-status-card"
+                        data-state="neutral"
+                    >
+                        <strong id="operatorLoginStatusTitle">
+                            Acceso protegido
+                        </strong>
+                        <p id="operatorLoginStatusMessage">
+                            Inicia sesión para abrir la consola operativa del
+                            turnero.
+                        </p>
+                    </div>
 
-                <form id="operatorLoginForm" class="sony-login-form" novalidate>
-                    <div id="operatorOpenClawFlow" class="is-hidden">
-                        <div class="admin-login-field">
-                            <span>OpenClaw / ChatGPT</span>
-                            <p id="operatorOpenClawSummary">
-                                Abre OpenClaw para validar la sesion del turnero
-                                sin usar una clave local.
+                    <form id="operatorLoginForm" class="sony-login-form" novalidate>
+                        <div id="operatorOpenClawFlow" class="is-hidden">
+                            <div class="admin-login-field">
+                                <span>OpenClaw / ChatGPT</span>
+                                <p id="operatorOpenClawSummary">
+                                    Abre OpenClaw para validar la sesion del turnero
+                                    sin usar una clave local.
+                                </p>
+                            </div>
+
+                            <div class="admin-login-actions">
+                                <button id="operatorOpenClawBtn" type="button">
+                                    Abrir OpenClaw
+                                </button>
+                                <button
+                                    id="operatorOpenClawRetryBtn"
+                                    type="button"
+                                    class="sony-login-reset is-hidden"
+                                >
+                                    Generar nuevo enlace
+                                </button>
+                            </div>
+
+                            <p
+                                id="operatorOpenClawHelperMeta"
+                                class="admin-login-support-copy"
+                            >
+                                Si la ventana no aparece, usa el enlace manual o
+                                genera un challenge nuevo.
+                            </p>
+                            <p
+                                id="operatorOpenClawManualRow"
+                                class="admin-login-support-copy is-hidden"
+                            >
+                                Código manual:
+                                <code id="operatorOpenClawManualCode"></code>
+                            </p>
+                            <p
+                                id="operatorOpenClawLinkRow"
+                                class="admin-login-support-copy is-hidden"
+                            >
+                                <a
+                                    id="operatorOpenClawHelperLink"
+                                    href="#"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Abrir helper manualmente
+                                </a>
                             </p>
                         </div>
 
-                        <div class="admin-login-actions">
-                            <button id="operatorOpenClawBtn" type="button">
-                                Abrir OpenClaw
-                            </button>
-                            <button
-                                id="operatorOpenClawRetryBtn"
-                                type="button"
-                                class="sony-login-reset is-hidden"
-                            >
-                                Generar nuevo enlace
-                            </button>
+                        <div id="operatorLegacyLoginFields">
+                            <label class="admin-login-field" for="operatorPassword">
+                                <span>Contraseña</span>
+                                <input
+                                    id="operatorPassword"
+                                    type="password"
+                                    required
+                                    placeholder="Ingresa tu clave"
+                                    autocomplete="current-password"
+                                />
+                            </label>
+
+                            <div id="operator2FAGroup" class="is-hidden">
+                                <label class="admin-login-field" for="operator2FACode">
+                                    <span>Código 2FA</span>
+                                    <input
+                                        id="operator2FACode"
+                                        type="text"
+                                        inputmode="numeric"
+                                        maxlength="6"
+                                        autocomplete="one-time-code"
+                                        placeholder="123456"
+                                    />
+                                </label>
+                            </div>
+
+                            <div class="admin-login-actions">
+                                <button id="operatorLoginBtn" type="submit">
+                                    Ingresar
+                                </button>
+                                <button
+                                    id="operatorReset2FABtn"
+                                    type="button"
+                                    class="sony-login-reset is-hidden"
+                                >
+                                    Volver
+                                </button>
+                            </div>
                         </div>
+                    </form>
+                </section>
 
-                        <p
-                            id="operatorOpenClawHelperMeta"
-                            class="admin-login-support-copy"
-                        >
-                            Si la ventana no aparece, usa el enlace manual o
-                            genera un challenge nuevo.
-                        </p>
-                        <p
-                            id="operatorOpenClawManualRow"
-                            class="admin-login-support-copy is-hidden"
-                        >
-                            Código manual:
-                            <code id="operatorOpenClawManualCode"></code>
-                        </p>
-                        <p
-                            id="operatorOpenClawLinkRow"
-                            class="admin-login-support-copy is-hidden"
-                        >
-                            <a
-                                id="operatorOpenClawHelperLink"
-                                href="#"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                Abrir helper manualmente
-                            </a>
-                        </p>
+                <aside class="queue-operator-login-brief">
+                    <p class="queue-operator-kicker">Console brief</p>
+                    <h2>Checklist rápida antes de abrir turno</h2>
+                    <div class="queue-operator-login-brief__grid">
+                        <article>
+                            <span>Ruta</span>
+                            <strong>Operador canónico</strong>
+                            <p>Valida perfil, estación y shell antes de tocar la cola.</p>
+                        </article>
+                        <article>
+                            <span>Hardware</span>
+                            <strong>Numpad + red</strong>
+                            <p>La operación depende de un Enter claro y sync confiable.</p>
+                        </article>
+                        <article>
+                            <span>Recuperación</span>
+                            <strong>Modo seguro visible</strong>
+                            <p>Si cae red o runtime, la UI debe dejarlo obvio y accionable.</p>
+                        </article>
                     </div>
-
-                    <div id="operatorLegacyLoginFields">
-                    <label class="admin-login-field" for="operatorPassword">
-                        <span>Contraseña</span>
-                        <input
-                            id="operatorPassword"
-                            type="password"
-                            required
-                            placeholder="Ingresa tu clave"
-                            autocomplete="current-password"
-                        />
-                    </label>
-
-                    <div id="operator2FAGroup" class="is-hidden">
-                        <label class="admin-login-field" for="operator2FACode">
-                            <span>Código 2FA</span>
-                            <input
-                                id="operator2FACode"
-                                type="text"
-                                inputmode="numeric"
-                                maxlength="6"
-                                autocomplete="one-time-code"
-                                placeholder="123456"
-                            />
-                        </label>
-                    </div>
-
-                    <div class="admin-login-actions">
-                        <button id="operatorLoginBtn" type="submit">
-                            Ingresar
-                        </button>
-                        <button
-                            id="operatorReset2FABtn"
-                            type="button"
-                            class="sony-login-reset is-hidden"
-                        >
-                            Volver
-                        </button>
-                    </div>
-                    </div>
-                </form>
-            </section>
+                </aside>
+            </div>
         </div>
 
         <main id="operatorApp" class="queue-operator-app is-hidden">
@@ -385,92 +410,101 @@
                         </article>
                     </div>
 
-                    <div id="queueStationControl" class="toolbar-row">
-                        <span id="queueStationBadge">Estación C1</span>
-                        <span id="queueStationModeBadge">Libre</span>
-                        <span id="queuePracticeModeBadge" hidden>
-                            Practice ON
-                        </span>
-                        <button
-                            type="button"
-                            data-action="queue-lock-station"
-                            data-queue-consultorio="1"
-                        >
-                            Lock C1
-                        </button>
-                        <button
-                            type="button"
-                            data-action="queue-lock-station"
-                            data-queue-consultorio="2"
-                        >
-                            Lock C2
-                        </button>
-                        <button
-                            type="button"
-                            data-action="queue-set-station-mode"
-                            data-queue-mode="free"
-                        >
-                            Modo libre
-                        </button>
-                        <button type="button" data-action="queue-toggle-shortcuts">
-                            Ver atajos
-                        </button>
-                        <button type="button" data-action="queue-capture-call-key">
-                            Calibrar tecla
-                        </button>
-                        <button
-                            type="button"
-                            data-action="queue-clear-call-key"
-                            hidden
-                        >
-                            Quitar tecla
-                        </button>
-                        <button
-                            type="button"
-                            id="queueReleaseC1"
-                            data-action="queue-release-station"
-                            data-queue-consultorio="1"
-                            hidden
-                        >
-                            Release C1
-                        </button>
-                        <button
-                            type="button"
-                            id="queueReleaseC2"
-                            data-action="queue-release-station"
-                            data-queue-consultorio="2"
-                            hidden
-                        >
-                            Release C2
-                        </button>
+                    <div id="queueStationControl" class="toolbar-row queue-station-bar">
+                        <div class="queue-station-bar__meta">
+                            <span id="queueStationBadge">Estación C1</span>
+                            <span id="queueStationModeBadge">Libre</span>
+                            <span id="queuePracticeModeBadge" hidden>
+                                Practice ON
+                            </span>
+                        </div>
+                        <div class="queue-station-bar__actions">
+                            <button
+                                type="button"
+                                data-action="queue-lock-station"
+                                data-queue-consultorio="1"
+                            >
+                                Lock C1
+                            </button>
+                            <button
+                                type="button"
+                                data-action="queue-lock-station"
+                                data-queue-consultorio="2"
+                            >
+                                Lock C2
+                            </button>
+                            <button
+                                type="button"
+                                data-action="queue-set-station-mode"
+                                data-queue-mode="free"
+                            >
+                                Modo libre
+                            </button>
+                            <button type="button" data-action="queue-toggle-shortcuts">
+                                Ver atajos
+                            </button>
+                            <button type="button" data-action="queue-capture-call-key">
+                                Calibrar tecla
+                            </button>
+                            <button
+                                type="button"
+                                data-action="queue-clear-call-key"
+                                hidden
+                            >
+                                Quitar tecla
+                            </button>
+                            <button
+                                type="button"
+                                id="queueReleaseC1"
+                                data-action="queue-release-station"
+                                data-queue-consultorio="1"
+                                hidden
+                            >
+                                Release C1
+                            </button>
+                            <button
+                                type="button"
+                                id="queueReleaseC2"
+                                data-action="queue-release-station"
+                                data-queue-consultorio="2"
+                                hidden
+                            >
+                                Release C2
+                            </button>
+                        </div>
                     </div>
 
-                    <div id="queueShortcutPanel" hidden>
-                        <p>Numpad Enter llama siguiente.</p>
-                        <p>Numpad Decimal prepara completar.</p>
-                        <p>Numpad Subtract prepara no_show.</p>
-                        <p>Numpad Add re-llama el ticket activo.</p>
+                    <div id="queueShortcutPanel" class="queue-shortcut-panel" hidden>
+                        <p class="queue-shortcut-panel__eyebrow">Numpad guide</p>
+                        <div class="queue-shortcut-panel__grid">
+                            <p><strong>Enter</strong> llama siguiente.</p>
+                            <p><strong>Decimal</strong> prepara completar.</p>
+                            <p><strong>Subtract</strong> prepara no_show.</p>
+                            <p><strong>Add</strong> re-llama el ticket activo.</p>
+                        </div>
                     </div>
 
-                    <div id="queueTriageToolbar" class="toolbar-row">
-                        <button type="button" data-queue-filter="all">Todo</button>
-                        <button type="button" data-queue-filter="called">
-                            Llamados
-                        </button>
-                        <button type="button" data-queue-filter="sla_risk">
-                            Riesgo SLA
-                        </button>
-                        <input
-                            type="search"
-                            id="queueSearchInput"
-                            placeholder="Buscar ticket"
-                        />
-                        <button type="button" data-action="queue-clear-search">
-                            Limpiar
-                        </button>
+                    <div id="queueTriageToolbar" class="queue-triage-toolbar">
+                        <div class="queue-triage-toolbar__filters">
+                            <button type="button" data-queue-filter="all">Todo</button>
+                            <button type="button" data-queue-filter="called">
+                                Llamados
+                            </button>
+                            <button type="button" data-queue-filter="sla_risk">
+                                Riesgo SLA
+                            </button>
+                            <input
+                                type="search"
+                                id="queueSearchInput"
+                                placeholder="Buscar ticket"
+                            />
+                            <button type="button" data-action="queue-clear-search">
+                                Limpiar
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="toolbar-row slim">
+                    <div class="toolbar-row slim queue-triage-toolbar__meta">
                         <p id="queueTriageSummary">Sin riesgo</p>
                         <span id="queueSelectionChip" class="is-hidden">
                             Seleccionados:
@@ -478,29 +512,41 @@
                         </span>
                     </div>
 
-                    <ul id="queueNextAdminList" class="sony-list"></ul>
+                    <section class="queue-operations-stream queue-operations-stream--operator">
+                        <div class="queue-operations-stream__header">
+                            <div>
+                                <p class="queue-premium-band__eyebrow">Live stream</p>
+                                <h4>Cola y acción inmediata</h4>
+                                <p>
+                                    Primero el siguiente ticket; debajo, la mesa completa para override
+                                    y seguimiento de cada estado operativo.
+                                </p>
+                            </div>
+                        </div>
+                        <ul id="queueNextAdminList" class="sony-list"></ul>
 
-                    <div class="table-scroll">
-                        <table
-                            class="sony-table queue-admin-table queue-operator-table"
-                        >
-                            <thead>
-                                <tr>
-                                    <th>Estado</th>
-                                    <th>Ticket</th>
-                                    <th>Tipo</th>
-                                    <th>Status</th>
-                                    <th>Consultorio</th>
-                                    <th>Espera</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="queueTableBody"></tbody>
-                        </table>
-                    </div>
+                        <div class="table-scroll">
+                            <table
+                                class="sony-table queue-admin-table queue-operator-table"
+                            >
+                                <thead>
+                                    <tr>
+                                        <th>Estado</th>
+                                        <th>Ticket</th>
+                                        <th>Tipo</th>
+                                        <th>Status</th>
+                                        <th>Consultorio</th>
+                                        <th>Espera</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="queueTableBody"></tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
 
-                <aside id="queueActivityPanel" class="sony-panel soft">
+                <aside id="queueActivityPanel" class="sony-panel soft queue-activity-panel">
                     <h4>Actividad y ayuda</h4>
                     <p class="queue-operator-aside-copy">
                         Si el numpad no dispara Enter, usa “Calibrar tecla” y

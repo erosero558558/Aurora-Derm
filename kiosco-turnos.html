@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-ops-tone="dark">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,9 +8,9 @@
             content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
         />
         <title>Kiosco de Turnos | Aurora Derm</title>
-        <link rel="stylesheet" href="queue-kiosk.css?v=queue-20260312-profile1" />
+        <link rel="stylesheet" href="queue-kiosk.css?v=queue-20260314-sony150" />
     </head>
-    <body>
+    <body data-ops-tone="dark" class="queue-kiosk-body">
         <div
             id="kioskWelcomeScreen"
             class="kiosk-welcome-screen"
@@ -71,6 +71,7 @@
 
         <main class="kiosk-layout">
             <section class="kiosk-card kiosk-checkin-card">
+                <p class="kiosk-stage-kicker">Check-in lounge</p>
                 <h1>Registro en sala de espera</h1>
                 <p id="kioskClinicContext" class="kiosk-clinic-context">
                     Ruta canónica del piloto · check-in con cita y sin cita
@@ -85,6 +86,18 @@
                 <p>
                     Selecciona tu opcion para generar turno o confirmar cita.
                 </p>
+                <section class="kiosk-next-step" aria-label="Guía rápida del kiosco">
+                    <article>
+                        <span>Qué hago ahora</span>
+                        <strong>Elige cita o sin cita</strong>
+                        <p>La parte superior define el flujo; el formulario solo muestra lo necesario.</p>
+                    </article>
+                    <article>
+                        <span>Qué pasa después</span>
+                        <strong>Toma ticket y mira la TV</strong>
+                        <p>La sala mostrará ticket e iniciales cuando llegue tu llamado.</p>
+                    </article>
+                </section>
                 <div class="kiosk-flow-cards">
                     <article>
                         <h3>Tengo cita</h3>
@@ -261,7 +274,7 @@
                     </p>
                 </section>
 
-                <section class="kiosk-card">
+                <section class="kiosk-card kiosk-card--queue">
                     <h2>Estado de la cola</h2>
                     <p
                         id="queueConnectionState"
@@ -302,7 +315,7 @@
                     </ol>
                 </section>
 
-                <section class="kiosk-card">
+                <section class="kiosk-card kiosk-card--assistant">
                     <h2>Asistente de sala</h2>
                     <p class="assistant-note">
                         Solo orientacion operativa de sala. No reemplaza consulta medica.

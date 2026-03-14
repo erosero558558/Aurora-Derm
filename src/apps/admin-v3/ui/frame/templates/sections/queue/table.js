@@ -1,36 +1,49 @@
 export function renderQueueTableShell() {
     return `
-        <ul id="queueNextAdminList" class="sony-list"></ul>
-
-        <div
-            id="queueReceptionGuidancePanel"
-            class="sony-panel soft queue-reception-guidance"
-        >
-            <div class="queue-reception-guidance__header">
+        <section class="queue-operations-stream">
+            <div class="queue-operations-stream__header">
                 <div>
-                    <h4>Guia de recepcion</h4>
-                    <p id="queueReceptionGuidanceMeta">
-                        Sin apoyos activos para recepcion.
+                    <p class="queue-premium-band__eyebrow">Live stream</p>
+                    <h4>Cola en vivo</h4>
+                    <p>
+                        El siguiente movimiento, apoyos de recepción y cierres
+                        recientes viven juntos para que la operación diaria no
+                        se disperse.
                     </p>
                 </div>
             </div>
-            <ul id="queueReceptionGuidanceList" class="sony-list"></ul>
-        </div>
+            <ul id="queueNextAdminList" class="sony-list"></ul>
 
-        <div
-            id="queueReceptionResolutionsPanel"
-            class="sony-panel soft queue-reception-guidance"
-        >
-            <div class="queue-reception-guidance__header">
-                <div>
-                    <h4>Resoluciones recientes</h4>
-                    <p id="queueRecentResolutionsMeta">
-                        Sin cierres asistidos todavia.
-                    </p>
+            <div
+                id="queueReceptionGuidancePanel"
+                class="sony-panel soft queue-reception-guidance"
+            >
+                <div class="queue-reception-guidance__header">
+                    <div>
+                        <h4>Guia de recepcion</h4>
+                        <p id="queueReceptionGuidanceMeta">
+                            Sin apoyos activos para recepcion.
+                        </p>
+                    </div>
                 </div>
+                <ul id="queueReceptionGuidanceList" class="sony-list"></ul>
             </div>
-            <ul id="queueRecentResolutionsList" class="sony-list"></ul>
-        </div>
+
+            <div
+                id="queueReceptionResolutionsPanel"
+                class="sony-panel soft queue-reception-guidance"
+            >
+                <div class="queue-reception-guidance__header">
+                    <div>
+                        <h4>Resoluciones recientes</h4>
+                        <p id="queueRecentResolutionsMeta">
+                            Sin cierres asistidos todavia.
+                        </p>
+                    </div>
+                </div>
+                <ul id="queueRecentResolutionsList" class="sony-list"></ul>
+            </div>
+        </section>
 
         <div class="table-scroll">
             <table class="sony-table queue-admin-table">
@@ -49,7 +62,7 @@ export function renderQueueTableShell() {
             </table>
         </div>
 
-        <div id="queueActivityPanel" class="sony-panel soft">
+        <div id="queueActivityPanel" class="sony-panel soft queue-activity-panel">
             <h4>Actividad</h4>
             <ul id="queueActivityList" class="sony-list"></ul>
         </div>

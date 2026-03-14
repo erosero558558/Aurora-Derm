@@ -4,6 +4,7 @@ import {
 } from '../../../shared/core/persistence.js';
 import {
     normalizeSection,
+    readSectionFromHash,
     setSectionHash,
 } from '../../../shared/core/router.js';
 import { getState, updateState } from '../../../shared/core/store.js';
@@ -15,9 +16,10 @@ import {
 import { renderSidebarState } from './sidebar.js';
 
 export function restoreUiPrefs() {
-    const lastSection = normalizeSection(
+    const storedSection = normalizeSection(
         getStorageItem(ADMIN_LAST_SECTION_STORAGE_KEY, 'dashboard')
     );
+    const lastSection = readSectionFromHash(storedSection);
     const collapsed =
         getStorageItem(ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY, '0') === '1';
 

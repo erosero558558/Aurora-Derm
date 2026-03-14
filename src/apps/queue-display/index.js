@@ -28,6 +28,9 @@ const DISPLAY_BELL_COOLDOWN_MS = 1200;
 const DISPLAY_BELL_BLOCKED_HINT_COOLDOWN_MS = 20000;
 const DISPLAY_HEARTBEAT_MS = 15000;
 
+document.documentElement.setAttribute('data-ops-tone', 'dark');
+document.body?.setAttribute('data-ops-tone', 'dark');
+
 const state = {
     lastCalledSignature: '',
     callBaselineReady: false,
@@ -90,10 +93,9 @@ function getDisplaySurfaceContract(profile = state.clinicProfile) {
 
 function renderDisplayProfileStatus(profile) {
     const surfaceContract = getDisplaySurfaceContract(profile);
-    const profileFingerprint = getTurneroClinicProfileFingerprint(profile).slice(
-        0,
-        8
-    );
+    const profileFingerprint = getTurneroClinicProfileFingerprint(
+        profile
+    ).slice(0, 8);
     const el = getById('displayProfileStatus');
     if (!(el instanceof HTMLElement)) {
         return;
@@ -234,8 +236,13 @@ function normalizeDisplaySnapshotStorage(rawValue) {
 }
 
 function resolveDisplayAppMode() {
-    const agent = `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
-    if (agent.includes('android') || agent.includes('google tv') || agent.includes('aft')) {
+    const agent =
+        `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
+    if (
+        agent.includes('android') ||
+        agent.includes('google tv') ||
+        agent.includes('aft')
+    ) {
         return 'android_tv';
     }
     return 'web';
@@ -265,16 +272,19 @@ function buildDisplayHeartbeatPayload() {
         summary = surfaceContract.detail;
     } else if (connectionState === 'offline') {
         status = 'alert';
-        summary = 'Sala TV sin conexión; usa respaldo local y confirma llamados manuales.';
+        summary =
+            'Sala TV sin conexión; usa respaldo local y confirma llamados manuales.';
     } else if (state.bellMuted) {
         status = 'warning';
-        summary = 'La campanilla está en silencio; reactivarla antes de operar.';
+        summary =
+            'La campanilla está en silencio; reactivarla antes de operar.';
     } else if (state.lastBellOutcome === 'blocked' || !state.bellPrimed) {
         status = 'alert';
         summary = 'La TV no confirmó audio; repite la prueba de campanilla.';
     } else if (connectionState === 'live' && healthySync) {
         status = 'ready';
-        summary = 'Sala TV lista: cola en vivo, audio activo y respaldo local disponible.';
+        summary =
+            'Sala TV lista: cola en vivo, audio activo y respaldo local disponible.';
     }
 
     return {
@@ -933,7 +943,9 @@ function renderDisplaySetupStatus() {
         state.clinicProfile,
         'display'
     );
-    const snapshotSavedAt = Date.parse(String(state.lastSnapshot?.savedAt || ''));
+    const snapshotSavedAt = Date.parse(
+        String(state.lastSnapshot?.savedAt || '')
+    );
     const snapshotAge = Number.isFinite(snapshotSavedAt)
         ? formatElapsedAge(Date.now() - snapshotSavedAt)
         : '';

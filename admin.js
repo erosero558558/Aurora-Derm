@@ -30,7 +30,9 @@ function e(t) {
     );
 }
 !(async function () {
-    (document.documentElement.setAttribute('data-admin-ui', 'sony_v3'), e(!1));
+    (document.documentElement.setAttribute('data-admin-ui', 'sony_v3'),
+        document.documentElement.setAttribute('data-ops-tone', 'light'),
+        e(!1));
     const i = (function () {
         const e = (e) => {
             if (
@@ -92,7 +94,7 @@ function e(t) {
     })();
     try {
         (await (async function () {
-            const t = await import('./js/admin-chunks/index-DbENpOI8.js');
+            const t = await import('./js/admin-chunks/index-MyvPG610.js');
             await (async function (t, n = '') {
                 if (!t || 'object' != typeof t) return;
                 if (n) {

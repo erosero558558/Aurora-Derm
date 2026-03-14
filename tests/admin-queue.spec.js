@@ -12419,7 +12419,7 @@ test.describe('Admin turnero sala', () => {
             'Experiencia: Despliegue'
         );
         await expect(page.locator('#queueDomainSummary')).toContainText(
-            'Checklist de apertura'
+            'El foco de apertura deja checklist'
         );
         await expect(page.locator('#queueDomainPrimary')).toHaveAttribute(
             'href',
@@ -12523,16 +12523,31 @@ test.describe('Admin turnero sala', () => {
             page.locator('#queueOpsPilotHandoffCopyBtn')
         ).toContainText('Copiar paquete');
         await expect(page.locator('#queueOpeningChecklist')).toBeVisible();
-        await expect(page.locator('#queueAppDownloadsCards')).toBeHidden();
-        await expect(page.locator('#queuePlaybook')).toBeHidden();
+        await expect(page.locator('#queueAppDownloadsCards')).toBeVisible();
+        await expect(page.locator('#queuePlaybook')).toBeVisible();
         await expect(page.locator('#queueDeskReply')).toBeHidden();
-        await expect(page.locator('#queueInstallConfigurator')).toBeHidden();
+        await expect(page.locator('#queueInstallConfigurator')).toBeVisible();
+        await expect(page.locator('#queueFocusModeExpandBtn')).toContainText(
+            'Ver todo'
+        );
+        await expect(page.locator('#queueDomainOperations')).toBeHidden();
+        await expect(page.locator('#queueDomainAuto')).toBeHidden();
 
-        await page.locator('#queueDomainOperations').dispatchEvent('click');
+        await page.locator('#queueFocusModeOperations').dispatchEvent('click');
+        await expect(page.locator('#queueAppsHub')).toHaveAttribute(
+            'data-queue-focus',
+            'operations'
+        );
+        await expect(page.locator('#queueAppsHub')).toHaveAttribute(
+            'data-queue-domain',
+            'operations'
+        );
         await expect(page.locator('#queueConsultorioBoard')).toBeVisible();
         await expect(page.locator('#queueAttentionDeck')).toBeVisible();
         await expect(page.locator('#queueResolutionDeck')).toBeVisible();
-        await expect(page.locator('#queueTicketLookup')).toBeVisible();
+        await expect(page.locator('#queueQuickConsole')).toBeVisible();
+        await expect(page.locator('#queueQuickTrays')).toBeVisible();
+        await expect(page.locator('#queueTicketLookup')).toBeHidden();
         await expect(
             page.locator('#queueConsultorioCard_c1 strong').first()
         ).toContainText('D1');
@@ -12547,12 +12562,36 @@ test.describe('Admin turnero sala', () => {
         );
         await expect(page.locator('#queueTicketRoute')).toBeHidden();
         await expect(page.locator('#queueNextTurns')).toBeHidden();
+        await expect(page.locator('#queueOpsPilot')).toBeHidden();
 
-        await page.locator('#queueDomainIncidents').dispatchEvent('click');
+        await page.locator('#queueFocusModeIncidents').dispatchEvent('click');
         await expect(page.locator('#queueSurfaceTelemetry')).toBeVisible();
         await expect(page.locator('#queueOpsAlerts')).toBeVisible();
         await expect(page.locator('#queueContingencyDeck')).toBeVisible();
-        await expect(page.locator('#queueOpsLog')).toBeHidden();
+        await expect(page.locator('#queueOpsLog')).toBeVisible();
+        await expect(page.locator('#queuePlaybook')).toBeVisible();
+        await expect(page.locator('#queueConsultorioBoard')).toBeHidden();
+
+        await page.locator('#queueFocusModeClosing').dispatchEvent('click');
+        await expect(page.locator('#queueShiftHandoff')).toBeVisible();
+        await expect(page.locator('#queueOpsLog')).toBeVisible();
+        await expect(page.locator('#queueSurfaceTelemetry')).toBeVisible();
+        await expect(page.locator('#queuePlaybook')).toBeVisible();
+        await expect(page.locator('#queueContingencyDeck')).toBeHidden();
+
+        await page.locator('#queueFocusModeExpandBtn').dispatchEvent('click');
+        await expect(page.locator('#queueFocusModeViewState')).toContainText(
+            'Ver todo temporal'
+        );
+        await expect(page.locator('#queueTicketLookup')).toBeVisible();
+        await expect(page.locator('#queueDeskReply')).toBeVisible();
+
+        await page.locator('#queueFocusModeOpening').dispatchEvent('click');
+        await expect(page.locator('#queueFocusModeViewState')).toContainText(
+            'Vista guiada'
+        );
+        await expect(page.locator('#queueTicketLookup')).toBeHidden();
+        await expect(page.locator('#queueDeskReply')).toBeHidden();
 
         await page.locator('#queueAdminViewModeExpert').click();
         await expect(page.locator('#queueAppsHub')).toHaveAttribute(
@@ -12562,6 +12601,7 @@ test.describe('Admin turnero sala', () => {
         await expect(page.locator('#queueAdminViewModeChip')).toContainText(
             'Expert activo'
         );
+        await expect(page.locator('#queueDomainOperations')).toBeVisible();
         await page.locator('#queueDomainDeployment').dispatchEvent('click');
         await expect(page.locator('#queueAppDownloadsCards')).toBeVisible();
         await expect(page.locator('#queuePlaybook')).toBeVisible();
@@ -12990,7 +13030,7 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('[data-action="queue-clear-call-key"]')
         ).toBeHidden();
-        await expect(page.locator('#queueTicketLookupInput')).toHaveValue('');
+        await expect(page.locator('#queueTicketLookup')).toBeHidden();
         await expect(page.locator('#queueTableBody')).not.toContainText(
             'A-1999'
         );
@@ -13962,7 +14002,7 @@ test.describe('Admin turnero sala', () => {
             'operations'
         );
         await expect(page.locator('#queueDomainTitle')).toContainText(
-            'Experiencia: Operacion'
+            'Experiencia: Operación'
         );
         await expect(page.locator('#queueDomainChip')).toContainText(
             'Manual -> operations'

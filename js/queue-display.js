@@ -1,1 +1,1871 @@
-!function(){"use strict";function e(e){if("object"==typeof crypto&&crypto&&"function"==typeof crypto.randomUUID)return`${e}-${crypto.randomUUID()}`;const n=Math.random().toString(36).slice(2,10);return`${e}-${Date.now().toString(36)}-${n}`}function n(e,n,t,a){const o="function"==typeof t&&t()?t():{},i=o.details&&"object"==typeof o.details?o.details:{};return{surface:e,deviceId:n,instance:String(o.instance||"main"),deviceLabel:String(o.deviceLabel||""),appMode:String(o.appMode||"web"),route:String(o.route||"").trim()||`${window.location.pathname}${window.location.search}`,status:String(o.status||"warning"),summary:String(o.summary||""),networkOnline:"boolean"==typeof o.networkOnline?o.networkOnline:!1!==navigator.onLine,lastEvent:String(o.lastEvent||a||"heartbeat"),lastEventAt:String(o.lastEventAt||(new Date).toISOString()),details:i}}const t=Object.freeze({schema:"turnero-clinic-profile/v1",clinic_id:"default-clinic",branding:{name:"Piel en Armonia",short_name:"Piel en Armonia",city:"Quito",base_url:""},consultorios:{c1:{label:"Consultorio 1",short_label:"C1"},c2:{label:"Consultorio 2",short_label:"C2"}},surfaces:{admin:{enabled:!0,label:"Admin web",route:"/admin.html#queue"},operator:{enabled:!0,label:"Operador web",route:"/operador-turnos.html"},kiosk:{enabled:!0,label:"Kiosco web",route:"/kiosco-turnos.html"},display:{enabled:!0,label:"Sala web",route:"/sala-turnos.html"}},release:{mode:"web_pilot",admin_mode_default:"basic",separate_deploy:!0,native_apps_blocking:!1,notes:[]}});let a=null;function o(e,n=""){return String(e??"").trim()||n}function i(e){const n=e&&"object"==typeof e?e:{},a=n.branding&&"object"==typeof n.branding?n.branding:{},i=n.consultorios&&"object"==typeof n.consultorios?n.consultorios:{},l=n.surfaces&&"object"==typeof n.surfaces?n.surfaces:{},r=n.release&&"object"==typeof n.release?n.release:{};return{schema:o(n.schema,t.schema),clinic_id:o(n.clinic_id,t.clinic_id),branding:{name:o(a.name,t.branding.name),short_name:o(a.short_name,o(a.name,t.branding.short_name)),city:o(a.city,t.branding.city),base_url:o(a.base_url,t.branding.base_url)},consultorios:{c1:{label:o(i?.c1?.label,t.consultorios.c1.label),short_label:o(i?.c1?.short_label,t.consultorios.c1.short_label)},c2:{label:o(i?.c2?.label,t.consultorios.c2.label),short_label:o(i?.c2?.short_label,t.consultorios.c2.short_label)}},surfaces:{admin:{enabled:"boolean"!=typeof l?.admin?.enabled||l.admin.enabled,label:o(l?.admin?.label,t.surfaces.admin.label),route:o(l?.admin?.route,t.surfaces.admin.route)},operator:{enabled:"boolean"!=typeof l?.operator?.enabled||l.operator.enabled,label:o(l?.operator?.label,t.surfaces.operator.label),route:o(l?.operator?.route,t.surfaces.operator.route)},kiosk:{enabled:"boolean"!=typeof l?.kiosk?.enabled||l.kiosk.enabled,label:o(l?.kiosk?.label,t.surfaces.kiosk.label),route:o(l?.kiosk?.route,t.surfaces.kiosk.route)},display:{enabled:"boolean"!=typeof l?.display?.enabled||l.display.enabled,label:o(l?.display?.label,t.surfaces.display.label),route:o(l?.display?.route,t.surfaces.display.route)}},release:{mode:o(r.mode,t.release.mode),admin_mode_default:"expert"===o(r.admin_mode_default,t.release.admin_mode_default)?"expert":"basic",separate_deploy:"boolean"!=typeof r.separate_deploy||r.separate_deploy,native_apps_blocking:"boolean"==typeof r.native_apps_blocking&&r.native_apps_blocking,notes:Array.isArray(r.notes)?r.notes.map(e=>o(e)).filter(Boolean):[]}}}function l(e){return o(e?.branding?.name,t.branding.name)}function r(e){return o(e?.branding?.short_name,l(e))}function s(e){const n=i(e);return function(e){let n=2166136261;for(let t=0;t<e.length;t+=1)n^=e.charCodeAt(t),n=Math.imul(n,16777619);return(n>>>0).toString(16).padStart(8,"0")}([n.clinic_id,n.branding.base_url,n.consultorios.c1.label,n.consultorios.c1.short_label,n.consultorios.c2.label,n.consultorios.c2.short_label,n.surfaces.admin.enabled?"1":"0",n.surfaces.admin.route,n.surfaces.operator.enabled?"1":"0",n.surfaces.operator.route,n.surfaces.kiosk.enabled?"1":"0",n.surfaces.kiosk.route,n.surfaces.display.enabled?"1":"0",n.surfaces.display.route,n.release.mode,n.release.admin_mode_default,n.release.separate_deploy?"1":"0",n.release.native_apps_blocking?"1":"0"].join("|"))}function c(e,n,a={}){const i=Boolean(a.short),l=2===Number(n||0)?"c2":"c1",r=t.consultorios[l],s=e?.consultorios&&"object"==typeof e.consultorios?e.consultorios[l]:null;return i?o(s?.short_label,r.short_label):o(s?.label,r.label)}function d(e){const n=o(e);if(!n)return"";try{const e=new URL(n,"https://turnero.local");return`${e.pathname}${e.hash||""}`||"/"}catch(e){return n}}function u(e,n,a={}){const l=i(e),c=function(e){return{source:"fallback_default"===String(e?.runtime_meta?.source||"remote").trim().toLowerCase()?"fallback_default":"remote",profileFingerprint:String(e?.runtime_meta?.profileFingerprint||s(e)).trim()}}(e),u=String(n).trim().toLowerCase(),p=l.surfaces[u]||t.surfaces.operator,m=!1!==p.enabled,f=d(p.route),b=function(e={}){return o(e.currentRoute)?d(e.currentRoute):"undefined"!=typeof window&&window.location&&"string"==typeof window.location.pathname?d(`${window.location.pathname||""}${window.location.hash||""}`):""}(a),g=""===f||""===b||f===b;return m?"remote"!==c.source?{surface:u,enabled:m,expectedRoute:f,currentRoute:b,routeMatches:g,state:"alert",label:p.label,detail:"No se pudo cargar clinic-profile.json; la superficie quedó con perfil de respaldo y no puede operar como piloto.",reason:"profile_missing"}:g?{surface:u,enabled:m,expectedRoute:f,currentRoute:b,routeMatches:g,state:"ready",label:p.label,detail:`Ruta canónica verificada: ${f||b||"sin ruta"}.`,reason:"ready"}:{surface:u,enabled:m,expectedRoute:f,currentRoute:b,routeMatches:g,state:"alert",label:p.label,detail:`La ruta activa (${b||"sin ruta"}) no coincide con la canónica (${f||"sin ruta declarada"}).`,reason:"route_mismatch"}:{surface:u,enabled:m,expectedRoute:f,currentRoute:b,routeMatches:!1,state:"alert",label:p.label,detail:`${p.label} está deshabilitada en el perfil de ${r(l)}.`,reason:"disabled"}}const p="turnero-clinic-storage/v1";function m(e){if("string"!=typeof e||!e.trim())return null;try{const n=JSON.parse(e);if(!n||"object"!=typeof n||Array.isArray(n))return null;if(n.values&&"object"==typeof n.values&&!Array.isArray(n.values))return{schema:String(n.schema||"").trim()||p,values:n.values}}catch(e){return null}return null}function f(e){const n=i(e);return String(n?.clinic_id||"").trim()||"default-clinic"}function b(e,n,t={}){const a="function"==typeof t.normalizeValue?t.normalizeValue:e=>e,o=Object.prototype.hasOwnProperty.call(t,"fallbackValue")?t.fallbackValue:null,i=f(n);try{const n=localStorage.getItem(String(e||""));if(null===n)return o;const t=m(n);return t?Object.prototype.hasOwnProperty.call(t.values,i)?a(t.values[i],o):o:a(n,o)}catch(e){return o}}function g(e,n,t){const a=f(n),o=String(e||"");if(!o)return!1;try{const e=m(localStorage.getItem(o))||{schema:p,values:{}};return e.values[a]=t,localStorage.setItem(o,JSON.stringify(e)),!0}catch(e){return!1}}const y="queueDisplayBellMuted",h="queueDisplayLastSnapshot",S="displayAnnouncementInlineStyles",v="displayStarInlineStyles",w="display-bell-flash",x={lastCalledSignature:"",callBaselineReady:!1,audioContext:null,pollingId:0,clockId:0,pollingEnabled:!1,failureStreak:0,refreshBusy:!1,manualRefreshBusy:!1,lastHealthySyncAt:0,bellMuted:!1,lastSnapshot:null,connectionState:"paused",lastConnectionMessage:"",lastRenderedSignature:"",bellFlashId:0,lastBellAt:0,lastBellBlockedHintAt:0,bellPrimed:!1,lastBellSource:"",lastBellOutcome:"idle",clinicProfile:null,lastRenderedState:null};let C=null;function k(e,n={}){try{window.dispatchEvent(new CustomEvent("piel:queue-ops",{detail:{surface:"display",event:String(e||"unknown"),at:(new Date).toISOString(),...n}}))}catch(e){}}function A(e){return document.getElementById(e)}function _(e){return 1!==Number(e||0)&&2!==Number(e||0)?"Recepcion":c(x.clinicProfile,e)}function M(e=x.clinicProfile){return u(e,"display")}function L(){return"alert"===M().state}function T(e,n=!1){return!0===e||1===e||"1"===e||"true"===e||!1!==e&&0!==e&&"0"!==e&&"false"!==e&&Boolean(n)}function E(e){const n=function(e){if(!e)return null;if("object"==typeof e)return e;if("string"!=typeof e||!e.trim())return null;try{const n=JSON.parse(e);return n&&"object"==typeof n?n:null}catch(e){return null}}(e);if(!n||Array.isArray(n))return null;const t=Date.parse(String(n.savedAt||""));return Number.isFinite(t)?Date.now()-t>216e5?null:{savedAt:new Date(t).toISOString(),data:te(n.data||{})}:null}function B(){const e=`${navigator.userAgent||""} ${navigator.platform||""}`.toLowerCase();return e.includes("android")||e.includes("google tv")||e.includes("aft")?"android_tv":"web"}function N(){const e=String(x.connectionState||"paused"),n=Boolean(x.lastHealthySyncAt),t=M(),a=String(x.clinicProfile?.clinic_id||"").trim(),o=String(x.clinicProfile?.branding?.name||x.clinicProfile?.branding?.short_name||"").trim(),i=s(x.clinicProfile),l=String(x.clinicProfile?.runtime_meta?.source||"remote").trim();let r="warning",c="Sala TV pendiente de validación.";return"alert"===t.state?(r="alert",c=t.detail):"offline"===e?(r="alert",c="Sala TV sin conexión; usa respaldo local y confirma llamados manuales."):x.bellMuted?(r="warning",c="La campanilla está en silencio; reactivarla antes de operar."):"blocked"!==x.lastBellOutcome&&x.bellPrimed?"live"===e&&n&&(r="ready",c="Sala TV lista: cola en vivo, audio activo y respaldo local disponible."):(r="alert",c="La TV no confirmó audio; repite la prueba de campanilla."),{instance:"main",deviceLabel:"Sala TV TCL C655",appMode:B(),status:r,summary:c,networkOnline:!1!==navigator.onLine,lastEvent:"played"===x.lastBellOutcome?"bell_ok":"blocked"===x.lastBellOutcome?"bell_blocked":"heartbeat",lastEventAt:x.lastBellAt>0?new Date(x.lastBellAt).toISOString():(new Date).toISOString(),details:{connection:e,bellMuted:Boolean(x.bellMuted),bellPrimed:Boolean(x.bellPrimed),bellOutcome:String(x.lastBellOutcome||"idle"),healthySync:n,clinicId:a,clinicName:o,profileSource:l,profileFingerprint:i,surfaceContractState:String(t.state||""),surfaceRouteExpected:String(t.expectedRoute||""),surfaceRouteCurrent:String(t.currentRoute||"")}}}function $(){return C||(C=function({surface:t,intervalMs:a=15e3,getPayload:o}={}){const i=function(e){const n=String(e||"").trim().toLowerCase();return"sala_tv"===n?"display":n||"operator"}(t),l=function(n){const t=`queueSurfaceDeviceIdV1:${n}`;try{const a=localStorage.getItem(t);if(a)return a;const o=e(n);return localStorage.setItem(t,o),o}catch(t){return e(n)}}(i),r=Math.max(5e3,Number(a||15e3));let s=0,c=!1,d=0,u=!1;async function p(e="interval",{keepalive:t=!1}={}){if(c)return!1;c=!0;try{return!!(await fetch(`/api.php?resource=${encodeURIComponent("queue-surface-heartbeat")}`,{method:"POST",credentials:"same-origin",keepalive:t,headers:{Accept:"application/json","Content-Type":"application/json"},body:JSON.stringify(n(i,l,o,e))})).ok&&(d=Date.now(),!0)}catch(e){return!1}finally{c=!1}}function m(){"visible"===document.visibilityState&&p("visible")}function f(){p("online")}function b(){p("unload",{keepalive:!0})}function g(){s&&(window.clearInterval(s),s=0),u&&(u=!1,document.removeEventListener("visibilitychange",m),window.removeEventListener("online",f),window.removeEventListener("beforeunload",b))}return{start:function({immediate:e=!0}={}){g(),u||(u=!0,document.addEventListener("visibilitychange",m),window.addEventListener("online",f),window.addEventListener("beforeunload",b)),e&&p("boot"),s=window.setInterval(()=>{"hidden"!==document.visibilityState&&p("interval")},r)},stop:g,notify:function(e="state_change"){Date.now()-d<4e3||p(e)},beatNow:(e="manual")=>p(e),getDeviceId:()=>l}}({surface:"display",intervalMs:15e3,getPayload:N}),C)}function R(e){return String(e||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;")}function H(e){const n=String(e||"").trim().toUpperCase();return n&&n.replace(/[^A-Z0-9-]/g,"")||"--"}function I(e){const n=String(e||"").trim();if(!n)return"--";const t=n.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9\s-]/g," ").replace(/\s+/g," ").trim();if(!t)return"--";const a=t.split(/[\s-]+/).filter(Boolean);let o="";if(a.length>=2)o=`${String(a[0]||"").charAt(0)}${String(a[a.length-1]||"").charAt(0)}`;else if(1===a.length){const e=String(a[0]||"").replace(/[^A-Za-z0-9]/g,"");if(!e)return"--";o=e.length<=3&&e===e.toUpperCase()?e:e.slice(0,2)}const i=o.toUpperCase().trim();return i?i.slice(0,3):"--"}function P(e,n){if(!e||"object"!=typeof e||!Array.isArray(n))return[];for(const t of n)if(t&&Array.isArray(e[t]))return e[t];return[]}function O(e,n){if(!e||"object"!=typeof e||!Array.isArray(n))return null;for(const t of n){if(!t)continue;const n=e[t];if(n&&"object"==typeof n&&!Array.isArray(n))return n}return null}function D(e,n,t=0){if(!e||"object"!=typeof e||!Array.isArray(n))return Number(t||0);for(const t of n){if(!t)continue;const n=Number(e[t]);if(Number.isFinite(n))return n}return Number(t||0)}function j(e){const n=e&&"object"==typeof e?e:{},t=O(n,["counts"])||{},a=D(n,["waitingCount","waiting_count"],Number.NaN),o=D(n,["calledCount","called_count"],Number.NaN);let i=P(n,["callingNow","calling_now","calledTickets","called_tickets"]);if(0===i.length){const e=O(n,["callingNowByConsultorio","calling_now_by_consultorio"]);e&&(i=Object.values(e).filter(Boolean))}const l=P(n,["nextTickets","next_tickets","waitingTickets","waiting_tickets"]),r=Number.isFinite(a)?a:D(t,["waiting","waiting_count"],l.length),s=Number.isFinite(o)?o:D(t,["called","called_count"],i.length);return{updatedAt:String(n.updatedAt||n.updated_at||"").trim()||(new Date).toISOString(),waitingCount:Math.max(0,Number(r||0)),calledCount:Math.max(0,Number(s||0)),callingNow:Array.isArray(i)?i.map(e=>({...e,id:Number(e?.id||e?.ticket_id||0)||0,ticketCode:H(e?.ticketCode||e?.ticket_code||"--"),patientInitials:I(e?.patientInitials||e?.patient_initials||"--"),assignedConsultorio:Number(e?.assignedConsultorio??e?.assigned_consultorio??0)||null,calledAt:String(e?.calledAt||e?.called_at||"")})):[],nextTickets:Array.isArray(l)?l.map((e,n)=>({...e,id:Number(e?.id||e?.ticket_id||0)||0,ticketCode:H(e?.ticketCode||e?.ticket_code||"--"),patientInitials:I(e?.patientInitials||e?.patient_initials||"--"),position:Number(e?.position||0)>0?Number(e.position):n+1})):[]}}function q(e,n){const t=A("displayConnectionState");if(!t)return;const a=String(e||"live").toLowerCase(),o={live:"Conectado",reconnecting:"Reconectando",offline:"Sin conexion",paused:"En pausa"},i=String(n||"").trim()||o[a]||o.live,l=a!==x.connectionState||i!==x.lastConnectionMessage;x.connectionState=a,x.lastConnectionMessage=i,t.dataset.state=a,t.textContent=i,l&&k("connection_state",{state:a,message:i}),W()}function V(){let e=A("displayOpsHint");if(e)return e;const n=A("displayUpdatedAt");return n?.parentElement?(e=document.createElement("span"),e.id="displayOpsHint",e.className="display-updated-at",e.textContent="Estado operativo: inicializando...",n.insertAdjacentElement("afterend",e),e):null}function z(){if(document.getElementById(v))return;const e=document.createElement("style");e.id=v,e.textContent=`\n        body[data-display-mode='star'] .display-header {\n            border-bottom-color: color-mix(in srgb, var(--accent) 18%, var(--border));\n            box-shadow: 0 10px 32px rgb(16 36 61 / 10%);\n        }\n        body[data-display-mode='star'] .display-brand strong {\n            letter-spacing: -0.02em;\n        }\n        body[data-display-mode='star'] .display-privacy-pill {\n            width: fit-content;\n            border: 1px solid color-mix(in srgb, var(--accent) 24%, #fff 76%);\n            border-radius: 999px;\n            padding: 0.22rem 0.66rem;\n            background: color-mix(in srgb, var(--accent-soft) 90%, #fff 10%);\n            color: color-mix(in srgb, var(--accent) 68%, #0f172a 32%);\n            font-size: 0.83rem;\n            font-weight: 600;\n            line-height: 1.3;\n        }\n        body[data-display-mode='star'] .display-layout {\n            gap: 1.1rem;\n        }\n        body[data-display-mode='star'] .display-panel {\n            border-radius: 22px;\n            padding: 1.12rem;\n        }\n        body[data-display-mode='star'] .display-next-list li {\n            min-height: 68px;\n        }\n        #displayMetrics {\n            margin: 0.7rem 1.35rem 0;\n            display: flex;\n            flex-wrap: wrap;\n            gap: 0.56rem;\n        }\n        .display-metric-chip {\n            border: 1px solid var(--border);\n            border-radius: 12px;\n            padding: 0.36rem 0.7rem;\n            background: var(--surface-soft);\n            color: var(--muted);\n            font-size: 0.9rem;\n            font-weight: 600;\n        }\n        .display-metric-chip strong {\n            color: var(--text);\n            font-size: 1.02rem;\n            margin-left: 0.28rem;\n        }\n        .display-metric-chip[data-kind='active'] {\n            border-color: color-mix(in srgb, var(--accent) 32%, #fff 68%);\n            background: color-mix(in srgb, var(--accent-soft) 88%, #fff 12%);\n            color: color-mix(in srgb, var(--accent) 68%, #0f172a 32%);\n        }\n        .display-metric-chip[data-kind='active'] strong {\n            color: var(--accent);\n        }\n        #displayAnnouncement .display-announcement-support {\n            margin: 0.24rem 0 0;\n            color: var(--muted);\n            font-size: clamp(0.98rem, 1.45vw, 1.15rem);\n            font-weight: 500;\n            line-height: 1.3;\n        }\n        #displayAnnouncement.is-live .display-announcement-support {\n            color: color-mix(in srgb, var(--accent) 60%, var(--muted) 40%);\n        }\n        body.${w} .display-header {\n            box-shadow:\n                0 0 0 2px color-mix(in srgb, var(--accent) 34%, #fff 66%),\n                0 14px 34px rgb(16 36 61 / 18%);\n        }\n        body.${w} #displayAnnouncement {\n            border-color: color-mix(in srgb, var(--accent) 45%, #fff 55%);\n            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, #fff 72%);\n            transform: translateY(-1px);\n        }\n        body.${w} .display-called-card.is-live {\n            border-color: color-mix(in srgb, var(--accent) 32%, #fff 68%);\n            box-shadow: 0 12px 24px rgb(16 36 61 / 14%);\n        }\n        @media (max-width: 720px) {\n            #displayMetrics {\n                margin: 0.56rem 0.9rem 0;\n            }\n        }\n    `,document.head.appendChild(e)}function F(){let e=A("displayAnnouncement");if(e instanceof HTMLElement)return e;const n=document.querySelector(".display-layout");return n instanceof HTMLElement?(function(){if(document.getElementById(S))return;const e=document.createElement("style");e.id=S,e.textContent="\n        #displayAnnouncement {\n            margin: 0.75rem 1.35rem 0;\n            padding: 1rem 1.2rem;\n            border-radius: 18px;\n            border: 1px solid color-mix(in srgb, var(--accent) 28%, #fff 72%);\n            background: linear-gradient(120deg, color-mix(in srgb, var(--accent-soft) 92%, #fff 8%), #fff);\n            box-shadow: 0 12px 24px rgb(16 36 61 / 11%);\n        }\n        #displayAnnouncement .display-announcement-label {\n            margin: 0;\n            color: var(--muted);\n            font-size: 0.96rem;\n            font-weight: 600;\n            letter-spacing: 0.02em;\n        }\n        #displayAnnouncement .display-announcement-text {\n            margin: 0.24rem 0 0;\n            font-size: clamp(1.34rem, 2.5vw, 2.15rem);\n            line-height: 1.18;\n            font-weight: 700;\n            letter-spacing: 0.01em;\n            color: var(--text);\n        }\n        #displayAnnouncement.is-live .display-announcement-text {\n            color: var(--accent);\n        }\n        #displayAnnouncement.is-bell {\n            border-color: color-mix(in srgb, var(--accent) 40%, #fff 60%);\n            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, #fff 78%);\n        }\n        #displayAnnouncement.is-idle {\n            border-color: var(--border);\n            background: linear-gradient(160deg, var(--surface-soft), #fff);\n        }\n        #displayAnnouncement.is-blocked {\n            border-color: color-mix(in srgb, var(--danger) 50%, #fff 50%);\n            background:\n                linear-gradient(160deg, rgb(239 107 107 / 14%), rgb(255 255 255 / 5%)),\n                var(--surface-soft);\n        }\n        #displayAnnouncement.is-blocked .display-announcement-text {\n            color: #ffd7d7;\n        }\n        #displayAnnouncement.is-blocked .display-announcement-support {\n            color: #ffd7d7;\n        }\n        @media (max-width: 720px) {\n            #displayAnnouncement {\n                margin: 0.6rem 0.9rem 0;\n            }\n        }\n        @media (prefers-reduced-motion: reduce) {\n            #displayAnnouncement {\n                transition: none !important;\n            }\n        }\n    ",document.head.appendChild(e)}(),z(),e=document.createElement("section"),e.id="displayAnnouncement",e.className="display-announcement is-idle",e.setAttribute("role","status"),e.setAttribute("aria-live","assertive"),e.setAttribute("aria-atomic","true"),e.innerHTML='\n        <p class="display-announcement-label">Llamando ahora</p>\n        <p class="display-announcement-text">Esperando siguiente llamado...</p>\n        <p class="display-announcement-support">Consulta la pantalla para el consultorio asignado.</p>\n    ',n.insertAdjacentElement("beforebegin",e),e):null}function U(e){const n=F();if(!(n instanceof HTMLElement))return;const t=n.querySelector(".display-announcement-text"),a=n.querySelector(".display-announcement-support");if(!(t instanceof HTMLElement))return;if(!e){n.classList.add("is-idle"),n.classList.remove("is-live"),n.classList.remove("is-blocked"),delete n.dataset.consultorio;const e="Esperando siguiente llamado...",o="Consulta la pantalla para el consultorio asignado.";return t.textContent!==e&&(t.textContent=e,k("announcement_update",{mode:"idle"})),void(a instanceof HTMLElement&&a.textContent!==o&&(a.textContent=o))}const o=Number(e?.assignedConsultorio||0),i=_(o),l=H(e?.ticketCode||"--"),r=`${i} · Turno ${l}`,s=`Paciente ${I(e?.patientInitials||"--")}: pasa con calma al ${i}.`;n.classList.remove("is-idle"),n.classList.add("is-live"),n.classList.remove("is-blocked"),n.dataset.consultorio=String(o||""),t.textContent!==r&&(t.textContent=r,k("announcement_update",{mode:"live",consultorio:o,ticketCode:l})),a instanceof HTMLElement&&a.textContent!==s&&(a.textContent=s)}function J(e){const n=V();n&&(n.textContent=String(e||"").trim()||"Estado operativo")}function W(){const e=A("displaySetupTitle"),n=A("displaySetupSummary"),t=A("displaySetupChecks");if(!(e instanceof HTMLElement&&n instanceof HTMLElement&&t instanceof HTMLElement))return;const a=String(x.connectionState||"paused"),o=String(x.lastConnectionMessage||"Sincronizacion pendiente"),i=x.lastBellAt>0?se(Date.now()-x.lastBellAt):"",l=u(x.clinicProfile,"display"),r=Date.parse(String(x.lastSnapshot?.savedAt||"")),s=Number.isFinite(r)?se(Date.now()-r):"",c=[{label:"Perfil de clínica",state:"alert"===l.state?"danger":"ready",detail:l.detail},{label:"Conexion y cola",state:"live"===a?x.lastHealthySyncAt?"ready":"warning":"offline"===a?"danger":"warning",detail:"live"===a?x.lastHealthySyncAt?`Panel en vivo (${ce()}).`:"Conectado, pero esperando una sincronizacion saludable.":o},{label:"Audio del TV",state:x.bellPrimed?"ready":"warning",detail:x.bellPrimed?"Audio desbloqueado para WebView/navegador.":'Toca "Probar campanilla" una vez para habilitar audio en la TCL C655.'},{label:"Campanilla",state:x.bellMuted?"warning":"played"===x.lastBellOutcome?"ready":"blocked"===x.lastBellOutcome?"danger":"warning",detail:x.bellMuted?"Esta en silencio. Reactivala antes de operar la sala.":"played"===x.lastBellOutcome?`Prueba sonora confirmada${i?` · hace ${i}`:""}.`:"blocked"===x.lastBellOutcome?"El audio fue bloqueado. Repite la prueba sonora en la TV.":"Todavia no hay prueba sonora confirmada."},{label:"Respaldo local",state:Number.isFinite(r)?"ready":"warning",detail:Number.isFinite(r)?`Ultimo respaldo local ${s} de antiguedad.`:"Aun sin snapshot local para contingencia."}];let d="Finaliza la puesta en marcha",p="Confirma conexion, audio y campanilla antes de dejar la TV en operacion continua.";"alert"===l.state?(d="profile_missing"===l.reason?"Perfil de clínica no cargado":"Ruta del piloto incorrecta",p=l.detail):"offline"===a?(d="Sala TV en contingencia",p="La TV puede seguir mostrando respaldo local, pero el enlace con la cola no esta disponible."):x.bellMuted?(d="Campanilla en silencio",p="La campanilla esta apagada. Reactivala antes de iniciar llamados reales."):"blocked"!==x.lastBellOutcome&&x.bellPrimed?"played"!==x.lastBellOutcome||x.lastBellAt<=0?(d="Falta probar la campanilla",p='Ejecuta "Probar campanilla" y confirma sonido en sala antes de abrir pacientes.'):"live"===a&&x.lastHealthySyncAt&&(d="Sala TV lista para llamados",p="La cola esta en vivo, la campanilla ya respondio y la TV tiene respaldo local para contingencia."):(d="Falta habilitar audio",p="Haz una prueba sonora en la TCL C655 para desbloquear audio y confirmar volumen."),e.textContent=d,n.textContent=p,t.innerHTML=c.map(e=>`\n                <article class="display-setup-check" data-state="${R(e.state)}" role="listitem">\n                    <strong>${R(e.label)}</strong>\n                    <span>${R(e.detail)}</span>\n                </article>\n            `).join(""),function(e="state_change"){$().notify(e)}("setup_status")}function G(){let e=A("displayMetrics");if(e instanceof HTMLElement)return e;const n=F();return n instanceof HTMLElement?(z(),e=document.createElement("section"),e.id="displayMetrics",e.className="display-metrics",e.setAttribute("aria-live","polite"),e.innerHTML='\n        <span class="display-metric-chip" data-kind="waiting">\n            En cola\n            <strong data-metric="waiting">0</strong>\n        </span>\n        <span class="display-metric-chip" data-kind="active">\n            Llamando\n            <strong data-metric="active">0</strong>\n        </span>\n        <span class="display-metric-chip" data-kind="next">\n            Siguientes\n            <strong data-metric="next">0</strong>\n        </span>\n    ',n.insertAdjacentElement("afterend",e),e):null}function K(e,n,t){if(!(e instanceof HTMLElement))return;const a=e.querySelector(`[data-metric="${n}"]`);if(!(a instanceof HTMLElement))return;const o=String(Math.max(0,Number(t||0)));a.textContent!==o&&(a.textContent=o)}function Z(e){const n=G();if(!(n instanceof HTMLElement))return;const t=j(e),a=Number(t.waitingCount||0),o=Array.isArray(t.callingNow)?t.callingNow.length:0,i=Array.isArray(t.nextTickets)?t.nextTickets.length:0;K(n,"waiting",a),K(n,"active",o),K(n,"next",i)}function Y(){let e=A("displayManualRefreshBtn");if(e instanceof HTMLButtonElement)return e;const n=document.querySelector(".display-clock-wrap");return n?(e=document.createElement("button"),e.id="displayManualRefreshBtn",e.type="button",e.className="display-control-btn",e.textContent="Refrescar panel",e.setAttribute("aria-label","Refrescar estado de turnos en pantalla"),n.appendChild(e),e):null}function Q(e){const n=Y();n instanceof HTMLButtonElement&&(n.disabled=Boolean(e),n.textContent=e?"Refrescando...":"Refrescar panel")}function X(){let e=A("displayBellToggleBtn");if(e instanceof HTMLButtonElement)return e;const n=document.querySelector(".display-clock-wrap");return n?(e=document.createElement("button"),e.id="displayBellToggleBtn",e.type="button",e.className="display-control-btn display-control-btn-muted",e.setAttribute("aria-label","Alternar campanilla de llamados"),n.appendChild(e),e):null}function ee(){const e=X();e instanceof HTMLButtonElement&&(e.textContent=x.bellMuted?"Campanilla: Off":"Campanilla: On",e.dataset.state=x.bellMuted?"muted":"enabled",e.setAttribute("aria-pressed",String(x.bellMuted)),e.title=x.bellMuted?"Campanilla en silencio":"Campanilla activa",W())}function ne(){!function(e,{announce:n=!1}={}){x.bellMuted=Boolean(e),g(y,x.clinicProfile,x.bellMuted?"1":"0"),ee(),k("bell_muted_changed",{muted:x.bellMuted,announce:n}),n&&J(x.bellMuted?"Campanilla en silencio. Puedes reactivarla con Alt+Shift+M.":"Campanilla activa para nuevos llamados.")}(!x.bellMuted,{announce:!0})}function te(e){const n=j(e);return{updatedAt:String(n.updatedAt||(new Date).toISOString()),waitingCount:Number(n.waitingCount||0),calledCount:Number(n.calledCount||0),callingNow:Array.isArray(n.callingNow)?n.callingNow:[],nextTickets:Array.isArray(n.nextTickets)?n.nextTickets:[]}}function ae(e,{mode:n="restore"}={}){if(L())return le(),!1;if(!e?.data)return!1;ge(e.data);const t=Math.max(0,Date.now()-Date.parse(String(e.savedAt||""))),a=se(t);return q("reconnecting","Respaldo local activo"),J("startup"===n?`Mostrando respaldo local (${a}) mientras conecta.`:`Sin backend. Mostrando ultimo estado local (${a}).`),k("snapshot_restored",{mode:n,ageMs:t}),!0}function oe(){let e=A("displaySnapshotHint");if(e instanceof HTMLElement)return e;const n=V();return n?.parentElement?(e=document.createElement("span"),e.id="displaySnapshotHint",e.className="display-updated-at",e.textContent="Respaldo: sin datos locales",n.insertAdjacentElement("afterend",e),e):null}function ie(){const e=oe();if(!(e instanceof HTMLElement))return;if(!x.lastSnapshot?.savedAt)return e.textContent="Respaldo: sin datos locales",void W();const n=Date.parse(String(x.lastSnapshot.savedAt||""));if(!Number.isFinite(n))return e.textContent="Respaldo: sin datos locales",void W();e.textContent=`Respaldo: ${se(Date.now()-n)} de antiguedad`,W()}function le(){const e=function(){const e=M();return"alert"!==e.state?"":"profile_missing"===e.reason?"Pantalla bloqueada: clinic-profile.json remoto ausente. Corrige el perfil y recarga antes de mostrar llamados.":`Pantalla bloqueada: la ruta no coincide con el canon del piloto (${e.expectedRoute||"/sala-turnos.html"}). Corrige el acceso antes de usar esta TV.`}();x.lastRenderedState=null,x.lastRenderedSignature="",x.lastCalledSignature="",x.callBaselineReady=!0,pe(),de("displayConsultorio1",null,_(1)),de("displayConsultorio2",null,_(2)),function(e){const n=F();if(!(n instanceof HTMLElement))return;const t=n.querySelector(".display-announcement-text"),a=n.querySelector(".display-announcement-support");if(!(t instanceof HTMLElement))return;const o="Pantalla bloqueada",i=String(e||"").trim()||"Corrige el perfil por clínica antes de usar esta TV.";n.classList.remove("is-live","is-idle"),n.classList.add("is-blocked"),delete n.dataset.consultorio,t.textContent!==o&&(t.textContent=o,k("announcement_update",{mode:"blocked"})),a instanceof HTMLElement&&a.textContent!==i&&(a.textContent=i)}(e);const n=A("displayNextList");n&&(n.innerHTML=`<li class="display-empty display-empty-blocked">${R(e||"Pantalla bloqueada por configuración del piloto.")}</li>`),Z({waitingCount:0,callingNow:[],nextTickets:[]}),q("paused","Pantalla bloqueada"),J(e)}function re({announce:e=!1}={}){x.lastSnapshot=null,x.lastRenderedSignature="",function(e,n){const t=f(n),a=String(e);if(!a)return!1;try{const e=m(localStorage.getItem(a));return e?(delete e.values[t],0===Object.keys(e.values).length?(localStorage.removeItem(a),!0):(localStorage.setItem(a,JSON.stringify(e)),!0)):(localStorage.removeItem(a),!0)}catch(e){return!1}}(h,x.clinicProfile),ie(),"live"!==x.connectionState&&(function(e="No hay turnos pendientes."){x.lastRenderedSignature="",x.lastCalledSignature="",x.callBaselineReady=!0,de("displayConsultorio1",null,_(1)),de("displayConsultorio2",null,_(2)),U(null);const n=A("displayNextList");n&&(n.innerHTML=`<li class="display-empty">${R(e)}</li>`),Z({waitingCount:0,callingNow:[],nextTickets:[]})}("Sin respaldo local disponible."),!1===navigator.onLine?q("offline","Sin conexion"):q("reconnecting","Sin respaldo local")),e&&J("Respaldo local limpiado. Esperando datos en vivo del backend."),k("snapshot_cleared",{announce:e})}function se(e){const n=Math.max(0,Number(e||0)),t=Math.round(n/1e3);if(t<60)return`${t}s`;const a=Math.floor(t/60),o=t%60;return o<=0?`${a}m`:`${a}m ${o}s`}function ce(){return x.lastHealthySyncAt?`hace ${se(Date.now()-x.lastHealthySyncAt)}`:"sin sincronizacion confirmada"}function de(e,n,t){const a=A(e);if(!a)return;if(!n)return void(a.innerHTML=`\n            <article class="display-called-card is-empty">\n                <h3>${t}</h3>\n                <p>Sin llamado activo</p>\n            </article>\n        `);const o=Date.parse(String(n.calledAt||"")),i=Number.isFinite(o)&&Date.now()-o<=8e3?"display-called-card is-live is-fresh":"display-called-card is-live";a.innerHTML=`\n        <article class="${i}">\n            <h3>${t}</h3>\n            <strong>${R(n.ticketCode||"--")}</strong>\n            <span>${R(n.patientInitials||"--")}</span>\n        </article>\n    `}function ue(e){return e?new Set(String(e).split("|").map(e=>e.trim()).filter(Boolean)):new Set}function pe(){x.bellFlashId&&(window.clearTimeout(x.bellFlashId),x.bellFlashId=0),document.body.classList.remove(w);const e=A("displayAnnouncement");e instanceof HTMLElement&&e.classList.remove("is-bell")}async function me({source:e="unknown"}={}){try{x.audioContext||(x.audioContext=new(window.AudioContext||window.webkitAudioContext));const n=x.audioContext;return"suspended"===n.state&&await n.resume(),x.bellPrimed="running"===n.state,k("bell_audio_primed",{source:e,running:x.bellPrimed}),W(),x.bellPrimed}catch(n){return x.bellPrimed=!1,k("bell_audio_primed",{source:e,running:!1}),W(),!1}}function fe(){const e=Date.now();x.lastBellBlockedHintAt>0&&e-x.lastBellBlockedHintAt<2e4||(x.lastBellBlockedHintAt=e,x.lastBellOutcome="blocked",W(),J('Audio bloqueado por navegador. Toca "Probar campanilla" una vez para habilitar sonido.'))}async function be({source:e="new_call",force:n=!1}={}){if(L())return;if(function(){const e=document.body;if(!(e instanceof HTMLElement))return;pe(),e.offsetWidth,e.classList.add(w);const n=A("displayAnnouncement");n instanceof HTMLElement&&n.classList.add("is-bell"),x.bellFlashId=window.setTimeout(()=>{pe()},1300)}(),x.bellMuted&&!n)return;const t=Date.now();if(!(!n&&x.lastBellAt>0&&t-x.lastBellAt<1200))try{if(!await me({source:e}))return x.lastBellSource=e,void fe();const n=x.audioContext,t=n.currentTime,a=n.createOscillator(),o=n.createGain();a.type="sine",a.frequency.setValueAtTime(932,t),o.gain.setValueAtTime(1e-4,t),o.gain.exponentialRampToValueAtTime(.16,t+.02),o.gain.exponentialRampToValueAtTime(1e-4,t+.22),a.connect(o),o.connect(n.destination),a.start(t),a.stop(t+.24),x.lastBellAt=Date.now(),x.lastBellSource=e,x.lastBellOutcome="played",W(),k("bell_played",{source:e,muted:x.bellMuted})}catch(n){x.lastBellSource=e,fe()}}function ge(e){if(L())return void le();const n=j(e);x.lastRenderedState=n;const t=function(e){const n=j(e),t=Array.isArray(n.callingNow)?n.callingNow.map(e=>({id:Number(e?.id||0),ticketCode:String(e?.ticketCode||""),patientInitials:String(e?.patientInitials||""),consultorio:Number(e?.assignedConsultorio||0),calledAt:String(e?.calledAt||"")})):[],a=Array.isArray(n.nextTickets)?n.nextTickets.slice(0,8).map(e=>({id:Number(e?.id||0),ticketCode:String(e?.ticketCode||""),patientInitials:String(e?.patientInitials||""),position:Number(e?.position||0)})):[],o=String(n.updatedAt||"");return JSON.stringify({updatedAt:o,callingNow:t,nextTickets:a})}(n),a=t===x.lastRenderedSignature,o=Array.isArray(n.callingNow)?n.callingNow:[],i={1:null,2:null};for(const e of o){const n=Number(e?.assignedConsultorio||0);1!==n&&2!==n||(i[n]=e)}const l=function(e,n){const t=Array.isArray(e)?e.filter(Boolean):[];if(0===t.length)return null;let a=t[0],o=Number.NEGATIVE_INFINITY;for(const e of t){const n=Date.parse(String(e?.calledAt||""));Number.isFinite(n)&&n>=o&&(o=n,a=e)}return Number.isFinite(o)?a:n[1]||n[2]||a}(o,i);a||(de("displayConsultorio1",i[1],_(1)),de("displayConsultorio2",i[2],_(2)),function(e){const n=A("displayNextList");n&&(Array.isArray(e)&&0!==e.length?n.innerHTML=e.slice(0,8).map(e=>`\n                <li>\n                    <span class="next-code">${R(e.ticketCode||"--")}</span>\n                    <span class="next-initials">${R(e.patientInitials||"--")}</span>\n                    <span class="next-position">#${R(e.position||"-")}</span>\n                </li>\n            `).join(""):n.innerHTML='<li class="display-empty">No hay turnos pendientes.</li>')}(n?.nextTickets||[]),function(e){const n=A("displayUpdatedAt");if(!n)return;const t=j(e),a=Date.parse(String(t.updatedAt||""));Number.isFinite(a)?n.textContent=`Actualizado ${new Date(a).toLocaleTimeString("es-EC",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}`:n.textContent="Actualizacion pendiente"}(n),x.lastRenderedSignature=t,k("render_update",{callingNowCount:o.length,nextCount:Array.isArray(n?.nextTickets)?n.nextTickets.length:0})),U(l),Z(n);const r=function(e){return Array.isArray(e)&&0!==e.length?e.map(e=>{const n=String(e.assignedConsultorio||"-"),t=Number(e.id||0),a=H(e.ticketCode||"--");return`${n}:${t>0?`id-${t}`:`code-${a}`}`}).sort().join("|"):""}(o);if(!x.callBaselineReady)return x.lastCalledSignature=r,void(x.callBaselineReady=!0);if(r!==x.lastCalledSignature){const e=ue(x.lastCalledSignature),n=ue(r),t=[];for(const a of n)e.has(a)||t.push(a);t.length>0&&be({source:"new_call"}),k("called_signature_changed",{signature:r,added_count:t.length})}x.lastCalledSignature=r}function ye(){const e=Math.max(0,Number(x.failureStreak||0)),n=2500*Math.pow(2,Math.min(e,3));return Math.min(15e3,n)}function he(){x.pollingId&&(window.clearTimeout(x.pollingId),x.pollingId=0)}function Se({immediate:e=!1}={}){if(he(),!x.pollingEnabled)return;const n=e?0:ye();x.pollingId=window.setTimeout(()=>{we()},n)}async function ve(){if(L())return le(),{ok:!1,stale:!1,blocked:!0,reason:"pilot_blocked",usedSnapshot:!1};if(x.refreshBusy)return{ok:!1,stale:!1,reason:"busy"};x.refreshBusy=!0;try{const e=j((await async function(){const e=new URLSearchParams;e.set("resource","queue-state"),e.set("t",String(Date.now()));const n=await fetch(`/api.php?${e.toString()}`,{method:"GET",credentials:"same-origin",headers:{Accept:"application/json"}}),t=await n.text();let a;try{a=t?JSON.parse(t):{}}catch(e){throw new Error("Respuesta JSON invalida")}if(!n.ok||!1===a.ok)throw new Error(a.error||`HTTP ${n.status}`);return a}()).data||{});ge(e),function(e){const n=te(e),t={savedAt:(new Date).toISOString(),data:n};x.lastSnapshot=t,g(h,x.clinicProfile,t),ie()}(e);const n=function(e){const n=j(e),t=Date.parse(String(n.updatedAt||""));if(!Number.isFinite(t))return{stale:!1,missingTimestamp:!0,ageMs:null};const a=Math.max(0,Date.now()-t);return{stale:a>=3e4,missingTimestamp:!1,ageMs:a}}(e);return{ok:!0,stale:Boolean(n.stale),missingTimestamp:Boolean(n.missingTimestamp),ageMs:n.ageMs,usedSnapshot:!1}}catch(e){const n=ae(x.lastSnapshot,{mode:"restore"});if(!n){const n=A("displayNextList");n&&(n.innerHTML=`<li class="display-empty">Sin conexion: ${R(e.message)}</li>`)}return{ok:!1,stale:!1,reason:"fetch_error",errorMessage:e.message,usedSnapshot:n}}finally{x.refreshBusy=!1}}async function we(){if(!x.pollingEnabled)return;if(L())return void le();if(document.hidden)return q("paused","En pausa (pestana oculta)"),J("Pantalla en pausa por pestana oculta."),void Se();if(!1===navigator.onLine)return x.failureStreak+=1,ae(x.lastSnapshot,{mode:"restore"})||(q("offline","Sin conexion"),J("Sin conexion. Mantener llamado por voz desde recepcion hasta recuperar enlace.")),void Se();const e=await ve();if(e.ok&&!e.stale)x.failureStreak=0,x.lastHealthySyncAt=Date.now(),q("live","Conectado"),J(`Panel estable (${ce()}).`);else if(e.ok&&e.stale){x.failureStreak+=1;const n=se(e.ageMs||0);q("reconnecting",`Watchdog: datos estancados ${n}`),J(`Datos estancados ${n}. Verifica fuente de cola.`)}else{if(x.failureStreak+=1,e.usedSnapshot)return void Se();const n=Math.max(1,Math.ceil(ye()/1e3));q("reconnecting",`Reconectando en ${n}s`),J(`Conexion inestable. Reintento automatico en ${n}s.`)}Se()}async function xe(){if(!x.manualRefreshBusy)if(L())le();else{x.manualRefreshBusy=!0,Q(!0),q("reconnecting","Refrescando panel...");try{const e=await ve();if(e.ok&&!e.stale)return x.failureStreak=0,x.lastHealthySyncAt=Date.now(),q("live","Conectado"),void J(`Sincronizacion manual exitosa (${ce()}).`);if(e.ok&&e.stale){const n=se(e.ageMs||0);return q("reconnecting",`Watchdog: datos estancados ${n}`),void J(`Persisten datos estancados (${n}).`)}if(e.usedSnapshot)return;const n=Math.max(1,Math.ceil(ye()/1e3));q(!1===navigator.onLine?"offline":"reconnecting",!1===navigator.onLine?"Sin conexion":`Reconectando en ${n}s`),J(!1===navigator.onLine?"Sin internet. Llamado manual temporal.":`Refresh manual sin exito. Reintento automatico en ${n}s.`)}finally{x.manualRefreshBusy=!1,Q(!1)}}}function Ce({immediate:e=!0}={}){if(x.pollingEnabled=!0,e)return q("live","Sincronizando..."),void we();Se()}function ke({reason:e="paused"}={}){x.pollingEnabled=!1,x.failureStreak=0,he();const n=String(e||"paused").toLowerCase();return"offline"===n?(q("offline","Sin conexion"),void J("Sin conexion. Mantener protocolo manual de llamados.")):"hidden"===n?(q("paused","En pausa (pestana oculta)"),void J("Pantalla oculta. Reanuda al volver al frente.")):(q("paused","En pausa"),void J("Sincronizacion pausada."))}function Ae(){const e=A("displayClock");e&&(e.textContent=(new Date).toLocaleTimeString("es-EC",{hour:"2-digit",minute:"2-digit"}))}document.addEventListener("DOMContentLoaded",function(){document.body.dataset.displayMode="star",z(),Ae(),x.clockId=window.setInterval(Ae,1e3),V(),oe(),F(),G();const e=Y();e instanceof HTMLButtonElement&&e.addEventListener("click",()=>{xe()});const n=X();n instanceof HTMLButtonElement&&n.addEventListener("click",()=>{ne()});const o=function(){let e=A("displayBellTestBtn");if(e instanceof HTMLButtonElement)return e;const n=document.querySelector(".display-clock-wrap");return n?(e=document.createElement("button"),e.id="displayBellTestBtn",e.type="button",e.className="display-control-btn display-control-btn-muted",e.textContent="Probar campanilla",e.setAttribute("aria-label","Probar campanilla de llamados"),n.appendChild(e),e):null}();o instanceof HTMLButtonElement&&o.addEventListener("click",()=>{be({source:"manual_test",force:!0}),J("Campanilla de prueba ejecutada. Si no escuchas sonido, revisa audio del equipo/TV.")});const d=function(){let e=A("displaySnapshotClearBtn");if(e instanceof HTMLButtonElement)return e;const n=document.querySelector(".display-clock-wrap");return n?(e=document.createElement("button"),e.id="displaySnapshotClearBtn",e.type="button",e.className="display-control-btn display-control-btn-muted",e.textContent="Limpiar respaldo",e.setAttribute("aria-label","Limpiar respaldo local del panel"),n.appendChild(e),e):null}();d instanceof HTMLButtonElement&&d.addEventListener("click",()=>{re({announce:!0})}),ee(),ie(),W(),q("paused","Sincronizacion lista"),J("Cargando perfil de clinica...");const u=()=>{me({source:"user_gesture"})};window.addEventListener("pointerdown",u,{once:!0}),window.addEventListener("keydown",u,{once:!0}),document.addEventListener("visibilitychange",()=>{document.hidden?ke({reason:"hidden"}):x.clinicProfile&&!L()&&Ce({immediate:!0})}),window.addEventListener("online",()=>{x.clinicProfile&&!L()&&Ce({immediate:!0})}),window.addEventListener("offline",()=>{ke({reason:"offline"})}),window.addEventListener("beforeunload",()=>{ke({reason:"paused"}),C?.stop(),x.clockId&&(window.clearInterval(x.clockId),x.clockId=0)}),window.addEventListener("keydown",e=>{if(!e.altKey||!e.shiftKey)return;const n=String(e.code||"").toLowerCase();return"keyr"===n?(e.preventDefault(),void xe()):"keym"===n?(e.preventDefault(),void ne()):"keyb"===n?(e.preventDefault(),be({source:"shortcut_test",force:!0}),void J("Campanilla de prueba ejecutada con teclado.")):void("keyx"===n&&(e.preventDefault(),re({announce:!0})))}),(a||(a=fetch("/content/turnero/clinic-profile.json",{credentials:"same-origin",headers:{Accept:"application/json"}}).then(async e=>{if(!e.ok)throw new Error(`clinic_profile_http_${e.status}`);return e.json()}).then(e=>{const n=i(e);return{...n,runtime_meta:{source:"remote",profileFingerprint:s(n)}}}).catch(()=>{const e=i(t);return{...e,runtime_meta:{source:"fallback_default",profileFingerprint:s(e)}}}),a)).then(e=>{(function(e){x.clinicProfile=e;const n=l(e),t=r(e),a=String(e?.clinic_id||"").trim()||"sin-clinic-id",o=String(e?.branding?.city||"").trim(),i=[c(e,1,{short:!0}),c(e,2,{short:!0})].join(" / ");document.title=`Sala de Espera | ${n}`;const d=document.querySelector(".display-brand strong");d instanceof HTMLElement&&(d.textContent=n);const u=A("displayBrandMeta");u instanceof HTMLElement&&(u.textContent=`Vista pacientes · ${i}`);const p=A("displayClinicMeta");p instanceof HTMLElement&&(p.textContent=[a,o||t].filter(Boolean).join(" · ")),function(e){const n=M(e),t=s(e).slice(0,8),a=A("displayProfileStatus");a instanceof HTMLElement&&(a.dataset.state="alert"===n.state?"alert":"ready"===n.state?"ready":"warning",a.textContent="alert"===n.state?"profile_missing"===n.reason?"Bloqueado · perfil de respaldo · clinic-profile.json remoto ausente":`Bloqueado · ruta fuera de canon · se esperaba ${n.expectedRoute||"/sala-turnos.html"}`:`Perfil remoto verificado · firma ${t} · canon ${n.expectedRoute||"/sala-turnos.html"}`)}(e),x.lastRenderedState?ge(x.lastRenderedState):(de("displayConsultorio1",null,_(1)),de("displayConsultorio2",null,_(2)))})(e),x.bellMuted=b(y,x.clinicProfile,{fallbackValue:!1,normalizeValue:T}),x.lastSnapshot=b(h,x.clinicProfile,{fallbackValue:null,normalizeValue:E}),ie(),x.lastSnapshot,ee(),ie(),W(),$().start({immediate:!1}),L()?le():(ae(x.lastSnapshot,{mode:"startup"})||J("Esperando primera sincronizacion..."),Ce({immediate:!0}))})})}();
+!(function () {
+    'use strict';
+    function e(e) {
+        if (
+            'object' == typeof crypto &&
+            crypto &&
+            'function' == typeof crypto.randomUUID
+        )
+            return `${e}-${crypto.randomUUID()}`;
+        const n = Math.random().toString(36).slice(2, 10);
+        return `${e}-${Date.now().toString(36)}-${n}`;
+    }
+    function n(e, n, t, a) {
+        const o = 'function' == typeof t && t() ? t() : {},
+            i = o.details && 'object' == typeof o.details ? o.details : {};
+        return {
+            surface: e,
+            deviceId: n,
+            instance: String(o.instance || 'main'),
+            deviceLabel: String(o.deviceLabel || ''),
+            appMode: String(o.appMode || 'web'),
+            route:
+                String(o.route || '').trim() ||
+                `${window.location.pathname}${window.location.search}`,
+            status: String(o.status || 'warning'),
+            summary: String(o.summary || ''),
+            networkOnline:
+                'boolean' == typeof o.networkOnline
+                    ? o.networkOnline
+                    : !1 !== navigator.onLine,
+            lastEvent: String(o.lastEvent || a || 'heartbeat'),
+            lastEventAt: String(o.lastEventAt || new Date().toISOString()),
+            details: i,
+        };
+    }
+    const t = Object.freeze({
+        schema: 'turnero-clinic-profile/v1',
+        clinic_id: 'default-clinic',
+        branding: {
+            name: 'Piel en Armonia',
+            short_name: 'Piel en Armonia',
+            city: 'Quito',
+            base_url: '',
+        },
+        consultorios: {
+            c1: { label: 'Consultorio 1', short_label: 'C1' },
+            c2: { label: 'Consultorio 2', short_label: 'C2' },
+        },
+        surfaces: {
+            admin: {
+                enabled: !0,
+                label: 'Admin web',
+                route: '/admin.html#queue',
+            },
+            operator: {
+                enabled: !0,
+                label: 'Operador web',
+                route: '/operador-turnos.html',
+            },
+            kiosk: {
+                enabled: !0,
+                label: 'Kiosco web',
+                route: '/kiosco-turnos.html',
+            },
+            display: {
+                enabled: !0,
+                label: 'Sala web',
+                route: '/sala-turnos.html',
+            },
+        },
+        release: {
+            mode: 'web_pilot',
+            admin_mode_default: 'basic',
+            separate_deploy: !0,
+            native_apps_blocking: !1,
+            notes: [],
+        },
+    });
+    let a = null;
+    function o(e, n = '') {
+        return String(e ?? '').trim() || n;
+    }
+    function i(e) {
+        const n = e && 'object' == typeof e ? e : {},
+            a = n.branding && 'object' == typeof n.branding ? n.branding : {},
+            i =
+                n.consultorios && 'object' == typeof n.consultorios
+                    ? n.consultorios
+                    : {},
+            l = n.surfaces && 'object' == typeof n.surfaces ? n.surfaces : {},
+            r = n.release && 'object' == typeof n.release ? n.release : {};
+        return {
+            schema: o(n.schema, t.schema),
+            clinic_id: o(n.clinic_id, t.clinic_id),
+            branding: {
+                name: o(a.name, t.branding.name),
+                short_name: o(a.short_name, o(a.name, t.branding.short_name)),
+                city: o(a.city, t.branding.city),
+                base_url: o(a.base_url, t.branding.base_url),
+            },
+            consultorios: {
+                c1: {
+                    label: o(i?.c1?.label, t.consultorios.c1.label),
+                    short_label: o(
+                        i?.c1?.short_label,
+                        t.consultorios.c1.short_label
+                    ),
+                },
+                c2: {
+                    label: o(i?.c2?.label, t.consultorios.c2.label),
+                    short_label: o(
+                        i?.c2?.short_label,
+                        t.consultorios.c2.short_label
+                    ),
+                },
+            },
+            surfaces: {
+                admin: {
+                    enabled:
+                        'boolean' != typeof l?.admin?.enabled ||
+                        l.admin.enabled,
+                    label: o(l?.admin?.label, t.surfaces.admin.label),
+                    route: o(l?.admin?.route, t.surfaces.admin.route),
+                },
+                operator: {
+                    enabled:
+                        'boolean' != typeof l?.operator?.enabled ||
+                        l.operator.enabled,
+                    label: o(l?.operator?.label, t.surfaces.operator.label),
+                    route: o(l?.operator?.route, t.surfaces.operator.route),
+                },
+                kiosk: {
+                    enabled:
+                        'boolean' != typeof l?.kiosk?.enabled ||
+                        l.kiosk.enabled,
+                    label: o(l?.kiosk?.label, t.surfaces.kiosk.label),
+                    route: o(l?.kiosk?.route, t.surfaces.kiosk.route),
+                },
+                display: {
+                    enabled:
+                        'boolean' != typeof l?.display?.enabled ||
+                        l.display.enabled,
+                    label: o(l?.display?.label, t.surfaces.display.label),
+                    route: o(l?.display?.route, t.surfaces.display.route),
+                },
+            },
+            release: {
+                mode: o(r.mode, t.release.mode),
+                admin_mode_default:
+                    'expert' ===
+                    o(r.admin_mode_default, t.release.admin_mode_default)
+                        ? 'expert'
+                        : 'basic',
+                separate_deploy:
+                    'boolean' != typeof r.separate_deploy || r.separate_deploy,
+                native_apps_blocking:
+                    'boolean' == typeof r.native_apps_blocking &&
+                    r.native_apps_blocking,
+                notes: Array.isArray(r.notes)
+                    ? r.notes.map((e) => o(e)).filter(Boolean)
+                    : [],
+            },
+        };
+    }
+    function l(e) {
+        return o(e?.branding?.name, t.branding.name);
+    }
+    function r(e) {
+        return o(e?.branding?.short_name, l(e));
+    }
+    function s(e) {
+        const n = i(e);
+        return (function (e) {
+            let n = 2166136261;
+            for (let t = 0; t < e.length; t += 1)
+                ((n ^= e.charCodeAt(t)), (n = Math.imul(n, 16777619)));
+            return (n >>> 0).toString(16).padStart(8, '0');
+        })(
+            [
+                n.clinic_id,
+                n.branding.base_url,
+                n.consultorios.c1.label,
+                n.consultorios.c1.short_label,
+                n.consultorios.c2.label,
+                n.consultorios.c2.short_label,
+                n.surfaces.admin.enabled ? '1' : '0',
+                n.surfaces.admin.route,
+                n.surfaces.operator.enabled ? '1' : '0',
+                n.surfaces.operator.route,
+                n.surfaces.kiosk.enabled ? '1' : '0',
+                n.surfaces.kiosk.route,
+                n.surfaces.display.enabled ? '1' : '0',
+                n.surfaces.display.route,
+                n.release.mode,
+                n.release.admin_mode_default,
+                n.release.separate_deploy ? '1' : '0',
+                n.release.native_apps_blocking ? '1' : '0',
+            ].join('|')
+        );
+    }
+    function c(e, n, a = {}) {
+        const i = Boolean(a.short),
+            l = 2 === Number(n || 0) ? 'c2' : 'c1',
+            r = t.consultorios[l],
+            s =
+                e?.consultorios && 'object' == typeof e.consultorios
+                    ? e.consultorios[l]
+                    : null;
+        return i ? o(s?.short_label, r.short_label) : o(s?.label, r.label);
+    }
+    function d(e) {
+        const n = o(e);
+        if (!n) return '';
+        try {
+            const e = new URL(n, 'https://turnero.local');
+            return `${e.pathname}${e.hash || ''}` || '/';
+        } catch (e) {
+            return n;
+        }
+    }
+    function u(e, n, a = {}) {
+        const l = i(e),
+            c = (function (e) {
+                return {
+                    source:
+                        'fallback_default' ===
+                        String(e?.runtime_meta?.source || 'remote')
+                            .trim()
+                            .toLowerCase()
+                            ? 'fallback_default'
+                            : 'remote',
+                    profileFingerprint: String(
+                        e?.runtime_meta?.profileFingerprint || s(e)
+                    ).trim(),
+                };
+            })(e),
+            u = String(n).trim().toLowerCase(),
+            p = l.surfaces[u] || t.surfaces.operator,
+            m = !1 !== p.enabled,
+            f = d(p.route),
+            b = (function (e = {}) {
+                return o(e.currentRoute)
+                    ? d(e.currentRoute)
+                    : 'undefined' != typeof window &&
+                        window.location &&
+                        'string' == typeof window.location.pathname
+                      ? d(
+                            `${window.location.pathname || ''}${window.location.hash || ''}`
+                        )
+                      : '';
+            })(a),
+            g = '' === f || '' === b || f === b;
+        return m
+            ? 'remote' !== c.source
+                ? {
+                      surface: u,
+                      enabled: m,
+                      expectedRoute: f,
+                      currentRoute: b,
+                      routeMatches: g,
+                      state: 'alert',
+                      label: p.label,
+                      detail: 'No se pudo cargar clinic-profile.json; la superficie quedó con perfil de respaldo y no puede operar como piloto.',
+                      reason: 'profile_missing',
+                  }
+                : g
+                  ? {
+                        surface: u,
+                        enabled: m,
+                        expectedRoute: f,
+                        currentRoute: b,
+                        routeMatches: g,
+                        state: 'ready',
+                        label: p.label,
+                        detail: `Ruta canónica verificada: ${f || b || 'sin ruta'}.`,
+                        reason: 'ready',
+                    }
+                  : {
+                        surface: u,
+                        enabled: m,
+                        expectedRoute: f,
+                        currentRoute: b,
+                        routeMatches: g,
+                        state: 'alert',
+                        label: p.label,
+                        detail: `La ruta activa (${b || 'sin ruta'}) no coincide con la canónica (${f || 'sin ruta declarada'}).`,
+                        reason: 'route_mismatch',
+                    }
+            : {
+                  surface: u,
+                  enabled: m,
+                  expectedRoute: f,
+                  currentRoute: b,
+                  routeMatches: !1,
+                  state: 'alert',
+                  label: p.label,
+                  detail: `${p.label} está deshabilitada en el perfil de ${r(l)}.`,
+                  reason: 'disabled',
+              };
+    }
+    const p = 'turnero-clinic-storage/v1';
+    function m(e) {
+        if ('string' != typeof e || !e.trim()) return null;
+        try {
+            const n = JSON.parse(e);
+            if (!n || 'object' != typeof n || Array.isArray(n)) return null;
+            if (
+                n.values &&
+                'object' == typeof n.values &&
+                !Array.isArray(n.values)
+            )
+                return {
+                    schema: String(n.schema || '').trim() || p,
+                    values: n.values,
+                };
+        } catch (e) {
+            return null;
+        }
+        return null;
+    }
+    function f(e) {
+        const n = i(e);
+        return String(n?.clinic_id || '').trim() || 'default-clinic';
+    }
+    function b(e, n, t = {}) {
+        const a =
+                'function' == typeof t.normalizeValue
+                    ? t.normalizeValue
+                    : (e) => e,
+            o = Object.prototype.hasOwnProperty.call(t, 'fallbackValue')
+                ? t.fallbackValue
+                : null,
+            i = f(n);
+        try {
+            const n = localStorage.getItem(String(e || ''));
+            if (null === n) return o;
+            const t = m(n);
+            return t
+                ? Object.prototype.hasOwnProperty.call(t.values, i)
+                    ? a(t.values[i], o)
+                    : o
+                : a(n, o);
+        } catch (e) {
+            return o;
+        }
+    }
+    function g(e, n, t) {
+        const a = f(n),
+            o = String(e || '');
+        if (!o) return !1;
+        try {
+            const e = m(localStorage.getItem(o)) || { schema: p, values: {} };
+            return (
+                (e.values[a] = t),
+                localStorage.setItem(o, JSON.stringify(e)),
+                !0
+            );
+        } catch (e) {
+            return !1;
+        }
+    }
+    const y = 'queueDisplayBellMuted',
+        h = 'queueDisplayLastSnapshot',
+        S = 'displayAnnouncementInlineStyles',
+        v = 'displayStarInlineStyles',
+        w = 'display-bell-flash';
+    (document.documentElement.setAttribute('data-ops-tone', 'dark'),
+        document.body?.setAttribute('data-ops-tone', 'dark'));
+    const x = {
+        lastCalledSignature: '',
+        callBaselineReady: !1,
+        audioContext: null,
+        pollingId: 0,
+        clockId: 0,
+        pollingEnabled: !1,
+        failureStreak: 0,
+        refreshBusy: !1,
+        manualRefreshBusy: !1,
+        lastHealthySyncAt: 0,
+        bellMuted: !1,
+        lastSnapshot: null,
+        connectionState: 'paused',
+        lastConnectionMessage: '',
+        lastRenderedSignature: '',
+        bellFlashId: 0,
+        lastBellAt: 0,
+        lastBellBlockedHintAt: 0,
+        bellPrimed: !1,
+        lastBellSource: '',
+        lastBellOutcome: 'idle',
+        clinicProfile: null,
+        lastRenderedState: null,
+    };
+    let k = null;
+    function C(e, n = {}) {
+        try {
+            window.dispatchEvent(
+                new CustomEvent('piel:queue-ops', {
+                    detail: {
+                        surface: 'display',
+                        event: String(e || 'unknown'),
+                        at: new Date().toISOString(),
+                        ...n,
+                    },
+                })
+            );
+        } catch (e) {}
+    }
+    function A(e) {
+        return document.getElementById(e);
+    }
+    function _(e) {
+        return 1 !== Number(e || 0) && 2 !== Number(e || 0)
+            ? 'Recepcion'
+            : c(x.clinicProfile, e);
+    }
+    function M(e = x.clinicProfile) {
+        return u(e, 'display');
+    }
+    function L() {
+        return 'alert' === M().state;
+    }
+    function T(e, n = !1) {
+        return (
+            !0 === e ||
+            1 === e ||
+            '1' === e ||
+            'true' === e ||
+            (!1 !== e && 0 !== e && '0' !== e && 'false' !== e && Boolean(n))
+        );
+    }
+    function E(e) {
+        const n = (function (e) {
+            if (!e) return null;
+            if ('object' == typeof e) return e;
+            if ('string' != typeof e || !e.trim()) return null;
+            try {
+                const n = JSON.parse(e);
+                return n && 'object' == typeof n ? n : null;
+            } catch (e) {
+                return null;
+            }
+        })(e);
+        if (!n || Array.isArray(n)) return null;
+        const t = Date.parse(String(n.savedAt || ''));
+        return Number.isFinite(t)
+            ? Date.now() - t > 216e5
+                ? null
+                : { savedAt: new Date(t).toISOString(), data: te(n.data || {}) }
+            : null;
+    }
+    function B() {
+        const e =
+            `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
+        return e.includes('android') ||
+            e.includes('google tv') ||
+            e.includes('aft')
+            ? 'android_tv'
+            : 'web';
+    }
+    function N() {
+        const e = String(x.connectionState || 'paused'),
+            n = Boolean(x.lastHealthySyncAt),
+            t = M(),
+            a = String(x.clinicProfile?.clinic_id || '').trim(),
+            o = String(
+                x.clinicProfile?.branding?.name ||
+                    x.clinicProfile?.branding?.short_name ||
+                    ''
+            ).trim(),
+            i = s(x.clinicProfile),
+            l = String(
+                x.clinicProfile?.runtime_meta?.source || 'remote'
+            ).trim();
+        let r = 'warning',
+            c = 'Sala TV pendiente de validación.';
+        return (
+            'alert' === t.state
+                ? ((r = 'alert'), (c = t.detail))
+                : 'offline' === e
+                  ? ((r = 'alert'),
+                    (c =
+                        'Sala TV sin conexión; usa respaldo local y confirma llamados manuales.'))
+                  : x.bellMuted
+                    ? ((r = 'warning'),
+                      (c =
+                          'La campanilla está en silencio; reactivarla antes de operar.'))
+                    : 'blocked' !== x.lastBellOutcome && x.bellPrimed
+                      ? 'live' === e &&
+                        n &&
+                        ((r = 'ready'),
+                        (c =
+                            'Sala TV lista: cola en vivo, audio activo y respaldo local disponible.'))
+                      : ((r = 'alert'),
+                        (c =
+                            'La TV no confirmó audio; repite la prueba de campanilla.')),
+            {
+                instance: 'main',
+                deviceLabel: 'Sala TV TCL C655',
+                appMode: B(),
+                status: r,
+                summary: c,
+                networkOnline: !1 !== navigator.onLine,
+                lastEvent:
+                    'played' === x.lastBellOutcome
+                        ? 'bell_ok'
+                        : 'blocked' === x.lastBellOutcome
+                          ? 'bell_blocked'
+                          : 'heartbeat',
+                lastEventAt:
+                    x.lastBellAt > 0
+                        ? new Date(x.lastBellAt).toISOString()
+                        : new Date().toISOString(),
+                details: {
+                    connection: e,
+                    bellMuted: Boolean(x.bellMuted),
+                    bellPrimed: Boolean(x.bellPrimed),
+                    bellOutcome: String(x.lastBellOutcome || 'idle'),
+                    healthySync: n,
+                    clinicId: a,
+                    clinicName: o,
+                    profileSource: l,
+                    profileFingerprint: i,
+                    surfaceContractState: String(t.state || ''),
+                    surfaceRouteExpected: String(t.expectedRoute || ''),
+                    surfaceRouteCurrent: String(t.currentRoute || ''),
+                },
+            }
+        );
+    }
+    function $() {
+        return (
+            k ||
+            ((k = (function ({
+                surface: t,
+                intervalMs: a = 15e3,
+                getPayload: o,
+            } = {}) {
+                const i = (function (e) {
+                        const n = String(e || '')
+                            .trim()
+                            .toLowerCase();
+                        return 'sala_tv' === n ? 'display' : n || 'operator';
+                    })(t),
+                    l = (function (n) {
+                        const t = `queueSurfaceDeviceIdV1:${n}`;
+                        try {
+                            const a = localStorage.getItem(t);
+                            if (a) return a;
+                            const o = e(n);
+                            return (localStorage.setItem(t, o), o);
+                        } catch (t) {
+                            return e(n);
+                        }
+                    })(i),
+                    r = Math.max(5e3, Number(a || 15e3));
+                let s = 0,
+                    c = !1,
+                    d = 0,
+                    u = !1;
+                async function p(e = 'interval', { keepalive: t = !1 } = {}) {
+                    if (c) return !1;
+                    c = !0;
+                    try {
+                        return (
+                            !!(
+                                await fetch(
+                                    `/api.php?resource=${encodeURIComponent('queue-surface-heartbeat')}`,
+                                    {
+                                        method: 'POST',
+                                        credentials: 'same-origin',
+                                        keepalive: t,
+                                        headers: {
+                                            Accept: 'application/json',
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify(n(i, l, o, e)),
+                                    }
+                                )
+                            ).ok && ((d = Date.now()), !0)
+                        );
+                    } catch (e) {
+                        return !1;
+                    } finally {
+                        c = !1;
+                    }
+                }
+                function m() {
+                    'visible' === document.visibilityState && p('visible');
+                }
+                function f() {
+                    p('online');
+                }
+                function b() {
+                    p('unload', { keepalive: !0 });
+                }
+                function g() {
+                    (s && (window.clearInterval(s), (s = 0)),
+                        u &&
+                            ((u = !1),
+                            document.removeEventListener('visibilitychange', m),
+                            window.removeEventListener('online', f),
+                            window.removeEventListener('beforeunload', b)));
+                }
+                return {
+                    start: function ({ immediate: e = !0 } = {}) {
+                        (g(),
+                            u ||
+                                ((u = !0),
+                                document.addEventListener(
+                                    'visibilitychange',
+                                    m
+                                ),
+                                window.addEventListener('online', f),
+                                window.addEventListener('beforeunload', b)),
+                            e && p('boot'),
+                            (s = window.setInterval(() => {
+                                'hidden' !== document.visibilityState &&
+                                    p('interval');
+                            }, r)));
+                    },
+                    stop: g,
+                    notify: function (e = 'state_change') {
+                        Date.now() - d < 4e3 || p(e);
+                    },
+                    beatNow: (e = 'manual') => p(e),
+                    getDeviceId: () => l,
+                };
+            })({ surface: 'display', intervalMs: 15e3, getPayload: N })),
+            k)
+        );
+    }
+    function R(e) {
+        return String(e || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+    function H(e) {
+        const n = String(e || '')
+            .trim()
+            .toUpperCase();
+        return (n && n.replace(/[^A-Z0-9-]/g, '')) || '--';
+    }
+    function I(e) {
+        const n = String(e || '').trim();
+        if (!n) return '--';
+        const t = n
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Za-z0-9\s-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (!t) return '--';
+        const a = t.split(/[\s-]+/).filter(Boolean);
+        let o = '';
+        if (a.length >= 2)
+            o = `${String(a[0] || '').charAt(0)}${String(a[a.length - 1] || '').charAt(0)}`;
+        else if (1 === a.length) {
+            const e = String(a[0] || '').replace(/[^A-Za-z0-9]/g, '');
+            if (!e) return '--';
+            o = e.length <= 3 && e === e.toUpperCase() ? e : e.slice(0, 2);
+        }
+        const i = o.toUpperCase().trim();
+        return i ? i.slice(0, 3) : '--';
+    }
+    function P(e, n) {
+        if (!e || 'object' != typeof e || !Array.isArray(n)) return [];
+        for (const t of n) if (t && Array.isArray(e[t])) return e[t];
+        return [];
+    }
+    function O(e, n) {
+        if (!e || 'object' != typeof e || !Array.isArray(n)) return null;
+        for (const t of n) {
+            if (!t) continue;
+            const n = e[t];
+            if (n && 'object' == typeof n && !Array.isArray(n)) return n;
+        }
+        return null;
+    }
+    function D(e, n, t = 0) {
+        if (!e || 'object' != typeof e || !Array.isArray(n))
+            return Number(t || 0);
+        for (const t of n) {
+            if (!t) continue;
+            const n = Number(e[t]);
+            if (Number.isFinite(n)) return n;
+        }
+        return Number(t || 0);
+    }
+    function j(e) {
+        const n = e && 'object' == typeof e ? e : {},
+            t = O(n, ['counts']) || {},
+            a = D(n, ['waitingCount', 'waiting_count'], Number.NaN),
+            o = D(n, ['calledCount', 'called_count'], Number.NaN);
+        let i = P(n, [
+            'callingNow',
+            'calling_now',
+            'calledTickets',
+            'called_tickets',
+        ]);
+        if (0 === i.length) {
+            const e = O(n, [
+                'callingNowByConsultorio',
+                'calling_now_by_consultorio',
+            ]);
+            e && (i = Object.values(e).filter(Boolean));
+        }
+        const l = P(n, [
+                'nextTickets',
+                'next_tickets',
+                'waitingTickets',
+                'waiting_tickets',
+            ]),
+            r = Number.isFinite(a)
+                ? a
+                : D(t, ['waiting', 'waiting_count'], l.length),
+            s = Number.isFinite(o)
+                ? o
+                : D(t, ['called', 'called_count'], i.length);
+        return {
+            updatedAt:
+                String(n.updatedAt || n.updated_at || '').trim() ||
+                new Date().toISOString(),
+            waitingCount: Math.max(0, Number(r || 0)),
+            calledCount: Math.max(0, Number(s || 0)),
+            callingNow: Array.isArray(i)
+                ? i.map((e) => ({
+                      ...e,
+                      id: Number(e?.id || e?.ticket_id || 0) || 0,
+                      ticketCode: H(e?.ticketCode || e?.ticket_code || '--'),
+                      patientInitials: I(
+                          e?.patientInitials || e?.patient_initials || '--'
+                      ),
+                      assignedConsultorio:
+                          Number(
+                              e?.assignedConsultorio ??
+                                  e?.assigned_consultorio ??
+                                  0
+                          ) || null,
+                      calledAt: String(e?.calledAt || e?.called_at || ''),
+                  }))
+                : [],
+            nextTickets: Array.isArray(l)
+                ? l.map((e, n) => ({
+                      ...e,
+                      id: Number(e?.id || e?.ticket_id || 0) || 0,
+                      ticketCode: H(e?.ticketCode || e?.ticket_code || '--'),
+                      patientInitials: I(
+                          e?.patientInitials || e?.patient_initials || '--'
+                      ),
+                      position:
+                          Number(e?.position || 0) > 0
+                              ? Number(e.position)
+                              : n + 1,
+                  }))
+                : [],
+        };
+    }
+    function q(e, n) {
+        const t = A('displayConnectionState');
+        if (!t) return;
+        const a = String(e || 'live').toLowerCase(),
+            o = {
+                live: 'Conectado',
+                reconnecting: 'Reconectando',
+                offline: 'Sin conexion',
+                paused: 'En pausa',
+            },
+            i = String(n || '').trim() || o[a] || o.live,
+            l = a !== x.connectionState || i !== x.lastConnectionMessage;
+        ((x.connectionState = a),
+            (x.lastConnectionMessage = i),
+            (t.dataset.state = a),
+            (t.textContent = i),
+            l && C('connection_state', { state: a, message: i }),
+            W());
+    }
+    function V() {
+        let e = A('displayOpsHint');
+        if (e) return e;
+        const n = A('displayUpdatedAt');
+        return n?.parentElement
+            ? ((e = document.createElement('span')),
+              (e.id = 'displayOpsHint'),
+              (e.className = 'display-updated-at'),
+              (e.textContent = 'Estado operativo: inicializando...'),
+              n.insertAdjacentElement('afterend', e),
+              e)
+            : null;
+    }
+    function z() {
+        if (document.getElementById(v)) return;
+        const e = document.createElement('style');
+        ((e.id = v),
+            (e.textContent = `\n        body[data-display-mode='star'] .display-header {\n            border-bottom-color: color-mix(in srgb, var(--accent) 18%, var(--border));\n            box-shadow: 0 10px 32px rgb(16 36 61 / 10%);\n        }\n        body[data-display-mode='star'] .display-brand strong {\n            letter-spacing: -0.02em;\n        }\n        body[data-display-mode='star'] .display-privacy-pill {\n            width: fit-content;\n            border: 1px solid color-mix(in srgb, var(--accent) 24%, #fff 76%);\n            border-radius: 999px;\n            padding: 0.22rem 0.66rem;\n            background: color-mix(in srgb, var(--accent-soft) 90%, #fff 10%);\n            color: color-mix(in srgb, var(--accent) 68%, #0f172a 32%);\n            font-size: 0.83rem;\n            font-weight: 600;\n            line-height: 1.3;\n        }\n        body[data-display-mode='star'] .display-layout {\n            gap: 1.1rem;\n        }\n        body[data-display-mode='star'] .display-panel {\n            border-radius: 22px;\n            padding: 1.12rem;\n        }\n        body[data-display-mode='star'] .display-next-list li {\n            min-height: 68px;\n        }\n        #displayMetrics {\n            margin: 0.7rem 1.35rem 0;\n            display: flex;\n            flex-wrap: wrap;\n            gap: 0.56rem;\n        }\n        .display-metric-chip {\n            border: 1px solid var(--border);\n            border-radius: 12px;\n            padding: 0.36rem 0.7rem;\n            background: var(--surface-soft);\n            color: var(--muted);\n            font-size: 0.9rem;\n            font-weight: 600;\n        }\n        .display-metric-chip strong {\n            color: var(--text);\n            font-size: 1.02rem;\n            margin-left: 0.28rem;\n        }\n        .display-metric-chip[data-kind='active'] {\n            border-color: color-mix(in srgb, var(--accent) 32%, #fff 68%);\n            background: color-mix(in srgb, var(--accent-soft) 88%, #fff 12%);\n            color: color-mix(in srgb, var(--accent) 68%, #0f172a 32%);\n        }\n        .display-metric-chip[data-kind='active'] strong {\n            color: var(--accent);\n        }\n        #displayAnnouncement .display-announcement-support {\n            margin: 0.24rem 0 0;\n            color: var(--muted);\n            font-size: clamp(0.98rem, 1.45vw, 1.15rem);\n            font-weight: 500;\n            line-height: 1.3;\n        }\n        #displayAnnouncement.is-live .display-announcement-support {\n            color: color-mix(in srgb, var(--accent) 60%, var(--muted) 40%);\n        }\n        body.${w} .display-header {\n            box-shadow:\n                0 0 0 2px color-mix(in srgb, var(--accent) 34%, #fff 66%),\n                0 14px 34px rgb(16 36 61 / 18%);\n        }\n        body.${w} #displayAnnouncement {\n            border-color: color-mix(in srgb, var(--accent) 45%, #fff 55%);\n            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, #fff 72%);\n            transform: translateY(-1px);\n        }\n        body.${w} .display-called-card.is-live {\n            border-color: color-mix(in srgb, var(--accent) 32%, #fff 68%);\n            box-shadow: 0 12px 24px rgb(16 36 61 / 14%);\n        }\n        @media (max-width: 720px) {\n            #displayMetrics {\n                margin: 0.56rem 0.9rem 0;\n            }\n        }\n    `),
+            document.head.appendChild(e));
+    }
+    function F() {
+        let e = A('displayAnnouncement');
+        if (e instanceof HTMLElement) return e;
+        const n = document.querySelector('.display-layout');
+        return n instanceof HTMLElement
+            ? ((function () {
+                  if (document.getElementById(S)) return;
+                  const e = document.createElement('style');
+                  ((e.id = S),
+                      (e.textContent =
+                          '\n        #displayAnnouncement {\n            margin: 0.75rem 1.35rem 0;\n            padding: 1rem 1.2rem;\n            border-radius: 18px;\n            border: 1px solid color-mix(in srgb, var(--accent) 28%, #fff 72%);\n            background: linear-gradient(120deg, color-mix(in srgb, var(--accent-soft) 92%, #fff 8%), #fff);\n            box-shadow: 0 12px 24px rgb(16 36 61 / 11%);\n        }\n        #displayAnnouncement .display-announcement-label {\n            margin: 0;\n            color: var(--muted);\n            font-size: 0.96rem;\n            font-weight: 600;\n            letter-spacing: 0.02em;\n        }\n        #displayAnnouncement .display-announcement-text {\n            margin: 0.24rem 0 0;\n            font-size: clamp(1.34rem, 2.5vw, 2.15rem);\n            line-height: 1.18;\n            font-weight: 700;\n            letter-spacing: 0.01em;\n            color: var(--text);\n        }\n        #displayAnnouncement.is-live .display-announcement-text {\n            color: var(--accent);\n        }\n        #displayAnnouncement.is-bell {\n            border-color: color-mix(in srgb, var(--accent) 40%, #fff 60%);\n            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, #fff 78%);\n        }\n        #displayAnnouncement.is-idle {\n            border-color: var(--border);\n            background: linear-gradient(160deg, var(--surface-soft), #fff);\n        }\n        #displayAnnouncement.is-blocked {\n            border-color: color-mix(in srgb, var(--danger) 50%, #fff 50%);\n            background:\n                linear-gradient(160deg, rgb(239 107 107 / 14%), rgb(255 255 255 / 5%)),\n                var(--surface-soft);\n        }\n        #displayAnnouncement.is-blocked .display-announcement-text {\n            color: #ffd7d7;\n        }\n        #displayAnnouncement.is-blocked .display-announcement-support {\n            color: #ffd7d7;\n        }\n        @media (max-width: 720px) {\n            #displayAnnouncement {\n                margin: 0.6rem 0.9rem 0;\n            }\n        }\n        @media (prefers-reduced-motion: reduce) {\n            #displayAnnouncement {\n                transition: none !important;\n            }\n        }\n    '),
+                      document.head.appendChild(e));
+              })(),
+              z(),
+              (e = document.createElement('section')),
+              (e.id = 'displayAnnouncement'),
+              (e.className = 'display-announcement is-idle'),
+              e.setAttribute('role', 'status'),
+              e.setAttribute('aria-live', 'assertive'),
+              e.setAttribute('aria-atomic', 'true'),
+              (e.innerHTML =
+                  '\n        <p class="display-announcement-label">Llamando ahora</p>\n        <p class="display-announcement-text">Esperando siguiente llamado...</p>\n        <p class="display-announcement-support">Consulta la pantalla para el consultorio asignado.</p>\n    '),
+              n.insertAdjacentElement('beforebegin', e),
+              e)
+            : null;
+    }
+    function U(e) {
+        const n = F();
+        if (!(n instanceof HTMLElement)) return;
+        const t = n.querySelector('.display-announcement-text'),
+            a = n.querySelector('.display-announcement-support');
+        if (!(t instanceof HTMLElement)) return;
+        if (!e) {
+            (n.classList.add('is-idle'),
+                n.classList.remove('is-live'),
+                n.classList.remove('is-blocked'),
+                delete n.dataset.consultorio);
+            const e = 'Esperando siguiente llamado...',
+                o = 'Consulta la pantalla para el consultorio asignado.';
+            return (
+                t.textContent !== e &&
+                    ((t.textContent = e),
+                    C('announcement_update', { mode: 'idle' })),
+                void (
+                    a instanceof HTMLElement &&
+                    a.textContent !== o &&
+                    (a.textContent = o)
+                )
+            );
+        }
+        const o = Number(e?.assignedConsultorio || 0),
+            i = _(o),
+            l = H(e?.ticketCode || '--'),
+            r = `${i} · Turno ${l}`,
+            s = `Paciente ${I(e?.patientInitials || '--')}: pasa con calma al ${i}.`;
+        (n.classList.remove('is-idle'),
+            n.classList.add('is-live'),
+            n.classList.remove('is-blocked'),
+            (n.dataset.consultorio = String(o || '')),
+            t.textContent !== r &&
+                ((t.textContent = r),
+                C('announcement_update', {
+                    mode: 'live',
+                    consultorio: o,
+                    ticketCode: l,
+                })),
+            a instanceof HTMLElement &&
+                a.textContent !== s &&
+                (a.textContent = s));
+    }
+    function J(e) {
+        const n = V();
+        n && (n.textContent = String(e || '').trim() || 'Estado operativo');
+    }
+    function W() {
+        const e = A('displaySetupTitle'),
+            n = A('displaySetupSummary'),
+            t = A('displaySetupChecks');
+        if (
+            !(
+                e instanceof HTMLElement &&
+                n instanceof HTMLElement &&
+                t instanceof HTMLElement
+            )
+        )
+            return;
+        const a = String(x.connectionState || 'paused'),
+            o = String(x.lastConnectionMessage || 'Sincronizacion pendiente'),
+            i = x.lastBellAt > 0 ? se(Date.now() - x.lastBellAt) : '',
+            l = u(x.clinicProfile, 'display'),
+            r = Date.parse(String(x.lastSnapshot?.savedAt || '')),
+            s = Number.isFinite(r) ? se(Date.now() - r) : '',
+            c = [
+                {
+                    label: 'Perfil de clínica',
+                    state: 'alert' === l.state ? 'danger' : 'ready',
+                    detail: l.detail,
+                },
+                {
+                    label: 'Conexion y cola',
+                    state:
+                        'live' === a
+                            ? x.lastHealthySyncAt
+                                ? 'ready'
+                                : 'warning'
+                            : 'offline' === a
+                              ? 'danger'
+                              : 'warning',
+                    detail:
+                        'live' === a
+                            ? x.lastHealthySyncAt
+                                ? `Panel en vivo (${ce()}).`
+                                : 'Conectado, pero esperando una sincronizacion saludable.'
+                            : o,
+                },
+                {
+                    label: 'Audio del TV',
+                    state: x.bellPrimed ? 'ready' : 'warning',
+                    detail: x.bellPrimed
+                        ? 'Audio desbloqueado para WebView/navegador.'
+                        : 'Toca "Probar campanilla" una vez para habilitar audio en la TCL C655.',
+                },
+                {
+                    label: 'Campanilla',
+                    state: x.bellMuted
+                        ? 'warning'
+                        : 'played' === x.lastBellOutcome
+                          ? 'ready'
+                          : 'blocked' === x.lastBellOutcome
+                            ? 'danger'
+                            : 'warning',
+                    detail: x.bellMuted
+                        ? 'Esta en silencio. Reactivala antes de operar la sala.'
+                        : 'played' === x.lastBellOutcome
+                          ? `Prueba sonora confirmada${i ? ` · hace ${i}` : ''}.`
+                          : 'blocked' === x.lastBellOutcome
+                            ? 'El audio fue bloqueado. Repite la prueba sonora en la TV.'
+                            : 'Todavia no hay prueba sonora confirmada.',
+                },
+                {
+                    label: 'Respaldo local',
+                    state: Number.isFinite(r) ? 'ready' : 'warning',
+                    detail: Number.isFinite(r)
+                        ? `Ultimo respaldo local ${s} de antiguedad.`
+                        : 'Aun sin snapshot local para contingencia.',
+                },
+            ];
+        let d = 'Finaliza la puesta en marcha',
+            p =
+                'Confirma conexion, audio y campanilla antes de dejar la TV en operacion continua.';
+        ('alert' === l.state
+            ? ((d =
+                  'profile_missing' === l.reason
+                      ? 'Perfil de clínica no cargado'
+                      : 'Ruta del piloto incorrecta'),
+              (p = l.detail))
+            : 'offline' === a
+              ? ((d = 'Sala TV en contingencia'),
+                (p =
+                    'La TV puede seguir mostrando respaldo local, pero el enlace con la cola no esta disponible.'))
+              : x.bellMuted
+                ? ((d = 'Campanilla en silencio'),
+                  (p =
+                      'La campanilla esta apagada. Reactivala antes de iniciar llamados reales.'))
+                : 'blocked' !== x.lastBellOutcome && x.bellPrimed
+                  ? 'played' !== x.lastBellOutcome || x.lastBellAt <= 0
+                      ? ((d = 'Falta probar la campanilla'),
+                        (p =
+                            'Ejecuta "Probar campanilla" y confirma sonido en sala antes de abrir pacientes.'))
+                      : 'live' === a &&
+                        x.lastHealthySyncAt &&
+                        ((d = 'Sala TV lista para llamados'),
+                        (p =
+                            'La cola esta en vivo, la campanilla ya respondio y la TV tiene respaldo local para contingencia.'))
+                  : ((d = 'Falta habilitar audio'),
+                    (p =
+                        'Haz una prueba sonora en la TCL C655 para desbloquear audio y confirmar volumen.')),
+            (e.textContent = d),
+            (n.textContent = p),
+            (t.innerHTML = c
+                .map(
+                    (e) =>
+                        `\n                <article class="display-setup-check" data-state="${R(e.state)}" role="listitem">\n                    <strong>${R(e.label)}</strong>\n                    <span>${R(e.detail)}</span>\n                </article>\n            `
+                )
+                .join('')),
+            (function (e = 'state_change') {
+                $().notify(e);
+            })('setup_status'));
+    }
+    function G() {
+        let e = A('displayMetrics');
+        if (e instanceof HTMLElement) return e;
+        const n = F();
+        return n instanceof HTMLElement
+            ? (z(),
+              (e = document.createElement('section')),
+              (e.id = 'displayMetrics'),
+              (e.className = 'display-metrics'),
+              e.setAttribute('aria-live', 'polite'),
+              (e.innerHTML =
+                  '\n        <span class="display-metric-chip" data-kind="waiting">\n            En cola\n            <strong data-metric="waiting">0</strong>\n        </span>\n        <span class="display-metric-chip" data-kind="active">\n            Llamando\n            <strong data-metric="active">0</strong>\n        </span>\n        <span class="display-metric-chip" data-kind="next">\n            Siguientes\n            <strong data-metric="next">0</strong>\n        </span>\n    '),
+              n.insertAdjacentElement('afterend', e),
+              e)
+            : null;
+    }
+    function K(e, n, t) {
+        if (!(e instanceof HTMLElement)) return;
+        const a = e.querySelector(`[data-metric="${n}"]`);
+        if (!(a instanceof HTMLElement)) return;
+        const o = String(Math.max(0, Number(t || 0)));
+        a.textContent !== o && (a.textContent = o);
+    }
+    function Z(e) {
+        const n = G();
+        if (!(n instanceof HTMLElement)) return;
+        const t = j(e),
+            a = Number(t.waitingCount || 0),
+            o = Array.isArray(t.callingNow) ? t.callingNow.length : 0,
+            i = Array.isArray(t.nextTickets) ? t.nextTickets.length : 0;
+        (K(n, 'waiting', a), K(n, 'active', o), K(n, 'next', i));
+    }
+    function Y() {
+        let e = A('displayManualRefreshBtn');
+        if (e instanceof HTMLButtonElement) return e;
+        const n = document.querySelector('.display-clock-wrap');
+        return n
+            ? ((e = document.createElement('button')),
+              (e.id = 'displayManualRefreshBtn'),
+              (e.type = 'button'),
+              (e.className = 'display-control-btn'),
+              (e.textContent = 'Refrescar panel'),
+              e.setAttribute(
+                  'aria-label',
+                  'Refrescar estado de turnos en pantalla'
+              ),
+              n.appendChild(e),
+              e)
+            : null;
+    }
+    function Q(e) {
+        const n = Y();
+        n instanceof HTMLButtonElement &&
+            ((n.disabled = Boolean(e)),
+            (n.textContent = e ? 'Refrescando...' : 'Refrescar panel'));
+    }
+    function X() {
+        let e = A('displayBellToggleBtn');
+        if (e instanceof HTMLButtonElement) return e;
+        const n = document.querySelector('.display-clock-wrap');
+        return n
+            ? ((e = document.createElement('button')),
+              (e.id = 'displayBellToggleBtn'),
+              (e.type = 'button'),
+              (e.className = 'display-control-btn display-control-btn-muted'),
+              e.setAttribute('aria-label', 'Alternar campanilla de llamados'),
+              n.appendChild(e),
+              e)
+            : null;
+    }
+    function ee() {
+        const e = X();
+        e instanceof HTMLButtonElement &&
+            ((e.textContent = x.bellMuted
+                ? 'Campanilla: Off'
+                : 'Campanilla: On'),
+            (e.dataset.state = x.bellMuted ? 'muted' : 'enabled'),
+            e.setAttribute('aria-pressed', String(x.bellMuted)),
+            (e.title = x.bellMuted
+                ? 'Campanilla en silencio'
+                : 'Campanilla activa'),
+            W());
+    }
+    function ne() {
+        !(function (e, { announce: n = !1 } = {}) {
+            ((x.bellMuted = Boolean(e)),
+                g(y, x.clinicProfile, x.bellMuted ? '1' : '0'),
+                ee(),
+                C('bell_muted_changed', { muted: x.bellMuted, announce: n }),
+                n &&
+                    J(
+                        x.bellMuted
+                            ? 'Campanilla en silencio. Puedes reactivarla con Alt+Shift+M.'
+                            : 'Campanilla activa para nuevos llamados.'
+                    ));
+        })(!x.bellMuted, { announce: !0 });
+    }
+    function te(e) {
+        const n = j(e);
+        return {
+            updatedAt: String(n.updatedAt || new Date().toISOString()),
+            waitingCount: Number(n.waitingCount || 0),
+            calledCount: Number(n.calledCount || 0),
+            callingNow: Array.isArray(n.callingNow) ? n.callingNow : [],
+            nextTickets: Array.isArray(n.nextTickets) ? n.nextTickets : [],
+        };
+    }
+    function ae(e, { mode: n = 'restore' } = {}) {
+        if (L()) return (le(), !1);
+        if (!e?.data) return !1;
+        ge(e.data);
+        const t = Math.max(0, Date.now() - Date.parse(String(e.savedAt || ''))),
+            a = se(t);
+        return (
+            q('reconnecting', 'Respaldo local activo'),
+            J(
+                'startup' === n
+                    ? `Mostrando respaldo local (${a}) mientras conecta.`
+                    : `Sin backend. Mostrando ultimo estado local (${a}).`
+            ),
+            C('snapshot_restored', { mode: n, ageMs: t }),
+            !0
+        );
+    }
+    function oe() {
+        let e = A('displaySnapshotHint');
+        if (e instanceof HTMLElement) return e;
+        const n = V();
+        return n?.parentElement
+            ? ((e = document.createElement('span')),
+              (e.id = 'displaySnapshotHint'),
+              (e.className = 'display-updated-at'),
+              (e.textContent = 'Respaldo: sin datos locales'),
+              n.insertAdjacentElement('afterend', e),
+              e)
+            : null;
+    }
+    function ie() {
+        const e = oe();
+        if (!(e instanceof HTMLElement)) return;
+        if (!x.lastSnapshot?.savedAt)
+            return ((e.textContent = 'Respaldo: sin datos locales'), void W());
+        const n = Date.parse(String(x.lastSnapshot.savedAt || ''));
+        if (!Number.isFinite(n))
+            return ((e.textContent = 'Respaldo: sin datos locales'), void W());
+        ((e.textContent = `Respaldo: ${se(Date.now() - n)} de antiguedad`),
+            W());
+    }
+    function le() {
+        const e = (function () {
+            const e = M();
+            return 'alert' !== e.state
+                ? ''
+                : 'profile_missing' === e.reason
+                  ? 'Pantalla bloqueada: clinic-profile.json remoto ausente. Corrige el perfil y recarga antes de mostrar llamados.'
+                  : `Pantalla bloqueada: la ruta no coincide con el canon del piloto (${e.expectedRoute || '/sala-turnos.html'}). Corrige el acceso antes de usar esta TV.`;
+        })();
+        ((x.lastRenderedState = null),
+            (x.lastRenderedSignature = ''),
+            (x.lastCalledSignature = ''),
+            (x.callBaselineReady = !0),
+            pe(),
+            de('displayConsultorio1', null, _(1)),
+            de('displayConsultorio2', null, _(2)),
+            (function (e) {
+                const n = F();
+                if (!(n instanceof HTMLElement)) return;
+                const t = n.querySelector('.display-announcement-text'),
+                    a = n.querySelector('.display-announcement-support');
+                if (!(t instanceof HTMLElement)) return;
+                const o = 'Pantalla bloqueada',
+                    i =
+                        String(e || '').trim() ||
+                        'Corrige el perfil por clínica antes de usar esta TV.';
+                (n.classList.remove('is-live', 'is-idle'),
+                    n.classList.add('is-blocked'),
+                    delete n.dataset.consultorio,
+                    t.textContent !== o &&
+                        ((t.textContent = o),
+                        C('announcement_update', { mode: 'blocked' })),
+                    a instanceof HTMLElement &&
+                        a.textContent !== i &&
+                        (a.textContent = i));
+            })(e));
+        const n = A('displayNextList');
+        (n &&
+            (n.innerHTML = `<li class="display-empty display-empty-blocked">${R(e || 'Pantalla bloqueada por configuración del piloto.')}</li>`),
+            Z({ waitingCount: 0, callingNow: [], nextTickets: [] }),
+            q('paused', 'Pantalla bloqueada'),
+            J(e));
+    }
+    function re({ announce: e = !1 } = {}) {
+        ((x.lastSnapshot = null),
+            (x.lastRenderedSignature = ''),
+            (function (e, n) {
+                const t = f(n),
+                    a = String(e);
+                if (!a) return !1;
+                try {
+                    const e = m(localStorage.getItem(a));
+                    return e
+                        ? (delete e.values[t],
+                          0 === Object.keys(e.values).length
+                              ? (localStorage.removeItem(a), !0)
+                              : (localStorage.setItem(a, JSON.stringify(e)),
+                                !0))
+                        : (localStorage.removeItem(a), !0);
+                } catch (e) {
+                    return !1;
+                }
+            })(h, x.clinicProfile),
+            ie(),
+            'live' !== x.connectionState &&
+                ((function (e = 'No hay turnos pendientes.') {
+                    ((x.lastRenderedSignature = ''),
+                        (x.lastCalledSignature = ''),
+                        (x.callBaselineReady = !0),
+                        de('displayConsultorio1', null, _(1)),
+                        de('displayConsultorio2', null, _(2)),
+                        U(null));
+                    const n = A('displayNextList');
+                    (n &&
+                        (n.innerHTML = `<li class="display-empty">${R(e)}</li>`),
+                        Z({
+                            waitingCount: 0,
+                            callingNow: [],
+                            nextTickets: [],
+                        }));
+                })('Sin respaldo local disponible.'),
+                !1 === navigator.onLine
+                    ? q('offline', 'Sin conexion')
+                    : q('reconnecting', 'Sin respaldo local')),
+            e &&
+                J(
+                    'Respaldo local limpiado. Esperando datos en vivo del backend.'
+                ),
+            C('snapshot_cleared', { announce: e }));
+    }
+    function se(e) {
+        const n = Math.max(0, Number(e || 0)),
+            t = Math.round(n / 1e3);
+        if (t < 60) return `${t}s`;
+        const a = Math.floor(t / 60),
+            o = t % 60;
+        return o <= 0 ? `${a}m` : `${a}m ${o}s`;
+    }
+    function ce() {
+        return x.lastHealthySyncAt
+            ? `hace ${se(Date.now() - x.lastHealthySyncAt)}`
+            : 'sin sincronizacion confirmada';
+    }
+    function de(e, n, t) {
+        const a = A(e);
+        if (!a) return;
+        if (!n)
+            return void (a.innerHTML = `\n            <article class="display-called-card is-empty">\n                <h3>${t}</h3>\n                <p>Sin llamado activo</p>\n            </article>\n        `);
+        const o = Date.parse(String(n.calledAt || '')),
+            i =
+                Number.isFinite(o) && Date.now() - o <= 8e3
+                    ? 'display-called-card is-live is-fresh'
+                    : 'display-called-card is-live';
+        a.innerHTML = `\n        <article class="${i}">\n            <h3>${t}</h3>\n            <strong>${R(n.ticketCode || '--')}</strong>\n            <span>${R(n.patientInitials || '--')}</span>\n        </article>\n    `;
+    }
+    function ue(e) {
+        return e
+            ? new Set(
+                  String(e)
+                      .split('|')
+                      .map((e) => e.trim())
+                      .filter(Boolean)
+              )
+            : new Set();
+    }
+    function pe() {
+        (x.bellFlashId &&
+            (window.clearTimeout(x.bellFlashId), (x.bellFlashId = 0)),
+            document.body.classList.remove(w));
+        const e = A('displayAnnouncement');
+        e instanceof HTMLElement && e.classList.remove('is-bell');
+    }
+    async function me({ source: e = 'unknown' } = {}) {
+        try {
+            x.audioContext ||
+                (x.audioContext = new (
+                    window.AudioContext || window.webkitAudioContext
+                )());
+            const n = x.audioContext;
+            return (
+                'suspended' === n.state && (await n.resume()),
+                (x.bellPrimed = 'running' === n.state),
+                C('bell_audio_primed', { source: e, running: x.bellPrimed }),
+                W(),
+                x.bellPrimed
+            );
+        } catch (n) {
+            return (
+                (x.bellPrimed = !1),
+                C('bell_audio_primed', { source: e, running: !1 }),
+                W(),
+                !1
+            );
+        }
+    }
+    function fe() {
+        const e = Date.now();
+        (x.lastBellBlockedHintAt > 0 && e - x.lastBellBlockedHintAt < 2e4) ||
+            ((x.lastBellBlockedHintAt = e),
+            (x.lastBellOutcome = 'blocked'),
+            W(),
+            J(
+                'Audio bloqueado por navegador. Toca "Probar campanilla" una vez para habilitar sonido.'
+            ));
+    }
+    async function be({ source: e = 'new_call', force: n = !1 } = {}) {
+        if (L()) return;
+        if (
+            ((function () {
+                const e = document.body;
+                if (!(e instanceof HTMLElement)) return;
+                (pe(), e.offsetWidth, e.classList.add(w));
+                const n = A('displayAnnouncement');
+                (n instanceof HTMLElement && n.classList.add('is-bell'),
+                    (x.bellFlashId = window.setTimeout(() => {
+                        pe();
+                    }, 1300)));
+            })(),
+            x.bellMuted && !n)
+        )
+            return;
+        const t = Date.now();
+        if (!(!n && x.lastBellAt > 0 && t - x.lastBellAt < 1200))
+            try {
+                if (!(await me({ source: e })))
+                    return ((x.lastBellSource = e), void fe());
+                const n = x.audioContext,
+                    t = n.currentTime,
+                    a = n.createOscillator(),
+                    o = n.createGain();
+                ((a.type = 'sine'),
+                    a.frequency.setValueAtTime(932, t),
+                    o.gain.setValueAtTime(1e-4, t),
+                    o.gain.exponentialRampToValueAtTime(0.16, t + 0.02),
+                    o.gain.exponentialRampToValueAtTime(1e-4, t + 0.22),
+                    a.connect(o),
+                    o.connect(n.destination),
+                    a.start(t),
+                    a.stop(t + 0.24),
+                    (x.lastBellAt = Date.now()),
+                    (x.lastBellSource = e),
+                    (x.lastBellOutcome = 'played'),
+                    W(),
+                    C('bell_played', { source: e, muted: x.bellMuted }));
+            } catch (n) {
+                ((x.lastBellSource = e), fe());
+            }
+    }
+    function ge(e) {
+        if (L()) return void le();
+        const n = j(e);
+        x.lastRenderedState = n;
+        const t = (function (e) {
+                const n = j(e),
+                    t = Array.isArray(n.callingNow)
+                        ? n.callingNow.map((e) => ({
+                              id: Number(e?.id || 0),
+                              ticketCode: String(e?.ticketCode || ''),
+                              patientInitials: String(e?.patientInitials || ''),
+                              consultorio: Number(e?.assignedConsultorio || 0),
+                              calledAt: String(e?.calledAt || ''),
+                          }))
+                        : [],
+                    a = Array.isArray(n.nextTickets)
+                        ? n.nextTickets
+                              .slice(0, 8)
+                              .map((e) => ({
+                                  id: Number(e?.id || 0),
+                                  ticketCode: String(e?.ticketCode || ''),
+                                  patientInitials: String(
+                                      e?.patientInitials || ''
+                                  ),
+                                  position: Number(e?.position || 0),
+                              }))
+                        : [],
+                    o = String(n.updatedAt || '');
+                return JSON.stringify({
+                    updatedAt: o,
+                    callingNow: t,
+                    nextTickets: a,
+                });
+            })(n),
+            a = t === x.lastRenderedSignature,
+            o = Array.isArray(n.callingNow) ? n.callingNow : [],
+            i = { 1: null, 2: null };
+        for (const e of o) {
+            const n = Number(e?.assignedConsultorio || 0);
+            (1 !== n && 2 !== n) || (i[n] = e);
+        }
+        const l = (function (e, n) {
+            const t = Array.isArray(e) ? e.filter(Boolean) : [];
+            if (0 === t.length) return null;
+            let a = t[0],
+                o = Number.NEGATIVE_INFINITY;
+            for (const e of t) {
+                const n = Date.parse(String(e?.calledAt || ''));
+                Number.isFinite(n) && n >= o && ((o = n), (a = e));
+            }
+            return Number.isFinite(o) ? a : n[1] || n[2] || a;
+        })(o, i);
+        (a ||
+            (de('displayConsultorio1', i[1], _(1)),
+            de('displayConsultorio2', i[2], _(2)),
+            (function (e) {
+                const n = A('displayNextList');
+                n &&
+                    (Array.isArray(e) && 0 !== e.length
+                        ? (n.innerHTML = e
+                              .slice(0, 8)
+                              .map(
+                                  (e) =>
+                                      `\n                <li>\n                    <span class="next-code">${R(e.ticketCode || '--')}</span>\n                    <span class="next-initials">${R(e.patientInitials || '--')}</span>\n                    <span class="next-position">#${R(e.position || '-')}</span>\n                </li>\n            `
+                              )
+                              .join(''))
+                        : (n.innerHTML =
+                              '<li class="display-empty">No hay turnos pendientes.</li>'));
+            })(n?.nextTickets || []),
+            (function (e) {
+                const n = A('displayUpdatedAt');
+                if (!n) return;
+                const t = j(e),
+                    a = Date.parse(String(t.updatedAt || ''));
+                Number.isFinite(a)
+                    ? (n.textContent = `Actualizado ${new Date(a).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`)
+                    : (n.textContent = 'Actualizacion pendiente');
+            })(n),
+            (x.lastRenderedSignature = t),
+            C('render_update', {
+                callingNowCount: o.length,
+                nextCount: Array.isArray(n?.nextTickets)
+                    ? n.nextTickets.length
+                    : 0,
+            })),
+            U(l),
+            Z(n));
+        const r = (function (e) {
+            return Array.isArray(e) && 0 !== e.length
+                ? e
+                      .map((e) => {
+                          const n = String(e.assignedConsultorio || '-'),
+                              t = Number(e.id || 0),
+                              a = H(e.ticketCode || '--');
+                          return `${n}:${t > 0 ? `id-${t}` : `code-${a}`}`;
+                      })
+                      .sort()
+                      .join('|')
+                : '';
+        })(o);
+        if (!x.callBaselineReady)
+            return (
+                (x.lastCalledSignature = r),
+                void (x.callBaselineReady = !0)
+            );
+        if (r !== x.lastCalledSignature) {
+            const e = ue(x.lastCalledSignature),
+                n = ue(r),
+                t = [];
+            for (const a of n) e.has(a) || t.push(a);
+            (t.length > 0 && be({ source: 'new_call' }),
+                C('called_signature_changed', {
+                    signature: r,
+                    added_count: t.length,
+                }));
+        }
+        x.lastCalledSignature = r;
+    }
+    function ye() {
+        const e = Math.max(0, Number(x.failureStreak || 0)),
+            n = 2500 * Math.pow(2, Math.min(e, 3));
+        return Math.min(15e3, n);
+    }
+    function he() {
+        x.pollingId && (window.clearTimeout(x.pollingId), (x.pollingId = 0));
+    }
+    function Se({ immediate: e = !1 } = {}) {
+        if ((he(), !x.pollingEnabled)) return;
+        const n = e ? 0 : ye();
+        x.pollingId = window.setTimeout(() => {
+            we();
+        }, n);
+    }
+    async function ve() {
+        if (L())
+            return (
+                le(),
+                {
+                    ok: !1,
+                    stale: !1,
+                    blocked: !0,
+                    reason: 'pilot_blocked',
+                    usedSnapshot: !1,
+                }
+            );
+        if (x.refreshBusy) return { ok: !1, stale: !1, reason: 'busy' };
+        x.refreshBusy = !0;
+        try {
+            const e = j(
+                (
+                    await (async function () {
+                        const e = new URLSearchParams();
+                        (e.set('resource', 'queue-state'),
+                            e.set('t', String(Date.now())));
+                        const n = await fetch(`/api.php?${e.toString()}`, {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                headers: { Accept: 'application/json' },
+                            }),
+                            t = await n.text();
+                        let a;
+                        try {
+                            a = t ? JSON.parse(t) : {};
+                        } catch (e) {
+                            throw new Error('Respuesta JSON invalida');
+                        }
+                        if (!n.ok || !1 === a.ok)
+                            throw new Error(a.error || `HTTP ${n.status}`);
+                        return a;
+                    })()
+                ).data || {}
+            );
+            (ge(e),
+                (function (e) {
+                    const n = te(e),
+                        t = { savedAt: new Date().toISOString(), data: n };
+                    ((x.lastSnapshot = t), g(h, x.clinicProfile, t), ie());
+                })(e));
+            const n = (function (e) {
+                const n = j(e),
+                    t = Date.parse(String(n.updatedAt || ''));
+                if (!Number.isFinite(t))
+                    return { stale: !1, missingTimestamp: !0, ageMs: null };
+                const a = Math.max(0, Date.now() - t);
+                return { stale: a >= 3e4, missingTimestamp: !1, ageMs: a };
+            })(e);
+            return {
+                ok: !0,
+                stale: Boolean(n.stale),
+                missingTimestamp: Boolean(n.missingTimestamp),
+                ageMs: n.ageMs,
+                usedSnapshot: !1,
+            };
+        } catch (e) {
+            const n = ae(x.lastSnapshot, { mode: 'restore' });
+            if (!n) {
+                const n = A('displayNextList');
+                n &&
+                    (n.innerHTML = `<li class="display-empty">Sin conexion: ${R(e.message)}</li>`);
+            }
+            return {
+                ok: !1,
+                stale: !1,
+                reason: 'fetch_error',
+                errorMessage: e.message,
+                usedSnapshot: n,
+            };
+        } finally {
+            x.refreshBusy = !1;
+        }
+    }
+    async function we() {
+        if (!x.pollingEnabled) return;
+        if (L()) return void le();
+        if (document.hidden)
+            return (
+                q('paused', 'En pausa (pestana oculta)'),
+                J('Pantalla en pausa por pestana oculta.'),
+                void Se()
+            );
+        if (!1 === navigator.onLine)
+            return (
+                (x.failureStreak += 1),
+                ae(x.lastSnapshot, { mode: 'restore' }) ||
+                    (q('offline', 'Sin conexion'),
+                    J(
+                        'Sin conexion. Mantener llamado por voz desde recepcion hasta recuperar enlace.'
+                    )),
+                void Se()
+            );
+        const e = await ve();
+        if (e.ok && !e.stale)
+            ((x.failureStreak = 0),
+                (x.lastHealthySyncAt = Date.now()),
+                q('live', 'Conectado'),
+                J(`Panel estable (${ce()}).`));
+        else if (e.ok && e.stale) {
+            x.failureStreak += 1;
+            const n = se(e.ageMs || 0);
+            (q('reconnecting', `Watchdog: datos estancados ${n}`),
+                J(`Datos estancados ${n}. Verifica fuente de cola.`));
+        } else {
+            if (((x.failureStreak += 1), e.usedSnapshot)) return void Se();
+            const n = Math.max(1, Math.ceil(ye() / 1e3));
+            (q('reconnecting', `Reconectando en ${n}s`),
+                J(`Conexion inestable. Reintento automatico en ${n}s.`));
+        }
+        Se();
+    }
+    async function xe() {
+        if (!x.manualRefreshBusy)
+            if (L()) le();
+            else {
+                ((x.manualRefreshBusy = !0),
+                    Q(!0),
+                    q('reconnecting', 'Refrescando panel...'));
+                try {
+                    const e = await ve();
+                    if (e.ok && !e.stale)
+                        return (
+                            (x.failureStreak = 0),
+                            (x.lastHealthySyncAt = Date.now()),
+                            q('live', 'Conectado'),
+                            void J(`Sincronizacion manual exitosa (${ce()}).`)
+                        );
+                    if (e.ok && e.stale) {
+                        const n = se(e.ageMs || 0);
+                        return (
+                            q(
+                                'reconnecting',
+                                `Watchdog: datos estancados ${n}`
+                            ),
+                            void J(`Persisten datos estancados (${n}).`)
+                        );
+                    }
+                    if (e.usedSnapshot) return;
+                    const n = Math.max(1, Math.ceil(ye() / 1e3));
+                    (q(
+                        !1 === navigator.onLine ? 'offline' : 'reconnecting',
+                        !1 === navigator.onLine
+                            ? 'Sin conexion'
+                            : `Reconectando en ${n}s`
+                    ),
+                        J(
+                            !1 === navigator.onLine
+                                ? 'Sin internet. Llamado manual temporal.'
+                                : `Refresh manual sin exito. Reintento automatico en ${n}s.`
+                        ));
+                } finally {
+                    ((x.manualRefreshBusy = !1), Q(!1));
+                }
+            }
+    }
+    function ke({ immediate: e = !0 } = {}) {
+        if (((x.pollingEnabled = !0), e))
+            return (q('live', 'Sincronizando...'), void we());
+        Se();
+    }
+    function Ce({ reason: e = 'paused' } = {}) {
+        ((x.pollingEnabled = !1), (x.failureStreak = 0), he());
+        const n = String(e || 'paused').toLowerCase();
+        return 'offline' === n
+            ? (q('offline', 'Sin conexion'),
+              void J('Sin conexion. Mantener protocolo manual de llamados.'))
+            : 'hidden' === n
+              ? (q('paused', 'En pausa (pestana oculta)'),
+                void J('Pantalla oculta. Reanuda al volver al frente.'))
+              : (q('paused', 'En pausa'), void J('Sincronizacion pausada.'));
+    }
+    function Ae() {
+        const e = A('displayClock');
+        e &&
+            (e.textContent = new Date().toLocaleTimeString('es-EC', {
+                hour: '2-digit',
+                minute: '2-digit',
+            }));
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        ((document.body.dataset.displayMode = 'star'),
+            z(),
+            Ae(),
+            (x.clockId = window.setInterval(Ae, 1e3)),
+            V(),
+            oe(),
+            F(),
+            G());
+        const e = Y();
+        e instanceof HTMLButtonElement &&
+            e.addEventListener('click', () => {
+                xe();
+            });
+        const n = X();
+        n instanceof HTMLButtonElement &&
+            n.addEventListener('click', () => {
+                ne();
+            });
+        const o = (function () {
+            let e = A('displayBellTestBtn');
+            if (e instanceof HTMLButtonElement) return e;
+            const n = document.querySelector('.display-clock-wrap');
+            return n
+                ? ((e = document.createElement('button')),
+                  (e.id = 'displayBellTestBtn'),
+                  (e.type = 'button'),
+                  (e.className =
+                      'display-control-btn display-control-btn-muted'),
+                  (e.textContent = 'Probar campanilla'),
+                  e.setAttribute('aria-label', 'Probar campanilla de llamados'),
+                  n.appendChild(e),
+                  e)
+                : null;
+        })();
+        o instanceof HTMLButtonElement &&
+            o.addEventListener('click', () => {
+                (be({ source: 'manual_test', force: !0 }),
+                    J(
+                        'Campanilla de prueba ejecutada. Si no escuchas sonido, revisa audio del equipo/TV.'
+                    ));
+            });
+        const d = (function () {
+            let e = A('displaySnapshotClearBtn');
+            if (e instanceof HTMLButtonElement) return e;
+            const n = document.querySelector('.display-clock-wrap');
+            return n
+                ? ((e = document.createElement('button')),
+                  (e.id = 'displaySnapshotClearBtn'),
+                  (e.type = 'button'),
+                  (e.className =
+                      'display-control-btn display-control-btn-muted'),
+                  (e.textContent = 'Limpiar respaldo'),
+                  e.setAttribute(
+                      'aria-label',
+                      'Limpiar respaldo local del panel'
+                  ),
+                  n.appendChild(e),
+                  e)
+                : null;
+        })();
+        (d instanceof HTMLButtonElement &&
+            d.addEventListener('click', () => {
+                re({ announce: !0 });
+            }),
+            ee(),
+            ie(),
+            W(),
+            q('paused', 'Sincronizacion lista'),
+            J('Cargando perfil de clinica...'));
+        const u = () => {
+            me({ source: 'user_gesture' });
+        };
+        (window.addEventListener('pointerdown', u, { once: !0 }),
+            window.addEventListener('keydown', u, { once: !0 }),
+            document.addEventListener('visibilitychange', () => {
+                document.hidden
+                    ? Ce({ reason: 'hidden' })
+                    : x.clinicProfile && !L() && ke({ immediate: !0 });
+            }),
+            window.addEventListener('online', () => {
+                x.clinicProfile && !L() && ke({ immediate: !0 });
+            }),
+            window.addEventListener('offline', () => {
+                Ce({ reason: 'offline' });
+            }),
+            window.addEventListener('beforeunload', () => {
+                (Ce({ reason: 'paused' }),
+                    k?.stop(),
+                    x.clockId &&
+                        (window.clearInterval(x.clockId), (x.clockId = 0)));
+            }),
+            window.addEventListener('keydown', (e) => {
+                if (!e.altKey || !e.shiftKey) return;
+                const n = String(e.code || '').toLowerCase();
+                return 'keyr' === n
+                    ? (e.preventDefault(), void xe())
+                    : 'keym' === n
+                      ? (e.preventDefault(), void ne())
+                      : 'keyb' === n
+                        ? (e.preventDefault(),
+                          be({ source: 'shortcut_test', force: !0 }),
+                          void J('Campanilla de prueba ejecutada con teclado.'))
+                        : void (
+                              'keyx' === n &&
+                              (e.preventDefault(), re({ announce: !0 }))
+                          );
+            }),
+            (
+                a ||
+                ((a = fetch('/content/turnero/clinic-profile.json', {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json' },
+                })
+                    .then(async (e) => {
+                        if (!e.ok)
+                            throw new Error(`clinic_profile_http_${e.status}`);
+                        return e.json();
+                    })
+                    .then((e) => {
+                        const n = i(e);
+                        return {
+                            ...n,
+                            runtime_meta: {
+                                source: 'remote',
+                                profileFingerprint: s(n),
+                            },
+                        };
+                    })
+                    .catch(() => {
+                        const e = i(t);
+                        return {
+                            ...e,
+                            runtime_meta: {
+                                source: 'fallback_default',
+                                profileFingerprint: s(e),
+                            },
+                        };
+                    })),
+                a)
+            ).then((e) => {
+                ((function (e) {
+                    x.clinicProfile = e;
+                    const n = l(e),
+                        t = r(e),
+                        a =
+                            String(e?.clinic_id || '').trim() ||
+                            'sin-clinic-id',
+                        o = String(e?.branding?.city || '').trim(),
+                        i = [
+                            c(e, 1, { short: !0 }),
+                            c(e, 2, { short: !0 }),
+                        ].join(' / ');
+                    document.title = `Sala de Espera | ${n}`;
+                    const d = document.querySelector('.display-brand strong');
+                    d instanceof HTMLElement && (d.textContent = n);
+                    const u = A('displayBrandMeta');
+                    u instanceof HTMLElement &&
+                        (u.textContent = `Vista pacientes · ${i}`);
+                    const p = A('displayClinicMeta');
+                    (p instanceof HTMLElement &&
+                        (p.textContent = [a, o || t]
+                            .filter(Boolean)
+                            .join(' · ')),
+                        (function (e) {
+                            const n = M(e),
+                                t = s(e).slice(0, 8),
+                                a = A('displayProfileStatus');
+                            a instanceof HTMLElement &&
+                                ((a.dataset.state =
+                                    'alert' === n.state
+                                        ? 'alert'
+                                        : 'ready' === n.state
+                                          ? 'ready'
+                                          : 'warning'),
+                                (a.textContent =
+                                    'alert' === n.state
+                                        ? 'profile_missing' === n.reason
+                                            ? 'Bloqueado · perfil de respaldo · clinic-profile.json remoto ausente'
+                                            : `Bloqueado · ruta fuera de canon · se esperaba ${n.expectedRoute || '/sala-turnos.html'}`
+                                        : `Perfil remoto verificado · firma ${t} · canon ${n.expectedRoute || '/sala-turnos.html'}`));
+                        })(e),
+                        x.lastRenderedState
+                            ? ge(x.lastRenderedState)
+                            : (de('displayConsultorio1', null, _(1)),
+                              de('displayConsultorio2', null, _(2))));
+                })(e),
+                    (x.bellMuted = b(y, x.clinicProfile, {
+                        fallbackValue: !1,
+                        normalizeValue: T,
+                    })),
+                    (x.lastSnapshot = b(h, x.clinicProfile, {
+                        fallbackValue: null,
+                        normalizeValue: E,
+                    })),
+                    ie(),
+                    x.lastSnapshot,
+                    ee(),
+                    ie(),
+                    W(),
+                    $().start({ immediate: !1 }),
+                    L()
+                        ? le()
+                        : (ae(x.lastSnapshot, { mode: 'startup' }) ||
+                              J('Esperando primera sincronizacion...'),
+                          ke({ immediate: !0 })));
+            }));
+    });
+})();

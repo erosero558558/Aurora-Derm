@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-ops-tone="dark">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,11 +8,12 @@
             content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
         />
         <title>Sala de Espera | Turnero</title>
-        <link rel="stylesheet" href="queue-display.css?v=queue-20260313-pilotblock1" />
+        <link rel="stylesheet" href="queue-display.css?v=queue-20260314-sony150" />
     </head>
-    <body>
+    <body data-ops-tone="dark" class="queue-display-body">
         <header class="display-header">
             <div class="display-brand">
+                <span class="display-stage-kicker">Waiting room broadcast</span>
                 <strong>Aurora Derm</strong>
                 <span id="displayBrandMeta">
                     Turnero de sala de espera · Vista pacientes (lectura grande)
@@ -50,7 +51,7 @@
         </header>
 
         <main class="display-layout">
-            <section class="display-panel">
+            <section class="display-panel display-panel--hero">
                 <h1>Llamando ahora</h1>
                 <div class="display-called-grid">
                     <div id="displayConsultorio1" aria-live="assertive"></div>
@@ -58,7 +59,7 @@
                 </div>
             </section>
 
-            <section class="display-panel">
+            <section class="display-panel display-panel--queue">
                 <h2>Siguientes turnos</h2>
                 <ol id="displayNextList" class="display-next-list" aria-live="polite">
                     <li class="display-empty">No hay turnos pendientes.</li>
@@ -68,7 +69,7 @@
                 </p>
             </section>
 
-            <section class="display-panel display-setup-panel" aria-live="polite">
+            <section class="display-panel display-setup-panel display-panel--setup" aria-live="polite">
                 <div class="display-setup-card__header">
                     <span>Puesta en marcha TCL C655</span>
                     <strong id="displaySetupTitle">Falta probar la campanilla</strong>

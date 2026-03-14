@@ -1013,31 +1013,52 @@ foreach ($check in $analyticsChecks) {
 }
 
 $healthUrl = "$base/api.php?resource=health-diagnostics"
+$healthPublicUrl = "$base/api.php?resource=health"
+$healthSupportsDetailedChecks = $true
 try {
-    $healthResp = Invoke-JsonGetStrict -Url $healthUrl -UserAgent 'PielArmoniaDeployCheck/1.0'
-    $healthRequired = @(
-        'timingMs',
-        'version',
-        'dataDirWritable',
-        'dataDirSource',
-        'storeEncrypted',
-        'storeEncryptionConfigured',
-        'storeEncryptionRequired',
-        'storeEncryptionStatus',
-        'storeEncryptionCompliant',
-        'authMode',
-        'authStatus',
-        'authConfigured',
-        'authHardeningCompliant',
-        'figoConfigured',
-        'figoRecursiveConfig',
-        'calendarConfigured',
-        'calendarReachable',
-        'calendarMode',
-        'calendarSource',
-        'calendarAuth',
-        'calendarTokenHealthy'
-    )
+    try {
+        $healthResp = Invoke-JsonGetStrict -Url $healthUrl -UserAgent 'PielArmoniaDeployCheck/1.0'
+    } catch {
+        Write-Host "[WARN] health-diagnostics no disponible: $($_.Exception.Message)"
+        $healthResp = Invoke-JsonGetStrict -Url $healthPublicUrl -UserAgent 'PielArmoniaDeployCheck/1.0'
+        $healthUrl = $healthPublicUrl
+        $healthSupportsDetailedChecks = $false
+        Write-Host '[INFO] health fallback activo: usando payload publico para checks compatibles'
+    }
+
+    $healthRequired = if ($healthSupportsDetailedChecks) {
+        @(
+            'timingMs',
+            'version',
+            'dataDirWritable',
+            'dataDirSource',
+            'storeEncrypted',
+            'storeEncryptionConfigured',
+            'storeEncryptionRequired',
+            'storeEncryptionStatus',
+            'storeEncryptionCompliant',
+            'authMode',
+            'authStatus',
+            'authConfigured',
+            'authHardeningCompliant',
+            'figoConfigured',
+            'figoRecursiveConfig',
+            'calendarConfigured',
+            'calendarReachable',
+            'calendarMode',
+            'calendarSource',
+            'calendarAuth',
+            'calendarTokenHealthy'
+        )
+    } else {
+        @(
+            'timingMs',
+            'version',
+            'dataDirWritable',
+            'storageReady',
+            'timestamp'
+        )
+    }
     foreach ($field in $healthRequired) {
         if ($null -ne $healthResp.Json.PSObject.Properties[$field]) {
             Write-Host "[OK]  health incluye: $field"
@@ -1173,12 +1194,19 @@ try {
     }
     if ($null -eq $authNode) {
         Write-Host "[WARN] health no incluye checks.auth"
-        $results += [PSCustomObject]@{
-            Asset = 'health-auth-missing'
-            Match = $false
-            LocalHash = 'present'
-            RemoteHash = 'missing'
-            RemoteUrl = $healthUrl
+        if (
+            $healthSupportsDetailedChecks -or
+            $RequireAuthConfigured -or
+            $RequireOperatorAuth -or
+            $RequireAdminTwoFactor
+        ) {
+            $results += [PSCustomObject]@{
+                Asset = 'health-auth-missing'
+                Match = $false
+                LocalHash = 'present'
+                RemoteHash = 'missing'
+                RemoteUrl = $healthUrl
+            }
         }
     } else {
         $authMode = 'unknown'
@@ -1366,6 +1394,7 @@ try {
         $publicSyncConfigured = $false
         $publicSyncHealthy = $false
         $publicSyncJobId = ''
+        $publicSyncJobKey = ''
         $publicSyncAgeSeconds = 999999
         $publicSyncState = ''
         $publicSyncLastErrorMessage = ''
@@ -1377,6 +1406,7 @@ try {
         try { $publicSyncConfigured = [bool]$publicSyncNode.configured } catch { $publicSyncConfigured = $false }
         try { $publicSyncHealthy = [bool]$publicSyncNode.healthy } catch { $publicSyncHealthy = $false }
         try { $publicSyncJobId = [string]$publicSyncNode.jobId } catch { $publicSyncJobId = '' }
+        try { $publicSyncJobKey = [string]$publicSyncNode.jobKey } catch { $publicSyncJobKey = '' }
         try { $publicSyncAgeSeconds = [int]$publicSyncNode.ageSeconds } catch { $publicSyncAgeSeconds = 999999 }
         try { $publicSyncState = [string]$publicSyncNode.state } catch { $publicSyncState = '' }
         try { $publicSyncLastErrorMessage = [string]$publicSyncNode.lastErrorMessage } catch { $publicSyncLastErrorMessage = '' }
@@ -1396,18 +1426,26 @@ try {
         } else {
             (@($publicSyncDirtyPathsSample | Select-Object -First 5 | ForEach-Object { [string]$_ }) -join ', ')
         }
-        $publicSyncHeadDrift = (
-            -not [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
-            -not [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
-            $publicSyncCurrentHead -ne $publicSyncRemoteHead
-        )
-        $publicSyncTelemetryGap = (
-            -not $publicSyncHealthy -and
-            -not [string]::IsNullOrWhiteSpace($publicSyncLastErrorMessage) -and
-            [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
-            [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
-            $publicSyncDirtyPathsCount -le 0
-        )
+        $publicSyncHeadDrift = $false
+        if ($healthSupportsDetailedChecks) {
+            $publicSyncHeadDrift = (
+                -not [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+                -not [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+                $publicSyncCurrentHead -ne $publicSyncRemoteHead
+            )
+        } else {
+            try { $publicSyncHeadDrift = [bool]$publicSyncNode.headDrift } catch { $publicSyncHeadDrift = $false }
+        }
+        $publicSyncTelemetryGap = $false
+        if ($healthSupportsDetailedChecks) {
+            $publicSyncTelemetryGap = (
+                -not $publicSyncHealthy -and
+                -not [string]::IsNullOrWhiteSpace($publicSyncLastErrorMessage) -and
+                [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+                [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+                $publicSyncDirtyPathsCount -le 0
+            )
+        }
 
         if ($publicSyncConfigured) {
             Write-Host "[OK]  public sync configurado (jobId=$publicSyncJobId, state=$publicSyncState, ageSeconds=$publicSyncAgeSeconds)"
@@ -1417,6 +1455,9 @@ try {
 
         if (-not [string]::IsNullOrWhiteSpace($publicSyncDeployedCommit)) {
             Write-Host "[INFO] public sync deployedCommit=$publicSyncDeployedCommit"
+        }
+        if (-not $healthSupportsDetailedChecks) {
+            Write-Host '[INFO] public sync payload publico redactado; se omiten jobId/currentHead/remoteHead/dirtyPathsCount detallados'
         }
         Write-Host "[INFO] public sync lastErrorMessage=$publicSyncLastErrorMessage currentHead=$publicSyncCurrentHead remoteHead=$publicSyncRemoteHead headDrift=$publicSyncHeadDrift dirtyPathsCount=$publicSyncDirtyPathsCount telemetryGap=$publicSyncTelemetryGap dirtyPathsSample=$publicSyncDirtyPathsSampleLabel"
 
@@ -1430,12 +1471,22 @@ try {
                     RemoteUrl = $healthUrl
                 }
             }
-            if ($publicSyncJobId -ne '8d31e299-7e57-4959-80b5-aaa2d73e9674') {
+            if ($healthSupportsDetailedChecks) {
+                if ($publicSyncJobId -ne '8d31e299-7e57-4959-80b5-aaa2d73e9674') {
+                    $results += [PSCustomObject]@{
+                        Asset = 'health-public-sync-job-id'
+                        Match = $false
+                        LocalHash = '8d31e299-7e57-4959-80b5-aaa2d73e9674'
+                        RemoteHash = if ($publicSyncJobId) { $publicSyncJobId } else { 'missing' }
+                        RemoteUrl = $healthUrl
+                    }
+                }
+            } elseif ($publicSyncJobKey -and $publicSyncJobKey -ne 'public_main_sync') {
                 $results += [PSCustomObject]@{
-                    Asset = 'health-public-sync-job-id'
+                    Asset = 'health-public-sync-job-key'
                     Match = $false
-                    LocalHash = '8d31e299-7e57-4959-80b5-aaa2d73e9674'
-                    RemoteHash = if ($publicSyncJobId) { $publicSyncJobId } else { 'missing' }
+                    LocalHash = 'public_main_sync'
+                    RemoteHash = $publicSyncJobKey
                     RemoteUrl = $healthUrl
                 }
             }
@@ -1457,7 +1508,7 @@ try {
                     RemoteUrl = $healthUrl
                 }
             }
-            if ($publicSyncLastErrorMessage -eq 'working_tree_dirty') {
+            if ($healthSupportsDetailedChecks -and $publicSyncLastErrorMessage -eq 'working_tree_dirty') {
                 $results += [PSCustomObject]@{
                     Asset = 'health-public-sync-working-tree-dirty'
                     Match = $false
@@ -1475,7 +1526,7 @@ try {
                     RemoteUrl = $healthUrl
                 }
             }
-            if ($publicSyncTelemetryGap) {
+            if ($healthSupportsDetailedChecks -and $publicSyncTelemetryGap) {
                 $results += [PSCustomObject]@{
                     Asset = 'health-public-sync-telemetry-gap'
                     Match = $false
@@ -1781,6 +1832,9 @@ $turneroPilotRemoteAdminModeDefault = ''
 $turneroPilotRemoteSeparateDeploy = $false
 $turneroPilotRemoteNativeAppsBlocking = $false
 $turneroPilotRemoteDeployedCommit = ''
+$turneroPilotRemoteHealthRedacted = $false
+$turneroPilotRemoteDiagnosticsAuthorized = $false
+$turneroPilotRemoteResource = 'health'
 $turneroPilotRecoveryTargets = @()
 $turneroPilotRecoveryTargetsLabel = 'none'
 
@@ -1852,6 +1906,9 @@ if (Test-Path $turneroClinicProfileScriptPath) {
             $turneroPilotRemoteFingerprint = ''
             $turneroPilotRemoteCatalogReady = $false
             $turneroPilotRemoteDeployedCommit = ''
+            $turneroPilotRemoteHealthRedacted = $false
+            $turneroPilotRemoteDiagnosticsAuthorized = $false
+            $turneroPilotRemoteResource = 'health'
             try { $turneroPilotRemoteClinicId = [string]$turneroPilotVerify.turneroPilot.clinicId } catch { $turneroPilotRemoteClinicId = '' }
             try { $turneroPilotRemoteFingerprint = [string]$turneroPilotVerify.turneroPilot.profileFingerprint } catch { $turneroPilotRemoteFingerprint = '' }
             try { $turneroPilotRemoteCatalogReady = [bool]$turneroPilotVerify.turneroPilot.catalogReady } catch { $turneroPilotRemoteCatalogReady = $false }
@@ -1861,13 +1918,38 @@ if (Test-Path $turneroClinicProfileScriptPath) {
             try { $turneroPilotRemoteSeparateDeploy = [bool]$turneroPilotVerify.turneroPilot.separateDeploy } catch { $turneroPilotRemoteSeparateDeploy = $false }
             try { $turneroPilotRemoteNativeAppsBlocking = [bool]$turneroPilotVerify.turneroPilot.nativeAppsBlocking } catch { $turneroPilotRemoteNativeAppsBlocking = $false }
             try { $turneroPilotRemoteDeployedCommit = [string]$turneroPilotVerify.publicSync.deployedCommit } catch { $turneroPilotRemoteDeployedCommit = '' }
+            try { $turneroPilotRemoteHealthRedacted = [bool]$turneroPilotVerify.publicHealthRedacted } catch { $turneroPilotRemoteHealthRedacted = $false }
+            try { $turneroPilotRemoteDiagnosticsAuthorized = [bool]$turneroPilotVerify.diagnosticsAuthorized } catch { $turneroPilotRemoteDiagnosticsAuthorized = $false }
+            try { $turneroPilotRemoteResource = [string]$turneroPilotVerify.remoteResource } catch { $turneroPilotRemoteResource = 'health' }
 
             Write-Host "[INFO] turnero pilot remote clinicId=$turneroPilotRemoteClinicId fingerprint=$turneroPilotRemoteFingerprint catalogReady=$turneroPilotRemoteCatalogReady deployedCommit=$turneroPilotRemoteDeployedCommit"
             Write-Host "[INFO] turnero pilot recoveryTargets=$turneroPilotRecoveryTargetsLabel"
 
-            if ($null -eq $turneroPilotVerify -or $turneroPilotVerifyExit -ne 0 -or -not [bool]$turneroPilotVerify.ok) {
+            $turneroPilotRemoteVerificationBlocked = (
+                $null -eq $turneroPilotVerify -or
+                $turneroPilotVerifyExit -ne 0 -or
+                -not [bool]$turneroPilotVerify.ok -or
+                $turneroPilotRemoteHealthRedacted -or
+                [string]::IsNullOrWhiteSpace($turneroPilotRemoteClinicId) -or
+                [string]::IsNullOrWhiteSpace($turneroPilotRemoteFingerprint) -or
+                -not $turneroPilotRemoteCatalogReady
+            )
+
+            if ($turneroPilotRemoteHealthRedacted) {
+                Write-Host "[FAIL] turnero pilot remote health redacted (resource=$turneroPilotRemoteResource diagnosticsAuthorized=$turneroPilotRemoteDiagnosticsAuthorized)"
+            } elseif (
+                [string]::IsNullOrWhiteSpace($turneroPilotRemoteClinicId) -or
+                [string]::IsNullOrWhiteSpace($turneroPilotRemoteFingerprint) -or
+                -not $turneroPilotRemoteCatalogReady
+            ) {
+                Write-Host "[FAIL] turnero pilot remote identity unresolved (clinicId=$turneroPilotRemoteClinicId fingerprint=$turneroPilotRemoteFingerprint catalogReady=$turneroPilotRemoteCatalogReady)"
+            }
+
+            if ($turneroPilotRemoteVerificationBlocked) {
                 $turneroPilotRemoteHash = if ($turneroPilotRemoteClinicId -or $turneroPilotRemoteFingerprint) {
                     "${turneroPilotRemoteClinicId}:${turneroPilotRemoteFingerprint}"
+                } elseif ($turneroPilotRemoteHealthRedacted) {
+                    "redacted:$turneroPilotRemoteResource"
                 } elseif ($turneroPilotVerifyRaw) {
                     [string]$turneroPilotVerifyRaw
                 } else {
@@ -2157,6 +2239,9 @@ $turneroPilotReport = [ordered]@{
     remoteSeparateDeploy = $turneroPilotRemoteSeparateDeploy
     remoteNativeAppsBlocking = $turneroPilotRemoteNativeAppsBlocking
     remoteDeployedCommit = $turneroPilotRemoteDeployedCommit
+    remotePublicHealthRedacted = $turneroPilotRemoteHealthRedacted
+    remoteDiagnosticsAuthorized = $turneroPilotRemoteDiagnosticsAuthorized
+    remoteResource = $turneroPilotRemoteResource
 }
 
 $verifyMetadata = [ordered]@{

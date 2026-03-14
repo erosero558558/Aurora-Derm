@@ -14,6 +14,10 @@ import { hydrateAvailabilityPreferences } from '../sections/availability.js';
 import { initPushModule } from '../shared/modules/push.js';
 import { focusAgentPrompt } from '../shared/modules/agent.js';
 import {
+    queueNumpadAction,
+    toggleQueueHelpPanel,
+} from '../shared/modules/queue.js';
+import {
     bootAuthenticatedUi,
     handleLoginSubmit,
     primeLoginSurface,
@@ -48,6 +52,8 @@ export async function bootAdminV3() {
     bindFrameHooks();
     document.body.classList.add('admin-v3-mode');
     document.body.classList.remove('admin-v2-mode');
+    document.body.dataset.opsTone = 'light';
+    document.documentElement.setAttribute('data-ops-tone', 'light');
     attachActionListeners();
     hydrateAppointmentPreferences();
     hydrateCallbacksPreferences();
@@ -82,6 +88,8 @@ export async function bootAdminV3() {
             toggleSidebarCollapsed();
         },
         dismissQueueSensitiveDialog,
+        queueNumpadAction,
+        toggleQueueHelp: toggleQueueHelpPanel,
     });
 
     await checkAuthStatus();

@@ -1,4 +1,4 @@
-@import url('./ops-design-system.css?v=ops-20260303-rigor3');
+@import url('./ops-design-system.css?v=ops-20260314-sony150');
 
 body {
     margin: 0;
@@ -493,5 +493,424 @@ body[data-display-mode='star'] .display-metric-chip[data-kind='active'] strong {
         animation: none !important;
         transition: none !important;
         scroll-behavior: auto !important;
+    }
+}
+
+body[data-ops-tone='dark'].queue-display-body {
+    position: relative;
+    overflow-x: hidden;
+    background:
+        radial-gradient(circle at 10% -8%, rgb(127 199 255 / 18%) 0%, transparent 30%),
+        radial-gradient(circle at 95% -10%, rgb(79 207 155 / 10%) 0%, transparent 26%),
+        linear-gradient(150deg, #010204 0%, #06080d 42%, #030508 100%);
+}
+
+body[data-ops-tone='dark'].queue-display-body::before,
+body[data-ops-tone='dark'].queue-display-body::after {
+    content: '';
+    position: fixed;
+    inset: auto;
+    width: 34rem;
+    height: 34rem;
+    border-radius: 999px;
+    pointer-events: none;
+    filter: blur(70px);
+    opacity: 0.18;
+    z-index: 0;
+}
+
+body[data-ops-tone='dark'].queue-display-body::before {
+    top: -14rem;
+    right: -10rem;
+    background: rgb(127 199 255 / 20%);
+}
+
+body[data-ops-tone='dark'].queue-display-body::after {
+    bottom: -16rem;
+    left: -10rem;
+    background: rgb(79 207 155 / 12%);
+}
+
+body[data-ops-tone='dark'] .display-header,
+body[data-ops-tone='dark'] .display-layout {
+    position: relative;
+    z-index: 1;
+}
+
+body[data-ops-tone='dark'] .display-header {
+    padding: 1.08rem 1.4rem;
+    align-items: center;
+    background:
+        linear-gradient(180deg, rgb(8 10 14 / 94%), rgb(6 8 12 / 88%)),
+        radial-gradient(circle at top left, rgb(127 199 255 / 12%), transparent 36%);
+    border-bottom-color: rgb(255 255 255 / 10%);
+}
+
+.display-stage-kicker {
+    color: #7fc7ff;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+body[data-ops-tone='dark'] .display-brand strong {
+    letter-spacing: 0.02em;
+}
+
+body[data-ops-tone='dark'] .display-layout {
+    gap: 1.05rem;
+    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.92fr);
+    padding: 1rem 1.35rem 1.35rem;
+}
+
+body[data-ops-tone='dark'] .display-panel {
+    border-radius: 30px;
+    padding: clamp(1.05rem, 2vw, 1.3rem);
+    border-color: rgb(255 255 255 / 10%);
+    background:
+        linear-gradient(160deg, rgb(14 16 21 / 95%), rgb(8 10 15 / 92%)),
+        radial-gradient(circle at top right, rgb(127 199 255 / 10%), transparent 32%);
+    box-shadow: 0 28px 60px rgb(0 0 0 / 34%);
+    backdrop-filter: blur(18px);
+}
+
+body[data-ops-tone='dark'] .display-panel--hero {
+    background:
+        linear-gradient(160deg, rgb(16 19 24 / 96%), rgb(9 11 17 / 93%)),
+        radial-gradient(circle at top right, rgb(127 199 255 / 14%), transparent 34%);
+}
+
+body[data-ops-tone='dark'] .display-panel--queue {
+    background:
+        linear-gradient(160deg, rgb(12 15 19 / 95%), rgb(8 10 15 / 92%)),
+        radial-gradient(circle at top right, rgb(79 207 155 / 10%), transparent 30%);
+}
+
+body[data-ops-tone='dark'] .display-panel--setup {
+    background:
+        linear-gradient(160deg, rgb(13 15 20 / 95%), rgb(8 10 14 / 92%)),
+        radial-gradient(circle at top right, rgb(242 187 99 / 10%), transparent 30%);
+}
+
+body[data-ops-tone='dark'] .display-panel h1,
+body[data-ops-tone='dark'] .display-panel h2 {
+    letter-spacing: 0.02em;
+}
+
+body[data-ops-tone='dark'] .display-called-card {
+    min-height: 220px;
+    border-radius: 24px;
+    border-color: rgb(255 255 255 / 10%);
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 6%), rgb(255 255 255 / 1%)),
+        rgb(255 255 255 / 2%);
+}
+
+body[data-ops-tone='dark'] .display-called-card strong {
+    font-size: clamp(2.7rem, 5.2vw, 5.1rem);
+}
+
+body[data-ops-tone='dark'] .display-next-list li,
+body[data-ops-tone='dark'] .display-setup-check {
+    border-color: rgb(255 255 255 / 10%);
+    border-radius: 18px;
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 6%), rgb(255 255 255 / 1%)),
+        rgb(255 255 255 / 2%);
+}
+
+body[data-ops-tone='dark'] .display-next-list li {
+    padding: 0.86rem 0.96rem;
+}
+
+body[data-ops-tone='dark'] .next-code {
+    letter-spacing: 0.08em;
+}
+
+body[data-ops-tone='dark'] .display-setup-checks {
+    gap: 0.68rem;
+}
+
+@media (max-width: 1040px) {
+    body[data-ops-tone='dark'] .display-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sony refinement pass: emphasize the broadcast hero without changing the runtime contract. */
+body[data-ops-tone='dark'] .display-panel--hero,
+body[data-ops-tone='dark'] .display-called-card {
+    position: relative;
+    overflow: hidden;
+}
+
+body[data-ops-tone='dark'] .display-panel--hero::before,
+body[data-ops-tone='dark'] .display-called-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1.2rem;
+    right: 1.2rem;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgb(127 199 255 / 70%), transparent 84%);
+    pointer-events: none;
+}
+
+body[data-ops-tone='dark'] .display-header {
+    box-shadow: 0 18px 42px rgb(0 0 0 / 24%);
+}
+
+body[data-ops-tone='dark'] .display-called-card {
+    box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 5%),
+        0 20px 42px rgb(0 0 0 / 28%);
+}
+
+body[data-ops-tone='dark'] .display-called-card strong {
+    font-size: clamp(2.9rem, 5.4vw, 5.35rem);
+    letter-spacing: 0.015em;
+    text-shadow: 0 16px 32px rgb(0 0 0 / 32%);
+}
+
+body[data-ops-tone='dark'] .display-next-list li {
+    min-height: 86px;
+    align-content: center;
+}
+
+/* Sony broadcast pass: give the waiting room a more cinematic on-air hierarchy. */
+body[data-ops-tone='dark'] .display-header {
+    padding: 1.16rem 1.5rem 1.08rem;
+    border-bottom-color: rgb(255 255 255 / 8%);
+}
+
+body[data-ops-tone='dark'] .display-brand {
+    gap: 0.3rem;
+    max-width: 52rem;
+}
+
+body[data-ops-tone='dark'] .display-brand strong {
+    font-size: clamp(1.48rem, 2.3vw, 2.22rem);
+    letter-spacing: 0.015em;
+}
+
+body[data-ops-tone='dark'] .display-brand span {
+    font-size: 0.95rem;
+}
+
+body[data-ops-tone='dark'] .display-stage-kicker {
+    color: #b7ddff;
+    letter-spacing: 0.2em;
+}
+
+body[data-ops-tone='dark'] .display-clock-wrap {
+    gap: 0.3rem;
+    min-width: 248px;
+}
+
+body[data-ops-tone='dark'] .display-clock {
+    font-size: clamp(2.16rem, 3.35vw, 2.95rem);
+    text-shadow: 0 10px 26px rgb(0 0 0 / 26%);
+}
+
+body[data-ops-tone='dark'] .display-layout {
+    gap: 1.12rem;
+    grid-template-columns: minmax(0, 1.2fr) minmax(380px, 0.88fr);
+    padding: 1.04rem 1.45rem 1.45rem;
+}
+
+body[data-ops-tone='dark'] .display-panel--hero,
+body[data-ops-tone='dark'] .display-panel--queue,
+body[data-ops-tone='dark'] .display-panel--setup {
+    position: relative;
+    overflow: hidden;
+}
+
+body[data-ops-tone='dark'] .display-panel--queue::before,
+body[data-ops-tone='dark'] .display-panel--setup::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1.2rem;
+    right: 1.2rem;
+    height: 2px;
+    border-radius: 999px;
+    pointer-events: none;
+}
+
+body[data-ops-tone='dark'] .display-panel--queue::before {
+    background: linear-gradient(90deg, rgb(79 207 155 / 62%), transparent 84%);
+}
+
+body[data-ops-tone='dark'] .display-panel--setup::before {
+    background: linear-gradient(90deg, rgb(242 187 99 / 62%), transparent 84%);
+}
+
+body[data-ops-tone='dark'] .display-panel--hero {
+    padding: clamp(1.18rem, 2.1vw, 1.45rem);
+}
+
+body[data-ops-tone='dark'] .display-panel--hero h1,
+body[data-ops-tone='dark'] .display-panel--queue h2 {
+    margin-bottom: 1rem;
+    font-size: clamp(1.58rem, 2.4vw, 2.16rem);
+}
+
+body[data-ops-tone='dark'] .display-called-grid {
+    gap: 1rem;
+}
+
+body[data-ops-tone='dark'] .display-called-card {
+    gap: 0.55rem;
+    min-height: 236px;
+    border-radius: 28px;
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 1%)),
+        linear-gradient(145deg, rgb(24 26 32 / 78%), rgb(11 13 18 / 92%));
+}
+
+body[data-ops-tone='dark'] .display-called-card h3 {
+    margin-bottom: 0.34rem;
+    color: rgb(255 255 255 / 56%);
+    font-size: 0.82rem;
+    letter-spacing: 0.16em;
+}
+
+body[data-ops-tone='dark'] .display-called-card strong {
+    line-height: 0.95;
+}
+
+body[data-ops-tone='dark'] .display-called-card span {
+    color: #eef4ff;
+    font-size: clamp(1rem, 1.5vw, 1.24rem);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body[data-ops-tone='dark'] .display-next-list {
+    gap: 0.68rem;
+}
+
+body[data-ops-tone='dark'] .display-next-list li {
+    min-height: 94px;
+    padding: 0.95rem 1.02rem;
+    align-items: center;
+    box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 4%),
+        0 12px 28px rgb(0 0 0 / 16%);
+}
+
+body[data-ops-tone='dark'] .next-code {
+    font-size: clamp(1.36rem, 2.3vw, 1.82rem);
+    letter-spacing: 0.06em;
+}
+
+body[data-ops-tone='dark'] .next-initials {
+    color: rgb(255 255 255 / 70%);
+    font-size: 1rem;
+}
+
+body[data-ops-tone='dark'] .next-position {
+    padding: 0.22rem 0.52rem;
+    border-radius: 999px;
+    background: rgb(127 199 255 / 12%);
+    color: #e9f5ff;
+}
+
+body[data-ops-tone='dark'] .display-setup-card__header {
+    gap: 0.3rem;
+}
+
+body[data-ops-tone='dark'] .display-setup-card__header strong {
+    font-family: 'FrauncesSoft', serif;
+    font-size: clamp(1.22rem, 1.7vw, 1.5rem);
+    font-weight: 500;
+}
+
+body[data-ops-tone='dark'] .display-setup-summary {
+    max-width: 72ch;
+    font-size: 0.94rem;
+    line-height: 1.55;
+}
+
+body[data-ops-tone='dark'] .display-setup-checks {
+    gap: 0.72rem;
+}
+
+body[data-ops-tone='dark'] .display-setup-check {
+    min-height: 78px;
+    align-content: start;
+}
+
+body[data-display-mode='star'] #displayAnnouncement {
+    position: relative;
+    overflow: hidden;
+    padding: 1.08rem 1.2rem 1.1rem !important;
+    border-radius: 22px !important;
+    background:
+        linear-gradient(160deg, rgb(41 54 67 / 82%), rgb(18 23 30 / 92%)),
+        radial-gradient(circle at top right, rgb(127 199 255 / 18%), transparent 34%) !important;
+    box-shadow: 0 20px 42px rgb(0 0 0 / 22%) !important;
+}
+
+body[data-display-mode='star'] #displayAnnouncement::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1.12rem;
+    right: 1.12rem;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgb(127 199 255 / 72%), transparent 84%);
+    pointer-events: none;
+}
+
+body[data-display-mode='star'] #displayAnnouncement .display-announcement-label {
+    color: rgb(195 219 240 / 76%) !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 0.18em !important;
+}
+
+body[data-display-mode='star'] #displayAnnouncement .display-announcement-text {
+    font-size: clamp(1.54rem, 2.7vw, 2.34rem) !important;
+    line-height: 1.12 !important;
+    letter-spacing: 0.015em !important;
+}
+
+body[data-display-mode='star'] #displayAnnouncement .display-announcement-support {
+    max-width: 70ch;
+    color: rgb(219 236 248 / 78%) !important;
+    font-size: clamp(0.98rem, 1.35vw, 1.16rem) !important;
+}
+
+body[data-display-mode='star'] #displayMetrics {
+    gap: 0.62rem !important;
+}
+
+body[data-display-mode='star'] .display-metric-chip {
+    border-radius: 999px !important;
+    padding: 0.38rem 0.84rem !important;
+    background: rgb(255 255 255 / 6%) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+body[data-display-mode='star'] .display-metric-chip strong {
+    font-size: 1.06rem !important;
+}
+
+@media (max-width: 1040px) {
+    body[data-ops-tone='dark'] .display-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-ops-tone='dark'] .display-panel,
+    body[data-ops-tone='dark'] .display-called-card,
+    body[data-ops-tone='dark'] .display-next-list li {
+        transition: none !important;
+        animation: none !important;
     }
 }

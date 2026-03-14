@@ -24,13 +24,16 @@ param(
     [int]$MaxTelemedicineUnlinkedIntakes = 5,
     [int]$MinServicePrioritiesServices = 1,
     [int]$MinServicePrioritiesCategories = 1,
-    [int]$MinServicePrioritiesFeatured = 1
+    [int]$MinServicePrioritiesFeatured = 1,
+    [string]$ReportPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $base = $Domain.TrimEnd('/')
 $todayDate = Get-Date -Format 'yyyy-MM-dd'
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
+$defaultReportPath = Join-Path $repoRoot 'verification\runtime\prod-monitor-last.json'
+$effectiveReportPath = if ([string]::IsNullOrWhiteSpace($ReportPath)) { $defaultReportPath } else { $ReportPath }
 $commonHttpPath = Join-Path $repoRoot 'bin/powershell/Common.Http.ps1'
 $openClawAuthDiagnosticScriptPath = Join-Path $repoRoot 'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1'
 $turneroClinicProfileScriptPath = Join-Path $repoRoot 'bin/turnero-clinic-profile.js'
@@ -48,7 +51,132 @@ $checks = @(
 
 $results = @()
 $failures = @()
+$warnings = @()
 $effectiveAllowStoreCalendar = [bool]$AllowStoreCalendar
+$monitorStatus = 'unknown'
+$healthSnapshot = [ordered]@{
+    available = $false
+    status = 'not_evaluated'
+    storageReady = $false
+    dataDirSource = ''
+    calendarSource = ''
+    calendarMode = ''
+    calendarReachable = $false
+    calendarConfigured = $false
+    calendarRequired = $false
+    calendarLastErrorReason = ''
+    calendarLastErrorAt = ''
+    storage = [ordered]@{
+        available = $false
+        backend = ''
+        source = ''
+        encrypted = $false
+        encryptionConfigured = $false
+        encryptionRequired = $false
+        encryptionStatus = 'unknown'
+        encryptionCompliant = $false
+    }
+    auth = [ordered]@{
+        available = $false
+        mode = 'unknown'
+        status = 'unknown'
+        configured = $false
+        hardeningCompliant = $false
+        recommendedMode = 'openclaw_chatgpt'
+        recommendedModeActive = $false
+        operatorAuthEnabled = $false
+        operatorAuthConfigured = $false
+        legacyPasswordConfigured = $false
+        twoFactorEnabled = $false
+    }
+}
+$publicSyncSnapshot = [ordered]@{
+    available = $false
+    status = 'not_evaluated'
+    configured = $false
+    healthy = $false
+    operationallyHealthy = $false
+    repoHygieneIssue = $false
+    failureReason = ''
+    lastErrorMessage = ''
+    jobId = ''
+    state = 'unknown'
+    ageSeconds = $null
+    expectedMaxLagSeconds = $null
+    currentHead = ''
+    remoteHead = ''
+    headDrift = $false
+    telemetryGap = $false
+    dirtyPathsCount = 0
+    dirtyPathsSample = @()
+}
+$telemedicineSnapshot = [ordered]@{
+    available = $false
+    status = 'not_evaluated'
+    configured = $false
+    diagnosticsStatus = ''
+    reviewQueueCount = 0
+    criticalCount = 0
+    warningCount = 0
+    stagedLegacyUploadsCount = 0
+    unlinkedIntakesCount = 0
+    danglingAppointmentLinksCount = 0
+    casePhotosWithoutPrivatePathCount = 0
+}
+$turneroPilotSnapshot = [ordered]@{
+    available = $false
+    status = 'not_evaluated'
+    clinicId = ''
+    catalogMatch = $false
+    verifyRequired = $false
+    recoveryTargets = @()
+    remote = [ordered]@{
+        clinicId = ''
+        profileFingerprint = ''
+        catalogReady = $false
+        ok = $false
+    }
+}
+$githubDeployAlertsSnapshot = [ordered]@{
+    available = $false
+    status = 'not_evaluated'
+    repo = $GitHubRepo
+    fetchOk = $false
+    error = ''
+    relevantCount = 0
+    transportCount = 0
+    connectivityCount = 0
+    repairGitSyncCount = 0
+    selfHostedRunnerCount = 0
+    selfHostedDeployCount = 0
+    turneroPilotCount = 0
+    issueNumbers = 'none'
+    issueRefs = 'none'
+    recoveryTargets = @()
+    hasTransportBlock = $false
+    hasConnectivityBlock = $false
+    hasRepairGitSyncBlock = $false
+    hasSelfHostedRunnerBlock = $false
+    hasSelfHostedDeployBlock = $false
+    hasTurneroPilotBlock = $false
+}
+$servicePrioritiesSnapshot = [ordered]@{
+    available = $false
+    status = 'not_evaluated'
+    source = ''
+    catalogVersion = ''
+    serviceCountMeta = $null
+    servicesCount = 0
+    categoriesCount = 0
+    featuredCount = 0
+}
+
+function Add-MonitorWarning {
+    param([string]$Message)
+
+    $script:warnings += $Message
+    Write-Host $Message
+}
 
 function Add-MonitorFailure {
     param(
@@ -58,11 +186,133 @@ function Add-MonitorFailure {
 
     if ($AllowDegraded) {
         $warningMessage = $Message -replace '^\[FAIL\]', '[WARN]'
-        Write-Host $warningMessage
+        Add-MonitorWarning -Message $warningMessage
         return
     }
 
     $script:failures += $Message
+}
+
+function Get-MonitorReportRelativePath {
+    param([string]$Path)
+
+    try {
+        $resolvedRepoRoot = [System.IO.Path]::GetFullPath([string]$repoRoot)
+        $resolvedPath = [System.IO.Path]::GetFullPath([string]$Path)
+        if ($resolvedPath.StartsWith($resolvedRepoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $resolvedPath.Substring($resolvedRepoRoot.Length).TrimStart('\') -replace '\\', '/'
+        }
+        return $resolvedPath -replace '\\', '/'
+    } catch {
+        return [string]$Path
+    }
+}
+
+function Get-MonitorActionSummary {
+    $areas = New-Object System.Collections.Generic.List[string]
+    foreach ($message in @($script:failures + $script:warnings)) {
+        if ($message -match 'health\.publicSync|publicSync') {
+            if (-not $areas.Contains('publicSync')) { $areas.Add('publicSync') }
+        }
+        if ($message -match 'telemedicine') {
+            if (-not $areas.Contains('telemedicine')) { $areas.Add('telemedicine') }
+        }
+        if ($message -match 'turneroPilot') {
+            if (-not $areas.Contains('turneroPilot')) { $areas.Add('turneroPilot') }
+        }
+        if ($message -match 'github\.deployAlerts') {
+            if (-not $areas.Contains('githubDeployAlerts')) { $areas.Add('githubDeployAlerts') }
+        }
+        if ($message -match 'service-priorities') {
+            if (-not $areas.Contains('servicePriorities')) { $areas.Add('servicePriorities') }
+        }
+        if ($message -match 'health\.auth') {
+            if (-not $areas.Contains('auth')) { $areas.Add('auth') }
+        }
+        if ($message -match 'health\.storage') {
+            if (-not $areas.Contains('storage')) { $areas.Add('storage') }
+        }
+    }
+
+    $headline = if ($script:failures.Count -gt 0) {
+        'Revisar fallas criticas antes de considerar el monitor estable.'
+    } elseif ($script:warnings.Count -gt 0) {
+        'Monitor estable con warnings; revisar guardrails degradados y deuda operativa.'
+    } else {
+        'Sin accion inmediata; mantener corrida programada y captura de evidencia.'
+    }
+
+    $nextActions = if ($areas.Count -gt 0) {
+        @($areas | ForEach-Object { "Revisar area $_" })
+    } elseif ($script:failures.Count -gt 0) {
+        @('Revisar detalle de failures del monitor.')
+    } elseif ($script:warnings.Count -gt 0) {
+        @('Revisar detalle de warnings del monitor.')
+    } else {
+        @('Mantener monitoreo continuo en produccion.')
+    }
+
+    return [ordered]@{
+        headline = $headline
+        focusAreas = @($areas)
+        nextActions = $nextActions
+    }
+}
+
+function Write-MonitorReport {
+    $latencyThresholds = @{}
+    foreach ($check in $checks) {
+        $latencyThresholds[[string]$check.Name] = if ($check.MaxLatencyMs) { [int]$check.MaxLatencyMs } else { $MaxLatencyMs }
+    }
+    $latencyEndpoints = @(
+        $results | ForEach-Object {
+            [ordered]@{
+                name = [string]$_.Name
+                url = [string]$_.Url
+                statusCode = $_.StatusCode
+                durationMs = $_.DurationMs
+                error = [string]$_.Error
+                ok = ($_.StatusCode -eq 200)
+            }
+        }
+    )
+    $slowEndpoints = @(
+        $latencyEndpoints | Where-Object {
+            $endpoint = $_
+            $max = if ($latencyThresholds.ContainsKey([string]$endpoint.name)) { [int]$latencyThresholds[[string]$endpoint.name] } else { $MaxLatencyMs }
+            [int]$endpoint.durationMs -gt $max
+        } | ForEach-Object { $_.name }
+    )
+    $reportPayload = [ordered]@{
+        version = 1
+        generatedAt = [DateTimeOffset]::UtcNow.ToString('o')
+        domain = $base
+        reportPath = Get-MonitorReportRelativePath -Path $effectiveReportPath
+        ok = ($script:failures.Count -eq 0)
+        status = $script:monitorStatus
+        failures = @($script:failures)
+        warnings = @($script:warnings)
+        latency = [ordered]@{
+            maxLatencyMs = $MaxLatencyMs
+            endpoints = $latencyEndpoints
+            slowEndpoints = $slowEndpoints
+        }
+        checks = [ordered]@{
+            health = $script:healthSnapshot
+            publicSync = $script:publicSyncSnapshot
+            telemedicine = $script:telemedicineSnapshot
+            turneroPilot = $script:turneroPilotSnapshot
+            githubDeployAlerts = $script:githubDeployAlertsSnapshot
+            servicePriorities = $script:servicePrioritiesSnapshot
+        }
+        summary = Get-MonitorActionSummary
+    }
+
+    $reportDirectory = Split-Path -Parent $effectiveReportPath
+    if (-not [string]::IsNullOrWhiteSpace($reportDirectory)) {
+        New-Item -ItemType Directory -Path $reportDirectory -Force | Out-Null
+    }
+    $reportPayload | ConvertTo-Json -Depth 12 | Set-Content -Path $effectiveReportPath -Encoding utf8
 }
 
 function Invoke-OpenClawAuthRolloutDiagnostic {
@@ -84,16 +334,16 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
         }
     }
 
-    $reportPath = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-auth-rollout-monitor-" + [Guid]::NewGuid().ToString('N') + '.json')
+    $diagnosticReportPath = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-auth-rollout-monitor-" + [Guid]::NewGuid().ToString('N') + '.json')
 
     try {
-        & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $reportPath *> $null
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $diagnosticReportPath *> $null
 
-        if (-not (Test-Path $reportPath)) {
+        if (-not (Test-Path $diagnosticReportPath)) {
             throw 'No se genero reporte del diagnostico OpenClaw.'
         }
 
-        $raw = Get-Content -Path $reportPath -Raw
+        $raw = Get-Content -Path $diagnosticReportPath -Raw
         $payload = ($raw -replace "^\uFEFF", '') | ConvertFrom-Json -Depth 12
 
         return [PSCustomObject]@{
@@ -118,7 +368,7 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
             error = $_.Exception.Message
         }
     } finally {
-        Remove-Item -Path $reportPath -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $diagnosticReportPath -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -141,7 +391,7 @@ foreach ($c in $checks) {
             $code = ''
             try { $code = [string]$payload.code } catch {}
             if ($code -eq 'calendar_unreachable') {
-                Write-Host "[WARN] $($r.Name): calendario bloqueado temporalmente (503 calendar_unreachable)"
+                Add-MonitorWarning -Message "[WARN] $($r.Name): calendario bloqueado temporalmente (503 calendar_unreachable)"
                 $handledBlockedCalendar = $true
             }
         }
@@ -183,7 +433,7 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 if ($RequireStoreEncryption) {
                     $failures += '[FAIL] health.checks.storage ausente'
                 } else {
-                    Write-Host '[WARN] health.checks.storage ausente'
+                    Add-MonitorWarning -Message '[WARN] health.checks.storage ausente'
                 }
             } else {
                 $storeEncrypted = $false
@@ -209,11 +459,22 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 } elseif ($RequireStoreEncryption -and -not $storeEncryptionCompliant) {
                     $failures += "[FAIL] health.storage.encryptionCompliant=false (status=$storeEncryptionStatus configured=$storeEncryptionConfigured)"
                 } elseif (-not $storeEncryptionCompliant) {
-                    Write-Host "[WARN] health.storage encryption no compliant (status=$storeEncryptionStatus configured=$storeEncryptionConfigured required=$storeEncryptionRequired)"
+                    Add-MonitorWarning -Message "[WARN] health.storage encryption no compliant (status=$storeEncryptionStatus configured=$storeEncryptionConfigured required=$storeEncryptionRequired)"
                 } elseif ($storeEncryptionStatus -eq 'encrypted') {
                     Write-Host '[OK]  health storage cifrado en reposo activo'
                 } else {
                     Write-Host "[OK]  health storage status=$storeEncryptionStatus"
+                }
+
+                $script:healthSnapshot.storage = [ordered]@{
+                    available = $true
+                    backend = $storageBackend
+                    source = $storageSource
+                    encrypted = $storeEncrypted
+                    encryptionConfigured = $storeEncryptionConfigured
+                    encryptionRequired = $storeEncryptionRequired
+                    encryptionStatus = $storeEncryptionStatus
+                    encryptionCompliant = $storeEncryptionCompliant
                 }
             }
 
@@ -262,17 +523,17 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 if ($RequireOperatorAuth -and -not $authRecommendedModeActive) {
                     $failures += "[FAIL] health.auth.mode=$authMode (esperado=$authRecommendedMode)"
                 } elseif (-not $authRecommendedModeActive) {
-                    Write-Host "[WARN] health.auth mode no recomendado (mode=$authMode expected=$authRecommendedMode)"
+                    Add-MonitorWarning -Message "[WARN] health.auth mode no recomendado (mode=$authMode expected=$authRecommendedMode)"
                 }
                 if ($RequireAdminTwoFactor -and -not $authTwoFactorEnabled) {
                     $failures += '[FAIL] health.auth.twoFactorEnabled=false'
                 } elseif ($authMode -eq 'legacy_password' -and -not $authTwoFactorEnabled) {
-                    Write-Host '[WARN] health.auth legacy_password sin 2FA'
+                    Add-MonitorWarning -Message '[WARN] health.auth legacy_password sin 2FA'
                 }
                 if ($RequireAuthConfigured -and -not $authHardeningCompliant) {
                     $failures += "[FAIL] health.auth.hardeningCompliant=false (mode=$authMode recommendedMode=$authRecommendedMode twoFactorEnabled=$authTwoFactorEnabled)"
                 } elseif ($authConfigured -and -not $authHardeningCompliant) {
-                    Write-Host "[WARN] health.auth hardening pendiente (mode=$authMode recommendedMode=$authRecommendedMode twoFactorEnabled=$authTwoFactorEnabled)"
+                    Add-MonitorWarning -Message "[WARN] health.auth hardening pendiente (mode=$authMode recommendedMode=$authRecommendedMode twoFactorEnabled=$authTwoFactorEnabled)"
                 }
 
                 if ($RequireOperatorAuth) {
@@ -282,12 +543,46 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                         Add-MonitorFailure -Message "[FAIL] operator auth rollout diagnosis=$($operatorAuthRollout.diagnosis) source=$($operatorAuthRollout.source) mode=$($operatorAuthRollout.mode) configured=$($operatorAuthRollout.configured) nextAction=$($operatorAuthRollout.nextAction)" -AllowDegraded:$false
                     }
                 }
+
+                $script:healthSnapshot.auth = [ordered]@{
+                    available = $true
+                    mode = $authMode
+                    status = $authStatus
+                    configured = $authConfigured
+                    hardeningCompliant = $authHardeningCompliant
+                    recommendedMode = $authRecommendedMode
+                    recommendedModeActive = $authRecommendedModeActive
+                    operatorAuthEnabled = $authOperatorAuthEnabled
+                    operatorAuthConfigured = $authOperatorAuthConfigured
+                    legacyPasswordConfigured = $authLegacyPasswordConfigured
+                    twoFactorEnabled = $authTwoFactorEnabled
+                }
             }
 
             $publicSyncNode = $null
             try { $publicSyncNode = $health.checks.publicSync } catch { $publicSyncNode = $null }
             if ($null -eq $publicSyncNode) {
                 Add-MonitorFailure -Message '[FAIL] health.checks.publicSync ausente' -AllowDegraded:$AllowDegradedPublicSync
+                $script:publicSyncSnapshot = [ordered]@{
+                    available = $false
+                    status = 'failed'
+                    configured = $false
+                    healthy = $false
+                    operationallyHealthy = $false
+                    repoHygieneIssue = $false
+                    failureReason = 'missing'
+                    lastErrorMessage = ''
+                    jobId = ''
+                    state = 'missing'
+                    ageSeconds = $null
+                    expectedMaxLagSeconds = $null
+                    currentHead = ''
+                    remoteHead = ''
+                    headDrift = $false
+                    telemetryGap = $false
+                    dirtyPathsCount = 0
+                    dirtyPathsSample = @()
+                }
             } else {
                 $publicSyncConfigured = $false
                 $publicSyncHealthy = $false
@@ -388,7 +683,41 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                     $publicSyncConfigured -and
                     $publicSyncRepoHygieneIssue
                 ) {
-                    Write-Host "[WARN] health.publicSync repo hygiene issue (dirtyPathsCount=$publicSyncDirtyPathsCount dirtyPathsSample=$publicSyncDirtyPathsSampleLabel)"
+                    Add-MonitorWarning -Message "[WARN] health.publicSync repo hygiene issue (dirtyPathsCount=$publicSyncDirtyPathsCount dirtyPathsSample=$publicSyncDirtyPathsSampleLabel)"
+                }
+
+                $publicSyncStatus = if (
+                    $publicSyncConfigured -and
+                    $publicSyncOperationallyHealthy -and
+                    $publicSyncAgeSeconds -le $publicSyncExpectedMaxLagSeconds -and
+                    -not $publicSyncHeadDrift -and
+                    -not $publicSyncTelemetryGap
+                ) {
+                    if ($publicSyncRepoHygieneIssue) { 'warning' } else { 'ok' }
+                } elseif (-not $publicSyncConfigured) {
+                    'failed'
+                } else {
+                    'failed'
+                }
+                $script:publicSyncSnapshot = [ordered]@{
+                    available = $true
+                    status = $publicSyncStatus
+                    configured = $publicSyncConfigured
+                    healthy = $publicSyncHealthy
+                    operationallyHealthy = $publicSyncOperationallyHealthy
+                    repoHygieneIssue = $publicSyncRepoHygieneIssue
+                    failureReason = $publicSyncFailureReason
+                    lastErrorMessage = $publicSyncLastErrorMessage
+                    jobId = $publicSyncJobId
+                    state = $publicSyncState
+                    ageSeconds = $publicSyncAgeSeconds
+                    expectedMaxLagSeconds = $publicSyncExpectedMaxLagSeconds
+                    currentHead = $publicSyncCurrentHead
+                    remoteHead = $publicSyncRemoteHead
+                    headDrift = $publicSyncHeadDrift
+                    telemetryGap = $publicSyncTelemetryGap
+                    dirtyPathsCount = $publicSyncDirtyPathsCount
+                    dirtyPathsSample = @($publicSyncDirtyPathsSample)
                 }
             }
 
@@ -414,6 +743,20 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
 
                 if ($null -eq $turneroPilotStatus -or $turneroPilotStatusExit -ne 0) {
                     Add-MonitorFailure -Message '[FAIL] turneroPilot clinic-profile status unresolved' -AllowDegraded:$AllowDegradedPublicSync
+                    $script:turneroPilotSnapshot = [ordered]@{
+                        available = $true
+                        status = 'failed'
+                        clinicId = ''
+                        catalogMatch = $false
+                        verifyRequired = $false
+                        recoveryTargets = @()
+                        remote = [ordered]@{
+                            clinicId = ''
+                            profileFingerprint = ''
+                            catalogReady = $false
+                            ok = $false
+                        }
+                    }
                 } else {
                     try { $turneroPilotClinicId = [string]$turneroPilotStatus.profile.clinic_id } catch { $turneroPilotClinicId = '' }
                     try { $turneroPilotCatalogMatch = [bool]$turneroPilotStatus.matchesCatalog } catch { $turneroPilotCatalogMatch = $false }
@@ -421,6 +764,20 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
 
                     if (-not $turneroPilotCatalogMatch) {
                         Add-MonitorFailure -Message "[FAIL] turneroPilot catalog drift (clinicId=$turneroPilotClinicId)" -AllowDegraded:$AllowDegradedPublicSync
+                        $script:turneroPilotSnapshot = [ordered]@{
+                            available = $true
+                            status = 'failed'
+                            clinicId = $turneroPilotClinicId
+                            catalogMatch = $turneroPilotCatalogMatch
+                            verifyRequired = $turneroPilotVerifyRequired
+                            recoveryTargets = @()
+                            remote = [ordered]@{
+                                clinicId = ''
+                                profileFingerprint = ''
+                                catalogReady = $false
+                                ok = $false
+                            }
+                        }
                     } elseif ($turneroPilotVerifyRequired) {
                         $turneroPilotRecoveryTargets = @(
                             '[ALERTA PROD] Deploy Hosting turneroPilot bloqueado',
@@ -446,22 +803,94 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                         $turneroPilotRemoteClinicId = ''
                         $turneroPilotRemoteFingerprint = ''
                         $turneroPilotRemoteCatalogReady = $false
+                        $turneroPilotRemoteHealthRedacted = $false
+                        $turneroPilotRemoteDiagnosticsAuthorized = $false
+                        $turneroPilotRemoteResource = 'health'
                         try { $turneroPilotRemoteClinicId = [string]$turneroPilotVerify.turneroPilot.clinicId } catch { $turneroPilotRemoteClinicId = '' }
                         try { $turneroPilotRemoteFingerprint = [string]$turneroPilotVerify.turneroPilot.profileFingerprint } catch { $turneroPilotRemoteFingerprint = '' }
                         try { $turneroPilotRemoteCatalogReady = [bool]$turneroPilotVerify.turneroPilot.catalogReady } catch { $turneroPilotRemoteCatalogReady = $false }
+                        try { $turneroPilotRemoteHealthRedacted = [bool]$turneroPilotVerify.publicHealthRedacted } catch { $turneroPilotRemoteHealthRedacted = $false }
+                        try { $turneroPilotRemoteDiagnosticsAuthorized = [bool]$turneroPilotVerify.diagnosticsAuthorized } catch { $turneroPilotRemoteDiagnosticsAuthorized = $false }
+                        try { $turneroPilotRemoteResource = [string]$turneroPilotVerify.remoteResource } catch { $turneroPilotRemoteResource = 'health' }
 
                         Write-Host "[INFO] turneroPilot remote clinicId=$turneroPilotRemoteClinicId fingerprint=$turneroPilotRemoteFingerprint catalogReady=$turneroPilotRemoteCatalogReady"
                         Write-Host "[INFO] turneroPilot recoveryTargets=$turneroPilotRecoveryTargetsLabel"
 
-                        if ($null -eq $turneroPilotVerify -or $turneroPilotVerifyExit -ne 0 -or -not [bool]$turneroPilotVerify.ok) {
+                        $turneroPilotRemoteVerificationBlocked = (
+                            $null -eq $turneroPilotVerify -or
+                            $turneroPilotVerifyExit -ne 0 -or
+                            -not [bool]$turneroPilotVerify.ok -or
+                            $turneroPilotRemoteHealthRedacted -or
+                            [string]::IsNullOrWhiteSpace($turneroPilotRemoteClinicId) -or
+                            [string]::IsNullOrWhiteSpace($turneroPilotRemoteFingerprint) -or
+                            -not $turneroPilotRemoteCatalogReady
+                        )
+
+                        if ($turneroPilotRemoteHealthRedacted) {
+                            Add-MonitorFailure -Message "[FAIL] turneroPilot remote health redacted (resource=$turneroPilotRemoteResource diagnosticsAuthorized=$turneroPilotRemoteDiagnosticsAuthorized)" -AllowDegraded:$AllowDegradedPublicSync
+                        } elseif (
+                            [string]::IsNullOrWhiteSpace($turneroPilotRemoteClinicId) -or
+                            [string]::IsNullOrWhiteSpace($turneroPilotRemoteFingerprint) -or
+                            -not $turneroPilotRemoteCatalogReady
+                        ) {
+                            Add-MonitorFailure -Message "[FAIL] turneroPilot remote identity unresolved (clinicId=$turneroPilotRemoteClinicId fingerprint=$turneroPilotRemoteFingerprint catalogReady=$turneroPilotRemoteCatalogReady)" -AllowDegraded:$AllowDegradedPublicSync
+                        }
+
+                        if ($turneroPilotRemoteVerificationBlocked) {
                             Add-MonitorFailure -Message "[FAIL] turneroPilot remote mismatch (clinicId=$turneroPilotRemoteClinicId fingerprint=$turneroPilotRemoteFingerprint catalogReady=$turneroPilotRemoteCatalogReady)" -AllowDegraded:$AllowDegradedPublicSync
+                        }
+
+                        $script:turneroPilotSnapshot = [ordered]@{
+                            available = $true
+                            status = if (-not $turneroPilotRemoteVerificationBlocked) { 'ok' } else { 'failed' }
+                            clinicId = $turneroPilotClinicId
+                            catalogMatch = $turneroPilotCatalogMatch
+                            verifyRequired = $turneroPilotVerifyRequired
+                            recoveryTargets = @($turneroPilotRecoveryTargets)
+                            remote = [ordered]@{
+                                clinicId = $turneroPilotRemoteClinicId
+                                profileFingerprint = $turneroPilotRemoteFingerprint
+                                catalogReady = $turneroPilotRemoteCatalogReady
+                                ok = (-not $turneroPilotRemoteVerificationBlocked)
+                                publicHealthRedacted = $turneroPilotRemoteHealthRedacted
+                                diagnosticsAuthorized = $turneroPilotRemoteDiagnosticsAuthorized
+                                resource = $turneroPilotRemoteResource
+                            }
                         }
                     } else {
                         Write-Host '[INFO] turneroPilot verify-remote omitido: perfil activo no esta en modo web_pilot.'
+                        $script:turneroPilotSnapshot = [ordered]@{
+                            available = $true
+                            status = 'not_required'
+                            clinicId = $turneroPilotClinicId
+                            catalogMatch = $turneroPilotCatalogMatch
+                            verifyRequired = $turneroPilotVerifyRequired
+                            recoveryTargets = @()
+                            remote = [ordered]@{
+                                clinicId = ''
+                                profileFingerprint = ''
+                                catalogReady = $false
+                                ok = $false
+                            }
+                        }
                     }
                 }
             } else {
-                Write-Host '[WARN] bin/turnero-clinic-profile.js no existe; se omite monitor turneroPilot.'
+                Add-MonitorWarning -Message '[WARN] bin/turnero-clinic-profile.js no existe; se omite monitor turneroPilot.'
+                $script:turneroPilotSnapshot = [ordered]@{
+                    available = $false
+                    status = 'missing_script'
+                    clinicId = ''
+                    catalogMatch = $false
+                    verifyRequired = $false
+                    recoveryTargets = @()
+                    remote = [ordered]@{
+                        clinicId = ''
+                        profileFingerprint = ''
+                        catalogReady = $false
+                        ok = $false
+                    }
+                }
             }
 
             $githubDeployAlertsSummary = Get-GitHubProductionAlertSummary `
@@ -507,7 +936,7 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
             Write-Host "[INFO] github.deployAlerts fetchOk=$githubDeployAlertsFetchOk repo=$GitHubRepo relevantCount=$githubDeployAlertsRelevantCount transportCount=$githubDeployAlertsTransportCount connectivityCount=$githubDeployAlertsConnectivityCount repairGitSyncCount=$githubDeployAlertsRepairGitSyncCount selfHostedRunnerCount=$githubDeployAlertsSelfHostedRunnerCount selfHostedDeployCount=$githubDeployAlertsSelfHostedDeployCount turneroPilotCount=$githubDeployAlertsTurneroPilotCount turneroPilotRecoveryTargets=$turneroPilotRecoveryTargetsLabel issueNumbers=$githubDeployAlertsIssueNumbersLabel issueRefs=$githubDeployAlertsIssueRefsLabel"
 
             if (-not $githubDeployAlertsFetchOk) {
-                Write-Host "[WARN] github.deployAlerts unreachable (repo=$GitHubRepo error=$githubDeployAlertsError)"
+                Add-MonitorWarning -Message "[WARN] github.deployAlerts unreachable (repo=$GitHubRepo error=$githubDeployAlertsError)"
             }
             if ($githubDeployAlertsRelevantCount -gt 0) {
                 Add-MonitorFailure -Message "[FAIL] github.deployAlerts open production alerts (count=$githubDeployAlertsRelevantCount issueNumbers=$githubDeployAlertsIssueNumbersLabel)" -AllowDegraded:$AllowDegradedPublicSync
@@ -531,6 +960,30 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 Add-MonitorFailure -Message "[FAIL] github.deployAlerts turnero pilot blocked (issueNumbers=$githubDeployAlertsIssueNumbersLabel recoveryTargets=$turneroPilotRecoveryTargetsLabel)" -AllowDegraded:$AllowDegradedPublicSync
             }
 
+            $script:githubDeployAlertsSnapshot = [ordered]@{
+                available = $true
+                status = if (-not $githubDeployAlertsFetchOk) { 'unreachable' } elseif ($githubDeployAlertsRelevantCount -gt 0) { 'failed' } else { 'ok' }
+                repo = $GitHubRepo
+                fetchOk = $githubDeployAlertsFetchOk
+                error = $githubDeployAlertsError
+                relevantCount = $githubDeployAlertsRelevantCount
+                transportCount = $githubDeployAlertsTransportCount
+                connectivityCount = $githubDeployAlertsConnectivityCount
+                repairGitSyncCount = $githubDeployAlertsRepairGitSyncCount
+                selfHostedRunnerCount = $githubDeployAlertsSelfHostedRunnerCount
+                selfHostedDeployCount = $githubDeployAlertsSelfHostedDeployCount
+                turneroPilotCount = $githubDeployAlertsTurneroPilotCount
+                issueNumbers = $githubDeployAlertsIssueNumbersLabel
+                issueRefs = $githubDeployAlertsIssueRefsLabel
+                recoveryTargets = @($turneroPilotRecoveryTargets)
+                hasTransportBlock = $githubDeployAlertsHasTransportBlock
+                hasConnectivityBlock = $githubDeployAlertsHasConnectivityBlock
+                hasRepairGitSyncBlock = $githubDeployAlertsHasRepairGitSyncBlock
+                hasSelfHostedRunnerBlock = $githubDeployAlertsHasSelfHostedRunnerBlock
+                hasSelfHostedDeployBlock = $githubDeployAlertsHasSelfHostedDeployBlock
+                hasTurneroPilotBlock = $githubDeployAlertsHasTurneroPilotBlock
+            }
+
             $calendarSource = ''
             $calendarMode = ''
             $calendarReachable = $false
@@ -548,7 +1001,7 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
 
             if ($calendarRequired -and $effectiveAllowStoreCalendar) {
                 $effectiveAllowStoreCalendar = $false
-                Write-Host '[WARN] health.calendarRequired=true; se fuerza validacion strict Google en monitor.'
+                Add-MonitorWarning -Message '[WARN] health.calendarRequired=true; se fuerza validacion strict Google en monitor.'
             }
 
             if (-not $effectiveAllowStoreCalendar -and $calendarSource -ne 'google') {
@@ -573,7 +1026,20 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 if ($RequireTelemedicineConfigured) {
                     $failures += '[FAIL] health.checks.telemedicine ausente'
                 } else {
-                    Write-Host '[WARN] health.checks.telemedicine ausente (modo permisivo)'
+                    Add-MonitorWarning -Message '[WARN] health.checks.telemedicine ausente (modo permisivo)'
+                }
+                $script:telemedicineSnapshot = [ordered]@{
+                    available = $false
+                    status = if ($RequireTelemedicineConfigured) { 'failed' } else { 'warning' }
+                    configured = $false
+                    diagnosticsStatus = ''
+                    reviewQueueCount = 0
+                    criticalCount = 0
+                    warningCount = 0
+                    stagedLegacyUploadsCount = 0
+                    unlinkedIntakesCount = 0
+                    danglingAppointmentLinksCount = 0
+                    casePhotosWithoutPrivatePathCount = 0
                 }
             } else {
                 $telemedicineConfigured = $false
@@ -619,6 +1085,45 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 if ($telemedicineCasePhotosWithoutPrivatePathCount -gt 0) {
                     $failures += "[FAIL] health.telemedicine.integrity.casePhotosWithoutPrivatePathCount=$telemedicineCasePhotosWithoutPrivatePathCount (> 0)"
                 }
+
+                $script:telemedicineSnapshot = [ordered]@{
+                    available = $true
+                    status = if (
+                        $telemedicineConfigured -and
+                        $telemedicineDiagnosticsStatus -ne 'critical' -and
+                        $telemedicineCriticalCount -le 0 -and
+                        $telemedicineReviewQueueCount -le $MaxTelemedicineReviewQueue -and
+                        $telemedicineStagedLegacyCount -le $MaxTelemedicineStagedUploads -and
+                        $telemedicineUnlinkedIntakesCount -le $MaxTelemedicineUnlinkedIntakes -and
+                        $telemedicineDanglingLinksCount -le 0 -and
+                        $telemedicineCasePhotosWithoutPrivatePathCount -le 0
+                    ) { 'ok' } else { 'failed' }
+                    configured = $telemedicineConfigured
+                    diagnosticsStatus = $telemedicineDiagnosticsStatus
+                    reviewQueueCount = $telemedicineReviewQueueCount
+                    criticalCount = $telemedicineCriticalCount
+                    warningCount = $telemedicineWarningCount
+                    stagedLegacyUploadsCount = $telemedicineStagedLegacyCount
+                    unlinkedIntakesCount = $telemedicineUnlinkedIntakesCount
+                    danglingAppointmentLinksCount = $telemedicineDanglingLinksCount
+                    casePhotosWithoutPrivatePathCount = $telemedicineCasePhotosWithoutPrivatePathCount
+                }
+            }
+
+            $script:healthSnapshot = [ordered]@{
+                available = $true
+                status = [string]$health.status
+                storageReady = [bool]$health.storageReady
+                dataDirSource = [string]$health.dataDirSource
+                calendarSource = $calendarSource
+                calendarMode = $calendarMode
+                calendarReachable = $calendarReachable
+                calendarConfigured = $calendarConfigured
+                calendarRequired = $calendarRequired
+                calendarLastErrorReason = $calendarLastErrorReason
+                calendarLastErrorAt = $calendarLastErrorAt
+                storage = $script:healthSnapshot.storage
+                auth = $script:healthSnapshot.auth
             }
         } catch {
             $failures += "[FAIL] health: validacion exception $($_.Exception.Message)"
@@ -732,7 +1237,7 @@ if ($null -ne $servicePrioritiesResult -and $servicePrioritiesResult.StatusCode 
                 $failures += "[FAIL] service-priorities.meta.source=$source (esperado=$($allowedSources -join '|'))"
             }
             if (-not $RequireServicePrioritiesFunnel -and $source -eq 'catalog_only') {
-                Write-Host '[WARN] service-priorities sin señales de funnel; usando catalog_only temporalmente.'
+                Add-MonitorWarning -Message '[WARN] service-priorities sin señales de funnel; usando catalog_only temporalmente.'
             }
             if ([string]::IsNullOrWhiteSpace($catalogVersion)) {
                 $failures += '[FAIL] service-priorities.meta.catalogVersion vacio'
@@ -761,11 +1266,44 @@ if ($null -ne $servicePrioritiesResult -and $servicePrioritiesResult.StatusCode 
             if ($featuredCount -lt $MinServicePrioritiesFeatured) {
                 $failures += "[FAIL] service-priorities.data.featured count=$featuredCount (< $MinServicePrioritiesFeatured)"
             }
+
+            $script:servicePrioritiesSnapshot = [ordered]@{
+                available = $true
+                status = if (
+                    -not [string]::IsNullOrWhiteSpace($catalogVersion) -and
+                    $serviceCountMeta -ge $MinServicePrioritiesServices -and
+                    $servicesCount -ge $MinServicePrioritiesServices -and
+                    $categoriesCount -ge $MinServicePrioritiesCategories -and
+                    $featuredCount -ge $MinServicePrioritiesFeatured
+                ) { 'ok' } else { 'failed' }
+                source = $source
+                catalogVersion = $catalogVersion
+                serviceCountMeta = $serviceCountMeta
+                servicesCount = $servicesCount
+                categoriesCount = $categoriesCount
+                featuredCount = $featuredCount
+            }
         }
     }
 }
 
 Write-Host ''
+$script:monitorStatus = if ($failures.Count -gt 0) { 'failed' } elseif ($warnings.Count -gt 0) { 'warning' } else { 'ok' }
+try {
+    Write-MonitorReport
+} catch {
+    $fallbackMessage = "[FAIL] prod-monitor report write exception $($_.Exception.Message)"
+    if (-not ($failures -contains $fallbackMessage)) {
+        $failures += $fallbackMessage
+    }
+    $script:monitorStatus = 'failed'
+    try {
+        $effectiveReportPath = $defaultReportPath
+        Write-MonitorReport
+    } catch {
+        Add-MonitorWarning -Message "[WARN] no se pudo persistir prod-monitor report en ruta fallback: $($_.Exception.Message)"
+    }
+}
 if ($failures.Count -gt 0) {
     Write-Host 'Resultado: FALLIDO' -ForegroundColor Red
     foreach ($f in $failures) {

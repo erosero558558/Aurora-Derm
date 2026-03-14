@@ -1,6 +1,10 @@
 import { hasFocusedInput } from '../../ui/render.js';
 import { getState } from '../store.js';
-import { DEFAULT_QUICK_ACTIONS, SECTION_SHORTCUTS } from './constants.js';
+import {
+    DEFAULT_QUICK_ACTIONS,
+    QUEUE_QUICK_ACTIONS,
+    SECTION_SHORTCUTS,
+} from './constants.js';
 import {
     getEventKeyData,
     isAltShiftShortcut,
@@ -132,6 +136,8 @@ export function handleGlobalKeyboardShortcut(event, options) {
 }
 
 function resolveQuickActions(activeSection) {
-    void activeSection;
+    if (activeSection === 'queue') {
+        return QUEUE_QUICK_ACTIONS;
+    }
     return DEFAULT_QUICK_ACTIONS;
 }

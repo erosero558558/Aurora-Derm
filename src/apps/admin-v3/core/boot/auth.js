@@ -11,6 +11,10 @@ import {
     usePrimaryLoginSurface,
 } from '../../shared/modules/auth.js';
 import {
+    applyQueueRuntimeDefaults,
+    renderQueueSection,
+} from '../../shared/modules/queue.js';
+import {
     focusLoginField,
     hideCommandPalette,
     resetLoginForm,
@@ -34,6 +38,13 @@ const OPENCLAW_TERMINAL_STATUSES = new Set([
 
 let openClawPollTimer = 0;
 let openClawPolling = false;
+
+function syncQueueRuntimeDefaultsAfterBoot() {
+    applyQueueRuntimeDefaults();
+    if (getState().ui.activeSection === 'queue') {
+        renderQueueSection();
+    }
+}
 
 function normalizeAuthStatus(status) {
     return String(status || 'anonymous')
@@ -233,6 +244,7 @@ async function finishAuthenticatedLogin(toastMessage = 'Sesion iniciada') {
     setLogin2FAVisibility(false);
     resetLoginForm({ clearPassword: true });
     await refreshDataAndRender(false);
+    syncQueueRuntimeDefaultsAfterBoot();
     createToast(toastMessage, 'success');
 }
 
@@ -452,6 +464,7 @@ export async function bootAuthenticatedUi() {
     showDashboardView();
     hideCommandPalette();
     await refreshDataAndRender(false);
+    syncQueueRuntimeDefaultsAfterBoot();
 }
 
 export function resumeOpenClawPolling() {

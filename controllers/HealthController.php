@@ -491,6 +491,10 @@ class HealthController
      */
     private static function publicPayload(array $detailedPayload): array
     {
+        $checks = is_array($detailedPayload['checks'] ?? null)
+            ? $detailedPayload['checks']
+            : [];
+
         return [
             'ok' => (bool) ($detailedPayload['ok'] ?? false),
             'status' => (string) ($detailedPayload['status'] ?? 'unknown'),
@@ -498,7 +502,83 @@ class HealthController
             'dataDirWritable' => (bool) ($detailedPayload['dataDirWritable'] ?? false),
             'timingMs' => (int) ($detailedPayload['timingMs'] ?? 0),
             'version' => (string) ($detailedPayload['version'] ?? app_runtime_version()),
+            'checks' => [
+                'turneroPilot' => self::publicTurneroPilotCheck(
+                    is_array($checks['turneroPilot'] ?? null) ? $checks['turneroPilot'] : []
+                ),
+                'publicSync' => self::publicPublicSyncCheck(
+                    is_array($checks['publicSync'] ?? null) ? $checks['publicSync'] : []
+                ),
+            ],
             'timestamp' => (string) ($detailedPayload['timestamp'] ?? local_date('c')),
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $turneroPilot
+     * @return array<string,mixed>
+     */
+    private static function publicTurneroPilotCheck(array $turneroPilot): array
+    {
+        $surfaces = [];
+        $surfaceSnapshot = is_array($turneroPilot['surfaces'] ?? null)
+            ? $turneroPilot['surfaces']
+            : [];
+
+        foreach (['admin', 'operator', 'kiosk', 'display'] as $surfaceKey) {
+            $surface = is_array($surfaceSnapshot[$surfaceKey] ?? null)
+                ? $surfaceSnapshot[$surfaceKey]
+                : [];
+            $surfaces[$surfaceKey] = [
+                'enabled' => (bool) ($surface['enabled'] ?? false),
+                'label' => (string) ($surface['label'] ?? ''),
+                'route' => (string) ($surface['route'] ?? ''),
+            ];
+        }
+
+        return [
+            'configured' => (bool) ($turneroPilot['configured'] ?? false),
+            'ready' => (bool) ($turneroPilot['ready'] ?? false),
+            'profileSource' => (string) ($turneroPilot['profileSource'] ?? ''),
+            'clinicId' => (string) ($turneroPilot['clinicId'] ?? ''),
+            'profileFingerprint' => (string) ($turneroPilot['profileFingerprint'] ?? ''),
+            'catalogAvailable' => (bool) ($turneroPilot['catalogAvailable'] ?? false),
+            'catalogMatched' => (bool) ($turneroPilot['catalogMatched'] ?? false),
+            'catalogReady' => (bool) ($turneroPilot['catalogReady'] ?? false),
+            'catalogEntryId' => (string) ($turneroPilot['catalogEntryId'] ?? ''),
+            'releaseMode' => (string) ($turneroPilot['releaseMode'] ?? ''),
+            'adminModeDefault' => (string) ($turneroPilot['adminModeDefault'] ?? ''),
+            'separateDeploy' => (bool) ($turneroPilot['separateDeploy'] ?? false),
+            'nativeAppsBlocking' => (bool) ($turneroPilot['nativeAppsBlocking'] ?? false),
+            'surfaces' => $surfaces,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $publicSync
+     * @return array<string,mixed>
+     */
+    private static function publicPublicSyncCheck(array $publicSync): array
+    {
+        $ageSeconds = null;
+        if (array_key_exists('ageSeconds', $publicSync) && $publicSync['ageSeconds'] !== null) {
+            $ageSeconds = (int) $publicSync['ageSeconds'];
+        }
+
+        return [
+            'configured' => (bool) ($publicSync['configured'] ?? false),
+            'jobKey' => (string) ($publicSync['jobKey'] ?? 'public_main_sync'),
+            'state' => (string) ($publicSync['state'] ?? 'unknown'),
+            'healthy' => (bool) ($publicSync['healthy'] ?? false),
+            'operationallyHealthy' => (bool) ($publicSync['operationallyHealthy'] ?? false),
+            'ageSeconds' => $ageSeconds,
+            'expectedMaxLagSeconds' => max(1, (int) ($publicSync['expectedMaxLagSeconds'] ?? 120)),
+            'lastCheckedAt' => (string) ($publicSync['lastCheckedAt'] ?? ''),
+            'lastSuccessAt' => (string) ($publicSync['lastSuccessAt'] ?? ''),
+            'lastErrorAt' => (string) ($publicSync['lastErrorAt'] ?? ''),
+            'failureReason' => (string) ($publicSync['failureReason'] ?? ''),
+            'deployedCommit' => (string) ($publicSync['deployedCommit'] ?? ''),
+            'headDrift' => (bool) ($publicSync['headDrift'] ?? false),
         ];
     }
 

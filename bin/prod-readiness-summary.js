@@ -19,6 +19,8 @@ const ROOT = resolve(__dirname, '..');
 const DEFAULT_JSON_OUT = 'verification/runtime/prod-readiness-summary.json';
 const DEFAULT_MD_OUT = 'verification/runtime/prod-readiness-summary.md';
 const DEFAULT_SENTRY_JSON_OUT = 'verification/runtime/sentry-events-last.json';
+const DEFAULT_PROD_MONITOR_JSON_OUT =
+    'verification/runtime/prod-monitor-last.json';
 const PHASE6_SCHEDULE_AT_RISK_THRESHOLD_MINUTES = 24 * 60;
 const CRITICAL_WORKFLOW_INPROGRESS_GRACE_MINUTES = 4;
 const WEEKLY_KPI_SCHEDULE_UTC = Object.freeze({
@@ -63,8 +65,34 @@ function safeJsonParse(text, fallback = null) {
     }
 }
 
+function getGhInvocation() {
+    const override = process.env.GH_CLI_PATH;
+    if (!override) {
+        return {
+            command: 'gh',
+            argsPrefix: [],
+            label: 'gh',
+        };
+    }
+
+    if (/\.(c?js|mjs)$/i.test(override)) {
+        return {
+            command: process.execPath,
+            argsPrefix: [override],
+            label: override,
+        };
+    }
+
+    return {
+        command: override,
+        argsPrefix: [],
+        label: override,
+    };
+}
+
 function runGh(args, { allowFailure = true } = {}) {
-    const result = spawnSync('gh', args, {
+    const gh = getGhInvocation();
+    const result = spawnSync(gh.command, [...gh.argsPrefix, ...args], {
         cwd: ROOT,
         encoding: 'utf8',
         windowsHide: true,
@@ -76,7 +104,7 @@ function runGh(args, { allowFailure = true } = {}) {
     const response = {
         ok,
         exitCode: typeof result.status === 'number' ? result.status : 1,
-        command: `gh ${args.join(' ')}`,
+        command: `${gh.label} ${args.join(' ')}`,
         stdout,
         stderr,
         error:
@@ -447,13 +475,7 @@ function findLatestWeeklyReportJson(outputDir) {
         .filter((name) => /^weekly-report-\d{8}\.json$/i.test(name))
         .map((name) => {
             const fullPath = resolve(absoluteDir, name);
-            let mtimeMs;
-            try {
-                mtimeMs = statSync(fullPath).mtimeMs;
-            } catch (_error) {
-                mtimeMs = 0;
-            }
-            return { name, fullPath, mtimeMs };
+            return { name, fullPath, mtimeMs: getPathMtimeMs(fullPath, 0) };
         })
         .sort((a, b) => b.mtimeMs - a.mtimeMs);
     return candidates[0] || null;
@@ -462,8 +484,7 @@ function findLatestWeeklyReportJson(outputDir) {
 function findFileRecursive(rootDir, matcher) {
     const stack = [rootDir];
     const matches = [];
-    const matchFn =
-        typeof matcher === 'function' ? matcher : () => false;
+    const matchFn = typeof matcher === 'function' ? matcher : () => false;
     while (stack.length > 0) {
         const current = stack.pop();
         let entries;
@@ -479,18 +500,24 @@ function findFileRecursive(rootDir, matcher) {
                 continue;
             }
             if (matchFn(entry.name, fullPath)) {
-                let mtimeMs;
-                try {
-                    mtimeMs = statSync(fullPath).mtimeMs;
-                } catch (_error) {
-                    mtimeMs = 0;
-                }
-                matches.push({ fullPath, name: entry.name, mtimeMs });
+                matches.push({
+                    fullPath,
+                    name: entry.name,
+                    mtimeMs: getPathMtimeMs(fullPath, 0),
+                });
             }
         }
     }
     matches.sort((a, b) => b.mtimeMs - a.mtimeMs);
     return matches[0] || null;
+}
+
+function getPathMtimeMs(filePath, fallback = null) {
+    try {
+        return statSync(filePath).mtimeMs;
+    } catch (_error) {
+        return fallback;
+    }
 }
 
 function parseWeeklyReportPayload(payload, meta = {}) {
@@ -667,12 +694,6 @@ function readLatestWeeklyReport(outputDir) {
         fileName: latest.name,
         mtimeMs: latest.mtimeMs,
     });
-}
-
-function findWeeklyReportJsonRecursive(rootDir) {
-    return findFileRecursive(rootDir, (name) =>
-        /^weekly-report-\d{8}\.json$/i.test(name)
-    );
 }
 
 function downloadNamedArtifact(runId, artifactName, matcher, missingError) {
@@ -872,12 +893,13 @@ function parseSentryEvidencePayload(payload, meta = {}) {
             ? payload.staleProjects
             : [],
         actionRequired: payload.actionRequired || null,
-        failureReason: failureReason.code || failureReason.message
-            ? {
-                  code: failureReason.code || null,
-                  message: failureReason.message || null,
-              }
-            : null,
+        failureReason:
+            failureReason.code || failureReason.message
+                ? {
+                      code: failureReason.code || null,
+                      message: failureReason.message || null,
+                  }
+                : null,
         backend: {
             project: backend.project || null,
             found: Boolean(backend.found),
@@ -924,17 +946,10 @@ function readLatestSentryEvidence(localPath) {
         };
     }
 
-    let mtimeMs = null;
-    try {
-        mtimeMs = statSync(absolutePath).mtimeMs;
-    } catch (_error) {
-        mtimeMs = null;
-    }
-
     return readSentryEvidenceFromFile(absolutePath, {
         source: 'local',
         fileName: basename(absolutePath),
-        mtimeMs,
+        mtimeMs: getPathMtimeMs(absolutePath),
     });
 }
 
@@ -1007,6 +1022,206 @@ function readSentryEvidencePreferred({ localPath, sentryRun }) {
     }
 
     const localReport = readLatestSentryEvidence(localPath);
+    if (localReport.found && !localReport.error) {
+        return {
+            ...localReport,
+            fallbackAttempted: true,
+            fallbackFromRemoteError: remoteReport.error || null,
+        };
+    }
+
+    if (!remoteReport.found && !localReport.found) {
+        return {
+            ...localReport,
+            source: 'auto',
+            fallbackAttempted: true,
+            fallbackFromRemoteError: remoteReport.error || null,
+        };
+    }
+
+    return {
+        ...(remoteReport.found ? remoteReport : localReport),
+        fallbackAttempted: true,
+        fallbackFromRemoteError: remoteReport.error || null,
+    };
+}
+
+function parseProdMonitorEvidencePayload(payload, meta = {}) {
+    const checks =
+        payload && typeof payload.checks === 'object' && payload.checks
+            ? payload.checks
+            : {};
+    const workflow =
+        payload && typeof payload.workflow === 'object' && payload.workflow
+            ? payload.workflow
+            : {};
+    const failures = Array.isArray(payload?.failures) ? payload.failures : [];
+    const warnings = Array.isArray(payload?.warnings) ? payload.warnings : [];
+    const failureCount = Number.isFinite(Number(payload?.failureCount))
+        ? Number(payload.failureCount)
+        : failures.length;
+    const warningCount = Number.isFinite(Number(payload?.warningCount))
+        ? Number(payload.warningCount)
+        : warnings.length;
+
+    return {
+        found: true,
+        source: meta.source || 'local',
+        path: meta.path || null,
+        fileName: meta.fileName || (meta.path ? basename(meta.path) : null),
+        mtime:
+            meta.mtimeIso ||
+            (Number.isFinite(meta.mtimeMs)
+                ? new Date(meta.mtimeMs).toISOString()
+                : null),
+        reportRun: meta.reportRun || null,
+        generatedAt: toIso(payload?.generatedAt),
+        ok: Boolean(payload?.ok),
+        status: payload?.status || (payload?.ok ? 'ok' : 'unknown'),
+        domain: payload?.domain || null,
+        failureCount,
+        warningCount,
+        failures,
+        warnings,
+        workflowFailures: Array.isArray(payload?.workflowFailures)
+            ? payload.workflowFailures
+            : [],
+        summary:
+            payload && typeof payload.summary === 'object'
+                ? payload.summary
+                : null,
+        artifact:
+            payload && typeof payload.artifact === 'object'
+                ? payload.artifact
+                : null,
+        checks,
+        health: checks.health || null,
+        publicSync: checks.publicSync || null,
+        telemedicine: checks.telemedicine || null,
+        turneroPilot: checks.turneroPilot || null,
+        githubDeployAlerts: checks.githubDeployAlerts || null,
+        servicePriorities: checks.servicePriorities || null,
+        workflow,
+        publicSyncRecovery: workflow.publicSyncRecovery || null,
+        turneroPilotRecovery: workflow.turneroPilotRecovery || null,
+        publicCutover: workflow.publicCutover || null,
+        publicV4Rollout: workflow.publicV4Rollout || null,
+        staleDeployAlertAutoclose: workflow.staleDeployAlertAutoclose || null,
+        error: null,
+    };
+}
+
+function readProdMonitorEvidenceFromFile(filePath, meta = {}) {
+    let payload;
+    try {
+        payload = JSON.parse(readFileSync(filePath, 'utf8'));
+    } catch (error) {
+        return {
+            found: true,
+            source: meta.source || 'local',
+            path: filePath,
+            fileName: basename(filePath),
+            reportRun: meta.reportRun || null,
+            error: `No se pudo parsear JSON: ${error.message}`,
+        };
+    }
+
+    return parseProdMonitorEvidencePayload(payload, {
+        ...meta,
+        path: filePath,
+    });
+}
+
+function readLatestProdMonitorEvidence(localPath) {
+    const absolutePath = resolve(ROOT, localPath);
+    if (!existsSync(absolutePath)) {
+        return {
+            found: false,
+            source: 'local',
+            path: absolutePath,
+            error: null,
+        };
+    }
+
+    return readProdMonitorEvidenceFromFile(absolutePath, {
+        source: 'local',
+        fileName: basename(absolutePath),
+        mtimeMs: getPathMtimeMs(absolutePath),
+    });
+}
+
+function downloadProdMonitorEvidenceArtifact(runId) {
+    return downloadNamedArtifact(
+        runId,
+        'prod-monitor-report',
+        (name) => /^prod-monitor-last\.json$/i.test(name),
+        'Artifact prod-monitor-report no contiene prod-monitor-last.json'
+    );
+}
+
+function readProdMonitorEvidenceFromRemoteArtifact(
+    prodMonitorRun,
+    fallbackPath
+) {
+    const run = getWorkflowRunForHealth(prodMonitorRun);
+    if (!prodMonitorRun || !prodMonitorRun.available || !run || !run.id) {
+        return {
+            found: false,
+            source: 'remote_artifact',
+            path: resolve(ROOT, fallbackPath || DEFAULT_PROD_MONITOR_JSON_OUT),
+            error: 'No hay run de Production Monitor disponible para descargar artifact',
+        };
+    }
+    const downloaded = downloadProdMonitorEvidenceArtifact(run.id);
+    if (!downloaded.ok) {
+        return {
+            found: false,
+            source: 'remote_artifact',
+            path: resolve(ROOT, fallbackPath || DEFAULT_PROD_MONITOR_JSON_OUT),
+            reportRun: {
+                id: run.id,
+                url: run.url || null,
+                conclusion: run.conclusion || null,
+                status: run.status || null,
+                updatedAt: run.updatedAt || null,
+            },
+            error: downloaded.error,
+        };
+    }
+
+    try {
+        return readProdMonitorEvidenceFromFile(downloaded.file.fullPath, {
+            source: 'remote_artifact',
+            fileName: downloaded.file.name,
+            mtimeMs: downloaded.file.mtimeMs,
+            reportRun: {
+                id: run.id,
+                url: run.url || null,
+                conclusion: run.conclusion || null,
+                status: run.status || null,
+                updatedAt: run.updatedAt || null,
+                headSha: run.headSha || null,
+            },
+        });
+    } finally {
+        try {
+            rmSync(downloaded.tempDir, { recursive: true, force: true });
+        } catch (_error) {
+            // best effort
+        }
+    }
+}
+
+function readProdMonitorEvidencePreferred({ localPath, prodMonitorRun }) {
+    const remoteReport = readProdMonitorEvidenceFromRemoteArtifact(
+        prodMonitorRun,
+        localPath
+    );
+    if (remoteReport.found && !remoteReport.error) {
+        return remoteReport;
+    }
+
+    const localReport = readLatestProdMonitorEvidence(localPath);
     if (localReport.found && !localReport.error) {
         return {
             ...localReport,
@@ -1329,6 +1544,7 @@ function computeProductionStability({
     weeklyLocalReport,
     weeklyKpiHistory,
     sentryEvidence,
+    prodMonitorEvidence,
 }) {
     const criticalWorkflowKeys = ['ci', 'postDeployGate', 'deployHosting'];
     const reasons = [];
@@ -1401,6 +1617,31 @@ function computeProductionStability({
         );
     } else if (sentryEvidence?.error) {
         advisories.push(`sentry_evidence:error(${sentryEvidence.error})`);
+    }
+    if (prodMonitorEvidence?.found && !prodMonitorEvidence.error) {
+        advisories.push(
+            `prod_monitor:${prodMonitorEvidence.ok ? 'ok' : prodMonitorEvidence.status || 'unknown'}`
+        );
+        if (
+            ['failed', 'error'].includes(
+                String(prodMonitorEvidence.status || '').toLowerCase()
+            ) ||
+            prodMonitorEvidence.ok === false
+        ) {
+            signal = 'RED';
+            reasons.push(
+                `prod_monitor:${prodMonitorEvidence.status || 'failed'}`
+            );
+        } else if (
+            String(prodMonitorEvidence.status || '').toLowerCase() ===
+                'warning' &&
+            signal === 'GREEN'
+        ) {
+            signal = 'YELLOW';
+            reasons.push('prod_monitor:warning');
+        }
+    } else if (prodMonitorEvidence?.error) {
+        advisories.push(`prod_monitor:error(${prodMonitorEvidence.error})`);
     }
 
     return {
@@ -1639,6 +1880,7 @@ function computeSuggestedActions({
     productionStability,
     executionEfficiency,
     sentryEvidence,
+    prodMonitorEvidence,
 }) {
     const actions = [];
     const workflowLabels = {
@@ -1808,6 +2050,45 @@ function computeSuggestedActions({
                 null,
         });
     }
+    if (
+        prodMonitorEvidence?.found &&
+        !prodMonitorEvidence.error &&
+        String(prodMonitorEvidence.status || '').toLowerCase() !== 'ok'
+    ) {
+        pushAction({
+            id: 'ACT-P0-PROD-MONITOR',
+            priority:
+                String(prodMonitorEvidence.status || '').toLowerCase() ===
+                'warning'
+                    ? 'P2'
+                    : 'P0',
+            blocking:
+                String(prodMonitorEvidence.status || '').toLowerCase() !==
+                'warning',
+            title: 'Revisar evidencia canonica de Production Monitor',
+            reason:
+                prodMonitorEvidence.summary?.headline ||
+                prodMonitorEvidence.failures?.[0] ||
+                prodMonitorEvidence.warnings?.[0] ||
+                `prod-monitor status=${prodMonitorEvidence.status || 'unknown'}`,
+            command:
+                'gh run download --name prod-monitor-report || npm run monitor:prod',
+            url:
+                prodMonitorEvidence.reportRun?.url ||
+                getWorkflowRunForHealth(workflows?.prodMonitor)?.url ||
+                null,
+        });
+    } else if (prodMonitorEvidence?.error) {
+        pushAction({
+            id: 'ACT-P2-PROD-MONITOR-EVIDENCE',
+            priority: 'P2',
+            blocking: false,
+            title: 'Recuperar lectura de evidencia canonica del monitor',
+            reason: prodMonitorEvidence.error,
+            command: 'npm run monitor:prod',
+            url: getWorkflowRunForHealth(workflows?.prodMonitor)?.url || null,
+        });
+    }
 
     if (executionEfficiency?.signal === 'YELLOW') {
         const mergedPrsCount = Number(
@@ -1975,6 +2256,9 @@ function toMarkdown(summary) {
     lines.push(markdownWorkflowLine('Weekly KPI Report', workflows.weeklyKpi));
     lines.push(
         markdownWorkflowLine('Sentry Events Verify', workflows.sentryVerify)
+    );
+    lines.push(
+        markdownWorkflowLine('Production Monitor', workflows.prodMonitor)
     );
     lines.push(
         markdownWorkflowLine(
@@ -2159,7 +2443,9 @@ function toMarkdown(summary) {
         lines.push(`- ok: ${summary.sentryEvidence.ok ? 'true' : 'false'}`);
         lines.push(`- status: ${summary.sentryEvidence.status || 'n/a'}`);
         if (summary.sentryEvidence.reportRun?.id) {
-            lines.push(`- source_run_id: ${summary.sentryEvidence.reportRun.id}`);
+            lines.push(
+                `- source_run_id: ${summary.sentryEvidence.reportRun.id}`
+            );
         }
         if (summary.sentryEvidence.reportRun?.url) {
             lines.push(
@@ -2226,6 +2512,102 @@ function toMarkdown(summary) {
                 `- action_required: ${summary.sentryEvidence.actionRequired}`
             );
         }
+    }
+    lines.push('');
+
+    lines.push('## Production Monitor Evidence');
+    lines.push('');
+    if (!summary.prodMonitorEvidence || !summary.prodMonitorEvidence.found) {
+        lines.push('- status: not_found');
+        lines.push(`- source: ${summary.prodMonitorEvidence?.source || 'n/a'}`);
+        if (summary.prodMonitorEvidence?.error) {
+            lines.push(`- error: ${summary.prodMonitorEvidence.error}`);
+        }
+    } else if (summary.prodMonitorEvidence.error) {
+        lines.push('- status: error');
+        lines.push(`- source: ${summary.prodMonitorEvidence.source || 'n/a'}`);
+        lines.push(`- error: ${summary.prodMonitorEvidence.error}`);
+        if (summary.prodMonitorEvidence.path) {
+            lines.push(`- path: ${summary.prodMonitorEvidence.path}`);
+        }
+    } else {
+        lines.push(`- source: ${summary.prodMonitorEvidence.source || 'n/a'}`);
+        lines.push(
+            `- ok: ${summary.prodMonitorEvidence.ok ? 'true' : 'false'}`
+        );
+        lines.push(`- status: ${summary.prodMonitorEvidence.status || 'n/a'}`);
+        if (summary.prodMonitorEvidence.reportRun?.id) {
+            lines.push(
+                `- source_run_id: ${summary.prodMonitorEvidence.reportRun.id}`
+            );
+        }
+        if (summary.prodMonitorEvidence.reportRun?.url) {
+            lines.push(
+                `- source_run_url: ${summary.prodMonitorEvidence.reportRun.url}`
+            );
+        }
+        if (summary.prodMonitorEvidence.fallbackAttempted) {
+            lines.push('- source_fallback_attempted: true');
+        }
+        if (summary.prodMonitorEvidence.fallbackFromRemoteError) {
+            lines.push(
+                `- source_fallback_remote_error: ${summary.prodMonitorEvidence.fallbackFromRemoteError}`
+            );
+        }
+        lines.push(`- path: ${summary.prodMonitorEvidence.path || 'n/a'}`);
+        lines.push(
+            `- generatedAt: ${summary.prodMonitorEvidence.generatedAt || 'n/a'}`
+        );
+        lines.push(`- mtime: ${summary.prodMonitorEvidence.mtime || 'n/a'}`);
+        lines.push(
+            `- failure_count: ${summary.prodMonitorEvidence.failureCount ?? 'n/a'}`
+        );
+        lines.push(
+            `- warning_count: ${summary.prodMonitorEvidence.warningCount ?? 'n/a'}`
+        );
+        lines.push(
+            `- health_status: ${summary.prodMonitorEvidence.health?.status || 'n/a'}`
+        );
+        lines.push(
+            `- public_sync_status: ${summary.prodMonitorEvidence.publicSync?.status || 'n/a'}`
+        );
+        lines.push(
+            `- telemedicine_status: ${summary.prodMonitorEvidence.telemedicine?.status || 'n/a'}`
+        );
+        lines.push(
+            `- turnero_pilot_status: ${summary.prodMonitorEvidence.turneroPilot?.status || 'n/a'}`
+        );
+        lines.push(
+            `- github_deploy_alerts_status: ${summary.prodMonitorEvidence.githubDeployAlerts?.status || 'n/a'}`
+        );
+        lines.push(
+            `- public_sync_recovery_status: ${summary.prodMonitorEvidence.publicSyncRecovery?.status || 'n/a'}`
+        );
+        lines.push(
+            `- public_cutover_status: ${summary.prodMonitorEvidence.publicCutover?.stepOutcome || 'n/a'}`
+        );
+        lines.push(
+            `- public_v4_rollout_status: ${summary.prodMonitorEvidence.publicV4Rollout?.stepOutcome || 'n/a'}`
+        );
+        if (summary.prodMonitorEvidence.summary?.headline) {
+            lines.push(
+                `- summary_headline: ${summary.prodMonitorEvidence.summary.headline}`
+            );
+        }
+        lines.push(
+            `- failures: ${
+                summary.prodMonitorEvidence.failures?.length
+                    ? summary.prodMonitorEvidence.failures.join(' | ')
+                    : 'none'
+            }`
+        );
+        lines.push(
+            `- warnings: ${
+                summary.prodMonitorEvidence.warnings?.length
+                    ? summary.prodMonitorEvidence.warnings.join(' | ')
+                    : 'none'
+            }`
+        );
     }
     lines.push('');
 
@@ -2399,6 +2781,13 @@ function main() {
             },
             branch
         ),
+        prodMonitor: fetchLatestWorkflowRun(
+            {
+                workflowRef: '.github/workflows/prod-monitor.yml',
+                label: 'Production Monitor',
+            },
+            branch
+        ),
         repairGitSync: fetchLatestWorkflowRun(
             {
                 workflowRef: '.github/workflows/repair-git-sync.yml',
@@ -2426,12 +2815,17 @@ function main() {
         localPath: DEFAULT_SENTRY_JSON_OUT,
         sentryRun: workflows.sentryVerify,
     });
+    const prodMonitorEvidence = readProdMonitorEvidencePreferred({
+        localPath: DEFAULT_PROD_MONITOR_JSON_OUT,
+        prodMonitorRun: workflows.prodMonitor,
+    });
     const productionStability = computeProductionStability({
         workflows,
         openProdAlerts,
         weeklyLocalReport,
         weeklyKpiHistory,
         sentryEvidence,
+        prodMonitorEvidence,
     });
     const planMasterProgress = computePlanMasterProgress({
         workflows,
@@ -2454,6 +2848,7 @@ function main() {
         productionStability,
         executionEfficiency,
         sentryEvidence,
+        prodMonitorEvidence,
     });
     const releaseReadiness = computeReleaseReadiness({
         productionStability,
@@ -2481,6 +2876,7 @@ function main() {
         openProdAlerts,
         weeklyLocalReport,
         sentryEvidence,
+        prodMonitorEvidence,
         paths: {
             jsonOut,
             mdOut,

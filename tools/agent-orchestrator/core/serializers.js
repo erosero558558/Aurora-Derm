@@ -164,11 +164,13 @@ function serializeBoard(board, options = {}) {
         lines.push(`    domain_lane: ${task.domain_lane || 'backend_ops'}`);
         lines.push(`    lane_lock: ${task.lane_lock || 'strict'}`);
         lines.push(`    cross_domain: ${task.cross_domain ? 'true' : 'false'}`);
-        lines.push(`    provider_mode: ${task.provider_mode || ''}`);
-        lines.push(`    runtime_surface: ${task.runtime_surface || ''}`);
-        lines.push(`    runtime_transport: ${task.runtime_transport || ''}`);
+        lines.push(`    provider_mode: ${quote(task.provider_mode || '')}`);
+        lines.push(`    runtime_surface: ${quote(task.runtime_surface || '')}`);
         lines.push(
-            `    runtime_last_transport: ${task.runtime_last_transport || ''}`
+            `    runtime_transport: ${quote(task.runtime_transport || '')}`
+        );
+        lines.push(
+            `    runtime_last_transport: ${quote(task.runtime_last_transport || '')}`
         );
         lines.push(`    files: ${serializeArrayInline(task.files || [])}`);
         lines.push(`    source_signal: ${task.source_signal || 'manual'}`);

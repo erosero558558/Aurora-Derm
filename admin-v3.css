@@ -1,3 +1,5 @@
+@import url('./ops-design-system.css?v=ops-20260314-sony150');
+
 html[data-admin-ui='sony_v3'] {
     --admin3-bg: #f3f4f1;
     --admin3-bg-soft: #eceee7;
@@ -14,13 +16,17 @@ html[data-admin-ui='sony_v3'] {
     --admin3-radius: 26px;
     --admin3-radius-sm: 18px;
     --admin3-width: min(1340px, calc(100vw - 56px));
-    --admin3-font: 'Inter', 'Plus Jakarta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --admin3-font: 'PlusJakarta', 'Segoe UI', sans-serif;
+    --admin3-display-font: 'FrauncesSoft', 'Times New Roman', serif;
     --admin3-focus: #1742d1;
     --admin3-success: #1f7a4f;
     --admin3-info: #2b6cb0;
     --admin3-warning: #9d6a10;
     --admin3-danger: #a3352b;
     --admin3-neutral: #5b646d;
+    --admin3-motion-fast: var(--ops-motion-fast);
+    --admin3-motion-base: var(--ops-motion-base);
+    --admin3-ease: var(--ops-ease-premium);
 }
 
 html[data-admin-ui='sony_v3'][data-theme='dark'] {
@@ -39,7 +45,9 @@ html[data-admin-ui='sony_v3'][data-theme='dark'] {
 }
 
 html[data-admin-ui='sony_v3'] body {
-    background: linear-gradient(180deg, var(--admin3-bg) 0%, var(--admin3-bg-soft) 100%);
+    background:
+        radial-gradient(circle at top left, rgb(63 132 207 / 10%), transparent 32%),
+        linear-gradient(180deg, var(--admin3-bg) 0%, var(--admin3-bg-soft) 100%);
     color: var(--admin3-ink);
     font-family: var(--admin3-font);
 }
@@ -47,7 +55,9 @@ html[data-admin-ui='sony_v3'] body {
 body.admin-v3-mode {
     margin: 0;
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--admin3-bg) 0%, var(--admin3-bg-soft) 100%);
+    background:
+        radial-gradient(circle at top left, rgb(63 132 207 / 10%), transparent 32%),
+        linear-gradient(180deg, var(--admin3-bg) 0%, var(--admin3-bg-soft) 100%);
     color: var(--admin3-ink);
     line-height: 1.45;
 }
@@ -74,6 +84,10 @@ body.admin-v3-mode button {
 }
 
 body.admin-v3-mode .is-hidden {
+    display: none !important;
+}
+
+body.admin-v3-mode [hidden] {
     display: none !important;
 }
 
@@ -128,10 +142,10 @@ body.admin-v3-mode .queue-sensitive-confirm-dialog form {
     border-radius: var(--admin3-radius);
     box-shadow: var(--admin3-shadow);
     transition:
-        transform 140ms ease,
-        box-shadow 140ms ease,
-        border-color 140ms ease,
-        background 140ms ease;
+        transform var(--admin3-motion-fast) var(--admin3-ease),
+        box-shadow var(--admin3-motion-fast) var(--admin3-ease),
+        border-color var(--admin3-motion-fast) var(--admin3-ease),
+        background var(--admin3-motion-fast) var(--admin3-ease);
 }
 
 body.admin-v3-mode .sony-panel.soft,
@@ -179,8 +193,6 @@ body.admin-v3-mode .sony-kpi {
 
 body.admin-v3-mode .sony-kpi h3,
 body.admin-v3-mode .sony-kpi h4,
-body.admin-v3-mode .sony-panel h3,
-body.admin-v3-mode .sony-panel h4,
 body.admin-v3-mode .admin-v3-login h1,
 body.admin-v3-mode .admin-v3-login h2,
 body.admin-v3-mode .admin-v3-topbar h2,
@@ -188,6 +200,15 @@ body.admin-v3-mode #adminContextTitle {
     margin: 0;
     letter-spacing: -0.04em;
     line-height: 0.96;
+}
+
+body.admin-v3-mode .section-header h3,
+body.admin-v3-mode .admin-v3-login h1,
+body.admin-v3-mode .admin-v3-login h2,
+body.admin-v3-mode .admin-v3-topbar h2,
+body.admin-v3-mode #adminContextTitle {
+    font-family: var(--admin3-display-font);
+    font-weight: 500;
 }
 
 body.admin-v3-mode .sony-kpi strong {
@@ -251,7 +272,11 @@ body.admin-v3-mode .logout-btn {
     min-height: 42px;
     padding: 0 16px;
     font-weight: 600;
-    transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease;
+    transition:
+        transform var(--admin3-motion-fast) var(--admin3-ease),
+        background var(--admin3-motion-fast) var(--admin3-ease),
+        border-color var(--admin3-motion-fast) var(--admin3-ease),
+        color var(--admin3-motion-fast) var(--admin3-ease);
 }
 
 body.admin-v3-mode button:hover,

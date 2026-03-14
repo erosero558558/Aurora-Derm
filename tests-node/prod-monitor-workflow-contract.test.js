@@ -67,11 +67,11 @@ test('prod-monitor workflow propaga env de service priorities a monitor script',
 test('prod-monitor workflow publica parametros de service priorities en summary', () => {
     const { raw } = loadWorkflow();
     const requiredSummaryLines = [
-        '- allow_degraded_service_priorities: ``$env:ALLOW_DEGRADED_SERVICE_PRIORITIES``',
-        '- min_service_priorities_services: ``$env:MIN_SERVICE_PRIORITIES_SERVICES``',
-        '- min_service_priorities_categories: ``$env:MIN_SERVICE_PRIORITIES_CATEGORIES``',
-        '- min_service_priorities_featured: ``$env:MIN_SERVICE_PRIORITIES_FEATURED``',
-        '- require_service_priorities_funnel: ``$env:REQUIRE_SERVICE_PRIORITIES_FUNNEL``',
+        '- allow_degraded_service_priorities: ``$($report.workflow.monitor.inputs.allowDegradedServicePriorities)``',
+        '- min_service_priorities_services: ``$($report.workflow.monitor.inputs.minServicePrioritiesServices)``',
+        '- min_service_priorities_categories: ``$($report.workflow.monitor.inputs.minServicePrioritiesCategories)``',
+        '- min_service_priorities_featured: ``$($report.workflow.monitor.inputs.minServicePrioritiesFeatured)``',
+        '- require_service_priorities_funnel: ``$($report.workflow.monitor.inputs.requireServicePrioritiesFunnel)``',
     ];
 
     for (const snippet of requiredSummaryLines) {
@@ -130,15 +130,10 @@ test('prod-monitor workflow propaga env de telemedicina a monitor script', () =>
 test('prod-monitor workflow publica parametros de telemedicina en summary', () => {
     const { raw } = loadWorkflow();
     const requiredSummaryLines = [
-        '- allow_degraded_telemedicine_diagnostics: ``$env:ALLOW_DEGRADED_TELEMEDICINE_DIAGNOSTICS``',
-        '- require_telemedicine_configured: ``$env:REQUIRE_TELEMEDICINE_CONFIGURED``',
-        '- max_telemedicine_review_queue: ``$env:MAX_TELEMEDICINE_REVIEW_QUEUE``',
-        '- max_telemedicine_staged_uploads: ``$env:MAX_TELEMEDICINE_STAGED_UPLOADS``',
-        '- max_telemedicine_unlinked_intakes: ``$env:MAX_TELEMEDICINE_UNLINKED_INTAKES``',
-        '- telemedicine_monitor_status: ``$env:TELEMEDICINE_MONITOR_STATUS``',
-        '- telemedicine_monitor_reason: ``$env:TELEMEDICINE_MONITOR_REASON``',
-        '- telemedicine_monitor_non_tele_failures: ``$env:TELEMEDICINE_MONITOR_NON_TELE_FAILURES``',
-        '- telemedicine_monitor_step_outcome: ``${{ steps.telemedicine_monitor.outcome }}``',
+        '- telemedicine_monitor_status: ``$($report.workflow.telemedicine.status)``',
+        '- telemedicine_monitor_reason: ``$($report.workflow.telemedicine.reason)``',
+        '- telemedicine_monitor_non_tele_failures: ``$($report.workflow.telemedicine.nonTeleFailures)``',
+        '- telemedicine_monitor_step_outcome: ``$($report.workflow.telemedicine.stepOutcome)``',
     ];
 
     for (const snippet of requiredSummaryLines) {
@@ -267,11 +262,11 @@ test('prod-monitor workflow cierra incidente turneroPilot cuando verify-remote s
         'recovery_targets=$($recoveryTargets -join',
         'turnero pilot recovery => status=$status reason=$reason clinic_id=$clinicId deployed_commit=$deployedCommit recovery_targets=',
         'prod-monitor-turnero-pilot-recovery',
-        '- turnero_pilot_recovery_status: ``$env:TURNERO_PILOT_RECOVERY_STATUS``',
-        '- turnero_pilot_recovery_reason: ``$env:TURNERO_PILOT_RECOVERY_REASON``',
-        '- turnero_pilot_recovery_deployed_commit: ``$env:TURNERO_PILOT_RECOVERY_DEPLOYED_COMMIT``',
-        '- turnero_pilot_recovery_targets: ``$env:TURNERO_PILOT_RECOVERY_TARGETS``',
-        '- turnero_pilot_recovery_manifest: ``$env:TURNERO_PILOT_RECOVERY_MANIFEST_PATH``',
+        '- turnero_pilot_recovery_status: ``$($report.workflow.turneroPilotRecovery.status)``',
+        '- turnero_pilot_recovery_reason: ``$($report.workflow.turneroPilotRecovery.reason)``',
+        '- turnero_pilot_recovery_deployed_commit: ``$($report.workflow.turneroPilotRecovery.deployedCommit)``',
+        '- turnero_pilot_recovery_targets: ``$($report.workflow.turneroPilotRecovery.recoveryTargets)``',
+        '- turnero_pilot_recovery_manifest: ``$($report.workflow.turneroPilotRecovery.manifestPath)``',
         "'[ALERTA PROD] Deploy Hosting turneroPilot bloqueado'",
         "'[ALERTA PROD] Deploy Frontend Self-Hosted turneroPilot bloqueado'",
         'Cerrado automaticamente por prod-monitor al confirmar `verify-remote` saludable.',
@@ -363,12 +358,12 @@ test('prod-monitor workflow cablea ventana y smoke post-cutover publico', () => 
 test('prod-monitor workflow publica estado de cutover en summary', () => {
     const { raw } = loadWorkflow();
     const requiredSummaryLines = [
-        '- enable_public_cutover_monitor: ``$env:ENABLE_PUBLIC_CUTOVER_MONITOR``',
-        '- public_cutover_started_at: ``$env:PUBLIC_CUTOVER_STARTED_AT``',
-        '- public_cutover_window_hours: ``$env:PUBLIC_CUTOVER_WINDOW_HOURS``',
-        '- public_cutover_window_active: ``$env:PUBLIC_CUTOVER_WINDOW_ACTIVE`` (reason ``$env:PUBLIC_CUTOVER_WINDOW_REASON``)',
-        '- public_cutover_elapsed_hours: ``$env:PUBLIC_CUTOVER_ELAPSED_HOURS``',
-        '- public_cutover_step_outcome: ``${{ steps.public_cutover.outcome }}``',
+        '- enable_public_cutover_monitor: ``$($report.workflow.publicCutover.enabled)``',
+        '- public_cutover_started_at: ``$($report.workflow.publicCutover.startedAt)``',
+        '- public_cutover_window_hours: ``$($report.workflow.publicCutover.windowHours)``',
+        '- public_cutover_window_active: ``$($report.workflow.publicCutover.windowActive)`` (reason ``$($report.workflow.publicCutover.windowReason)``)',
+        '- public_cutover_elapsed_hours: ``$($report.workflow.publicCutover.elapsedHours)``',
+        '- public_cutover_step_outcome: ``$($report.workflow.publicCutover.stepOutcome)``',
     ];
 
     for (const snippet of requiredSummaryLines) {
@@ -464,27 +459,27 @@ test('prod-monitor workflow cablea script y artefacto de gate rollout V4', () =>
 test('prod-monitor workflow publica parametros y outcome de rollout V4 en summary', () => {
     const { raw } = loadWorkflow();
     const requiredSummaryLines = [
-        '- enable_public_v4_rollout_monitor: ``$env:ENABLE_PUBLIC_V4_ROLLOUT_MONITOR``',
-        '- public_v4_rollout_stage: ``$env:PUBLIC_V4_ROLLOUT_STAGE``',
-        '- public_v4_rollout_surface_test: ``$env:PUBLIC_V4_ROLLOUT_SURFACE_TEST``',
-        '- public_v4_rollout_surface_control: ``$env:PUBLIC_V4_ROLLOUT_SURFACE_CONTROL``',
-        '- public_v4_rollout_min_view_booking: ``$env:PUBLIC_V4_ROLLOUT_MIN_VIEW_BOOKING``',
-        '- public_v4_rollout_min_start_checkout: ``$env:PUBLIC_V4_ROLLOUT_MIN_START_CHECKOUT``',
-        '- public_v4_rollout_max_confirmed_drop_pp: ``$env:PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP``',
-        '- public_v4_rollout_min_confirmed_rate_pct: ``$env:PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT``',
-        '- public_v4_rollout_allow_missing_control: ``$env:PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL``',
-        '- enable_public_v4_rollout_monitor_effective: ``$env:ENABLE_PUBLIC_V4_ROLLOUT_MONITOR_EFFECTIVE``',
-        '- public_v4_rollout_stage_effective: ``$env:PUBLIC_V4_ROLLOUT_STAGE_EFFECTIVE``',
-        '- public_v4_rollout_stage_profile_effective: ``$env:PUBLIC_V4_ROLLOUT_STAGE_PROFILE_EFFECTIVE``',
-        '- public_v4_rollout_policy_source_effective: ``$env:PUBLIC_V4_ROLLOUT_POLICY_SOURCE_EFFECTIVE``',
-        '- public_v4_rollout_surface_test_effective: ``$env:PUBLIC_V4_ROLLOUT_SURFACE_TEST_EFFECTIVE``',
-        '- public_v4_rollout_surface_control_effective: ``$env:PUBLIC_V4_ROLLOUT_SURFACE_CONTROL_EFFECTIVE``',
-        '- public_v4_rollout_min_view_booking_effective: ``$env:PUBLIC_V4_ROLLOUT_MIN_VIEW_BOOKING_EFFECTIVE``',
-        '- public_v4_rollout_min_start_checkout_effective: ``$env:PUBLIC_V4_ROLLOUT_MIN_START_CHECKOUT_EFFECTIVE``',
-        '- public_v4_rollout_max_confirmed_drop_pp_effective: ``$env:PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP_EFFECTIVE``',
-        '- public_v4_rollout_min_confirmed_rate_pct_effective: ``$env:PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT_EFFECTIVE``',
-        '- public_v4_rollout_allow_missing_control_effective: ``$env:PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL_EFFECTIVE``',
-        '- public_v4_rollout_step_outcome: ``${{ steps.public_v4_rollout.outcome }}``',
+        '- enable_public_v4_rollout_monitor: ``$($report.workflow.publicV4Rollout.enabled)``',
+        '- public_v4_rollout_stage: ``$($report.workflow.publicV4Rollout.stage)``',
+        '- public_v4_rollout_surface_test: ``$($report.workflow.publicV4Rollout.surfaceTest)``',
+        '- public_v4_rollout_surface_control: ``$($report.workflow.publicV4Rollout.surfaceControl)``',
+        '- public_v4_rollout_min_view_booking: ``$($report.workflow.publicV4Rollout.minViewBooking)``',
+        '- public_v4_rollout_min_start_checkout: ``$($report.workflow.publicV4Rollout.minStartCheckout)``',
+        '- public_v4_rollout_max_confirmed_drop_pp: ``$($report.workflow.publicV4Rollout.maxConfirmedDropPp)``',
+        '- public_v4_rollout_min_confirmed_rate_pct: ``$($report.workflow.publicV4Rollout.minConfirmedRatePct)``',
+        '- public_v4_rollout_allow_missing_control: ``$($report.workflow.publicV4Rollout.allowMissingControl)``',
+        '- enable_public_v4_rollout_monitor_effective: ``$($report.workflow.publicV4Rollout.enabledEffective)``',
+        '- public_v4_rollout_stage_effective: ``$($report.workflow.publicV4Rollout.stageEffective)``',
+        '- public_v4_rollout_stage_profile_effective: ``$($report.workflow.publicV4Rollout.stageProfileEffective)``',
+        '- public_v4_rollout_policy_source_effective: ``$($report.workflow.publicV4Rollout.policySourceEffective)``',
+        '- public_v4_rollout_surface_test_effective: ``$($report.workflow.publicV4Rollout.surfaceTestEffective)``',
+        '- public_v4_rollout_surface_control_effective: ``$($report.workflow.publicV4Rollout.surfaceControlEffective)``',
+        '- public_v4_rollout_min_view_booking_effective: ``$($report.workflow.publicV4Rollout.minViewBookingEffective)``',
+        '- public_v4_rollout_min_start_checkout_effective: ``$($report.workflow.publicV4Rollout.minStartCheckoutEffective)``',
+        '- public_v4_rollout_max_confirmed_drop_pp_effective: ``$($report.workflow.publicV4Rollout.maxConfirmedDropPpEffective)``',
+        '- public_v4_rollout_min_confirmed_rate_pct_effective: ``$($report.workflow.publicV4Rollout.minConfirmedRatePctEffective)``',
+        '- public_v4_rollout_allow_missing_control_effective: ``$($report.workflow.publicV4Rollout.allowMissingControlEffective)``',
+        '- public_v4_rollout_step_outcome: ``$($report.workflow.publicV4Rollout.stepOutcome)``',
     ];
 
     for (const snippet of requiredSummaryLines) {
@@ -536,12 +531,12 @@ test('prod-monitor workflow auto-cierra alertas stale de deploy cuando public sy
     }
 
     const requiredSummaryLines = [
-        '- stale_deploy_alert_autoclose_status: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS``',
-        '- stale_deploy_alert_autoclose_reason: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_REASON``',
-        '- stale_deploy_alert_autoclose_public_sync_healthy: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY``',
-        '- stale_deploy_alert_autoclose_open_relevant_count: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT``',
-        '- stale_deploy_alert_autoclose_closed_count: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT``',
-        '- stale_deploy_alert_autoclose_closed_issues: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES``',
+        '- stale_deploy_alert_autoclose_status: ``$($report.workflow.staleDeployAlertAutoclose.status)``',
+        '- stale_deploy_alert_autoclose_reason: ``$($report.workflow.staleDeployAlertAutoclose.reason)``',
+        '- stale_deploy_alert_autoclose_public_sync_healthy: ``$($report.workflow.staleDeployAlertAutoclose.publicSyncHealthy)``',
+        '- stale_deploy_alert_autoclose_open_relevant_count: ``$($report.workflow.staleDeployAlertAutoclose.openRelevantCount)``',
+        '- stale_deploy_alert_autoclose_closed_count: ``$($report.workflow.staleDeployAlertAutoclose.closedCount)``',
+        '- stale_deploy_alert_autoclose_closed_issues: ``$($report.workflow.staleDeployAlertAutoclose.closedIssues)``',
     ];
 
     for (const snippet of requiredSummaryLines) {
@@ -549,6 +544,38 @@ test('prod-monitor workflow auto-cierra alertas stale de deploy cuando public sy
             raw.includes(snippet),
             true,
             `falta linea de summary para autocierre stale deploy alerts: ${snippet}`
+        );
+    }
+});
+
+test('prod-monitor workflow normaliza y publica artefacto canonico del reporte', () => {
+    const { raw, parsed } = loadWorkflow();
+    const steps = parsed?.jobs?.monitor?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    for (const snippet of [
+        'PROD_MONITOR_REPORT_PATH',
+        'ReportPath = $env:PROD_MONITOR_REPORT_PATH',
+        'name: prod-monitor-report',
+        'path: ${{ env.PROD_MONITOR_REPORT_PATH }}',
+        'artifact_name: ``$($report.artifact.name)``',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring del artefacto canonico prod-monitor: ${snippet}`
+        );
+    }
+
+    for (const expectedStepName of [
+        'Normalizar reporte canonico prod-monitor',
+        'Upload canonical prod-monitor report',
+        'Resumen',
+    ]) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step de reporte canonico prod-monitor: ${expectedStepName}`
         );
     }
 });

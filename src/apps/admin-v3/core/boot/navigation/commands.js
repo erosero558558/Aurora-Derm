@@ -5,7 +5,20 @@ import {
 } from '../../../sections/appointments.js';
 import { setCallbacksFilter } from '../../../sections/callbacks.js';
 import { openClinicalHistorySession } from '../../../sections/clinical-history.js';
+import {
+    clearQueueSearch,
+    setQueueFilter,
+} from '../../../shared/modules/queue.js';
 import { navigateToSection } from './sections.js';
+
+async function openQueueWithFilter(filter = 'all') {
+    const navigated = await navigateToSection('queue');
+    if (navigated === false) {
+        return;
+    }
+    clearQueueSearch();
+    setQueueFilter(filter);
+}
 
 const QUICK_ACTIONS = {
     appointments_overview: async () => {
@@ -58,6 +71,24 @@ const QUICK_ACTIONS = {
     },
     availability_section: async () => {
         await navigateToSection('availability');
+    },
+    queue_filter_all: async () => {
+        await openQueueWithFilter('all');
+    },
+    queue_filter_waiting: async () => {
+        await openQueueWithFilter('waiting');
+    },
+    queue_filter_called: async () => {
+        await openQueueWithFilter('called');
+    },
+    queue_sla_risk: async () => {
+        await openQueueWithFilter('sla_risk');
+    },
+    queue_filter_sla_risk: async () => {
+        await openQueueWithFilter('sla_risk');
+    },
+    queue_section: async () => {
+        await openQueueWithFilter('all');
     },
 };
 
@@ -123,6 +154,13 @@ export function parseQuickCommand(value) {
         command.includes('slots')
     ) {
         return 'availability_section';
+    }
+    if (
+        command.includes('turnero') ||
+        command.includes('cola') ||
+        command === 'queue'
+    ) {
+        return 'queue_sla_risk';
     }
     if (command.includes('no show')) {
         return 'appointments_no_show';
