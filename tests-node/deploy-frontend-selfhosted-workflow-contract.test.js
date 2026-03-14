@@ -138,6 +138,38 @@ test('deploy-frontend-selfhosted resuelve y verifica turneroPilot con reporte de
     }
 });
 
+test('deploy-frontend-selfhosted publica las superficies canonicas del turnero y el bundle desktop oficial', () => {
+    const { raw } = loadWorkflow();
+
+    for (const snippet of [
+        "'fonts'",
+        "'images'",
+        "'content'",
+        "'js'",
+        "'app-downloads'",
+        "'desktop-updates'",
+        "'admin-v3.css'",
+        "'operador-turnos.html'",
+        "'kiosco-turnos.html'",
+        "'sala-turnos.html'",
+        "'queue-ops.css'",
+        "'queue-kiosk.css'",
+        "'queue-display.css'",
+        "'styles.css'",
+        "'styles-deferred.css'",
+        "'script.js'",
+        "'sw.js'",
+        "'manifest.json'",
+        "'favicon.ico'",
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta artefacto publico canonico en deploy-frontend-selfhosted: ${snippet}`
+        );
+    }
+});
+
 test('deploy-frontend-selfhosted gestiona incidente dedicado de turneroPilot', () => {
     const { raw, parsed } = loadWorkflow();
     const steps = parsed?.jobs?.deploy?.steps || [];

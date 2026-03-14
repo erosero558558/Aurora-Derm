@@ -238,15 +238,49 @@ jobs:
                   }
 
                   function collectDeployFiles() {
-                    const candidates = ['es', 'en', '_astro', 'index.php', 'index.html'];
+                    const candidates = [
+                      'es',
+                      'en',
+                      '_astro',
+                      'fonts',
+                      'images',
+                      'content',
+                      'js',
+                      'app-downloads',
+                      'desktop-updates',
+                      'index.php',
+                      'index.html',
+                      'styles.css',
+                      'styles-deferred.css',
+                      'script.js',
+                      'sw.js',
+                      'manifest.json',
+                      'favicon.ico',
+                      'admin-v3.css',
+                      'operador-turnos.html',
+                      'kiosco-turnos.html',
+                      'sala-turnos.html',
+                      'queue-ops.css',
+                      'queue-kiosk.css',
+                      'queue-display.css'
+                    ];
                     const files = [];
+                    const seen = new Set();
                     for (const entry of candidates) {
                       const full = path.resolve(entry);
                       if (!fs.existsSync(full)) continue;
                       const stat = fs.statSync(full);
                       if (stat.isDirectory()) {
-                        files.push(...walkFiles(full));
+                        for (const nestedFile of walkFiles(full)) {
+                          const normalized = path.normalize(nestedFile);
+                          if (seen.has(normalized)) continue;
+                          seen.add(normalized);
+                          files.push(nestedFile);
+                        }
                       } else {
+                        const normalized = path.normalize(full);
+                        if (seen.has(normalized)) continue;
+                        seen.add(normalized);
                         files.push(full);
                       }
                     }
