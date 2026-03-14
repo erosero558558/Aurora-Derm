@@ -259,6 +259,7 @@ node agent-orchestrator.js runtime invoke AG-900 --expect-rev 12 --json
 node agent-orchestrator.js codex start CDX-001 --block C1
 node agent-orchestrator.js codex start CDX-001 --block C1 --expect-rev 12
 node agent-orchestrator.js codex stop CDX-001 --to review
+node agent-orchestrator.js codex stop CDX-001 --to blocked --blocked-reason remote_verify_smoke_gate_pending --expect-rev 12
 node agent-orchestrator.js board doctor
 node agent-orchestrator.js board doctor --json --profile ci
 node agent-orchestrator.js board events tail --json
@@ -416,6 +417,9 @@ Nota:
 - El bloque `CODEX_STRATEGY_NEXT` del plan debe espejar exactamente
   `strategy.next` cuando exista draft.
 - Toda ejecucion activa de Codex debe tener tarea espejo `CDX-*` en `AGENT_BOARD.yaml` con `executor: codex`.
+- Toda estrategia nueva o nueva ola debe arrancar activando primero sus tareas
+  espejo `CDX-*` por lane; las `AG-*` de apoyo no abren trabajo antes de que
+  exista al menos una `CDX-*` activa alineada al frente.
 - Maximo una tarea `CDX-*` activa por `codex_instance`.
 - Maximo tres tareas `CDX-*` activas en total, una por lane.
 - El bloqueo por solape se decide por `files` en tareas activas del board (`ready`, `in_progress`, `review`, `blocked`).

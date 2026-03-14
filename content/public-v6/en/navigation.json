@@ -87,9 +87,9 @@
                 "kind": "standard"
             },
             {
-                "id": "legal",
-                "label": "Legal",
-                "href": "/en/legal/terms/",
+                "id": "followup",
+                "label": "Follow-up",
+                "href": "/en/services/piel-cabello-unas/",
                 "kind": "standard"
             }
         ],
@@ -173,10 +173,10 @@
                 "deck": "Remote guidance when it helps you move sooner, with clear direction on what comes next."
             },
             {
-                "label": "Legal and consent",
-                "href": "/en/legal/terms/",
-                "eyebrow": "Legal framework",
-                "deck": "Terms, privacy, and consent foundations for care delivery."
+                "label": "When to change route",
+                "href": "/en/services/diagnostico-integral/",
+                "eyebrow": "Next step",
+                "deck": "If one path is no longer enough, return to the first visit route to reorganize priorities and decide between telemedicine and in-clinic care."
             }
         ]
     },
@@ -294,11 +294,11 @@
             },
             {
                 "id": "extended-care",
-                "heading": "Follow-up",
+                "heading": "Teledermatology and follow-up",
                 "context": {
-                    "eyebrow": "Ongoing care",
-                    "title": "Teledermatology, follow-up, and consent in one patient map",
-                    "deck": "This section brings together remote guidance, thoughtful follow-up, and the legal framework that supports care.",
+                    "eyebrow": "Stay on course",
+                    "title": "Move remotely, adjust the plan, and know when to come in",
+                    "deck": "This section summarizes when remote care helps first, when follow-up should continue, and when the next step should be in clinic.",
                     "href": "/en/telemedicine/"
                 },
                 "items": [
@@ -317,6 +317,20 @@
                         ]
                     },
                     {
+                        "label": "Route change",
+                        "href": "/en/services/diagnostico-integral/",
+                        "children": [
+                            {
+                                "label": "Return to first visit",
+                                "href": "/en/services/diagnostico-integral/"
+                            },
+                            {
+                                "label": "Compare services",
+                                "href": "/en/services/"
+                            }
+                        ]
+                    },
+                    {
                         "label": "Dermatology follow-up",
                         "href": "/en/services/piel-cabello-unas/",
                         "children": [
@@ -331,16 +345,16 @@
                         ]
                     },
                     {
-                        "label": "Legal and consent",
-                        "href": "/en/legal/terms/",
+                        "label": "Move into clinic",
+                        "href": "/en/services/diagnostico-integral/",
                         "children": [
                             {
-                                "label": "Privacy",
-                                "href": "/en/legal/privacy/"
+                                "label": "First visit",
+                                "href": "/en/services/diagnostico-integral/"
                             },
                             {
-                                "label": "Medical disclaimer",
-                                "href": "/en/legal/medical-disclaimer/"
+                                "label": "View specialties",
+                                "href": "/en/services/"
                             }
                         ]
                     }

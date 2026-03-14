@@ -510,7 +510,7 @@ async function run() {
             );
         });
 
-        await desktopPage.locator('[data-v6-next]').click();
+        await desktopPage.locator('[data-v6-next]').first().click();
         await desktopPage.keyboard.press('ArrowRight');
         const indexAfterRight = await desktopPage.evaluate(() =>
             Array.from(document.querySelectorAll('[data-v6-slide]')).findIndex(

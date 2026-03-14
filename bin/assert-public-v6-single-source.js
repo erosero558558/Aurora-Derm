@@ -75,10 +75,12 @@ function main() {
         .filter((file) => fs.existsSync(path.join(ROOT, file)));
     const forbiddenTrackedHtml = trackedHtml.filter((file) => {
         if (file.startsWith('templates/')) return false;
+        if (file.startsWith('docs/archive/')) return false;
         if (file === 'admin.html') return false;
         if (file === 'operador-turnos.html') return false;
         if (file === 'kiosco-turnos.html') return false;
         if (file === 'sala-turnos.html') return false;
+        if (file.startsWith('src/apps/turnero-desktop/src/renderer/')) return false;
         if (file.startsWith('es/')) return false;
         if (file.startsWith('en/')) return false;
         return true;

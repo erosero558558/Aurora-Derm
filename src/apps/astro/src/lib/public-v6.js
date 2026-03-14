@@ -718,6 +718,7 @@ function applyServiceImageDecisions(payload, locale) {
                 normalizeText(safeService.cardAssetId) ||
                 inferAssetIdFromImagePath(safeService.heroImage),
             fallbackSrc: safeService.heroImage,
+            fallbackSrcset: safeService.heroImageSrcset,
             fallbackAlt: safeService.heroAlt || safeService.title,
         });
         const statementResolved = resolveV6SlotImage(statementSlotId, locale, {
@@ -725,12 +726,16 @@ function applyServiceImageDecisions(payload, locale) {
                 normalizeText(safeService.statementAssetId) ||
                 inferAssetIdFromImagePath(safeService.statementImage),
             fallbackSrc: safeService.statementImage,
+            fallbackSrcset: safeService.statementImageSrcset,
             fallbackAlt: safeService.statementAlt || safeService.title,
         });
 
         return {
             ...safeService,
             heroImage: heroResolved.src || safeService.heroImage,
+            heroImageSrcset:
+                heroResolved.srcset ||
+                normalizeText(safeService.heroImageSrcset),
             heroAlt:
                 heroResolved.alt ||
                 normalizeText(safeService.heroAlt) ||
@@ -738,6 +743,9 @@ function applyServiceImageDecisions(payload, locale) {
             heroImageAssetId: heroResolved.assetId,
             heroImageSlotId: heroSlotId,
             statementImage: statementResolved.src || safeService.statementImage,
+            statementImageSrcset:
+                statementResolved.srcset ||
+                normalizeText(safeService.statementImageSrcset),
             statementAlt:
                 statementResolved.alt ||
                 normalizeText(safeService.statementAlt) ||
@@ -2264,9 +2272,18 @@ function hydrateV6ServiceMedia(service, locale) {
         statementImage:
             normalizeText(service?.statementImage) ||
             normalizeText(statementAsset?.src),
+        statementImageSrcset:
+            normalizeText(service?.statementImageSrcset) ||
+            normalizeText(statementAsset?.srcset),
         statementAlt,
+        heroImageSrcset:
+            normalizeText(service?.heroImageSrcset) ||
+            normalizeText(cardAsset?.srcset),
         cardImage:
             normalizeText(service?.cardImage) || normalizeText(cardAsset?.src),
+        cardImageSrcset:
+            normalizeText(service?.cardImageSrcset) ||
+            normalizeText(cardAsset?.srcset),
         cardAlt,
     };
 }

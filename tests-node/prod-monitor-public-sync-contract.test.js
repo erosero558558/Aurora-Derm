@@ -52,7 +52,7 @@ test('prod monitor clasifica incidentes publicSync con telemetria canonica', () 
         'Add-MonitorFailure -Message "[FAIL] health.publicSync unhealthy (state=$publicSyncState, failureReason=$publicSyncFailureReason, repoHygieneIssue=$publicSyncRepoHygieneIssue, headDrift=$publicSyncHeadDrift, telemetryGap=$publicSyncTelemetryGap, dirtyPathsCount=$publicSyncDirtyPathsCount)" -AllowDegraded:$AllowDegradedPublicSync',
         'Add-MonitorFailure -Message "[FAIL] health.publicSync head drift (currentHead=$publicSyncCurrentHead remoteHead=$publicSyncRemoteHead)" -AllowDegraded:$AllowDegradedPublicSync',
         'Add-MonitorFailure -Message "[FAIL] health.publicSync telemetry gap (failureReason=$publicSyncFailureReason lastErrorMessage=$publicSyncLastErrorMessage)" -AllowDegraded:$AllowDegradedPublicSync',
-        'Write-Host "[WARN] health.publicSync repo hygiene issue (dirtyPathsCount=$publicSyncDirtyPathsCount dirtyPathsSample=$publicSyncDirtyPathsSampleLabel)"',
+        'Add-MonitorWarning -Message "[WARN] health.publicSync repo hygiene issue (dirtyPathsCount=$publicSyncDirtyPathsCount dirtyPathsSample=$publicSyncDirtyPathsSampleLabel)"',
     ];
 
     for (const snippet of requiredSnippets) {
@@ -78,9 +78,18 @@ test('prod monitor integra verify-remote del piloto web por clínica en el triag
         '& node $turneroClinicProfileScriptPath verify-remote --base-url $base --json 2>&1',
         '[INFO] turneroPilot remote clinicId=$turneroPilotRemoteClinicId fingerprint=$turneroPilotRemoteFingerprint catalogReady=$turneroPilotRemoteCatalogReady',
         '[INFO] turneroPilot recoveryTargets=$turneroPilotRecoveryTargetsLabel',
+        '$turneroPilotRemoteHealthRedacted = $false',
+        '$turneroPilotRemoteDiagnosticsAuthorized = $false',
+        "$turneroPilotRemoteResource = 'health'",
+        'try { $turneroPilotRemoteHealthRedacted = [bool]$turneroPilotVerify.publicHealthRedacted } catch { $turneroPilotRemoteHealthRedacted = $false }',
+        'Add-MonitorFailure -Message "[FAIL] turneroPilot remote health redacted (resource=$turneroPilotRemoteResource diagnosticsAuthorized=$turneroPilotRemoteDiagnosticsAuthorized)" -AllowDegraded:$AllowDegradedPublicSync',
+        '$turneroPilotRemoteVerificationBlocked = (',
         'Add-MonitorFailure -Message "[FAIL] turneroPilot remote mismatch (clinicId=$turneroPilotRemoteClinicId fingerprint=$turneroPilotRemoteFingerprint catalogReady=$turneroPilotRemoteCatalogReady)" -AllowDegraded:$AllowDegradedPublicSync',
+        'publicHealthRedacted = $turneroPilotRemoteHealthRedacted',
+        'diagnosticsAuthorized = $turneroPilotRemoteDiagnosticsAuthorized',
+        'resource = $turneroPilotRemoteResource',
         "Write-Host '[INFO] turneroPilot verify-remote omitido: perfil activo no esta en modo web_pilot.'",
-        "Write-Host '[WARN] bin/turnero-clinic-profile.js no existe; se omite monitor turneroPilot.'",
+        "Add-MonitorWarning -Message '[WARN] bin/turnero-clinic-profile.js no existe; se omite monitor turneroPilot.'",
     ];
 
     for (const snippet of requiredSnippets) {

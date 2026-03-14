@@ -75,6 +75,9 @@ const QUEUE_REFRESH_MS = 8000;
 const OPERATOR_HEARTBEAT_MS = 15000;
 const OPERATOR_PILOT_BLOCK_TOAST_COOLDOWN_MS = 2500;
 
+document.documentElement.setAttribute('data-ops-tone', 'light');
+document.body?.setAttribute('data-ops-tone', 'light');
+
 let refreshIntervalId = 0;
 let operatorHeartbeat = null;
 let operatorAuthPollPromise = null;

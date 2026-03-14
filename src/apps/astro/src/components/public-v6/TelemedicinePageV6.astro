@@ -128,7 +128,14 @@ const heroBookingLabel =
         <section class="v6-page-hero-media is-internal v6-page-hero-media--tele" data-v6-internal-hero>
             <div class="v6-tele-hero-shell">
                 <figure class="v6-tele-hero-shell__media">
-                    <img src={heroImageSrc} srcset={heroImageSrcSet || undefined} alt={heroImageAlt} sizes="100vw" loading="eager" fetchpriority="high" />
+                    <img
+                        src={heroImageSrc}
+                        srcset={heroImageSrcSet || undefined}
+                        alt={heroImageAlt}
+                        sizes="(max-width: 1100px) 100vw, 62vw"
+                        loading="eager"
+                        fetchpriority="high"
+                    />
                 </figure>
                 <aside class="v6-tele-hero-shell__panel">
                     <p class="v6-tele-hero-shell__eyebrow">{heroSummaryLabel}</p>

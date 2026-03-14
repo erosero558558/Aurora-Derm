@@ -2,6 +2,7 @@ import { setHash } from './persistence.js';
 
 const VALID_SECTIONS = new Set([
     'dashboard',
+    'queue',
     'clinical-history',
     'appointments',
     'callbacks',

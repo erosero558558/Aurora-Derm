@@ -39,6 +39,9 @@ const KIOSK_WELCOME_REMOVE_MS = 2600;
 const KIOSK_VOICE_GUIDE_LANG = 'es-EC';
 const KIOSK_HEARTBEAT_MS = 15000;
 
+document.documentElement.setAttribute('data-ops-tone', 'dark');
+document.body?.setAttribute('data-ops-tone', 'dark');
+
 const state = {
     queueState: null,
     chatHistory: [],
@@ -165,8 +168,7 @@ function normalizeOfflineOutboxStorage(rawValue) {
             patientInitials: String(item?.patientInitials || '--'),
             queueType: String(item?.queueType || '--'),
             renderMode:
-                String(item?.renderMode || 'ticket').toLowerCase() ===
-                'support'
+                String(item?.renderMode || 'ticket').toLowerCase() === 'support'
                     ? 'support'
                     : 'ticket',
             queuedAt: String(item?.queuedAt || new Date().toISOString()),
@@ -243,10 +245,9 @@ function getKioskConsultorioLabel(consultorio) {
 
 function renderKioskProfileStatus(profile) {
     const surfaceContract = getKioskSurfaceContract(profile);
-    const profileFingerprint = getTurneroClinicProfileFingerprint(profile).slice(
-        0,
-        8
-    );
+    const profileFingerprint = getTurneroClinicProfileFingerprint(
+        profile
+    ).slice(0, 8);
     const el = getById('kioskProfileStatus');
     if (!(el instanceof HTMLElement)) {
         return;

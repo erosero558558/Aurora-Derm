@@ -85,15 +85,30 @@ final class HealthVisibilityTest extends TestCase
         $this->assertArrayHasKey('version', $response['payload']);
         $this->assertArrayNotHasKey('storageBackend', $response['payload']);
         $this->assertArrayNotHasKey('dataDirSource', $response['payload']);
-        $this->assertArrayHasKey('calendarConfigured', $response['payload']);
-        $this->assertArrayHasKey('calendarReachable', $response['payload']);
-        $this->assertArrayHasKey('calendarMode', $response['payload']);
-        $this->assertArrayHasKey('calendarSource', $response['payload']);
         $this->assertArrayHasKey('checks', $response['payload']);
+        $this->assertArrayHasKey('turneroPilot', $response['payload']['checks']);
         $this->assertArrayHasKey('publicSync', $response['payload']['checks']);
         $this->assertArrayNotHasKey('storage', $response['payload']['checks']);
         $this->assertArrayNotHasKey('auth', $response['payload']['checks']);
         $this->assertArrayNotHasKey('internalConsole', $response['payload']['checks']);
+        $this->assertSame(
+            'piel-armonia-quito',
+            (string) ($response['payload']['checks']['turneroPilot']['clinicId'] ?? '')
+        );
+        $this->assertSame(
+            '/admin.html#queue',
+            (string) ($response['payload']['checks']['turneroPilot']['surfaces']['admin']['route'] ?? '')
+        );
+        $this->assertTrue((bool) ($response['payload']['checks']['publicSync']['configured'] ?? false));
+        $this->assertArrayNotHasKey('repoPath', $response['payload']['checks']['publicSync']);
+        $this->assertArrayNotHasKey('statusPath', $response['payload']['checks']['publicSync']);
+        $this->assertArrayNotHasKey('logPath', $response['payload']['checks']['publicSync']);
+        $this->assertArrayNotHasKey('lockFile', $response['payload']['checks']['publicSync']);
+        $this->assertArrayNotHasKey('currentHead', $response['payload']['checks']['publicSync']);
+        $this->assertArrayNotHasKey('remoteHead', $response['payload']['checks']['publicSync']);
+        $this->assertArrayNotHasKey('dirtyPaths', $response['payload']['checks']['publicSync']);
+        $this->assertArrayNotHasKey('dirtyPathsCount', $response['payload']['checks']['publicSync']);
+        $this->assertArrayNotHasKey('lastErrorMessage', $response['payload']['checks']['publicSync']);
     }
 
     public function testAuthorizedHealthStillExposesDetailedDiagnostics(): void

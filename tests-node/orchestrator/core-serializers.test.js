@@ -126,6 +126,10 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
                 exception_expires_at: '2026-03-14T08:00:00.000Z',
                 exception_state: 'regularized',
                 files: ['agent-orchestrator.js'],
+                provider_mode: '',
+                runtime_surface: '',
+                runtime_transport: '',
+                runtime_last_transport: '',
                 acceptance: 'ok',
                 acceptance_ref: 'verification/agent-runs/AG-001.md',
                 depends_on: [],
@@ -154,6 +158,14 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
     assert.match(yaml, /title:\s+"Task \\"uno\\""/);
     assert.match(yaml, /exception_state:\s+"regularized"/);
     assert.match(yaml, /files:\s+\["agent-orchestrator\.js"\]/);
+    assert.match(yaml, /provider_mode:\s+""/);
+    assert.match(yaml, /runtime_surface:\s+""/);
+    assert.match(yaml, /runtime_transport:\s+""/);
+    assert.match(yaml, /runtime_last_transport:\s+""/);
+    assert.equal(
+        yaml.split(/\r?\n/).some((line) => /\s+$/.test(line)),
+        false
+    );
 
     const parsed = parsers.parseBoardContent(yaml, {
         allowedStatuses: new Set(['ready']),

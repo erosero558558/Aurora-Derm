@@ -88,13 +88,13 @@ export function buildQueueQuickConsoleModel(manifest, detectedPlatform, deps) {
             tone: 'incidents',
             title: 'Consola rápida: Incidencias',
             summary:
-                'Enfoca refresh, contingencia y registro de incidencia sin perder tiempo buscando la acción correcta en todo el hub.',
+                'Primero refresca la cola, luego registra la incidencia y abre contingencia o bitácora según la urgencia del turno.',
             chips,
             actions: [
                 {
                     id: 'queueQuickConsoleAction_refresh',
                     kind: 'button',
-                    label: 'Refrescar cola',
+                    label: 'Refrescar y revisar sync',
                     variant: 'primary',
                     action: 'queue-refresh-state',
                 },
@@ -125,8 +125,8 @@ export function buildQueueQuickConsoleModel(manifest, detectedPlatform, deps) {
             title: 'Consola rápida: Cierre',
             summary:
                 handoffAssist.suggestedCount > 0
-                    ? 'Confirma el relevo sugerido, copia el resumen y deja a la vista las superficies críticas del cierre.'
-                    : 'Abre operador o sala y remata el cierre del turno sin desplazarte por todos los bloques.',
+                    ? 'Confirma el relevo sugerido, copia el resumen y deja bitácora y telemetría listas para cerrar sin rebuscar.'
+                    : 'Copia el relevo o abre operador y sala para rematar el turno sin desplazarte por el hub completo.',
             chips,
             actions: [
                 {
@@ -165,13 +165,13 @@ export function buildQueueQuickConsoleModel(manifest, detectedPlatform, deps) {
         tone: 'operations',
         title: 'Consola rápida: Operación',
         summary:
-            'Llama el siguiente turno, refresca la cola o abre la superficie correcta sin saltar entre el header y el resto del hub.',
+            'Llama el siguiente turno o reabre operador desde aquí; el resto del carril operativo queda a un scroll corto.',
         chips,
         actions: [
             {
                 id: 'queueQuickConsoleAction_call_c1',
                 kind: 'button',
-                label: 'Llamar C1',
+                label: 'Llamar siguiente C1',
                 variant: 'primary',
                 action: 'queue-call-next',
                 consultorio: 1,

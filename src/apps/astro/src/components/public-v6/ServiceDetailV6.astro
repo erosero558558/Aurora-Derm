@@ -41,6 +41,7 @@ const serviceCategory = normalizeText(service.category);
 const serviceSummary = normalizeText(service.summary);
 const serviceLead = normalizeText(service.lead);
 const serviceHeroImage = normalizeText(service.heroImage);
+const serviceHeroSrcset = normalizeText(service.heroImageSrcset);
 const serviceHeroAlt = normalizeText(service.heroAlt) || serviceTitle;
 const serviceStatementImage = normalizeText(service.statementImage);
 const serviceStatementAlt = normalizeText(service.statementAlt);
@@ -164,7 +165,14 @@ const heroMenuItems = sectionMenuItems.slice(0, 3);
         <section class="v6-page-hero-media is-internal v6-page-hero-media--service" data-v6-internal-hero>
             <div class="v6-service-hero-shell">
                 <figure class="v6-service-hero-shell__media">
-                    <img src={serviceHeroImage} alt={serviceHeroAlt} loading="eager" fetchpriority="high" />
+                    <img
+                        src={serviceHeroImage}
+                        srcset={serviceHeroSrcset || undefined}
+                        sizes="(max-width: 1100px) 100vw, 62vw"
+                        alt={serviceHeroAlt}
+                        loading="eager"
+                        fetchpriority="high"
+                    />
                 </figure>
                 <aside class="v6-service-hero-shell__panel">
                     <p class="v6-service-hero-shell__eyebrow">{heroSummaryLabel}</p>

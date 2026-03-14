@@ -5,9 +5,13 @@ export function renderQueueFocusModeView(manifest, detectedPlatform, deps) {
         escapeHtml,
         persistOpsFocusMode,
         getHubRoot,
+        getAdminMode,
+        isBasicFullView,
+        setBasicFullView,
         renderQueueHubDomainView,
         renderQueueQuickConsole,
         renderQueuePlaybook,
+        rerenderQueueOpsHub,
     } = deps;
     const root = document.getElementById('queueFocusMode');
     const hub = getHubRoot();
@@ -16,6 +20,18 @@ export function renderQueueFocusModeView(manifest, detectedPlatform, deps) {
     }
 
     const focus = buildQueueFocusMode(manifest, detectedPlatform);
+    const adminMode =
+        typeof getAdminMode === 'function'
+            ? getAdminMode()
+            : String(hub?.dataset?.queueAdminMode || '')
+                    .trim()
+                    .toLowerCase() === 'basic'
+              ? 'basic'
+              : 'expert';
+    const basicFullView =
+        adminMode === 'basic' && typeof isBasicFullView === 'function'
+            ? isBasicFullView()
+            : false;
     if (hub instanceof HTMLElement) {
         hub.dataset.queueFocus = focus.effectiveMode;
         hub.dataset.queueFocusSource =
@@ -59,6 +75,37 @@ export function renderQueueFocusModeView(manifest, detectedPlatform, deps) {
                         >
                             ${escapeHtml(focus.primaryLabel)}
                         </a>
+                        ${
+                            adminMode === 'basic'
+                                ? `
+                                    <div class="queue-focus-mode__view-toggle">
+                                        <span
+                                            id="queueFocusModeViewState"
+                                            class="queue-focus-mode__view-state"
+                                            data-state="${basicFullView ? 'expanded' : 'focused'}"
+                                        >
+                                            ${escapeHtml(
+                                                basicFullView
+                                                    ? 'Ver todo temporal'
+                                                    : 'Vista guiada'
+                                            )}
+                                        </span>
+                                        <button
+                                            id="queueFocusModeExpandBtn"
+                                            type="button"
+                                            class="queue-focus-mode__expand"
+                                            data-state="${basicFullView ? 'active' : 'idle'}"
+                                        >
+                                            ${escapeHtml(
+                                                basicFullView
+                                                    ? 'Volver al foco'
+                                                    : 'Ver todo'
+                                            )}
+                                        </button>
+                                    </div>
+                                `
+                                : ''
+                        }
                     </div>
                 </div>
                 <div class="queue-focus-mode__choices" role="tablist" aria-label="Cambiar foco del hub operativo">
@@ -77,6 +124,12 @@ export function renderQueueFocusModeView(manifest, detectedPlatform, deps) {
             return;
         }
         button.onclick = () => {
+            if (
+                adminMode === 'basic' &&
+                typeof setBasicFullView === 'function'
+            ) {
+                setBasicFullView(false);
+            }
             persistOpsFocusMode(button.dataset.queueFocusMode || 'auto');
             renderQueueFocusModeView(manifest, detectedPlatform, deps);
             if (typeof renderQueueHubDomainView === 'function') {
@@ -86,4 +139,25 @@ export function renderQueueFocusModeView(manifest, detectedPlatform, deps) {
             renderQueuePlaybook(manifest, detectedPlatform);
         };
     });
+
+    const expandButton = document.getElementById('queueFocusModeExpandBtn');
+    if (
+        adminMode === 'basic' &&
+        expandButton instanceof HTMLButtonElement &&
+        typeof setBasicFullView === 'function'
+    ) {
+        expandButton.onclick = () => {
+            setBasicFullView(!basicFullView);
+            if (typeof rerenderQueueOpsHub === 'function') {
+                rerenderQueueOpsHub(manifest, detectedPlatform);
+                return;
+            }
+            renderQueueFocusModeView(manifest, detectedPlatform, deps);
+            if (typeof renderQueueHubDomainView === 'function') {
+                renderQueueHubDomainView();
+            }
+            renderQueueQuickConsole(manifest, detectedPlatform);
+            renderQueuePlaybook(manifest, detectedPlatform);
+        };
+    }
 }

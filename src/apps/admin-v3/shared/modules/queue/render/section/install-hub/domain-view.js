@@ -7,12 +7,25 @@ const VALID_DOMAIN_SELECTIONS = new Set([
     'deployment',
     'incidents',
 ]);
+const VALID_QUEUE_FOCUS_MODES = new Set([
+    'opening',
+    'operations',
+    'incidents',
+    'closing',
+]);
 
 function normalizeSelection(value) {
     const safeValue = String(value || '')
         .trim()
         .toLowerCase();
     return VALID_DOMAIN_SELECTIONS.has(safeValue) ? safeValue : 'auto';
+}
+
+function normalizeFocusMode(value) {
+    const safeValue = String(value || '')
+        .trim()
+        .toLowerCase();
+    return VALID_QUEUE_FOCUS_MODES.has(safeValue) ? safeValue : 'operations';
 }
 
 function normalizeClinicScopedSelection(rawValue, activeClinicId) {
@@ -97,9 +110,7 @@ function persistSelection(value, activeClinicId) {
 }
 
 function getSuggestedDomain(queueFocus) {
-    const safeFocus = String(queueFocus || '')
-        .trim()
-        .toLowerCase();
+    const safeFocus = normalizeFocusMode(queueFocus);
     if (safeFocus === 'opening') {
         return 'deployment';
     }
@@ -109,17 +120,93 @@ function getSuggestedDomain(queueFocus) {
     return 'operations';
 }
 
-function buildDomainCopy(domain, adminMode = 'expert') {
-    if (domain === 'deployment') {
-        if (adminMode === 'basic') {
+function normalizeAdminMode(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase() === 'basic'
+        ? 'basic'
+        : 'expert';
+}
+
+function tokenizeMatchList(value) {
+    return String(value || '')
+        .split(/\s+/u)
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean);
+}
+
+function matchesDataset(node, datasetKey, activeValue, defaultVisible) {
+    const matches = tokenizeMatchList(node?.dataset?.[datasetKey] || '');
+    if (matches.length === 0) {
+        return defaultVisible;
+    }
+    return matches.includes(activeValue);
+}
+
+function setPanelVisibility(node, isVisible) {
+    node.hidden = !isVisible;
+    node.style.display = isVisible ? '' : 'none';
+    node.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+}
+
+function listHubPanels(hub) {
+    if (!(hub instanceof HTMLElement)) {
+        return [];
+    }
+
+    return Array.from(
+        hub.querySelectorAll(
+            '[data-queue-admin-level], [data-queue-basic-match], [data-queue-domain-match]'
+        )
+    ).filter((node) => node instanceof HTMLElement && node.id);
+}
+
+function buildDomainCopy(
+    domain,
+    adminMode = 'expert',
+    queueFocus = 'operations'
+) {
+    if (adminMode === 'basic') {
+        if (domain === 'deployment') {
             return {
                 title: 'Experiencia: Despliegue',
                 summary:
-                    'Checklist de apertura, perfil por clínica y canon web del piloto viven aquí. Los instaladores quedan para el siguiente release.',
+                    'El foco de apertura deja checklist, piloto web y apps del release al frente. Los instaladores nativos quedan fuera del bloqueo del go-live.',
                 primaryHref: '#queueOpeningChecklist',
                 primaryLabel: 'Ir a apertura diaria',
             };
         }
+
+        if (domain === 'incidents') {
+            return {
+                title: 'Experiencia: Incidentes',
+                summary:
+                    'Telemetría, alertas, contingencias y bitácora urgente quedan juntas para resolver la incidencia sin cambiar de carril.',
+                primaryHref: '#queueSurfaceTelemetry',
+                primaryLabel: 'Ir a incidentes',
+            };
+        }
+
+        if (queueFocus === 'closing') {
+            return {
+                title: 'Experiencia: Operación',
+                summary:
+                    'El cierre deja relevo, bitácora y telemetría al frente sin reabrir la vista completa del hub.',
+                primaryHref: '#queueShiftHandoff',
+                primaryLabel: 'Ir a cierre y relevo',
+            };
+        }
+
+        return {
+            title: 'Experiencia: Operación',
+            summary:
+                'Consultorios, resolución, llamados y bandejas rápidas quedan al frente para operar el turno sin ruido lateral.',
+            primaryHref: '#queueConsultorioBoard',
+            primaryLabel: 'Ir a operación',
+        };
+    }
+
+    if (domain === 'deployment') {
         return {
             title: 'Experiencia: Despliegue',
             summary:
@@ -140,7 +227,7 @@ function buildDomainCopy(domain, adminMode = 'expert') {
     }
 
     return {
-        title: 'Experiencia: Operacion',
+        title: 'Experiencia: Operación',
         summary:
             'Llamados, cola viva, apoyo y cierre quedan al frente para usar el turnero sin ruido de despliegue.',
         primaryHref: '#queueConsultorioBoard',
@@ -153,49 +240,81 @@ function applyDomainVisibility(hub, effectiveDomain) {
         return;
     }
 
-    hub.querySelectorAll('[data-queue-domain-match]').forEach((node) => {
-        if (!(node instanceof HTMLElement)) {
-            return;
+    const adminMode = normalizeAdminMode(hub.dataset.queueAdminMode || '');
+    const queueFocus = normalizeFocusMode(hub.dataset.queueFocus || '');
+    const basicFullView =
+        adminMode === 'basic' &&
+        String(hub.dataset.queueBasicFullView || '')
+            .trim()
+            .toLowerCase() === 'true';
+
+    listHubPanels(hub).forEach((node) => {
+        let isVisible = true;
+        if (adminMode === 'basic' && !basicFullView) {
+            isVisible = matchesDataset(
+                node,
+                'queueBasicMatch',
+                queueFocus,
+                false
+            );
+        } else if (!basicFullView) {
+            isVisible = matchesDataset(
+                node,
+                'queueDomainMatch',
+                effectiveDomain,
+                true
+            );
         }
-        const matches = String(node.dataset.queueDomainMatch || '')
-            .split(/\s+/u)
-            .map((value) => value.trim().toLowerCase())
-            .filter(Boolean);
-        const isActive =
-            matches.length === 0 || matches.includes(effectiveDomain);
-        node.hidden = !isActive;
-        node.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+
+        setPanelVisibility(node, isVisible);
     });
 }
 
-function buildModel(hub) {
+function buildModel(hub, deps = {}) {
     const activeClinicId =
         String(hub?.dataset?.queueClinicId || '').trim() || 'default-clinic';
     const selectedDomain = loadSelection(activeClinicId);
-    const suggestedDomain = getSuggestedDomain(hub?.dataset?.queueFocus || '');
+    const queueFocus = normalizeFocusMode(hub?.dataset?.queueFocus || '');
+    const suggestedDomain = getSuggestedDomain(queueFocus);
     const adminMode =
-        String(hub?.dataset?.queueAdminMode || '')
-            .trim()
-            .toLowerCase() === 'basic'
-            ? 'basic'
-            : 'expert';
+        typeof deps.getAdminMode === 'function'
+            ? normalizeAdminMode(deps.getAdminMode())
+            : normalizeAdminMode(hub?.dataset?.queueAdminMode || '');
     const effectiveDomain =
-        selectedDomain === 'auto' ? suggestedDomain : selectedDomain;
-    const copy = buildDomainCopy(effectiveDomain, adminMode);
+        adminMode === 'basic' || selectedDomain === 'auto'
+            ? suggestedDomain
+            : selectedDomain;
+    const copy = buildDomainCopy(effectiveDomain, adminMode, queueFocus);
 
     return {
         selectedDomain,
         suggestedDomain,
         effectiveDomain,
+        adminMode,
+        queueFocus,
+        chipState:
+            adminMode === 'basic'
+                ? 'focus'
+                : selectedDomain === 'auto'
+                  ? 'auto'
+                  : 'manual',
         chipLabel:
-            selectedDomain === 'auto'
-                ? `Auto -> ${effectiveDomain}`
-                : `Manual -> ${effectiveDomain}`,
+            adminMode === 'basic'
+                ? `Foco -> ${effectiveDomain}`
+                : selectedDomain === 'auto'
+                  ? `Auto -> ${effectiveDomain}`
+                  : `Manual -> ${effectiveDomain}`,
+        domainSource:
+            adminMode === 'basic'
+                ? 'focus'
+                : selectedDomain === 'auto'
+                  ? 'auto'
+                  : 'manual',
         ...copy,
     };
 }
 
-export function renderQueueHubDomainView() {
+export function renderQueueHubDomainView(deps = {}) {
     const root = document.getElementById('queueDomainSwitcher');
     const hub = document.getElementById('queueAppsHub');
     if (!(root instanceof HTMLElement) || !(hub instanceof HTMLElement)) {
@@ -204,16 +323,44 @@ export function renderQueueHubDomainView() {
 
     const activeClinicId =
         String(hub.dataset.queueClinicId || '').trim() || 'default-clinic';
-    const model = buildModel(hub);
+    const model = buildModel(hub, deps);
+    const rerender = () => renderQueueHubDomainView(deps);
     hub.dataset.queueDomain = model.effectiveDomain;
-    hub.dataset.queueDomainSource =
-        model.selectedDomain === 'auto' ? 'auto' : 'manual';
+    hub.dataset.queueDomainSource = model.domainSource;
     applyDomainVisibility(hub, model.effectiveDomain);
+
+    if (model.adminMode === 'basic') {
+        setHtml(
+            '#queueDomainSwitcher',
+            `
+                <section class="queue-domain-switcher__shell" data-state="basic">
+                    <div class="queue-domain-switcher__head">
+                        <div>
+                            <p class="queue-app-card__eyebrow">Contexto recomendado</p>
+                            <h5 id="queueDomainTitle" class="queue-app-card__title">${model.title}</h5>
+                            <p id="queueDomainSummary" class="queue-domain-switcher__summary">${model.summary}</p>
+                        </div>
+                        <div class="queue-domain-switcher__meta">
+                            <span id="queueDomainChip" class="queue-domain-switcher__chip" data-state="${model.chipState}">${model.chipLabel}</span>
+                            <a id="queueDomainPrimary" href="${model.primaryHref}" class="queue-domain-switcher__ghost">${model.primaryLabel}</a>
+                            <button id="queueDomainAuto" type="button" class="queue-domain-switcher__ghost" hidden disabled>Seguir foco</button>
+                        </div>
+                    </div>
+                    <div class="queue-domain-switcher__tabs" role="tablist" aria-label="Cambiar experiencia del turnero" hidden>
+                        <button id="queueDomainOperations" type="button" class="queue-domain-switcher__tab" data-state="${model.effectiveDomain === 'operations' ? 'active' : 'idle'}" disabled>Operacion</button>
+                        <button id="queueDomainDeployment" type="button" class="queue-domain-switcher__tab" data-state="${model.effectiveDomain === 'deployment' ? 'active' : 'idle'}" disabled>Despliegue</button>
+                        <button id="queueDomainIncidents" type="button" class="queue-domain-switcher__tab" data-state="${model.effectiveDomain === 'incidents' ? 'active' : 'idle'}" disabled>Incidentes</button>
+                    </div>
+                </section>
+            `
+        );
+        return;
+    }
 
     setHtml(
         '#queueDomainSwitcher',
         `
-            <section class="queue-domain-switcher__shell">
+            <section class="queue-domain-switcher__shell" data-state="expert">
                 <div class="queue-domain-switcher__head">
                     <div>
                         <p class="queue-app-card__eyebrow">Experiencia</p>
@@ -221,35 +368,15 @@ export function renderQueueHubDomainView() {
                         <p id="queueDomainSummary" class="queue-domain-switcher__summary">${model.summary}</p>
                     </div>
                     <div class="queue-domain-switcher__meta">
-                        <span id="queueDomainChip" class="queue-domain-switcher__chip" data-state="${
-                            model.selectedDomain === 'auto' ? 'auto' : 'manual'
-                        }">${model.chipLabel}</span>
-                        <a id="queueDomainPrimary" href="${
-                            model.primaryHref
-                        }" class="queue-domain-switcher__primary">${
-                            model.primaryLabel
-                        }</a>
-                        <button id="queueDomainAuto" type="button" class="queue-domain-switcher__ghost"${
-                            model.selectedDomain === 'auto' ? ' hidden' : ''
-                        }>Seguir foco</button>
+                        <span id="queueDomainChip" class="queue-domain-switcher__chip" data-state="${model.chipState}">${model.chipLabel}</span>
+                        <a id="queueDomainPrimary" href="${model.primaryHref}" class="queue-domain-switcher__primary">${model.primaryLabel}</a>
+                        <button id="queueDomainAuto" type="button" class="queue-domain-switcher__ghost"${model.selectedDomain === 'auto' ? ' hidden' : ''}>Seguir foco</button>
                     </div>
                 </div>
                 <div class="queue-domain-switcher__tabs" role="tablist" aria-label="Cambiar experiencia del turnero">
-                    <button id="queueDomainOperations" type="button" class="queue-domain-switcher__tab" data-queue-domain-select="operations" data-state="${
-                        model.effectiveDomain === 'operations'
-                            ? 'active'
-                            : 'idle'
-                    }">Operacion</button>
-                    <button id="queueDomainDeployment" type="button" class="queue-domain-switcher__tab" data-queue-domain-select="deployment" data-state="${
-                        model.effectiveDomain === 'deployment'
-                            ? 'active'
-                            : 'idle'
-                    }">Despliegue</button>
-                    <button id="queueDomainIncidents" type="button" class="queue-domain-switcher__tab" data-queue-domain-select="incidents" data-state="${
-                        model.effectiveDomain === 'incidents'
-                            ? 'active'
-                            : 'idle'
-                    }">Incidentes</button>
+                    <button id="queueDomainOperations" type="button" class="queue-domain-switcher__tab" data-queue-domain-select="operations" data-state="${model.effectiveDomain === 'operations' ? 'active' : 'idle'}">Operacion</button>
+                    <button id="queueDomainDeployment" type="button" class="queue-domain-switcher__tab" data-queue-domain-select="deployment" data-state="${model.effectiveDomain === 'deployment' ? 'active' : 'idle'}">Despliegue</button>
+                    <button id="queueDomainIncidents" type="button" class="queue-domain-switcher__tab" data-queue-domain-select="incidents" data-state="${model.effectiveDomain === 'incidents' ? 'active' : 'idle'}">Incidentes</button>
                 </div>
             </section>
         `
@@ -264,7 +391,7 @@ export function renderQueueHubDomainView() {
                 button.dataset.queueDomainSelect || 'operations',
                 activeClinicId
             );
-            renderQueueHubDomainView();
+            rerender();
         };
     });
 
@@ -272,7 +399,7 @@ export function renderQueueHubDomainView() {
     if (autoButton instanceof HTMLButtonElement) {
         autoButton.onclick = () => {
             persistSelection('auto', activeClinicId);
-            renderQueueHubDomainView();
+            rerender();
         };
     }
 }

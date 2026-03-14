@@ -3,6 +3,12 @@ import {
     setSectionHash,
 } from '../../../shared/core/router.js';
 import { getState, updateState } from '../../../shared/core/store.js';
+import {
+    applyQueueRuntimeDefaults,
+    hydrateQueueFromData,
+    shouldRefreshQueueOnSectionEnter,
+    syncQueueAutoRefresh,
+} from '../../../shared/modules/queue.js';
 import { renderAdminChrome, setActiveSection } from '../../../ui/frame.js';
 import { hasPendingAvailabilityChanges } from '../../../sections/availability.js';
 import { openClinicalHistorySession } from '../../../sections/clinical-history.js';
@@ -48,6 +54,20 @@ export async function navigateToSection(section, options = {}) {
     if (normalized === 'clinical-history') {
         await openClinicalHistorySession();
     }
+    if (normalized === 'queue') {
+        applyQueueRuntimeDefaults();
+        await hydrateQueueFromData();
+    }
+
+    syncQueueAutoRefresh({
+        immediate: normalized === 'queue' && shouldRefreshQueueOnSectionEnter(),
+        reason:
+            normalized === 'queue'
+                ? previousSection === 'queue'
+                    ? 'queue-section-refresh'
+                    : 'queue-section-enter'
+                : 'queue-section-leave',
+    });
 
     return true;
 }

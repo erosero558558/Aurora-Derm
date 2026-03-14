@@ -41,12 +41,11 @@ updated_at: "2026-03-14"
 
 ## Estrategia madre activa
 
-- Estrategia operativa activa en el board remoto: ninguna por ahora.
-- El bloque `CODEX_STRATEGY_ACTIVE` de arriba queda preservado como espejo
-  canonico de la ultima estrategia configurada, hoy en `status: closed`.
+- Estrategia activa: `STRAT-2026-03-turnero-web-pilot`.
+- El bloque `CODEX_STRATEGY_ACTIVE` de arriba debe espejar el board vigente; hoy esta estrategia permanece en `status: active`.
 - Draft siguiente: ninguno por ahora; cuando exista debe reflejarse como
   `CODEX_STRATEGY_NEXT` y espejar `AGENT_BOARD.yaml.strategy.next`.
-- Objetivo: convertir `admin clinico + queue/turnero + OpenClaw UX` en una entrega operable, con soporte backend/runtime solo cuando desbloquea ese mismo frente.
+- Objetivo: reabrir `queue/turnero` como un piloto web por clinica demostrable en `admin basic`, `operator`, `kiosk` y `display`, con `clinic-profile` como fuente de verdad.
 - Revision vigente: semanal; `carry-over` permitido si la salida sigue siendo la misma entrega operativa.
 - Regla de foco: cada hilo Codex toma un solo `subfront_id` valido y rechaza trabajo fuera del frente salvo `strategy_role=exception`.
 - Intake canonico: trabajo nuevo del frente debe entrar por `strategy intake`

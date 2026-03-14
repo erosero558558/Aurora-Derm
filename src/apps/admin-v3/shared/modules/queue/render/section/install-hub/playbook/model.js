@@ -18,7 +18,7 @@ export function buildQueuePlaybookModel(manifest, detectedPlatform, deps) {
     ).length;
     const nextStep = steps.find((step) => !modeState[step.id]) || null;
     const summary = nextStep
-        ? `Paso actual: ${nextStep.title}. ${nextStep.detail}`
+        ? `Siguiente paso: ${nextStep.title}. ${nextStep.detail}`
         : 'La secuencia de este modo ya quedó completa. Puedes reiniciarla o pasar al siguiente momento del turno.';
 
     return {

@@ -14,3 +14,11 @@ export const DEFAULT_QUICK_ACTIONS = Object.freeze({
     keyc: 'callbacks_contacted',
     keyu: 'callbacks_sla_urgent',
 });
+
+export const QUEUE_QUICK_ACTIONS = Object.freeze({
+    keyw: 'queue_filter_waiting',
+    keyc: 'queue_filter_called',
+    keya: 'queue_filter_all',
+    keyl: 'queue_sla_risk',
+    keyo: 'queue_filter_all',
+});

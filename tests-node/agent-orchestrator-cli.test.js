@@ -1078,17 +1078,34 @@ test('codex start/stop lifecycle mantiene espejo valido y actualiza CODEX_ACTIVE
     assert.match(plan, /status: in_progress/);
     assert.match(plan, /task_id: CDX-001/);
 
+    runCli(dir, [
+        'codex',
+        'stop',
+        'CDX-001',
+        '--to',
+        'blocked',
+        '--blocked-reason',
+        'awaiting_remote_verify',
+    ]);
+    runCli(dir, ['codex-check']);
+    plan = readPlan(dir);
+    assert.match(plan, /status: blocked/);
+    let board = readBoard(dir);
+    assert.match(board, /blocked_reason:\s*"awaiting_remote_verify"/);
+
     runCli(dir, ['codex', 'stop', 'CDX-001', '--to', 'review']);
     runCli(dir, ['codex-check']);
     plan = readPlan(dir);
     assert.match(plan, /status: review/);
+    board = readBoard(dir);
+    assert.match(board, /blocked_reason:\s*""/);
 
     runCli(dir, ['codex', 'stop', 'CDX-001', '--to', 'done']);
     runCli(dir, ['codex-check']);
     plan = readPlan(dir);
     assert.doesNotMatch(plan, /<!-- CODEX_ACTIVE/);
 
-    const board = readBoard(dir);
+    board = readBoard(dir);
     assert.match(board, /- id: CDX-001/);
     assert.match(board, /status: done/);
 });
@@ -1979,9 +1996,9 @@ test('task create soporta --template runtime y completa defaults OpenClaw transv
     assert.match(board, /scope: openclaw_runtime/);
     assert.match(board, /domain_lane: transversal_runtime/);
     assert.match(board, /codex_instance: codex_transversal/);
-    assert.match(board, /provider_mode: openclaw_chatgpt/);
-    assert.match(board, /runtime_surface: leadops_worker/);
-    assert.match(board, /runtime_transport: hybrid_http_cli/);
+    assert.match(board, /provider_mode: "openclaw_chatgpt"/);
+    assert.match(board, /runtime_surface: "leadops_worker"/);
+    assert.match(board, /runtime_transport: "hybrid_http_cli"/);
     assert.match(board, /runtime_impact: high/);
     assert.match(board, /critical_zone: true/);
 });
@@ -4241,7 +4258,7 @@ tasks:
     assert.equal(invokePayload.result.provider, 'openclaw_chatgpt');
     assert.equal(invokePayload.result.upstream_provider, 'openclaw_queue');
     assert.equal(invokePayload.result.runtime_transport, 'http_bridge');
-    assert.match(readBoard(dir), /runtime_last_transport: http_bridge/);
+    assert.match(readBoard(dir), /runtime_last_transport: "http_bridge"/);
     assert.equal(
         runtimeServer.requests.some(
             (request) =>
@@ -4364,7 +4381,7 @@ test('runtime invoke cae a cli_helper cuando http_bridge falla', async (t) => {
         ),
         true
     );
-    assert.match(readBoard(dir), /runtime_last_transport: cli_helper/);
+    assert.match(readBoard(dir), /runtime_last_transport: "cli_helper"/);
     assert.equal(
         runtimeServer.requests.some(
             (request) =>

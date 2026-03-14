@@ -27,6 +27,7 @@ const SHIFTED_SHORTCUT_ALIASES = Object.freeze({
 
 function setDocumentVariant() {
     document.documentElement.setAttribute('data-admin-ui', 'sony_v3');
+    document.documentElement.setAttribute('data-ops-tone', 'light');
 }
 
 function setDocumentReadyState(ready) {

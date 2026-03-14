@@ -21,7 +21,7 @@ const navModel = getV6NavigationModel(locale, pathname);
     ogImageSrc={page?.heroImage?.src}
     preloadImageSrc={page?.heroImage?.src}
     preloadImageSrcSet={page?.heroImage?.srcset}
-    preloadImageSizes="100vw"
+    preloadImageSizes="(max-width: 1100px) 100vw, 62vw"
 >
     <TelemedicinePageV6 page={page} locale={locale} navModel={navModel} />
 </PublicShellV6>

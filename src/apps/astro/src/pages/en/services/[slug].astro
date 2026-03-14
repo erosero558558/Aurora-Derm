@@ -38,7 +38,8 @@ const related = (service.related || [])
     templateId="service_detail_v6"
     ogImageSrc={service.heroImage}
     preloadImageSrc={service.heroImage}
-    preloadImageSizes="100vw"
+    preloadImageSrcSet={service.heroImageSrcset}
+    preloadImageSizes="(max-width: 1100px) 100vw, 62vw"
 >
     <ServiceDetailV6
         service={service}

@@ -162,8 +162,8 @@ php bin/verify-gate.php
 2.  [ ] `/api.php?resource=health` retorna `status: ok`.
 3.  [ ] `https://pielarmonia.com/es/` y `https://pielarmonia.com/en/` retornan `200`.
 4.  [ ] `https://pielarmonia.com/telemedicina.html` redirige a `/es/telemedicina/`.
-5.  [ ] El bridge de reserva (`#citas`, `#appointmentForm`, `#serviceSelect`) sigue visible.
-6.  [ ] El formulario de contacto/reserva se abre correctamente.
+5.  [ ] La portada V6 expone las tres rutas maestras (`primera consulta`, `tratamientos`, `teledermatologia`) y muestra un siguiente paso claro.
+6.  [ ] Los CTA públicos redirigen correctamente a la ruta esperada (`/es/servicios/`, `/es/telemedicina/` y equivalentes en `en/`) sin depender de anchors legacy.
 7.  [ ] `admin.html` arranca en `sony_v3` aunque reciba params legacy (`admin_ui`, `admin_ui_reset`).
 8.  [ ] `GATE-ADMIN-ROLLOUT.ps1 -RequireOpenClawAuth` valida shell `sony_v3`, ausencia de CSS legacy y contrato OpenClaw `web_broker`.
         Implementacion canonica: `scripts/ops/admin/GATE-ADMIN-ROLLOUT.ps1`.

@@ -26,7 +26,7 @@ import {
     buildQueueFocusMode as buildQueueFocusModeModule,
     renderQueueFocusMode as renderQueueFocusModeModule,
 } from './install-hub/focus-mode.js';
-import { renderQueueHubDomainView } from './install-hub/domain-view.js';
+import { renderQueueHubDomainView as renderQueueHubDomainViewModule } from './install-hub/domain-view.js';
 import {
     buildQueueOpsAlerts as buildQueueOpsAlertsModule,
     renderQueueOpsAlerts as renderQueueOpsAlertsModule,
@@ -98,15 +98,21 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueConsultorioBoard',
     'queueAttentionDeck',
     'queueResolutionDeck',
-    'queueTicketLookup',
     'queueSurfaceTelemetry',
     'queueOpsAlerts',
     'queueOpsPilot',
     'queueOpeningChecklist',
     'queueShiftHandoff',
     'queueContingencyDeck',
+    'queueQuickTrays',
+    'queueQuickConsole',
+    'queuePlaybook',
+    'queueAppDownloadsCards',
+    'queueOpsLog',
+    'queueInstallConfigurator',
 ]);
 const QUEUE_ADMIN_EXPERT_PANEL_IDS = Object.freeze([
+    'queueTicketLookup',
     'queueTicketRoute',
     'queueTicketSimulation',
     'queueNextTurns',
@@ -143,15 +149,9 @@ const QUEUE_ADMIN_EXPERT_PANEL_IDS = Object.freeze([
     'queueWaitRadar',
     'queueLoadBalance',
     'queuePriorityLane',
-    'queueQuickTrays',
     'queueActiveTray',
     'queueTrayBurst',
     'queueDispatchDeck',
-    'queueQuickConsole',
-    'queuePlaybook',
-    'queueAppDownloadsCards',
-    'queueOpsLog',
-    'queueInstallConfigurator',
 ]);
 
 let installPreset = null;
@@ -165,6 +165,8 @@ let queueTicketLookupClinicId = null;
 let queueTicketSimulationContext = null;
 let queueAdminViewMode = null;
 let queueAdminViewModeClinicId = null;
+let queueBasicFullView = false;
+let queueBasicFullViewClinicId = null;
 let installPresetClinicId = null;
 
 function getDefaultAppDownloads() {
@@ -409,6 +411,8 @@ function persistQueueAdminViewMode(nextMode) {
     const activeClinicId = getActiveQueueOpsClinicId();
     queueAdminViewMode = normalizeQueueAdminViewMode(nextMode);
     queueAdminViewModeClinicId = activeClinicId;
+    queueBasicFullView = false;
+    queueBasicFullViewClinicId = activeClinicId;
     try {
         window.localStorage.setItem(
             QUEUE_ADMIN_VIEW_MODE_STORAGE_KEY,
@@ -422,6 +426,27 @@ function persistQueueAdminViewMode(nextMode) {
         // localStorage can be unavailable in some browser modes
     }
     return queueAdminViewMode;
+}
+
+function getQueueBasicFullViewScopeClinicId() {
+    const hubRoot = getQueueAppsHubRoot();
+    const hubClinicId = String(hubRoot?.dataset?.queueClinicId || '').trim();
+    return hubClinicId || getActiveQueueOpsClinicId();
+}
+
+function isQueueBasicFullView() {
+    const activeClinicId = getQueueBasicFullViewScopeClinicId();
+    if (queueBasicFullViewClinicId !== activeClinicId) {
+        queueBasicFullView = false;
+        queueBasicFullViewClinicId = activeClinicId;
+    }
+    return queueBasicFullView === true;
+}
+
+function setQueueBasicFullView(nextValue) {
+    queueBasicFullView = nextValue === true;
+    queueBasicFullViewClinicId = getQueueBasicFullViewScopeClinicId();
+    return queueBasicFullView;
 }
 
 function listInstallHubSurfaceOrder() {
@@ -3972,9 +3997,21 @@ function renderQueueFocusMode(manifest, detectedPlatform) {
         escapeHtml,
         persistOpsFocusMode,
         getHubRoot: getQueueAppsHubRoot,
+        getAdminMode: ensureQueueAdminViewMode,
+        isBasicFullView: isQueueBasicFullView,
+        setBasicFullView: setQueueBasicFullView,
         renderQueueHubDomainView,
         renderQueueQuickConsole,
         renderQueuePlaybook,
+        rerenderQueueOpsHub,
+    });
+}
+
+function renderQueueHubDomainView() {
+    applyQueueAdminViewModeToHub(ensureQueueAdminViewMode());
+    return renderQueueHubDomainViewModule({
+        getAdminMode: ensureQueueAdminViewMode,
+        isBasicFullView: isQueueBasicFullView,
     });
 }
 
@@ -4012,7 +4049,7 @@ function syncQueueHubPanelAdminLevels() {
     });
 }
 
-function primeQueueAdminViewModeToHub(mode) {
+function syncQueueAdminViewModeToHub(mode) {
     const root = getQueueAppsHubRoot();
     if (!(root instanceof HTMLElement)) {
         return;
@@ -4021,35 +4058,17 @@ function primeQueueAdminViewModeToHub(mode) {
     const normalizedMode = normalizeQueueAdminViewMode(mode);
     root.dataset.queueAdminMode = normalizedMode;
     root.dataset.queueClinicId = getActiveQueueOpsClinicId();
+    root.dataset.queueBasicFullView =
+        normalizedMode === 'basic' && isQueueBasicFullView() ? 'true' : 'false';
     syncQueueHubPanelAdminLevels();
+}
 
-    if (normalizedMode !== 'expert') {
-        return;
-    }
-
-    QUEUE_ADMIN_EXPERT_PANEL_IDS.forEach((panelId) => {
-        setQueueHubPanelVisibility(panelId, true);
-    });
+function primeQueueAdminViewModeToHub(mode) {
+    syncQueueAdminViewModeToHub(mode);
 }
 
 function applyQueueAdminViewModeToHub(mode) {
-    const root = getQueueAppsHubRoot();
-    if (!(root instanceof HTMLElement)) {
-        return;
-    }
-
-    const normalizedMode = normalizeQueueAdminViewMode(mode);
-    root.dataset.queueAdminMode = normalizedMode;
-    root.dataset.queueClinicId = getActiveQueueOpsClinicId();
-    syncQueueHubPanelAdminLevels();
-
-    if (normalizedMode !== 'basic') {
-        return;
-    }
-
-    QUEUE_ADMIN_EXPERT_PANEL_IDS.forEach((panelId) => {
-        setQueueHubPanelVisibility(panelId, false);
-    });
+    syncQueueAdminViewModeToHub(mode);
 }
 
 function clearQueueExpertPanels() {
@@ -4064,16 +4083,25 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderConsultorioBoard(manifest, detectedPlatform);
     renderQueueAttentionDeck(manifest, detectedPlatform);
     renderQueueResolutionDeck(manifest, detectedPlatform);
-    renderQueueTicketLookup(manifest, detectedPlatform);
     renderSurfaceTelemetry(manifest, detectedPlatform);
     renderQueueOpsAlerts(manifest, detectedPlatform);
     renderContingencyDeck(manifest, detectedPlatform);
+    renderQueueQuickTrays();
+    renderQueueQuickConsole(manifest, detectedPlatform);
+    renderQueuePlaybook(manifest, detectedPlatform);
     renderQueueOpsPilot(manifest, detectedPlatform);
     renderOpeningChecklist(manifest, detectedPlatform);
     renderShiftHandoff(manifest, detectedPlatform);
+    setHtml(
+        '#queueAppDownloadsCards',
+        renderInstallHubSurfaceCards(manifest, detectedPlatform)
+    );
+    renderQueueOpsLog(manifest, detectedPlatform);
+    renderInstallConfigurator(manifest, detectedPlatform);
 }
 
 function renderQueueHubExpertPanels(manifest, detectedPlatform) {
+    renderQueueTicketLookup(manifest, detectedPlatform);
     renderQueueTicketRoute(manifest, detectedPlatform);
     renderQueueTicketSimulation(manifest, detectedPlatform);
     renderQueueNextTurnsPanel(manifest, detectedPlatform);
@@ -4110,18 +4138,15 @@ function renderQueueHubExpertPanels(manifest, detectedPlatform) {
     renderQueueWaitRadar(manifest, detectedPlatform);
     renderQueueLoadBalance(manifest, detectedPlatform);
     renderQueuePriorityLane(manifest, detectedPlatform);
-    renderQueueQuickTrays();
     renderActiveTrayPanel(manifest, detectedPlatform);
     renderQueueTrayBurst(manifest, detectedPlatform);
     renderQueueDispatchDeck(manifest, detectedPlatform);
-    renderQueueQuickConsole(manifest, detectedPlatform);
-    renderQueuePlaybook(manifest, detectedPlatform);
-    setHtml(
-        '#queueAppDownloadsCards',
-        renderInstallHubSurfaceCards(manifest, detectedPlatform)
+}
+
+function shouldRenderQueueHubExpandedPanels(mode) {
+    return (
+        normalizeQueueAdminViewMode(mode) === 'expert' || isQueueBasicFullView()
     );
-    renderQueueOpsLog(manifest, detectedPlatform);
-    renderInstallConfigurator(manifest, detectedPlatform);
 }
 
 function renderQueueAdminViewMode(manifest, detectedPlatform) {
@@ -21668,11 +21693,10 @@ function rerenderQueueOpsHub(manifest, detectedPlatform) {
     const adminMode = ensureQueueAdminViewMode();
     renderQueueAdminViewMode(manifest, detectedPlatform);
     renderQueueHubCorePanels(manifest, detectedPlatform);
-    if (adminMode === 'expert') {
+    if (shouldRenderQueueHubExpandedPanels(adminMode)) {
         renderQueueHubExpertPanels(manifest, detectedPlatform);
     } else {
         clearQueueExpertPanels();
-        clearQueueHubPanel('queueAppDownloadsCards');
     }
     primeQueueAdminViewModeToHub(adminMode);
     renderQueueHubDomainView();
@@ -22132,11 +22156,10 @@ export function renderQueueInstallHub(options = {}) {
     const adminMode = ensureQueueAdminViewMode();
     renderQueueAdminViewMode(manifest, platform);
     renderQueueHubCorePanels(manifest, platform);
-    if (adminMode === 'expert') {
+    if (shouldRenderQueueHubExpandedPanels(adminMode)) {
         renderQueueHubExpertPanels(manifest, platform);
     } else {
         clearQueueExpertPanels();
-        clearQueueHubPanel('queueAppDownloadsCards');
     }
     primeQueueAdminViewModeToHub(adminMode);
     renderQueueHubDomainView();

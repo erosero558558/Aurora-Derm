@@ -137,7 +137,7 @@ async function handleCodexCommand(ctx) {
     const taskId = String(positionals[0] || flags.id || '').trim();
     if (!subcommand || !['start', 'stop'].includes(subcommand)) {
         throw new Error(
-            'Uso: node agent-orchestrator.js codex <start|stop> <CDX-001> [--block C1] [--to review|done|blocked]'
+            'Uso: node agent-orchestrator.js codex <start|stop> <CDX-001> [--block C1] [--to review|done|blocked] [--blocked-reason motivo]'
         );
     }
     if (!taskId) {
@@ -236,6 +236,9 @@ async function handleCodexCommand(ctx) {
     }
 
     const nextStatus = String(flags.to || 'review').trim();
+    const nextBlockedReason = String(
+        flags['blocked-reason'] || flags.blocked_reason || ''
+    ).trim();
     const expectRevision = parseExpectedRevisionFromFlags(
         flags,
         parseExpectedBoardRevisionFlag,
@@ -245,6 +248,10 @@ async function handleCodexCommand(ctx) {
         throw new Error(`Status destino invalido: ${nextStatus}`);
     }
     task.status = nextStatus;
+    task.blocked_reason =
+        nextStatus === 'blocked'
+            ? nextBlockedReason || String(task.blocked_reason || '').trim()
+            : '';
     task.updated_at = currentDate();
     writeBoard(board, {
         command: 'codex stop',

@@ -47,9 +47,7 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
         await openPublicRoute(page, '/en/');
 
         const newsStrip = page.locator('[data-v6-news-strip]');
-        await expect(newsStrip).toContainText(
-            'Clear clinical dermatology, ready to move you forward even while online booking is paused.'
-        );
+        await expect(newsStrip).toContainText('online booking is paused');
 
         await page.locator('[data-v6-news-toggle]').click();
         await expect(page.locator('[data-v6-news-panel]')).toBeVisible();

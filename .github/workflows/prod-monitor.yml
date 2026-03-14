@@ -168,6 +168,7 @@ jobs:
             TARGET_DOMAIN: ${{ github.event.inputs.domain || 'https://pielarmonia.com' }}
             ADMIN_ROLLOUT_STAGE: ${{ vars.ADMIN_ROLLOUT_STAGE || 'general' }}
             ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH: ${{ vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH || '' }}
+            PROD_MONITOR_REPORT_PATH: verification/runtime/prod-monitor-last.json
             MAX_LATENCY_MS: ${{ github.event.inputs.max_latency_ms || '3500' }}
             ALLOW_DEGRADED_FIGO: ${{ github.event.inputs.allow_degraded_figo || 'false' }}
             ALLOW_STORE_CALENDAR: ${{ github.event.inputs.allow_store_calendar || vars.PROD_MONITOR_ALLOW_STORE_CALENDAR || 'true' }}
@@ -248,6 +249,7 @@ jobs:
                   $monitorArgs = @{
                     Domain = $env:TARGET_DOMAIN
                     MaxLatencyMs = $maxLatency
+                    ReportPath = $env:PROD_MONITOR_REPORT_PATH
                   }
 
                   if ($env:ALLOW_DEGRADED_FIGO -eq 'true') {
@@ -1011,79 +1013,252 @@ jobs:
                       });
                       core.info(`Alertas stale de deploy cerradas tras recuperar publicSync: ${closedIssues.join(' | ')}`);
 
+            - name: Normalizar reporte canonico prod-monitor
+              if: ${{ always() }}
+              shell: pwsh
+              run: |
+                  $reportPath = [string]$env:PROD_MONITOR_REPORT_PATH
+                  if ([string]::IsNullOrWhiteSpace($reportPath)) {
+                    throw 'PROD_MONITOR_REPORT_PATH no definido.'
+                  }
+                  if (-not (Test-Path -LiteralPath $reportPath)) {
+                    throw "No existe reporte base del monitor: $reportPath"
+                  }
+
+                  $raw = Get-Content -LiteralPath $reportPath -Raw
+                  $report = (($raw -replace "^\uFEFF", '') | ConvertFrom-Json -Depth 40)
+
+                  $telemedicine = [ordered]@{
+                    status = [string]$env:TELEMEDICINE_MONITOR_STATUS
+                    reason = [string]$env:TELEMEDICINE_MONITOR_REASON
+                    nonTeleFailures = [string]$env:TELEMEDICINE_MONITOR_NON_TELE_FAILURES
+                    stepOutcome = '${{ steps.telemedicine_monitor.outcome }}'
+                    allowDegradedDiagnostics = [string]$env:ALLOW_DEGRADED_TELEMEDICINE_DIAGNOSTICS
+                    requireConfigured = [string]$env:REQUIRE_TELEMEDICINE_CONFIGURED
+                    maxReviewQueue = [string]$env:MAX_TELEMEDICINE_REVIEW_QUEUE
+                    maxStagedUploads = [string]$env:MAX_TELEMEDICINE_STAGED_UPLOADS
+                    maxUnlinkedIntakes = [string]$env:MAX_TELEMEDICINE_UNLINKED_INTAKES
+                  }
+                  $publicSyncRecovery = [ordered]@{
+                    status = [string]$env:PUBLIC_SYNC_RECOVERY_STATUS
+                    reason = [string]$env:PUBLIC_SYNC_RECOVERY_REASON
+                    currentHead = [string]$env:PUBLIC_SYNC_CURRENT_HEAD
+                    remoteHead = [string]$env:PUBLIC_SYNC_REMOTE_HEAD
+                    dirtyPathsCount = [string]$env:PUBLIC_SYNC_DIRTY_PATHS_COUNT
+                    stepOutcome = '${{ steps.public_sync_recovery.outcome }}'
+                  }
+                  $turneroPilotRecovery = [ordered]@{
+                    status = [string]$env:TURNERO_PILOT_RECOVERY_STATUS
+                    reason = [string]$env:TURNERO_PILOT_RECOVERY_REASON
+                    clinicId = [string]$env:TURNERO_PILOT_RECOVERY_CLINIC_ID
+                    profileFingerprint = [string]$env:TURNERO_PILOT_RECOVERY_PROFILE_FINGERPRINT
+                    deployedCommit = [string]$env:TURNERO_PILOT_RECOVERY_DEPLOYED_COMMIT
+                    recoveryTargets = [string]$env:TURNERO_PILOT_RECOVERY_TARGETS
+                    manifestPath = [string]$env:TURNERO_PILOT_RECOVERY_MANIFEST_PATH
+                    stepOutcome = '${{ steps.turnero_pilot_recovery.outcome }}'
+                  }
+                  $publicCutover = [ordered]@{
+                    enabled = [string]$env:ENABLE_PUBLIC_CUTOVER_MONITOR
+                    startedAt = [string]$env:PUBLIC_CUTOVER_STARTED_AT
+                    windowHours = [string]$env:PUBLIC_CUTOVER_WINDOW_HOURS
+                    windowActive = [string]$env:PUBLIC_CUTOVER_WINDOW_ACTIVE
+                    windowReason = [string]$env:PUBLIC_CUTOVER_WINDOW_REASON
+                    elapsedHours = [string]$env:PUBLIC_CUTOVER_ELAPSED_HOURS
+                    stepOutcome = '${{ steps.public_cutover.outcome }}'
+                  }
+                  $publicV4Rollout = [ordered]@{
+                    enabled = [string]$env:ENABLE_PUBLIC_V4_ROLLOUT_MONITOR
+                    stage = [string]$env:PUBLIC_V4_ROLLOUT_STAGE
+                    surfaceTest = [string]$env:PUBLIC_V4_ROLLOUT_SURFACE_TEST
+                    surfaceControl = [string]$env:PUBLIC_V4_ROLLOUT_SURFACE_CONTROL
+                    minViewBooking = [string]$env:PUBLIC_V4_ROLLOUT_MIN_VIEW_BOOKING
+                    minStartCheckout = [string]$env:PUBLIC_V4_ROLLOUT_MIN_START_CHECKOUT
+                    maxConfirmedDropPp = [string]$env:PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP
+                    minConfirmedRatePct = [string]$env:PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT
+                    allowMissingControl = [string]$env:PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL
+                    enabledEffective = [string]$env:ENABLE_PUBLIC_V4_ROLLOUT_MONITOR_EFFECTIVE
+                    stageEffective = [string]$env:PUBLIC_V4_ROLLOUT_STAGE_EFFECTIVE
+                    stageProfileEffective = [string]$env:PUBLIC_V4_ROLLOUT_STAGE_PROFILE_EFFECTIVE
+                    policySourceEffective = [string]$env:PUBLIC_V4_ROLLOUT_POLICY_SOURCE_EFFECTIVE
+                    surfaceTestEffective = [string]$env:PUBLIC_V4_ROLLOUT_SURFACE_TEST_EFFECTIVE
+                    surfaceControlEffective = [string]$env:PUBLIC_V4_ROLLOUT_SURFACE_CONTROL_EFFECTIVE
+                    minViewBookingEffective = [string]$env:PUBLIC_V4_ROLLOUT_MIN_VIEW_BOOKING_EFFECTIVE
+                    minStartCheckoutEffective = [string]$env:PUBLIC_V4_ROLLOUT_MIN_START_CHECKOUT_EFFECTIVE
+                    maxConfirmedDropPpEffective = [string]$env:PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP_EFFECTIVE
+                    minConfirmedRatePctEffective = [string]$env:PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT_EFFECTIVE
+                    allowMissingControlEffective = [string]$env:PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL_EFFECTIVE
+                    stepOutcome = '${{ steps.public_v4_rollout.outcome }}'
+                  }
+                  $staleDeployAutoclose = [ordered]@{
+                    status = [string]$env:STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS
+                    reason = [string]$env:STALE_DEPLOY_ALERT_AUTOCLOSE_REASON
+                    publicSyncHealthy = [string]$env:STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY
+                    openRelevantCount = [string]$env:STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT
+                    closedCount = [string]$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT
+                    closedIssues = [string]$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES
+                  }
+                  $monitorInputs = [ordered]@{
+                    targetDomain = [string]$env:TARGET_DOMAIN
+                    maxLatencyMs = [string]$env:MAX_LATENCY_MS
+                    allowDegradedFigo = [string]$env:ALLOW_DEGRADED_FIGO
+                    allowStoreCalendar = [string]$env:ALLOW_STORE_CALENDAR
+                    allowBlockedCalendar = [string]$env:ALLOW_BLOCKED_CALENDAR
+                    skipBackupCheck = [string]$env:SKIP_BACKUP_CHECK
+                    requireGoogleCalendar = [string]$env:REQUIRE_GOOGLE_CALENDAR
+                    allowDegradedServicePriorities = [string]$env:ALLOW_DEGRADED_SERVICE_PRIORITIES
+                    minServicePrioritiesServices = [string]$env:MIN_SERVICE_PRIORITIES_SERVICES
+                    minServicePrioritiesCategories = [string]$env:MIN_SERVICE_PRIORITIES_CATEGORIES
+                    minServicePrioritiesFeatured = [string]$env:MIN_SERVICE_PRIORITIES_FEATURED
+                    requireServicePrioritiesFunnel = [string]$env:REQUIRE_SERVICE_PRIORITIES_FUNNEL
+                  }
+                  $workflow = [ordered]@{
+                    reportVersion = 1
+                    eventName = [string]$env:GITHUB_EVENT_NAME
+                    runId = [string]$env:GITHUB_RUN_ID
+                    runAttempt = [string]$env:GITHUB_RUN_ATTEMPT
+                    repository = [string]$env:GITHUB_REPOSITORY
+                    workflow = [string]$env:GITHUB_WORKFLOW
+                    ref = [string]$env:GITHUB_REF
+                    monitor = [ordered]@{
+                      stepOutcome = '${{ steps.monitor_prod.outcome }}'
+                      inputs = $monitorInputs
+                    }
+                    telemedicine = $telemedicine
+                    publicSyncRecovery = $publicSyncRecovery
+                    turneroPilotRecovery = $turneroPilotRecovery
+                    publicCutover = $publicCutover
+                    publicV4Rollout = $publicV4Rollout
+                    staleDeployAlertAutoclose = $staleDeployAutoclose
+                  }
+
+                  $workflowFailures = @()
+                  if ($telemedicine.status -eq 'failed' -or $telemedicine.status -eq 'unknown') {
+                    $workflowFailures += 'telemedicine'
+                  }
+                  if ($publicSyncRecovery.status -eq 'failed') {
+                    $workflowFailures += 'public_sync_recovery'
+                  }
+                  if ($turneroPilotRecovery.status -eq 'failed') {
+                    $workflowFailures += 'turnero_pilot_recovery'
+                  }
+                  if ($publicCutover.stepOutcome -eq 'failure') {
+                    $workflowFailures += 'public_cutover'
+                  }
+                  if ($publicV4Rollout.stepOutcome -eq 'failure') {
+                    $workflowFailures += 'public_v4_rollout'
+                  }
+
+                  $failureCount = @($report.failures).Count
+                  $warningCount = @($report.warnings).Count
+                  $normalizedStatus = [string]$report.status
+                  if ($failureCount -gt 0 -or $workflowFailures.Count -gt 0) {
+                    $normalizedStatus = 'failed'
+                  } elseif ($warningCount -gt 0 -or $normalizedStatus -eq 'warning' -or $telemedicine.status -eq 'degraded') {
+                    $normalizedStatus = 'warning'
+                  } elseif ([string]::IsNullOrWhiteSpace($normalizedStatus) -or $normalizedStatus -eq 'unknown') {
+                    $normalizedStatus = 'ok'
+                  }
+
+                  Add-Member -InputObject $report -NotePropertyName workflow -NotePropertyValue $workflow -Force
+                  Add-Member -InputObject $report -NotePropertyName failureCount -NotePropertyValue $failureCount -Force
+                  Add-Member -InputObject $report -NotePropertyName warningCount -NotePropertyValue $warningCount -Force
+                  Add-Member -InputObject $report -NotePropertyName workflowFailures -NotePropertyValue @($workflowFailures) -Force
+                  Add-Member -InputObject $report -NotePropertyName status -NotePropertyValue $normalizedStatus -Force
+                  Add-Member -InputObject $report -NotePropertyName ok -NotePropertyValue ($normalizedStatus -eq 'ok') -Force
+                  Add-Member -InputObject $report -NotePropertyName artifact -NotePropertyValue ([ordered]@{
+                    name = 'prod-monitor-report'
+                    path = [string]$env:PROD_MONITOR_REPORT_PATH
+                  }) -Force
+
+                  $report | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $reportPath -Encoding utf8
+
+            - name: Upload canonical prod-monitor report
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: prod-monitor-report
+                  path: ${{ env.PROD_MONITOR_REPORT_PATH }}
+                  if-no-files-found: error
+                  retention-days: 7
+
             - name: Resumen
               if: ${{ always() }}
               shell: pwsh
               run: |
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Production monitor"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Dominio: ``$env:TARGET_DOMAIN``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Max latency: ``$env:MAX_LATENCY_MS ms``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_degraded_figo: ``$env:ALLOW_DEGRADED_FIGO``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_store_calendar: ``$env:ALLOW_STORE_CALENDAR``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_blocked_calendar: ``$env:ALLOW_BLOCKED_CALENDAR``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- skip_backup_check: ``$env:SKIP_BACKUP_CHECK``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- require_google_calendar: ``$env:REQUIRE_GOOGLE_CALENDAR``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_degraded_service_priorities: ``$env:ALLOW_DEGRADED_SERVICE_PRIORITIES``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- min_service_priorities_services: ``$env:MIN_SERVICE_PRIORITIES_SERVICES``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- min_service_priorities_categories: ``$env:MIN_SERVICE_PRIORITIES_CATEGORIES``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- min_service_priorities_featured: ``$env:MIN_SERVICE_PRIORITIES_FEATURED``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- require_service_priorities_funnel: ``$env:REQUIRE_SERVICE_PRIORITIES_FUNNEL``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- allow_degraded_telemedicine_diagnostics: ``$env:ALLOW_DEGRADED_TELEMEDICINE_DIAGNOSTICS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- require_telemedicine_configured: ``$env:REQUIRE_TELEMEDICINE_CONFIGURED``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- max_telemedicine_review_queue: ``$env:MAX_TELEMEDICINE_REVIEW_QUEUE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- max_telemedicine_staged_uploads: ``$env:MAX_TELEMEDICINE_STAGED_UPLOADS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- max_telemedicine_unlinked_intakes: ``$env:MAX_TELEMEDICINE_UNLINKED_INTAKES``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- telemedicine_monitor_status: ``$env:TELEMEDICINE_MONITOR_STATUS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- telemedicine_monitor_reason: ``$env:TELEMEDICINE_MONITOR_REASON``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- telemedicine_monitor_non_tele_failures: ``$env:TELEMEDICINE_MONITOR_NON_TELE_FAILURES``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- telemedicine_monitor_step_outcome: ``${{ steps.telemedicine_monitor.outcome }}``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_sync_recovery_status: ``$env:PUBLIC_SYNC_RECOVERY_STATUS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_sync_recovery_reason: ``$env:PUBLIC_SYNC_RECOVERY_REASON``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_sync_current_head: ``$env:PUBLIC_SYNC_CURRENT_HEAD``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_sync_remote_head: ``$env:PUBLIC_SYNC_REMOTE_HEAD``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_sync_dirty_paths_count: ``$env:PUBLIC_SYNC_DIRTY_PATHS_COUNT``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_sync_recovery_step_outcome: ``${{ steps.public_sync_recovery.outcome }}``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- turnero_pilot_recovery_status: ``$env:TURNERO_PILOT_RECOVERY_STATUS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- turnero_pilot_recovery_reason: ``$env:TURNERO_PILOT_RECOVERY_REASON``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- turnero_pilot_recovery_clinic_id: ``$env:TURNERO_PILOT_RECOVERY_CLINIC_ID``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- turnero_pilot_recovery_profile_fingerprint: ``$env:TURNERO_PILOT_RECOVERY_PROFILE_FINGERPRINT``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- turnero_pilot_recovery_deployed_commit: ``$env:TURNERO_PILOT_RECOVERY_DEPLOYED_COMMIT``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- turnero_pilot_recovery_targets: ``$env:TURNERO_PILOT_RECOVERY_TARGETS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- turnero_pilot_recovery_manifest: ``$env:TURNERO_PILOT_RECOVERY_MANIFEST_PATH``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- turnero_pilot_recovery_step_outcome: ``${{ steps.turnero_pilot_recovery.outcome }}``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- enable_public_cutover_monitor: ``$env:ENABLE_PUBLIC_CUTOVER_MONITOR``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_started_at: ``$env:PUBLIC_CUTOVER_STARTED_AT``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_window_hours: ``$env:PUBLIC_CUTOVER_WINDOW_HOURS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_window_active: ``$env:PUBLIC_CUTOVER_WINDOW_ACTIVE`` (reason ``$env:PUBLIC_CUTOVER_WINDOW_REASON``)"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_elapsed_hours: ``$env:PUBLIC_CUTOVER_ELAPSED_HOURS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_cutover_step_outcome: ``${{ steps.public_cutover.outcome }}``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- enable_public_v4_rollout_monitor: ``$env:ENABLE_PUBLIC_V4_ROLLOUT_MONITOR``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_stage: ``$env:PUBLIC_V4_ROLLOUT_STAGE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_surface_test: ``$env:PUBLIC_V4_ROLLOUT_SURFACE_TEST``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_surface_control: ``$env:PUBLIC_V4_ROLLOUT_SURFACE_CONTROL``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_min_view_booking: ``$env:PUBLIC_V4_ROLLOUT_MIN_VIEW_BOOKING``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_min_start_checkout: ``$env:PUBLIC_V4_ROLLOUT_MIN_START_CHECKOUT``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_max_confirmed_drop_pp: ``$env:PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_min_confirmed_rate_pct: ``$env:PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_allow_missing_control: ``$env:PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- enable_public_v4_rollout_monitor_effective: ``$env:ENABLE_PUBLIC_V4_ROLLOUT_MONITOR_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_stage_effective: ``$env:PUBLIC_V4_ROLLOUT_STAGE_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_stage_profile_effective: ``$env:PUBLIC_V4_ROLLOUT_STAGE_PROFILE_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_policy_source_effective: ``$env:PUBLIC_V4_ROLLOUT_POLICY_SOURCE_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_surface_test_effective: ``$env:PUBLIC_V4_ROLLOUT_SURFACE_TEST_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_surface_control_effective: ``$env:PUBLIC_V4_ROLLOUT_SURFACE_CONTROL_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_min_view_booking_effective: ``$env:PUBLIC_V4_ROLLOUT_MIN_VIEW_BOOKING_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_min_start_checkout_effective: ``$env:PUBLIC_V4_ROLLOUT_MIN_START_CHECKOUT_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_max_confirmed_drop_pp_effective: ``$env:PUBLIC_V4_ROLLOUT_MAX_CONFIRMED_DROP_PP_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_min_confirmed_rate_pct_effective: ``$env:PUBLIC_V4_ROLLOUT_MIN_CONFIRMED_RATE_PCT_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_allow_missing_control_effective: ``$env:PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- public_v4_rollout_step_outcome: ``${{ steps.public_v4_rollout.outcome }}``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_status: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_STATUS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_reason: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_REASON``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_public_sync_healthy: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_PUBLIC_SYNC_HEALTHY``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_open_relevant_count: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_OPEN_RELEVANT_COUNT``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_closed_count: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_COUNT``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- stale_deploy_alert_autoclose_closed_issues: ``$env:STALE_DEPLOY_ALERT_AUTOCLOSE_CLOSED_ISSUES``"
+                  $reportPath = [string]$env:PROD_MONITOR_REPORT_PATH
+                  if (-not (Test-Path -LiteralPath $reportPath)) {
+                    throw "No existe prod-monitor report para summary: $reportPath"
+                  }
+                  $report = ((Get-Content -LiteralPath $reportPath -Raw -Encoding utf8) -replace "^\uFEFF", '') | ConvertFrom-Json -Depth 40
+                  $lines = New-Object System.Collections.Generic.List[string]
+                  $lines.Add('## Production monitor')
+                  $lines.Add("- status: ``$($report.status)``")
+                  $lines.Add("- domain: ``$($report.domain)``")
+                  $lines.Add("- generated_at: ``$($report.generatedAt)``")
+                  $lines.Add("- report_path: ``$reportPath``")
+                  $lines.Add("- artifact_name: ``$($report.artifact.name)``")
+                  $lines.Add("- failures_count: ``$($report.failureCount)``")
+                  $lines.Add("- warnings_count: ``$($report.warningCount)``")
+                  $lines.Add("- allow_degraded_service_priorities: ``$($report.workflow.monitor.inputs.allowDegradedServicePriorities)``")
+                  $lines.Add("- min_service_priorities_services: ``$($report.workflow.monitor.inputs.minServicePrioritiesServices)``")
+                  $lines.Add("- min_service_priorities_categories: ``$($report.workflow.monitor.inputs.minServicePrioritiesCategories)``")
+                  $lines.Add("- min_service_priorities_featured: ``$($report.workflow.monitor.inputs.minServicePrioritiesFeatured)``")
+                  $lines.Add("- require_service_priorities_funnel: ``$($report.workflow.monitor.inputs.requireServicePrioritiesFunnel)``")
+                  $lines.Add("- telemedicine_monitor_status: ``$($report.workflow.telemedicine.status)``")
+                  $lines.Add("- telemedicine_monitor_reason: ``$($report.workflow.telemedicine.reason)``")
+                  $lines.Add("- telemedicine_monitor_non_tele_failures: ``$($report.workflow.telemedicine.nonTeleFailures)``")
+                  $lines.Add("- telemedicine_monitor_step_outcome: ``$($report.workflow.telemedicine.stepOutcome)``")
+                  $lines.Add("- public_sync_recovery_status: ``$($report.workflow.publicSyncRecovery.status)``")
+                  $lines.Add("- public_sync_recovery_reason: ``$($report.workflow.publicSyncRecovery.reason)``")
+                  $lines.Add("- public_sync_current_head: ``$($report.workflow.publicSyncRecovery.currentHead)``")
+                  $lines.Add("- public_sync_remote_head: ``$($report.workflow.publicSyncRecovery.remoteHead)``")
+                  $lines.Add("- public_sync_dirty_paths_count: ``$($report.workflow.publicSyncRecovery.dirtyPathsCount)``")
+                  $lines.Add("- turnero_pilot_recovery_status: ``$($report.workflow.turneroPilotRecovery.status)``")
+                  $lines.Add("- turnero_pilot_recovery_reason: ``$($report.workflow.turneroPilotRecovery.reason)``")
+                  $lines.Add("- turnero_pilot_recovery_clinic_id: ``$($report.workflow.turneroPilotRecovery.clinicId)``")
+                  $lines.Add("- turnero_pilot_recovery_profile_fingerprint: ``$($report.workflow.turneroPilotRecovery.profileFingerprint)``")
+                  $lines.Add("- turnero_pilot_recovery_deployed_commit: ``$($report.workflow.turneroPilotRecovery.deployedCommit)``")
+                  $lines.Add("- turnero_pilot_recovery_targets: ``$($report.workflow.turneroPilotRecovery.recoveryTargets)``")
+                  $lines.Add("- turnero_pilot_recovery_manifest: ``$($report.workflow.turneroPilotRecovery.manifestPath)``")
+                  $lines.Add("- enable_public_cutover_monitor: ``$($report.workflow.publicCutover.enabled)``")
+                  $lines.Add("- public_cutover_started_at: ``$($report.workflow.publicCutover.startedAt)``")
+                  $lines.Add("- public_cutover_window_hours: ``$($report.workflow.publicCutover.windowHours)``")
+                  $lines.Add("- public_cutover_window_active: ``$($report.workflow.publicCutover.windowActive)`` (reason ``$($report.workflow.publicCutover.windowReason)``)")
+                  $lines.Add("- public_cutover_elapsed_hours: ``$($report.workflow.publicCutover.elapsedHours)``")
+                  $lines.Add("- public_cutover_step_outcome: ``$($report.workflow.publicCutover.stepOutcome)``")
+                  $lines.Add("- enable_public_v4_rollout_monitor: ``$($report.workflow.publicV4Rollout.enabled)``")
+                  $lines.Add("- public_v4_rollout_stage: ``$($report.workflow.publicV4Rollout.stage)``")
+                  $lines.Add("- public_v4_rollout_surface_test: ``$($report.workflow.publicV4Rollout.surfaceTest)``")
+                  $lines.Add("- public_v4_rollout_surface_control: ``$($report.workflow.publicV4Rollout.surfaceControl)``")
+                  $lines.Add("- public_v4_rollout_min_view_booking: ``$($report.workflow.publicV4Rollout.minViewBooking)``")
+                  $lines.Add("- public_v4_rollout_min_start_checkout: ``$($report.workflow.publicV4Rollout.minStartCheckout)``")
+                  $lines.Add("- public_v4_rollout_max_confirmed_drop_pp: ``$($report.workflow.publicV4Rollout.maxConfirmedDropPp)``")
+                  $lines.Add("- public_v4_rollout_min_confirmed_rate_pct: ``$($report.workflow.publicV4Rollout.minConfirmedRatePct)``")
+                  $lines.Add("- public_v4_rollout_allow_missing_control: ``$($report.workflow.publicV4Rollout.allowMissingControl)``")
+                  $lines.Add("- enable_public_v4_rollout_monitor_effective: ``$($report.workflow.publicV4Rollout.enabledEffective)``")
+                  $lines.Add("- public_v4_rollout_stage_effective: ``$($report.workflow.publicV4Rollout.stageEffective)``")
+                  $lines.Add("- public_v4_rollout_stage_profile_effective: ``$($report.workflow.publicV4Rollout.stageProfileEffective)``")
+                  $lines.Add("- public_v4_rollout_policy_source_effective: ``$($report.workflow.publicV4Rollout.policySourceEffective)``")
+                  $lines.Add("- public_v4_rollout_surface_test_effective: ``$($report.workflow.publicV4Rollout.surfaceTestEffective)``")
+                  $lines.Add("- public_v4_rollout_surface_control_effective: ``$($report.workflow.publicV4Rollout.surfaceControlEffective)``")
+                  $lines.Add("- public_v4_rollout_min_view_booking_effective: ``$($report.workflow.publicV4Rollout.minViewBookingEffective)``")
+                  $lines.Add("- public_v4_rollout_min_start_checkout_effective: ``$($report.workflow.publicV4Rollout.minStartCheckoutEffective)``")
+                  $lines.Add("- public_v4_rollout_max_confirmed_drop_pp_effective: ``$($report.workflow.publicV4Rollout.maxConfirmedDropPpEffective)``")
+                  $lines.Add("- public_v4_rollout_min_confirmed_rate_pct_effective: ``$($report.workflow.publicV4Rollout.minConfirmedRatePctEffective)``")
+                  $lines.Add("- public_v4_rollout_allow_missing_control_effective: ``$($report.workflow.publicV4Rollout.allowMissingControlEffective)``")
+                  $lines.Add("- public_v4_rollout_step_outcome: ``$($report.workflow.publicV4Rollout.stepOutcome)``")
+                  $lines.Add("- stale_deploy_alert_autoclose_status: ``$($report.workflow.staleDeployAlertAutoclose.status)``")
+                  $lines.Add("- stale_deploy_alert_autoclose_reason: ``$($report.workflow.staleDeployAlertAutoclose.reason)``")
+                  $lines.Add("- stale_deploy_alert_autoclose_public_sync_healthy: ``$($report.workflow.staleDeployAlertAutoclose.publicSyncHealthy)``")
+                  $lines.Add("- stale_deploy_alert_autoclose_open_relevant_count: ``$($report.workflow.staleDeployAlertAutoclose.openRelevantCount)``")
+                  $lines.Add("- stale_deploy_alert_autoclose_closed_count: ``$($report.workflow.staleDeployAlertAutoclose.closedCount)``")
+                  $lines.Add("- stale_deploy_alert_autoclose_closed_issues: ``$($report.workflow.staleDeployAlertAutoclose.closedIssues)``")
+                  $lines.Add("- health_status: ``$($report.checks.health.status)``")
+                  $lines.Add("- public_sync_status: ``$($report.checks.publicSync.status)``")
+                  $lines.Add("- telemedicine_status: ``$($report.checks.telemedicine.status)``")
+                  $lines.Add("- turnero_pilot_status: ``$($report.checks.turneroPilot.status)``")
+                  $lines.Add("- github_deploy_alerts_status: ``$($report.checks.githubDeployAlerts.status)``")
+                  [System.IO.File]::AppendAllLines($env:GITHUB_STEP_SUMMARY, $lines)
 
             - name: Crear/actualizar incidente (solo schedule)
               if: ${{ failure() && github.event_name == 'schedule' && steps.public_cutover.outcome != 'failure' && steps.public_v4_rollout.outcome != 'failure' && ((env.TELEMEDICINE_MONITOR_STATUS != 'failed' && env.TELEMEDICINE_MONITOR_STATUS != 'unknown') || env.TELEMEDICINE_MONITOR_NON_TELE_FAILURES != '0') }}
