@@ -14868,11 +14868,9 @@ test.describe('Admin turnero sala', () => {
         page,
     }) => {
         const nowIso = new Date().toISOString();
-        const operatorInstance = {
-            deviceLabel: 'Operador C1 fijo',
-            appMode: 'desktop',
+        const operatorInstance = buildQueueDesktopOperatorInstance({
+            station: 'c1',
             ageSec: 5,
-            stale: false,
             effectiveStatus: 'warning',
             summary: 'Configuración local abierta en C1 fijo.',
             details: {
@@ -14890,127 +14888,24 @@ test.describe('Admin turnero sala', () => {
                 shellPhase: 'settings',
                 shellSettingsMode: true,
                 shellFirstRun: false,
-                shellPackaged: true,
-                shellPlatform: 'win32',
-                shellUpdateChannel: 'stable',
             },
-        };
-
-        await installLegacyAdminAuthMock(page, {
-            csrfToken: 'csrf_queue_admin_boot_operator',
         });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        queue_tickets: [],
-                        queueMeta: buildQueueMetaFromState({
-                            updatedAt: nowIso,
-                            waitingCount: 0,
-                            calledCount: 0,
-                            counts: {
-                                waiting: 0,
-                                called: 0,
-                                completed: 0,
-                                no_show: 0,
-                                cancelled: 0,
-                            },
-                            callingNow: [],
-                            nextTickets: [],
-                        }),
-                        queueSurfaceStatus: {
-                            operator: {
-                                surface: 'operator',
-                                label: 'Operador',
-                                status: 'warning',
-                                updatedAt: nowIso,
-                                ageSec: 5,
-                                stale: false,
-                                summary:
-                                    'Una desktop operador quedó en configuración local.',
-                                latest: operatorInstance,
-                                instances: [operatorInstance],
-                            },
-                            kiosk: {
-                                surface: 'kiosk',
-                                label: 'Kiosco',
-                                status: 'unknown',
-                                updatedAt: '',
-                                ageSec: 0,
-                                stale: true,
-                                summary: 'Sin heartbeat',
-                                latest: null,
-                                instances: [],
-                            },
-                            display: {
-                                surface: 'display',
-                                label: 'Sala TV',
-                                status: 'unknown',
-                                updatedAt: '',
-                                ageSec: 0,
-                                stale: true,
-                                summary: 'Sin heartbeat',
-                                latest: null,
-                                instances: [],
-                            },
-                        },
-                    },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, { ok: true, status: 'ok' });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            if (resource === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        updatedAt: nowIso,
-                        waitingCount: 0,
-                        calledCount: 0,
-                        counts: {
-                            waiting: 0,
-                            called: 0,
-                            completed: 0,
-                            no_show: 0,
-                            cancelled: 0,
-                        },
-                        callingNow: [],
-                        nextTickets: [],
-                    },
-                });
-            }
-
-            return json(route, { ok: true, data: {} });
+        await installQueueAdminAuthMock(page, 'csrf_queue_admin_boot_operator');
+        await installQueueOperationalAppsApiMocks(page, {
+            updatedAt: nowIso,
+            queueState: buildQueueIdleState(nowIso),
+            queueSurfaceStatus: buildQueueOperationalAppsSurfaceStatus({
+                operator: buildQueueDesktopOperatorSurfaceStatus({
+                    updatedAt: nowIso,
+                    status: 'warning',
+                    ageSec: 5,
+                    summary:
+                        'Una desktop operador quedó en configuración local.',
+                    latest: operatorInstance,
+                    instances: [operatorInstance],
+                }),
+            }),
         });
 
         await page.goto(adminUrl());
@@ -15047,11 +14942,9 @@ test.describe('Admin turnero sala', () => {
         page,
     }) => {
         const nowIso = new Date().toISOString();
-        const operatorInstance = {
-            deviceLabel: 'Operador C1 fijo',
-            appMode: 'desktop',
+        const operatorInstance = buildQueueDesktopOperatorInstance({
+            station: 'c1',
             ageSec: 4,
-            stale: false,
             effectiveStatus: 'warning',
             summary:
                 'No se pudo abrir la superficie operator. Reintentando en 18s.',
@@ -15070,132 +14963,32 @@ test.describe('Admin turnero sala', () => {
                 shellPhase: 'retry',
                 shellSettingsMode: false,
                 shellFirstRun: false,
-                shellPackaged: true,
-                shellPlatform: 'win32',
-                shellUpdateChannel: 'stable',
                 shellRetryActive: true,
                 shellRetryAttempt: 2,
                 shellRetryDelayMs: 18000,
                 shellRetryRemainingMs: 18000,
                 shellRetryReason: 'No se pudo abrir la superficie operator',
             },
-        };
-
-        await installLegacyAdminAuthMock(page, {
-            csrfToken: 'csrf_queue_admin_operator_retry',
         });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        queue_tickets: [],
-                        queueMeta: buildQueueMetaFromState({
-                            updatedAt: nowIso,
-                            waitingCount: 0,
-                            calledCount: 0,
-                            counts: {
-                                waiting: 0,
-                                called: 0,
-                                completed: 0,
-                                no_show: 0,
-                                cancelled: 0,
-                            },
-                            callingNow: [],
-                            nextTickets: [],
-                        }),
-                        queueSurfaceStatus: {
-                            operator: {
-                                surface: 'operator',
-                                label: 'Operador',
-                                status: 'warning',
-                                updatedAt: nowIso,
-                                ageSec: 4,
-                                stale: false,
-                                summary:
-                                    'Una desktop operador quedó reintentando apertura.',
-                                latest: operatorInstance,
-                                instances: [operatorInstance],
-                            },
-                            kiosk: {
-                                surface: 'kiosk',
-                                label: 'Kiosco',
-                                status: 'unknown',
-                                updatedAt: '',
-                                ageSec: 0,
-                                stale: true,
-                                summary: 'Sin heartbeat',
-                                latest: null,
-                                instances: [],
-                            },
-                            display: {
-                                surface: 'display',
-                                label: 'Sala TV',
-                                status: 'unknown',
-                                updatedAt: '',
-                                ageSec: 0,
-                                stale: true,
-                                summary: 'Sin heartbeat',
-                                latest: null,
-                                instances: [],
-                            },
-                        },
-                    },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, { ok: true, status: 'ok' });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            if (resource === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        updatedAt: nowIso,
-                        waitingCount: 0,
-                        calledCount: 0,
-                        counts: {
-                            waiting: 0,
-                            called: 0,
-                            completed: 0,
-                            no_show: 0,
-                            cancelled: 0,
-                        },
-                        callingNow: [],
-                        nextTickets: [],
-                    },
-                });
-            }
-
-            return json(route, { ok: true, data: {} });
+        await installQueueAdminAuthMock(
+            page,
+            'csrf_queue_admin_operator_retry'
+        );
+        await installQueueOperationalAppsApiMocks(page, {
+            updatedAt: nowIso,
+            queueState: buildQueueIdleState(nowIso),
+            queueSurfaceStatus: buildQueueOperationalAppsSurfaceStatus({
+                operator: buildQueueDesktopOperatorSurfaceStatus({
+                    updatedAt: nowIso,
+                    status: 'warning',
+                    ageSec: 4,
+                    summary:
+                        'Una desktop operador quedó reintentando apertura.',
+                    latest: operatorInstance,
+                    instances: [operatorInstance],
+                }),
+            }),
         });
 
         await page.goto(adminUrl());
@@ -15241,12 +15034,9 @@ test.describe('Admin turnero sala', () => {
         page,
     }) => {
         const nowIso = new Date().toISOString();
-        const operatorInstance = {
-            deviceLabel: 'Operador C2 fijo',
-            appMode: 'desktop',
+        const operatorInstance = buildQueueDesktopOperatorInstance({
+            station: 'c2',
             ageSec: 3,
-            stale: false,
-            effectiveStatus: 'ready',
             summary: 'Equipo listo para operar en C2 fijo.',
             details: {
                 station: 'c2',
@@ -15258,129 +15048,29 @@ test.describe('Admin turnero sala', () => {
                 numpadRequired: 4,
                 numpadLabel: 'Numpad listo',
                 numpadSummary: 'Matriz completa validada: llamar, +, . y -',
-                shellPackaged: true,
-                shellPlatform: 'win32',
-                shellUpdateChannel: 'stable',
                 shellLaunchMode: 'windowed',
                 shellAutoStart: false,
             },
-        };
-
-        await installLegacyAdminAuthMock(page, {
-            csrfToken: 'csrf_queue_admin_operator_autostart',
         });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        queue_tickets: [],
-                        queueMeta: buildQueueMetaFromState({
-                            updatedAt: nowIso,
-                            waitingCount: 0,
-                            calledCount: 0,
-                            counts: {
-                                waiting: 0,
-                                called: 0,
-                                completed: 0,
-                                no_show: 0,
-                                cancelled: 0,
-                            },
-                            callingNow: [],
-                            nextTickets: [],
-                        }),
-                        queueSurfaceStatus: {
-                            operator: {
-                                surface: 'operator',
-                                label: 'Operador',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 3,
-                                stale: false,
-                                summary:
-                                    'Operador Windows listo, pero con autoarranque apagado.',
-                                latest: operatorInstance,
-                                instances: [operatorInstance],
-                            },
-                            kiosk: {
-                                surface: 'kiosk',
-                                label: 'Kiosco',
-                                status: 'unknown',
-                                updatedAt: '',
-                                ageSec: 0,
-                                stale: true,
-                                summary: 'Sin heartbeat',
-                                latest: null,
-                                instances: [],
-                            },
-                            display: {
-                                surface: 'display',
-                                label: 'Sala TV',
-                                status: 'unknown',
-                                updatedAt: '',
-                                ageSec: 0,
-                                stale: true,
-                                summary: 'Sin heartbeat',
-                                latest: null,
-                                instances: [],
-                            },
-                        },
-                    },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, { ok: true, status: 'ok' });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            if (resource === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        updatedAt: nowIso,
-                        waitingCount: 0,
-                        calledCount: 0,
-                        counts: {
-                            waiting: 0,
-                            called: 0,
-                            completed: 0,
-                            no_show: 0,
-                            cancelled: 0,
-                        },
-                        callingNow: [],
-                        nextTickets: [],
-                    },
-                });
-            }
-
-            return json(route, { ok: true, data: {} });
+        await installQueueAdminAuthMock(
+            page,
+            'csrf_queue_admin_operator_autostart'
+        );
+        await installQueueOperationalAppsApiMocks(page, {
+            updatedAt: nowIso,
+            queueState: buildQueueIdleState(nowIso),
+            queueSurfaceStatus: buildQueueOperationalAppsSurfaceStatus({
+                operator: buildQueueDesktopOperatorSurfaceStatus({
+                    updatedAt: nowIso,
+                    status: 'ready',
+                    ageSec: 3,
+                    summary:
+                        'Operador Windows listo, pero con autoarranque apagado.',
+                    latest: operatorInstance,
+                    instances: [operatorInstance],
+                }),
+            }),
         });
 
         await page.goto(adminUrl());
@@ -15420,12 +15110,9 @@ test.describe('Admin turnero sala', () => {
         page,
     }) => {
         const nowIso = new Date().toISOString();
-        const operatorInstance = {
-            deviceLabel: 'Operador C1 fijo',
-            appMode: 'desktop',
+        const operatorInstance = buildQueueDesktopOperatorInstance({
+            station: 'c1',
             ageSec: 3,
-            stale: false,
-            effectiveStatus: 'ready',
             summary: 'Equipo listo para operar en C1 fijo.',
             details: {
                 station: 'c1',
@@ -15437,9 +15124,6 @@ test.describe('Admin turnero sala', () => {
                 numpadRequired: 4,
                 numpadLabel: 'Numpad listo',
                 numpadSummary: 'Matriz completa validada: llamar, +, . y -',
-                shellPackaged: true,
-                shellPlatform: 'win32',
-                shellUpdateChannel: 'stable',
                 shellLaunchMode: 'fullscreen',
                 shellAutoStart: true,
                 shellStatusPhase: 'download',
@@ -15448,123 +15132,25 @@ test.describe('Admin turnero sala', () => {
                 shellStatusVersion: '0.2.0',
                 shellMessage: 'Descargando update 42%',
             },
-        };
-
-        await installLegacyAdminAuthMock(page, {
-            csrfToken: 'csrf_queue_admin_operator_update',
         });
 
-        await page.route(/\/api\.php(\?.*)?$/i, async (route) => {
-            const url = new URL(route.request().url());
-            const resource = url.searchParams.get('resource') || '';
-
-            if (resource === 'features') {
-                return json(route, {
-                    ok: true,
-                    data: { admin_sony_ui: ADMIN_UI_VARIANT === 'sony_v2' },
-                });
-            }
-
-            if (resource === 'data') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        appointments: [],
-                        callbacks: [],
-                        reviews: [],
-                        availability: {},
-                        availabilityMeta: {
-                            source: 'store',
-                            mode: 'live',
-                            timezone: 'America/Guayaquil',
-                            calendarConfigured: true,
-                            calendarReachable: true,
-                            generatedAt: nowIso,
-                        },
-                        queue_tickets: [],
-                        queueMeta: buildQueueMetaFromState({
-                            updatedAt: nowIso,
-                            waitingCount: 0,
-                            calledCount: 0,
-                            counts: {
-                                waiting: 0,
-                                called: 0,
-                                completed: 0,
-                                no_show: 0,
-                                cancelled: 0,
-                            },
-                            callingNow: [],
-                            nextTickets: [],
-                        }),
-                        queueSurfaceStatus: {
-                            operator: {
-                                surface: 'operator',
-                                label: 'Operador',
-                                status: 'ready',
-                                updatedAt: nowIso,
-                                ageSec: 3,
-                                stale: false,
-                                summary:
-                                    'Operador Windows listo mientras descarga update.',
-                                latest: operatorInstance,
-                                instances: [operatorInstance],
-                            },
-                            kiosk: {
-                                surface: 'kiosk',
-                                label: 'Kiosco',
-                                status: 'unknown',
-                                updatedAt: '',
-                                ageSec: 0,
-                                stale: true,
-                                summary: 'Sin heartbeat',
-                                latest: null,
-                                instances: [],
-                            },
-                            display: {
-                                surface: 'display',
-                                label: 'Sala TV',
-                                status: 'unknown',
-                                updatedAt: '',
-                                ageSec: 0,
-                                stale: true,
-                                summary: 'Sin heartbeat',
-                                latest: null,
-                                instances: [],
-                            },
-                        },
-                    },
-                });
-            }
-
-            if (resource === 'health') {
-                return json(route, { ok: true, status: 'ok' });
-            }
-
-            if (resource === 'funnel-metrics') {
-                return json(route, { ok: true, data: {} });
-            }
-
-            if (resource === 'queue-state') {
-                return json(route, {
-                    ok: true,
-                    data: {
-                        updatedAt: nowIso,
-                        waitingCount: 0,
-                        calledCount: 0,
-                        counts: {
-                            waiting: 0,
-                            called: 0,
-                            completed: 0,
-                            no_show: 0,
-                            cancelled: 0,
-                        },
-                        callingNow: [],
-                        nextTickets: [],
-                    },
-                });
-            }
-
-            return json(route, { ok: true, data: {} });
+        await installQueueAdminAuthMock(
+            page,
+            'csrf_queue_admin_operator_update'
+        );
+        await installQueueOperationalAppsApiMocks(page, {
+            updatedAt: nowIso,
+            queueState: buildQueueIdleState(nowIso),
+            queueSurfaceStatus: buildQueueOperationalAppsSurfaceStatus({
+                operator: buildQueueDesktopOperatorSurfaceStatus({
+                    updatedAt: nowIso,
+                    status: 'ready',
+                    ageSec: 3,
+                    summary: 'Operador Windows listo mientras descarga update.',
+                    latest: operatorInstance,
+                    instances: [operatorInstance],
+                }),
+            }),
         });
 
         await page.goto(adminUrl());
