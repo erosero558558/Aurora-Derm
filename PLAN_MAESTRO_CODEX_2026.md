@@ -4,7 +4,7 @@ Inicio: 2026-02-24
 Cadencia: por commit (cada commit deja evidencia verificable)
 Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite por control)
 
-<!-- CODEX_STRATEGY_ACTIVE
+<!-- CODEX_STRATEGY_HISTORY
 id: STRAT-2026-03-admin-operativo
 title: "Admin operativo"
 status: closed
@@ -41,7 +41,11 @@ updated_at: "2026-03-14"
 
 ## Estrategia madre activa
 
-- Estrategia activa: `STRAT-2026-03-admin-operativo`.
+- Estrategia activa en el board remoto: ninguna por ahora.
+- El bloque historico `STRAT-2026-03-admin-operativo` queda preservado arriba
+  como referencia de mirror ya cerrado; no debe volver a publicarse como
+  `CODEX_STRATEGY_ACTIVE` hasta que `AGENT_BOARD.yaml.strategy.active` vuelva a
+  estado `active`.
 - Draft siguiente: ninguno por ahora; cuando exista debe reflejarse como
   `CODEX_STRATEGY_NEXT` y espejar `AGENT_BOARD.yaml.strategy.next`.
 - Objetivo: convertir `admin clinico + queue/turnero + OpenClaw UX` en una entrega operable, con soporte backend/runtime solo cuando desbloquea ese mismo frente.
