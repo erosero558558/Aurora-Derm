@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 'use strict';
 
-const VALID_STAGES = new Set(['internal', 'canary', 'general', 'rollback']);
+const VALID_STAGES = new Set([
+    'stable',
+    'internal',
+    'canary',
+    'general',
+    'rollback',
+]);
 
 const STAGE_PROFILE_BY_STAGE = {
+    stable: 'strict',
     internal: 'tolerant',
     canary: 'progressive',
     general: 'strict',

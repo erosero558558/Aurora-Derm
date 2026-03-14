@@ -74,3 +74,20 @@ test('resolver conserva values explicitos en stage general', () => {
     assert.equal(result.allow_missing_flag_effective, true);
     assert.equal(result.policy_source, 'input_or_var');
 });
+
+test('resolver conserva stage stable cuando deploy-hosting lo propaga', () => {
+    const result = resolveAdminRolloutPolicy({
+        stage: 'stable',
+        defaultStage: 'general',
+        skipRuntimeSmoke: 'false',
+        allowFeatureApiFailure: 'false',
+        allowMissingFlag: 'false',
+    });
+
+    assert.equal(result.stage_effective, 'stable');
+    assert.equal(result.stage_profile, 'strict');
+    assert.equal(result.skip_runtime_smoke_effective, false);
+    assert.equal(result.allow_feature_api_failure_effective, false);
+    assert.equal(result.allow_missing_flag_effective, false);
+    assert.equal(result.policy_source, 'input_or_var');
+});
