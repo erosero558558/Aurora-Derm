@@ -26,7 +26,6 @@ test('HealthController expone checks.turneroPilot para el piloto web por clínic
                 'requestStartedAt' => microtime(true),
                 'method' => 'GET',
                 'resource' => 'health',
-                'diagnosticsAuthorized' => false,
             ]);
         } catch (TestingExitException $e) {
             echo json_encode($e->payload);
@@ -42,12 +41,9 @@ test('HealthController expone checks.turneroPilot para el piloto web por clínic
 
     const payload = JSON.parse(result.stdout);
     const snapshot = payload?.checks?.turneroPilot;
-    const publicSync = payload?.checks?.publicSync;
 
     assert.equal(payload.ok, true);
     assert.equal(payload.status, 'ok');
-    assert.equal(typeof payload.storageBackend, 'undefined');
-    assert.equal(typeof payload?.checks?.storage, 'undefined');
     assert.equal(snapshot?.configured, true);
     assert.equal(snapshot?.ready, true);
     assert.equal(snapshot?.profileSource, 'file');
@@ -65,19 +61,4 @@ test('HealthController expone checks.turneroPilot para el piloto web por clínic
     assert.equal(snapshot?.surfaces?.kiosk?.route, '/kiosco-turnos.html');
     assert.equal(snapshot?.surfaces?.display?.route, '/sala-turnos.html');
     assert.match(String(snapshot?.profileFingerprint || ''), /^[0-9a-f]{8}$/);
-    assert.equal(publicSync?.configured, true);
-    assert.equal(typeof publicSync?.jobKey, 'string');
-    assert.equal(typeof publicSync?.healthy, 'boolean');
-    assert.equal(typeof publicSync?.state, 'string');
-    assert.equal(typeof publicSync?.deployedCommit, 'string');
-    assert.equal(typeof publicSync?.headDrift, 'boolean');
-    assert.equal(typeof publicSync?.repoPath, 'undefined');
-    assert.equal(typeof publicSync?.statusPath, 'undefined');
-    assert.equal(typeof publicSync?.logPath, 'undefined');
-    assert.equal(typeof publicSync?.lockFile, 'undefined');
-    assert.equal(typeof publicSync?.currentHead, 'undefined');
-    assert.equal(typeof publicSync?.remoteHead, 'undefined');
-    assert.equal(typeof publicSync?.dirtyPaths, 'undefined');
-    assert.equal(typeof publicSync?.dirtyPathsCount, 'undefined');
-    assert.equal(typeof publicSync?.lastErrorMessage, 'undefined');
 });

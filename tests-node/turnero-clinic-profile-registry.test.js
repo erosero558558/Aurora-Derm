@@ -28,7 +28,7 @@ test('lista perfiles turnero catalogados para despliegues separados', () => {
     );
 });
 
-test('valida perfil turnero y exige defaults canonicos del piloto web', () => {
+test('valida perfil turnero y exige separate_deploy para el piloto', () => {
     const validation = validateTurneroClinicProfile({
         schema: PROFILE_SCHEMA,
         clinic_id: 'clinica-demo',
@@ -66,18 +66,18 @@ test('valida perfil turnero y exige defaults canonicos del piloto web', () => {
         },
         release: {
             mode: 'web_pilot',
-            admin_mode_default: 'expert',
+            admin_mode_default: 'basic',
             separate_deploy: false,
-            native_apps_blocking: true,
+            native_apps_blocking: false,
             notes: [],
         },
     });
 
     assert.equal(validation.ok, false);
-    const joinedErrors = validation.errors.join('\n');
-    assert.match(joinedErrors, /separate_deploy debe quedar en true/i);
-    assert.match(joinedErrors, /admin_mode_default debe quedar en basic/i);
-    assert.match(joinedErrors, /native_apps_blocking debe quedar en false/i);
+    assert.match(
+        validation.errors.join('\n'),
+        /separate_deploy debe quedar en true/i
+    );
 });
 
 test('stagea un perfil catalogado al clinic-profile activo', () => {

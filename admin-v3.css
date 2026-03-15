@@ -329,14 +329,6 @@ body.admin-v3-mode .admin-v3-login__hero {
     display: grid;
     gap: 24px;
     align-content: space-between;
-    overflow: hidden;
-    position: relative;
-}
-
-body.admin-v3-mode .admin-v3-login__brand {
-    display: grid;
-    gap: 16px;
-    max-width: 42rem;
 }
 
 body.admin-v3-mode .admin-v3-login__hero .sony-kicker,
@@ -358,9 +350,6 @@ body.admin-v3-mode .admin-v3-login__fact {
     padding: 18px;
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.1);
-    display: grid;
-    gap: 10px;
-    align-content: start;
 }
 
 body.admin-v3-mode .admin-v3-login__fact span,
@@ -370,6 +359,7 @@ body.admin-v3-mode .admin-v3-login__fact small {
 
 body.admin-v3-mode .admin-v3-login__fact strong {
     display: block;
+    margin: 10px 0 8px;
     color: #fff;
     font-size: 1.05rem;
 }
@@ -380,7 +370,6 @@ body.admin-v3-mode .admin-v3-login__panel {
     background: var(--admin3-surface);
     border: 1px solid var(--admin3-line);
     box-shadow: var(--admin3-shadow);
-    align-content: start;
 }
 
 body.admin-v3-mode .admin-v3-login__panel-head {
@@ -388,31 +377,11 @@ body.admin-v3-mode .admin-v3-login__panel-head {
     gap: 12px;
 }
 
-body.admin-v3-mode .admin-login-route-card,
 body.admin-v3-mode .admin-login-status-card {
     padding: 18px 20px;
     border-radius: 22px;
     border: 1px solid var(--admin3-line);
     background: var(--admin3-surface-alt);
-}
-
-body.admin-v3-mode .admin-login-route-card {
-    display: grid;
-    gap: 10px;
-    border-color: rgba(18, 89, 122, 0.22);
-    background:
-        linear-gradient(180deg, rgba(18, 89, 122, 0.08) 0%, rgba(18, 89, 122, 0.03) 100%),
-        var(--admin3-surface-alt);
-}
-
-body.admin-v3-mode .admin-login-route-card strong {
-    font-size: 1.1rem;
-    letter-spacing: -0.03em;
-}
-
-body.admin-v3-mode .admin-login-route-card p,
-body.admin-v3-mode .admin-login-next-step p {
-    margin: 0;
 }
 
 body.admin-v3-mode .admin-login-status-card[data-state='warning'] {
@@ -464,15 +433,6 @@ body.admin-v3-mode .admin-login-support-copy {
 
 body.admin-v3-mode .admin-login-support-copy-secondary {
     font-size: 0.92rem;
-}
-
-body.admin-v3-mode .admin-login-next-step {
-    display: grid;
-    gap: 8px;
-    padding: 18px 20px;
-    border-radius: 22px;
-    border: 1px dashed var(--admin3-line);
-    background: color-mix(in srgb, var(--admin3-surface-alt) 72%, transparent);
 }
 
 body.admin-v3-mode .admin-openclaw-challenge__head {
@@ -708,60 +668,6 @@ body.admin-v3-mode .admin-v3-topbar {
 body.admin-v3-mode .admin-v3-topbar__copy {
     display: grid;
     gap: 8px;
-    min-width: 0;
-}
-
-body.admin-v3-mode .admin-quick-nav {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1 1 280px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-body.admin-v3-mode .admin-quick-nav-item {
-    min-height: 38px;
-    padding: 0 14px;
-    gap: 8px;
-    background: linear-gradient(180deg, #f7f7f4 0%, #ede9df 100%);
-    border-color: rgba(40, 40, 34, 0.08);
-    color: var(--admin3-ink);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
-}
-
-body.admin-v3-mode .admin-quick-nav-item:hover {
-    border-color: rgba(90, 72, 44, 0.18);
-    background: linear-gradient(180deg, #fcfbf8 0%, #efe8da 100%);
-}
-
-body.admin-v3-mode .admin-quick-nav-item.active,
-body.admin-v3-mode .admin-quick-nav-item[aria-pressed='true'] {
-    background: linear-gradient(135deg, #3f2b1f 0%, #915f41 100%);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 14px 24px rgba(88, 54, 32, 0.22);
-}
-
-body.admin-v3-mode .admin-quick-nav-shortcut {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 22px;
-    padding: 0 8px;
-    border-radius: 999px;
-    background: rgba(62, 48, 35, 0.08);
-    color: rgba(62, 48, 35, 0.88);
-    font-size: 0.66rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-body.admin-v3-mode .admin-quick-nav-item.active .admin-quick-nav-shortcut,
-body.admin-v3-mode .admin-quick-nav-item[aria-pressed='true'] .admin-quick-nav-shortcut {
-    background: rgba(255, 255, 255, 0.16);
-    color: #fff;
 }
 
 body.admin-v3-mode .admin-v3-topbar__actions {
@@ -2675,14 +2581,6 @@ body.admin-v3-mode .clinical-media-flow-form-grid {
         border-radius: 24px;
     }
 
-    body.admin-v3-mode .admin-v3-login__panel {
-        order: 1;
-    }
-
-    body.admin-v3-mode .admin-v3-login__hero {
-        order: 2;
-    }
-
     body.admin-v3-mode .admin-v3-login__facts,
     body.admin-v3-mode .callbacks-grid,
     body.admin-v3-mode .reviews-grid,
@@ -2701,16 +2599,6 @@ body.admin-v3-mode .clinical-media-flow-form-grid {
         grid-template-columns: 1fr;
     }
 
-    body.admin-v3-mode .admin-login-actions,
-    body.admin-v3-mode .admin-login-alt-actions {
-        width: 100%;
-    }
-
-    body.admin-v3-mode .admin-login-actions button,
-    body.admin-v3-mode .admin-login-alt-actions button {
-        flex: 1 1 auto;
-    }
-
     body.admin-v3-mode .callbacks-ops-card.wide {
         grid-column: auto;
     }
@@ -2724,13 +2612,6 @@ body.admin-v3-mode .clinical-media-flow-form-grid {
     body.admin-v3-mode .admin-v3-topbar__actions {
         width: 100%;
         justify-content: flex-start;
-    }
-
-    body.admin-v3-mode .admin-quick-nav {
-        width: 100%;
-        justify-content: flex-start;
-        overflow-x: auto;
-        padding-bottom: 4px;
     }
 
     body.admin-v3-mode .admin-agent-panel {

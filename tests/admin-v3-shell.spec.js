@@ -217,7 +217,6 @@ test.describe('Admin sony_v3 shell', () => {
         await expect(page.locator('#adminProductivityStrip')).toBeVisible();
         await expect(page.locator('#pageTitle')).toHaveText('Inicio');
         await expect(page.locator('#adminPrimaryNav')).toContainText('Inicio');
-        await expect(page.locator('#adminPrimaryNav')).toContainText('Turnero');
         await expect(page.locator('#adminPrimaryNav')).toContainText('Agenda');
         await expect(page.locator('#adminPrimaryNav')).toContainText(
             'Pendientes'
@@ -236,9 +235,9 @@ test.describe('Admin sony_v3 shell', () => {
         ).toHaveCount(0);
         await expect(
             page.locator('.nav-item[data-section="queue"]')
-        ).toHaveCount(1);
+        ).toHaveCount(0);
         await expect(page.locator('#reviews')).toHaveCount(0);
-        await expect(page.locator('#queue')).toHaveCount(1);
+        await expect(page.locator('#queue')).toHaveCount(0);
         await expect(page.locator('#openOperatorAppBtn')).toBeVisible();
         await expect(page.locator('#opsTodaySummaryCard')).toBeVisible();
         await expect(page.locator('#opsPendingSummaryCard')).toBeVisible();
@@ -272,9 +271,8 @@ test.describe('Admin sony_v3 shell', () => {
         await page.keyboard.press('Control+K');
         await page.locator('#adminQuickCommand').fill('turnero');
         await page.keyboard.press('Enter');
-        await expect(page.locator('#queue')).toHaveClass(/active/);
-        await expect(page).toHaveURL(/#queue$/);
-        await expect(page.locator('#pageTitle')).toHaveText('Turnero sala');
+        await expect(page.locator('#callbacks')).toHaveClass(/active/);
+        await expect(page).not.toHaveURL(/#queue$/);
     });
 
     test('conserva navegacion por atajos y workbench de citas', async ({

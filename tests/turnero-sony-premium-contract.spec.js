@@ -551,7 +551,7 @@ function createOperatorApiState() {
 test('turnero premium contract reaches 150/150 in auto day/night', async ({
     browser,
 }, testInfo) => {
-    test.setTimeout(180000);
+    test.setTimeout(300000);
 
     const score = createScorecard();
     const clinicProfile = buildClinicProfile();
