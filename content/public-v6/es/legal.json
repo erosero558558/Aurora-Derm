@@ -35,12 +35,12 @@
         },
         "thesis": {
             "eyebrow": "Uso del sitio",
-            "title": "Reglas simples para usar el sitio y los canales clinicos",
-            "body": "Aqui explicamos que protege cada politica, que limites existen y que puede esperar cuando comparte informacion con Aurora Derm."
+            "title": "Reglas claras para usar el sitio y sus canales",
+            "body": "Aqui explicamos que cubre cada politica, que limites existen y que puede esperar cuando comparte informacion con Aurora Derm."
         },
         "statement": {
             "eyebrow": "Lenguaje claro",
-            "title": "Lo legal tambien debe poder entenderse a la primera",
+            "title": "Lo legal tambien debe entenderse sin esfuerzo",
             "signature": "Aurora Derm",
             "image": "/images/optimized/v6-clinic-legal-governance.webp",
             "alt": "Privacidad, consentimiento y reglas del sitio en un marco claro"
@@ -61,14 +61,14 @@
                 {
                     "title": "Uso del sitio",
                     "items": [
-                        "La informacion publica orienta, pero no reemplaza una consulta medica personalizada.",
+                        "La informacion publica orienta, pero no reemplaza una consulta medica individual.",
                         "Cuando usted usa formularios o canales oficiales, debe compartir datos reales y actualizados.",
-                        "Si hay uso indebido del sitio, podemos limitar acceso para proteger el servicio y a terceros."
+                        "Si detectamos uso indebido del sitio, podemos limitar acceso para proteger el servicio y a terceros."
                     ]
                 },
                 {
-                        "title": "Contenido y propiedad",
-                        "items": [
+                    "title": "Contenido y propiedad",
+                    "items": [
                         "Los textos, imagenes y disenos pertenecen a Aurora Derm o a terceros autorizados.",
                         "No se permite reproduccion comercial total o parcial sin autorizacion escrita.",
                         "Las referencias a marcas o servicios de terceros se usan solo con fines informativos."
@@ -140,7 +140,7 @@
                     "items": [
                         "Usted debe informar sintomas, antecedentes y cambios recientes con la mayor precision posible.",
                         "El equipo clinico decide la conducta segun historia, examen y evidencia disponible.",
-                        "Seguir las indicaciones recibidas influye de manera directa en la evolucion del caso."
+                        "Seguir las indicaciones recibidas influye de forma directa en la evolucion del caso."
                     ]
                 }
             ]

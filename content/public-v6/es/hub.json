@@ -1,6 +1,6 @@
 {
     "title": "Especialidades dermatologicas | Aurora Derm",
-    "description": "Aurora Derm organiza sus especialidades dermatologicas en Quito con primera evaluacion clara, tratamientos indicados y seguimiento entendible.",
+    "description": "Aurora Derm organiza sus especialidades dermatologicas en Quito con rutas claras para primera consulta, tratamientos y seguimiento.",
     "breadcrumb": [
         {
             "label": "Inicio",
@@ -17,8 +17,8 @@
         "srcset": "/images/optimized/v6-clinic-hub-editorial-map-400.webp 400w, /images/optimized/v6-clinic-hub-editorial-map-640.webp 640w, /images/optimized/v6-clinic-hub-editorial-map-800.webp 800w, /images/optimized/v6-clinic-hub-editorial-map-1024.webp 1024w, /images/optimized/v6-clinic-hub-editorial-map-1200.webp 1200w, /images/optimized/v6-clinic-hub-editorial-map-1344.webp 1344w, /images/optimized/v6-clinic-hub-editorial-map.webp 1400w",
         "alt": "Mapa editorial de rutas dermatologicas y decisiones clinicas"
     },
-    "introTitle": "Encuentre la especialidad que mejor ordena lo que su piel necesita hoy",
-    "introDeck": "Cada pagina resume alcance, tiempos y seguimiento para que usted entienda el plan antes de decidir.",
+    "introTitle": "Encuentre la ruta que mas se parece a lo que usted necesita hoy",
+    "introDeck": "Aqui cada pagina explica para quien suele servir, que puede esperar y como seguir sin enredarse.",
     "ui": {
         "menu": {
             "featured": "Rutas destacadas",
@@ -26,7 +26,7 @@
         },
         "featured": {
             "eyebrow": "Para empezar",
-            "title": "Tres formas claras de empezar"
+            "title": "Tres maneras claras de empezar"
         },
         "sectionLabelPrefix": "Seccion",
         "routeLabel": "rutas",
@@ -34,28 +34,28 @@
         "railAria": "Secciones de servicios",
         "initiatives": {
             "eyebrow": "Tambien puede ayudar",
-            "title": "Apoyos que suelen hacer diferencia"
+            "title": "Apoyos que suelen marcar diferencia"
         }
     },
     "featured": [
         {
             "category": "Diagnostico",
             "title": "Diagnostico integral",
-            "copy": "Una primera lectura completa para ordenar prioridades y salir de la consulta con un plan claro.",
+            "copy": "Una primera lectura completa para ordenar prioridades y salir sabiendo que hacer primero.",
             "image": "/images/optimized/v6-clinic-diagnostico-integral.webp",
             "href": "/es/servicios/diagnostico-integral/"
         },
         {
             "category": "Tecnologia",
             "title": "Laser dermatologico segun su caso",
-            "copy": "Elegimos tecnologia por fototipo, objetivo y recuperacion esperada, con parametros revisados en cada control.",
+            "copy": "Elegimos tecnologia por fototipo, objetivo y recuperacion esperada, no por moda ni impulso.",
             "image": "/images/optimized/v6-clinic-statement-procedure-guidance.webp",
             "href": "/es/servicios/laser-dermatologico/"
         },
         {
             "category": "Teledermatologia",
             "title": "Teledermatologia con paso a consulta bien cuidado",
-            "copy": "La atencion remota ayuda a decidir si basta seguir a distancia o si conviene verle pronto en el consultorio.",
+            "copy": "La atencion remota ayuda a decidir si basta seguir a distancia o si conviene verle pronto.",
             "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
             "href": "/es/telemedicina/"
         }
@@ -63,14 +63,14 @@
     "sections": [
         {
             "id": "clinical-core",
-            "title": "Empezar y evaluar",
-            "deck": "Rutas para aclarar el diagnostico y sostener condiciones frecuentes con seguimiento claro desde el inicio.",
+            "title": "Empezar con claridad",
+            "deck": "Rutas para entender el diagnostico y ubicar condiciones frecuentes sin perder tiempo en vueltas innecesarias.",
             "cards": [
                 {
                     "slug": "diagnostico-integral",
                     "category": "Diagnostico",
                     "title": "Diagnostico integral",
-                    "copy": "Una lectura inicial que ordena riesgo, prioridades y tratamiento antes de empezar.",
+                    "copy": "Una lectura inicial que ordena prioridades, riesgos y pasos concretos desde la primera cita.",
                     "image": "/images/optimized/v6-clinic-diagnostico-integral.webp",
                     "href": "/es/servicios/diagnostico-integral/"
                 },
@@ -86,7 +86,7 @@
                     "slug": "cancer-piel",
                     "category": "Tamizaje",
                     "title": "Cancer de piel",
-                    "copy": "Revision temprana de lesiones con senales de alarma y un plan de vigilancia que no se deja para despues.",
+                    "copy": "Revision pronta de lesiones con senales de alarma y un plan de vigilancia bien explicado.",
                     "image": "/images/optimized/v6-clinic-cancer-piel.webp",
                     "href": "/es/servicios/cancer-piel/"
                 }
@@ -95,7 +95,7 @@
         {
             "id": "procedures",
             "title": "Tratar con criterio",
-            "deck": "Procedimientos y tecnologia cuando aportan valor clinico y pueden seguirse con seguridad.",
+            "deck": "Procedimientos y tecnologia cuando aportan valor real y pueden seguirse con seguridad.",
             "cards": [
                 {
                     "slug": "laser-dermatologico",
@@ -109,7 +109,7 @@
                     "slug": "peeling-quimico",
                     "category": "Renovacion",
                     "title": "Peeling quimico",
-                    "copy": "Peeling calibrado por fototipo, sensibilidad y objetivo terapeutico.",
+                    "copy": "Peeling calibrado por fototipo, sensibilidad y objetivo, con recuperacion explicada desde el inicio.",
                     "image": "/images/optimized/v6-clinic-peeling-quimico.webp",
                     "href": "/es/servicios/peeling-quimico/"
                 },
@@ -117,7 +117,7 @@
                     "slug": "bioestimuladores-colageno",
                     "category": "Rejuvenecimiento",
                     "title": "Bioestimuladores de colageno",
-                    "copy": "Mejora progresiva de firmeza y calidad cutanea con indicacion responsable y control por zonas.",
+                    "copy": "Mejora progresiva de firmeza y calidad cutanea con indicacion responsable y tiempos reales.",
                     "image": "/images/optimized/v6-clinic-bioestimuladores-colageno.webp",
                     "href": "/es/servicios/bioestimuladores-colageno/"
                 }
@@ -125,8 +125,8 @@
         },
         {
             "id": "extended",
-            "title": "Seguir y ajustar",
-            "deck": "Opciones para seguimiento prolongado, cuadros mixtos y decisiones compartidas que necesitan orden.",
+            "title": "Seguir sin perder el hilo",
+            "deck": "Opciones para controles, casos mixtos y decisiones compartidas que necesitan orden.",
             "cards": [
                 {
                     "slug": "dermatologia-pediatrica",
@@ -140,7 +140,7 @@
                     "slug": "piel-cabello-unas",
                     "category": "Integral",
                     "title": "Piel, cabello y unas",
-                    "copy": "Consulta integral para sintomas combinados que requieren una lectura clinica coordinada.",
+                    "copy": "Consulta integral para sintomas combinados que merecen una sola lectura bien armada.",
                     "image": "/images/optimized/v6-clinic-piel-cabello-unas.webp",
                     "href": "/es/servicios/piel-cabello-unas/"
                 },
@@ -148,7 +148,7 @@
                     "slug": "telemedicine",
                     "category": "Teledermatologia",
                     "title": "Teledermatologia",
-                    "copy": "Orientacion remota para decidir si basta seguir online o si conviene pasar al consultorio.",
+                    "copy": "Orientacion remota para decidir si basta seguir online o si conviene verle pronto en consulta.",
                     "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
                     "href": "/es/telemedicina/"
                 }
@@ -158,57 +158,57 @@
     "initiatives": [
         {
             "category": "Seguimiento",
-            "title": "Fotos clinicas comparables",
-            "copy": "Comparamos imagenes tomadas en condiciones parecidas para leer cambios con mas precision.",
+            "title": "Fotos que si sirven para comparar",
+            "copy": "Leemos cambios mejor cuando las imagenes mantienen condiciones parecidas entre controles.",
             "image": "/images/optimized/v6-clinic-home-followup.webp",
             "href": "/es/servicios/diagnostico-integral/"
         },
         {
             "category": "Inflamacion",
-            "title": "Brote activo",
-            "copy": "Ajustamos temprano cuando reaparecen lesiones o la piel se vuelve mas reactiva.",
+            "title": "Brote que pide ajuste",
+            "copy": "Si reaparecen lesiones o aumenta la reaccion, conviene corregir temprano y no esperar de mas.",
             "image": "/images/optimized/v6-clinic-granitos-brazos-piernas.webp",
             "href": "/es/servicios/acne-rosacea/"
         },
         {
             "category": "Pediatria",
-            "title": "Decisiones en familia",
-            "copy": "Un plan claro para casa, con senales de alarma y pasos que la familia puede sostener.",
+            "title": "Plan claro para la familia",
+            "copy": "El objetivo es que casa, escuela y cuidadores entiendan las indicaciones sin confusiones.",
             "image": "/images/optimized/v6-clinic-statement-family-support.webp",
             "href": "/es/servicios/dermatologia-pediatrica/"
         },
         {
             "category": "Tamizaje",
-            "title": "Lesion que merece revision",
-            "copy": "Damos prioridad cuando un lunar o una mancha cambian de forma reciente.",
+            "title": "Lunar o mancha que cambio",
+            "copy": "Damos prioridad cuando una lesion cambia de forma reciente o deja dudas que no conviene posponer.",
             "image": "/images/optimized/v6-clinic-cancer-piel.webp",
             "href": "/es/servicios/cancer-piel/"
         },
         {
             "category": "Tecnologia",
-            "title": "Calibracion por fototipo",
+            "title": "Parametros segun fototipo",
             "copy": "Energia, frecuencia y recuperacion se ajustan segun la respuesta real de su piel.",
             "image": "/images/optimized/v6-clinic-clinic-environment.webp",
             "href": "/es/servicios/laser-dermatologico/"
         },
         {
             "category": "Rejuvenecimiento",
-            "title": "Cuidado cutaneo por etapas",
+            "title": "Cuidado por etapas",
             "copy": "Combinamos sesiones con expectativas honestas para mejorar textura, firmeza y calidad de piel.",
             "image": "/images/optimized/v6-clinic-statement-procedure-guidance.webp",
             "href": "/es/servicios/bioestimuladores-colageno/"
         },
         {
             "category": "Legal",
-            "title": "Consentimiento en lenguaje claro",
-            "copy": "Derechos y responsabilidades explicados con claridad, sin complejidad innecesaria.",
+            "title": "Legal en lenguaje entendible",
+            "copy": "Derechos, privacidad y limites del sitio explicados con palabras claras y sin rodeos.",
             "image": "/images/optimized/v6-clinic-legal-governance.webp",
             "href": "/es/legal/terminos/"
         },
         {
             "category": "Teledermatologia",
-            "title": "Paso a consulta a tiempo",
-            "copy": "La atencion remota mantiene senales claras para pasar al consultorio cuando hace falta.",
+            "title": "Paso a consulta cuando toca",
+            "copy": "La atencion remota tambien sirve para reconocer cuando ya conviene verle en persona.",
             "image": "/images/optimized/v6-clinic-hub-editorial-map.webp",
             "href": "/es/telemedicina/"
         }
@@ -216,7 +216,7 @@
     "bookingStatus": {
         "eyebrow": "Primer paso",
         "title": "Reserva online en mantenimiento",
-        "description": "Puede empezar hoy por teledermatologia o entrar a la ruta que mas se parezca a lo que usted esta sintiendo.",
+        "description": "Puede empezar hoy por teledermatologia o entrar a la ruta que mas se parezca a lo que le esta pasando.",
         "ctaLabel": "Abrir teledermatologia",
         "ctaHref": "/es/telemedicina/"
     }

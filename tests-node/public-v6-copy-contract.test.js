@@ -34,6 +34,8 @@ function countWords(text) {
         .filter(Boolean).length;
 }
 
+const tuteoPattern = /\b(tu|tus|contigo|te\s+acompanamos|te\s+guiamos)\b/i;
+
 test('public-v6 copy contract: required ui labels exist in ES and EN', () => {
     const files = [
         'content/public-v6/es/navigation.json',
@@ -316,6 +318,10 @@ test('public-v6 copy contract: anti-robot legacy phrases removed', () => {
         /bloque corporativo/i,
         /v6 recalibration/i,
         /corporate block/i,
+        /calidez serena/i,
+        /seguimiento preciso/i,
+        /lectura medica clara/i,
+        /la promesa es simple/i,
     ];
 
     for (const file of files) {
@@ -328,4 +334,51 @@ test('public-v6 copy contract: anti-robot legacy phrases removed', () => {
             );
         }
     }
+});
+
+test('public-v6 copy contract: ES patient surfaces keep usted register and avoid tuteo', () => {
+    const files = [
+        'content/public-v6/es/navigation.json',
+        'content/public-v6/es/home.json',
+        'content/public-v6/es/hub.json',
+        'content/public-v6/es/service.json',
+        'content/public-v6/es/telemedicine.json',
+    ];
+
+    for (const file of files) {
+        const raw = fs.readFileSync(path.join(ROOT, file), 'utf8');
+        const normalized = raw.toLowerCase();
+        assert.equal(
+            normalized.includes('usted'),
+            true,
+            `${file}: expected explicit usted register`
+        );
+        assert.equal(
+            tuteoPattern.test(raw),
+            false,
+            `${file}: unexpected tuteo phrasing`
+        );
+    }
+});
+
+test('public-v6 copy contract: legal ES stays clear without colloquial filler', () => {
+    const raw = fs.readFileSync(
+        path.join(ROOT, 'content/public-v6/es/legal.json'),
+        'utf8'
+    );
+
+    const blocked = [
+        /sin tanta vuelta/i,
+        /\bde una\b/i,
+        /\bbacan\b/i,
+        /\bfull\b/i,
+    ];
+
+    blocked.forEach((pattern) => {
+        assert.equal(
+            pattern.test(raw),
+            false,
+            `content/public-v6/es/legal.json: unexpected colloquial pattern ${pattern}`
+        );
+    });
 });

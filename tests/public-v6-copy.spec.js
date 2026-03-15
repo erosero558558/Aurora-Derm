@@ -14,7 +14,7 @@ const prohibited = [
     /definitive cure/i,
     /risk[- ]free/i,
 ];
-const roboticPhrases = [
+const sharedRoboticPhrases = [
     /protocolo,\s*evidencia\s*y\s*seguimiento/i,
     /nunca promesas vacias/i,
     /bloque corporativo/i,
@@ -24,6 +24,12 @@ const roboticPhrases = [
     /transactional schedule in update/i,
     /respuesta de referencia/i,
     /reference answer/i,
+];
+const esRoboticPhrases = [
+    /calidez serena/i,
+    /seguimiento preciso/i,
+    /lectura medica clara/i,
+    /case media flow/i,
 ];
 
 test.describe('Public V6 copy integrity', () => {
@@ -43,9 +49,11 @@ test.describe('Public V6 copy integrity', () => {
             prohibited.forEach((pattern) => {
                 expect(text).not.toMatch(pattern);
             });
-            roboticPhrases.forEach((pattern) => {
-                expect(text).not.toMatch(pattern);
-            });
+            [...sharedRoboticPhrases, ...esRoboticPhrases].forEach(
+                (pattern) => {
+                    expect(text).not.toMatch(pattern);
+                }
+            );
         }
     });
 
@@ -68,7 +76,7 @@ test.describe('Public V6 copy integrity', () => {
             prohibited.forEach((pattern) => {
                 expect(text).not.toMatch(pattern);
             });
-            roboticPhrases.forEach((pattern) => {
+            sharedRoboticPhrases.forEach((pattern) => {
                 expect(text).not.toMatch(pattern);
             });
         }

@@ -17,7 +17,7 @@
         "srcset": "/images/optimized/v6-clinic-telemedicine-intake-400.webp 400w, /images/optimized/v6-clinic-telemedicine-intake-640.webp 640w, /images/optimized/v6-clinic-telemedicine-intake-800.webp 800w, /images/optimized/v6-clinic-telemedicine-intake-900.webp 900w, /images/optimized/v6-clinic-telemedicine-intake-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-intake.webp 1400w",
         "alt": "Inicio de telemedicina con contexto clinico e imagenes"
     },
-    "lead": "La telemedicina sirve cuando le ayuda a avanzar antes, sin perder respaldo medico ni claridad sobre lo que sigue.",
+    "lead": "La teledermatologia vale la pena cuando le ayuda a avanzar antes y deja claro cuando ya conviene verle en persona.",
     "ui": {
         "menu": {
             "initiatives": "Apoyos",
@@ -25,8 +25,8 @@
         },
         "thesis": {
             "eyebrow": "Modelo clinico remoto",
-            "title": "Atencion remota cuando de verdad ayuda",
-            "body": "Definimos que puede resolverse a distancia, que merece vigilancia cercana y en que momento ya conviene verle en consultorio."
+            "title": "Atencion remota cuando de verdad aporta",
+            "body": "Definimos que puede resolverse a distancia, que necesita vigilancia mas cercana y en que punto ya conviene consulta presencial."
         },
         "statement": {
             "eyebrow": "Revision remota",
@@ -36,7 +36,7 @@
             "alt": "Revision dermatologica remota con seguimiento y ajuste"
         },
         "internalMessage": {
-            "description": "Revisamos contexto, riesgo y evolucion para decidir si basta con seguimiento remoto o si ya hace falta examinarle en persona."
+            "description": "Revisamos contexto, riesgo y evolucion para decidir si basta seguimiento remoto o si ya hace falta examinarle en persona."
         },
         "rail": {
             "title": "Secciones",
@@ -58,53 +58,53 @@
         {
             "title": "Como funciona",
             "items": [
-                "Usted comparte antecedentes clave y fotografias tomadas con suficiente contexto para orientar la primera lectura.",
-                "Priorizamos el riesgo para decidir si su caso puede manejarse a distancia.",
-                "Le entregamos un plan inicial, cuidados concretos y, si hace falta, una ventana de control.",
+                "Usted comparte antecedentes y fotografias con suficiente contexto para orientar la primera lectura.",
+                "Priorizamos el riesgo para decidir si el caso puede manejarse a distancia o necesita examen directo.",
+                "Le entregamos un plan inicial, cuidados concretos y una ventana de control si hace falta.",
                 "Si aparecen senales de alarma, aceleramos el paso a consulta presencial."
             ]
         },
         {
             "title": "Cuando suele encajar",
             "items": [
-                "Brotes inflamatorios ya evaluados que necesitan ajuste",
-                "Seguimiento de tratamientos activos despues de cambios recientes",
+                "Brotes inflamatorios ya conocidos que necesitan ajuste",
+                "Seguimiento de tratamientos despues de cambios recientes",
                 "Dudas sobre la evolucion entre controles",
-                "Orientacion inicial antes de organizar una visita al consultorio"
+                "Primera orientacion antes de organizar una visita al consultorio"
             ]
         },
         {
             "title": "Cuando conviene pasar a presencial",
             "items": [
                 "Lesiones que cambian rapido, sangran o no cicatrizan",
-                "Dolor intenso, extension acelerada o compromiso funcional",
+                "Dolor intenso, extension acelerada o limitacion funcional",
                 "Respuesta insuficiente al plan remoto inicial",
-                "Necesidad de procedimientos o examen diagnostico presencial"
+                "Necesidad de procedimiento o examen diagnostico presencial"
             ]
         }
     ],
     "initiatives": [
         {
             "title": "Triage visual",
-            "copy": "Una primera lectura con imagenes clinicas para priorizar el riesgo y responder a tiempo.",
+            "copy": "Una primera lectura con imagenes clinicas para ubicar el riesgo y decidir sin perder tiempo.",
             "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
             "href": "#v6-tele-block-1"
         },
         {
             "title": "Control de brote",
-            "copy": "Ajustes remotos para contener brotes entre controles y evitar esperar de mas.",
+            "copy": "Ajustes remotos para contener brotes entre controles y no esperar a que el cuadro empeore.",
             "image": "/images/optimized/v6-clinic-home-followup.webp",
             "href": "#v6-tele-block-2"
         },
         {
             "title": "Paso a consulta presencial",
-            "copy": "Le citamos en consultorio cuando el comportamiento de la lesion pide examen directo.",
+            "copy": "Le indicamos cuando ya conviene verle en consultorio y no seguir apostando todo a la distancia.",
             "image": "/images/optimized/v6-clinic-clinic-environment.webp",
             "href": "#v6-tele-block-3"
         },
         {
             "title": "Seguimiento hibrido en Quito",
-            "copy": "Modelo pensado para combinar control remoto con revision presencial cuando aporta valor real.",
+            "copy": "Modelo pensado para combinar control remoto y revision presencial cuando eso le da mas claridad al caso.",
             "image": "/images/optimized/v6-clinic-legal-governance.webp",
             "href": "#v6-booking-status"
         }
@@ -112,7 +112,7 @@
     "bookingStatus": {
         "eyebrow": "Despues de esta orientacion",
         "title": "Reserva online en mantenimiento",
-        "description": "Si luego quiere comparar otras formas de atencion, puede volver a servicios y elegir la que mejor ordene su caso.",
+        "description": "Si despues quiere comparar otras rutas, vuelva a servicios y revise la que mejor ordene lo suyo.",
         "ctaLabel": "Ver servicios",
         "ctaHref": "/es/servicios/"
     }

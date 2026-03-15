@@ -2,11 +2,11 @@
     "locale": "es",
     "brand": {
         "logo": "Aurora Derm",
-        "tag": "Dermatologia clinica clara en Quito",
+        "tag": "Dermatologia clara y cercana en Quito",
         "voicePillars": [
-            "claridad clinica",
-            "calidez serena",
-            "seguimiento preciso"
+            "explicacion sencilla",
+            "trato cercano",
+            "seguimiento serio"
         ],
         "utility": {
             "label": "Para clinicas",
@@ -27,11 +27,11 @@
                 "dialogAria": "Buscador de servicios y temas",
                 "eyebrow": "Encuentre por donde empezar",
                 "inputLabel": "Escriba un sintoma, servicio o tratamiento",
-                "placeholder": "Acne, lunares, laser, teledermatologia...",
-                "hint": "Puede buscar sintomas, tratamientos o teledermatologia. Le mostramos opciones utiles para seguir.",
+                "placeholder": "Acne, lunares, caida de cabello, laser...",
+                "hint": "Busque por sintoma, servicio o tratamiento. Le mostramos por donde empezar sin tanta vuelta.",
                 "resultsAria": "Resultados de busqueda",
-                "emptyTitle": "No vimos una coincidencia clara",
-                "emptyBody": "Pruebe con diagnostico, acne, lunares, laser o teledermatologia.",
+                "emptyTitle": "No vimos una opcion clara",
+                "emptyBody": "Pruebe con acne, lunares, caida de cabello, laser o teledermatologia.",
                 "closeLabel": "Cerrar buscador",
                 "resultsLimit": 8
             }
@@ -50,8 +50,8 @@
     "header": {
         "contactLabel": "WhatsApp",
         "contactHref": "https://wa.me/593982453672",
-        "searchLabel": "Buscar por especialidad, tema o tratamiento",
-        "menuLabel": "Explorar",
+        "searchLabel": "Buscar por sintoma, servicio o tratamiento",
+        "menuLabel": "Ver secciones",
         "closeMenuLabel": "Cerrar",
         "switchLabel": "EN",
         "switchHref": "/en/",
@@ -97,86 +97,86 @@
             {
                 "label": "Diagnostico integral",
                 "href": "/es/servicios/diagnostico-integral/",
-                "eyebrow": "Consulta inicial",
-                "deck": "Primera lectura completa para definir prioridad, riesgo y como seguir con claridad."
+                "eyebrow": "Primera consulta",
+                "deck": "Primera cita para entender bien lo que pasa y salir con un plan claro."
             },
             {
                 "label": "Acne y rosacea",
                 "href": "/es/servicios/acne-rosacea/",
                 "eyebrow": "Inflamacion",
-                "deck": "Control de brotes con ajustes medicos y seguimiento sostenido."
+                "deck": "Control de brotes y sensibilidad con ajustes que su piel pueda sostener."
             },
             {
                 "label": "Laser dermatologico",
                 "href": "/es/servicios/laser-dermatologico/",
                 "eyebrow": "Tratamientos medicos",
-                "deck": "Tecnologia indicada por fototipo, lesion y seguridad de evolucion."
+                "deck": "Se indica cuando de verdad suma y se calibra segun su piel."
             },
             {
                 "label": "Peeling quimico",
                 "href": "/es/servicios/peeling-quimico/",
                 "eyebrow": "Tratamientos medicos",
-                "deck": "Protocolos calibrados por textura, pigmento y tolerancia de la piel."
+                "deck": "Renovacion cutanea guiada por fototipo, tolerancia y objetivo."
             },
             {
                 "label": "Bioestimuladores de colageno",
                 "href": "/es/servicios/bioestimuladores-colageno/",
                 "eyebrow": "Rejuvenecimiento medico",
-                "deck": "Soporte de firmeza con control medico y tiempos realistas."
+                "deck": "Mejora progresiva de firmeza con tiempos reales y control medico."
             },
             {
                 "label": "Botox medico",
                 "href": "/es/servicios/botox/",
                 "eyebrow": "Tratamientos medicos",
-                "deck": "Indicacion precisa para armonia facial con seguimiento clinico."
+                "deck": "Suaviza lineas sin quitar expresion ni volver rigido el gesto."
             },
             {
                 "label": "Mesoterapia",
                 "href": "/es/servicios/mesoterapia/",
                 "eyebrow": "Tratamientos medicos",
-                "deck": "Refuerzo dermico localizado cuando el caso lo necesita."
+                "deck": "Apoyo para hidratacion y calidad de piel cuando conviene sumar sesiones."
             },
             {
                 "label": "Piel, cabello y unas",
                 "href": "/es/servicios/piel-cabello-unas/",
                 "eyebrow": "Consulta integral",
-                "deck": "Atencion integral para sintomas, cambios visibles y seguimiento claro."
+                "deck": "Lectura conjunta para ordenar sintomas mezclados y explicar como se relacionan."
             },
             {
                 "label": "Cancer de piel",
                 "href": "/es/servicios/cancer-piel/",
                 "eyebrow": "Tamizaje",
-                "deck": "Lectura temprana de lesiones que cambian, sangran o no cicatrizan."
+                "deck": "Revision de lesiones que cambiaron, sangran o no terminan de curar."
             },
             {
                 "label": "Dermatologia pediatrica",
                 "href": "/es/servicios/dermatologia-pediatrica/",
                 "eyebrow": "Pediatria",
-                "deck": "Indicaciones claras para familias, escuela y control en casa."
+                "deck": "Indicaciones claras para familia, escuela y rutina en casa."
             },
             {
                 "label": "Cicatrices",
                 "href": "/es/servicios/cicatrices/",
                 "eyebrow": "Secuelas cutaneas",
-                "deck": "Opciones para textura, relieve y combinacion de tratamientos."
+                "deck": "Ruta por etapas para relieve, tono y textura, con explicaciones claras y metas realistas."
             },
             {
                 "label": "Granitos en brazos y piernas",
                 "href": "/es/servicios/granitos-brazos-piernas/",
                 "eyebrow": "Consulta integral",
-                "deck": "Valoracion de lesiones pequenas y persistentes con una lectura dermatologica clara."
+                "deck": "Lectura de textura y rutina para mejorar sin irritar mas la piel."
             },
             {
                 "label": "Teledermatologia",
                 "href": "/es/telemedicina/",
                 "eyebrow": "Teledermatologia",
-                "deck": "Orientacion remota cuando conviene avanzar antes, con claridad sobre el siguiente paso."
+                "deck": "Primera orientacion a distancia para decidir el siguiente paso con calma."
             },
             {
                 "label": "Legal y consentimiento",
                 "href": "/es/legal/terminos/",
                 "eyebrow": "Marco legal",
-                "deck": "Terminos, privacidad y bases de consentimiento para la atencion."
+                "deck": "Privacidad, terminos y limites explicados en lenguaje claro."
             }
         ]
     },
@@ -189,8 +189,8 @@
                 "heading": "Primera consulta",
                 "context": {
                     "eyebrow": "Empiece aqui",
-                    "title": "Empiece por la evaluacion que mejor ordena su caso",
-                    "deck": "Aurora Derm prioriza una primera lectura clara para definir riesgo, tiempos y como conviene seguir.",
+                    "title": "Empiece por la cita que mejor ordena su caso",
+                    "deck": "Si usted no sabe por donde arrancar, aqui reunimos las rutas que ayudan a entender primero y tratar despues.",
                     "href": "/es/servicios/diagnostico-integral/"
                 },
                 "items": [
@@ -242,9 +242,9 @@
                 "id": "procedures",
                 "heading": "Tratamientos",
                 "context": {
-                    "eyebrow": "Tecnologia responsable",
-                    "title": "Tratamientos indicados con criterio medico y seguimiento claro",
-                    "deck": "Laser, peeling y dermoestetica medica entran cuando mejoran una decision clinica y pueden seguirse con seguridad.",
+                    "eyebrow": "Tratamientos medicos",
+                    "title": "Tratamientos indicados cuando ya sabemos que conviene hacer",
+                    "deck": "Laser, peeling y dermoestetica entran cuando aportan de verdad y pueden seguirse con seguridad.",
                     "href": "/es/servicios/laser-dermatologico/"
                 },
                 "items": [
@@ -297,8 +297,8 @@
                 "heading": "Seguimiento",
                 "context": {
                     "eyebrow": "Acompanamiento continuo",
-                    "title": "Teledermatologia, controles y consentimiento en un mismo mapa",
-                    "deck": "Aqui reunimos orientacion remota, seguimiento responsable y el marco legal que sostiene la atencion.",
+                    "title": "Teledermatologia, controles y legal en un mismo recorrido",
+                    "deck": "Aqui encuentra orientacion remota, seguimiento y lo necesario para saber que esperar del sitio y la atencion.",
                     "href": "/es/telemedicina/"
                 },
                 "items": [
@@ -349,14 +349,14 @@
         ],
         "featured": {
             "eyebrow": "Aurora Derm",
-            "title": "Dermatologia clinica clara, con calidez serena y seguimiento preciso",
-            "deck": "La promesa es simple: explicar bien, tratar con criterio y acompanar cada decision sin volverla compleja.",
+            "title": "Dermatologia que se explica bien y se siente cercana",
+            "deck": "La idea es simple: entender lo que le pasa, decirle claro que vemos y acompanarle sin enredarle.",
             "href": "/es/servicios/"
         }
     },
     "footer": {
         "headline": "Aurora Derm",
-        "deck": "Dermatologia clinica clara en Quito, con decisiones explicadas y seguimiento preciso.",
+        "deck": "Dermatologia en Quito con explicaciones claras, trato cercano y seguimiento bien llevado.",
         "columns": [
             {
                 "title": "Empezar",

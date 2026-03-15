@@ -1,6 +1,9 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { gotoPublicRoute, waitForHomeV6Runtime } = require('./helpers/public-v6');
+const {
+    gotoPublicRoute,
+    waitForHomeV6Runtime,
+} = require('./helpers/public-v6');
 
 test.describe('Public V6 news strip', () => {
     test('news strip appears below hero with left-right hierarchy', async ({
@@ -39,7 +42,9 @@ test.describe('Public V6 news strip', () => {
         await expect(toggle).toHaveAttribute('aria-expanded', 'true');
         await expect(strip).toHaveAttribute('data-v6-expanded', 'true');
         await expect(panel).toBeVisible();
-        await expect(panel).toContainText('teledermatologia o por la primera consulta');
+        await expect(panel).toContainText(
+            'Puede arrancar por teledermatologia o por la consulta'
+        );
         await expect(panel.locator('a[href="/es/servicios/"]')).toBeVisible();
 
         await toggle.click();
