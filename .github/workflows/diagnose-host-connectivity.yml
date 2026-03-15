@@ -223,9 +223,10 @@ jobs:
                   status_path="turnero-pilot-diagnose.json"
                   raw_path="turnero-pilot-diagnose.raw.txt"
                   status_exit=0
-                  if ! node bin/turnero-clinic-profile.js status --json > "${status_path}" 2>"${raw_path}"; then
-                    status_exit=$?
-                  fi
+                  set +e
+                  node bin/turnero-clinic-profile.js status --json > "${status_path}" 2>"${raw_path}"
+                  status_exit=$?
+                  set -e
                   export TURNERO_PILOT_DIAGNOSE_STATUS_EXIT="${status_exit}"
                   export TURNERO_PILOT_DIAGNOSE_STATUS_PATH="${status_path}"
                   export TURNERO_PILOT_DIAGNOSE_STATUS_RAW_PATH="${raw_path}"

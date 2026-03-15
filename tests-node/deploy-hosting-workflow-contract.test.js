@@ -1142,6 +1142,12 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
         "TURNERO_PILOT_EXPECTED_CLINIC_ID: ${{ github.event.inputs.turnero_clinic_id || '' }}",
         "TURNERO_PILOT_EXPECTED_PROFILE_FINGERPRINT: ${{ github.event.inputs.turnero_profile_fingerprint || '' }}",
         "TURNERO_PILOT_EXPECTED_RELEASE_MODE: ${{ github.event.inputs.turnero_release_mode || '' }}",
+        'set +e',
+        'status_path="turnero-pilot-diagnose.json"',
+        'raw_path="turnero-pilot-diagnose.raw.txt"',
+        'node bin/turnero-clinic-profile.js status --json > "${status_path}" 2>"${raw_path}"',
+        'status_exit=$?',
+        'set -e',
         'node bin/turnero-clinic-profile.js status --json',
         "const reportPath = 'connectivity-report.json';",
         'report.turneroPilot = {',
@@ -1202,5 +1208,12 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
         raw.includes('uses: actions/github-script@v7'),
         false,
         'diagnose-host-connectivity ya no debe depender de actions/github-script@v7'
+    );
+    assert.equal(
+        raw.includes(
+            'if ! node bin/turnero-clinic-profile.js status --json > "${status_path}" 2>"${raw_path}"; then'
+        ),
+        false,
+        'diagnose-host-connectivity no debe invertir el exit code del status local de turneroPilot'
     );
 });
