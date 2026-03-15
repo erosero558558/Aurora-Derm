@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
     '/kiosco-turnos.html',
     '/sala-turnos.html',
     '/admin-v3.css?v=admin-v3-20260314-sony150',
-    '/admin.js?v=admin-20260314-openclaw-webbroker2',
+    '/admin.js?v=admin-20260314-rc1-shell1',
     '/queue-ops.css?v=queue-ops-20260314-sony150',
     '/js/admin-preboot-shortcuts.js?v=admin-20260314-rc1-preboot1',
     '/js/queue-operator.js?v=queue-operator-20260310-src1',
