@@ -75,24 +75,42 @@ function Invoke-CommandWithOutput {
         [string[]]$Arguments
     )
 
-    $previousNativeErrorPreference = $null
-    $nativePreferenceExists = $false
-
-    if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
-        $nativePreferenceExists = $true
-        $previousNativeErrorPreference = $PSNativeCommandUseErrorActionPreference
-        $PSNativeCommandUseErrorActionPreference = $false
-    }
-
+    $stdoutPath = [System.IO.Path]::GetTempFileName()
+    $stderrPath = [System.IO.Path]::GetTempFileName()
     try {
-        $output = & $FilePath @Arguments 2>&1
+        $process = Start-Process `
+            -FilePath $FilePath `
+            -ArgumentList $Arguments `
+            -NoNewWindow `
+            -Wait `
+            -PassThru `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath
+
+        $chunks = @()
+        if (Test-Path -LiteralPath $stdoutPath) {
+            $stdout = Get-Content -LiteralPath $stdoutPath -Raw
+            if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+                $chunks += $stdout.Trim()
+            }
+        }
+
+        if (Test-Path -LiteralPath $stderrPath) {
+            $stderr = Get-Content -LiteralPath $stderrPath -Raw
+            if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+                $chunks += $stderr.Trim()
+            }
+        }
+
         return [PSCustomObject]@{
-            ExitCode = $LASTEXITCODE
-            Output = @($output) -join [Environment]::NewLine
+            ExitCode = $process.ExitCode
+            Output = $chunks -join [Environment]::NewLine
         }
     } finally {
-        if ($nativePreferenceExists) {
-            $PSNativeCommandUseErrorActionPreference = $previousNativeErrorPreference
+        foreach ($tempPath in @($stdoutPath, $stderrPath)) {
+            if (Test-Path -LiteralPath $tempPath) {
+                Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 }
