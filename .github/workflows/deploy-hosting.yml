@@ -23,24 +23,6 @@ on:
                     - ftps
                     - ftp
                     - sftp
-            server_port:
-                description: 'Puerto remoto (21 FTP/FTPS, 22 SFTP)'
-                required: false
-                default: '21'
-                type: string
-            security:
-                description: 'Validacion TLS para FTPS'
-                required: false
-                default: 'strict'
-                type: choice
-                options:
-                    - strict
-                    - loose
-            server_dir:
-                description: 'Directorio remoto en hosting'
-                required: false
-                default: '/public_html/'
-                type: string
             dry_run:
                 description: 'Simular deploy sin subir archivos'
                 required: false
@@ -56,10 +38,20 @@ on:
                 required: false
                 default: false
                 type: boolean
-            clean_slate:
-                description: 'Eliminar archivos remotos no presentes (peligroso)'
+            enable_public_cutover_monitor:
+                description: 'Habilitar bootstrap de monitor post-cutover publico'
                 required: false
-                default: false
+                default: true
+                type: boolean
+            public_cutover_window_hours:
+                description: 'Ventana de monitoreo post-cutover (horas)'
+                required: false
+                default: '72'
+                type: string
+            dispatch_public_cutover_monitor:
+                description: 'Disparar prod-monitor inmediatamente tras deploy'
+                required: false
+                default: true
                 type: boolean
             enable_public_v4_rollout_monitor:
                 description: 'Habilitar gate de rollout publico V4 en prod-monitor post-deploy'
@@ -86,6 +78,11 @@ on:
                 required: false
                 default: '45'
                 type: string
+            skip_public_conversion_smoke:
+                description: 'Omitir conversion smoke publico ES/EN en produccion (solo emergencia/backend)'
+                required: false
+                default: false
+                type: boolean
             admin_rollout_stage:
                 description: 'Etapa admin rollout a propagar (internal|canary|general|rollback)'
                 required: false
@@ -160,11 +157,11 @@ jobs:
         env:
             # Staging Configuration
             DEPLOY_PROTOCOL: ${{ github.event.inputs.protocol || vars.STAGING_FTP_PROTOCOL || 'ftps' }}
-            FTP_SERVER_PORT: ${{ github.event.inputs.server_port || vars.STAGING_FTP_SERVER_PORT || '21' }}
-            FTP_SECURITY: ${{ github.event.inputs.security || vars.STAGING_FTP_SECURITY || 'strict' }}
-            FTP_SERVER_DIR: ${{ github.event.inputs.server_dir || vars.STAGING_FTP_SERVER_DIR || '/staging/' }}
+            FTP_SERVER_PORT: ${{ vars.STAGING_FTP_SERVER_PORT || '21' }}
+            FTP_SECURITY: ${{ vars.STAGING_FTP_SECURITY || 'strict' }}
+            FTP_SERVER_DIR: ${{ vars.STAGING_FTP_SERVER_DIR || '/staging/' }}
             FTP_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-            FTP_CLEAN_SLATE: ${{ github.event.inputs.clean_slate || 'false' }} # Careful with clean slate on staging if shared
+            FTP_CLEAN_SLATE: ${{ vars.FTP_CLEAN_SLATE || 'false' }} # Careful with clean slate on staging if shared
             STAGING_URL: ${{ vars.STAGING_URL || 'https://staging.pielarmonia.com' }}
             REQUIRE_STAGING_CANARY: ${{ github.event.inputs.require_staging_canary || vars.REQUIRE_STAGING_CANARY || 'true' }}
             ALLOW_PROD_WITHOUT_STAGING: ${{ github.event.inputs.allow_prod_without_staging || vars.ALLOW_PROD_WITHOUT_STAGING || 'false' }}
@@ -425,18 +422,18 @@ jobs:
             PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX: ${{ vars.PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX || 'Bearer' }}
             FORCE_TRANSPORT_DEPLOY: ${{ github.event.inputs.force_transport_deploy || 'false' }}
             DEPLOY_PROTOCOL: ${{ github.event.inputs.protocol || vars.FTP_PROTOCOL || 'ftps' }}
-            FTP_SERVER_PORT: ${{ github.event.inputs.server_port || vars.FTP_SERVER_PORT || '21' }}
-            FTP_SECURITY: ${{ github.event.inputs.security || vars.FTP_SECURITY || 'strict' }}
-            FTP_SERVER_DIR: ${{ github.event.inputs.server_dir || vars.FTP_SERVER_DIR || '/public_html/' }}
+            FTP_SERVER_PORT: ${{ vars.FTP_SERVER_PORT || '21' }}
+            FTP_SECURITY: ${{ vars.FTP_SECURITY || 'strict' }}
+            FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || '/public_html/' }}
             FTP_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-            FTP_CLEAN_SLATE: ${{ github.event.inputs.clean_slate || 'false' }}
+            FTP_CLEAN_SLATE: ${{ vars.FTP_CLEAN_SLATE || 'false' }}
             GIT_SYNC_WAIT_SEC: ${{ vars.GIT_SYNC_WAIT_SEC || '75' }}
             PROD_URL: ${{ vars.PROD_URL || 'https://pielarmonia.com' }}
             REQUIRE_STAGING_CANARY: ${{ github.event.inputs.require_staging_canary || vars.REQUIRE_STAGING_CANARY || 'true' }}
             ALLOW_PROD_WITHOUT_STAGING: ${{ github.event.inputs.allow_prod_without_staging || vars.ALLOW_PROD_WITHOUT_STAGING || 'false' }}
-            ENABLE_PUBLIC_CUTOVER_MONITOR: ${{ vars.PROD_MONITOR_ENABLE_PUBLIC_CUTOVER || 'true' }}
-            PUBLIC_CUTOVER_WINDOW_HOURS: ${{ vars.PUBLIC_CUTOVER_WINDOW_HOURS || '72' }}
-            DISPATCH_PUBLIC_CUTOVER_MONITOR: ${{ vars.DISPATCH_PUBLIC_CUTOVER_MONITOR || 'true' }}
+            ENABLE_PUBLIC_CUTOVER_MONITOR: ${{ github.event.inputs.enable_public_cutover_monitor || vars.PROD_MONITOR_ENABLE_PUBLIC_CUTOVER || 'true' }}
+            PUBLIC_CUTOVER_WINDOW_HOURS: ${{ github.event.inputs.public_cutover_window_hours || vars.PUBLIC_CUTOVER_WINDOW_HOURS || '72' }}
+            DISPATCH_PUBLIC_CUTOVER_MONITOR: ${{ github.event.inputs.dispatch_public_cutover_monitor || 'true' }}
             ENABLE_PUBLIC_V4_ROLLOUT_MONITOR_PROPAGATED: ${{ github.event.inputs.enable_public_v4_rollout_monitor || vars.PROD_MONITOR_ENABLE_PUBLIC_V4_ROLLOUT || 'false' }}
             PUBLIC_V4_ROLLOUT_STAGE_PROPAGATED: ${{ github.event.inputs.public_v4_rollout_stage || vars.PUBLIC_V4_ROLLOUT_STAGE || 'canary' }}
             PUBLIC_V4_ROLLOUT_SURFACE_TEST_PROPAGATED: ${{ vars.PUBLIC_V4_ROLLOUT_SURFACE_TEST || 'v4' }}
@@ -453,7 +450,7 @@ jobs:
             RUN_POSTDEPLOY_FAST_AUTOMATION: ${{ vars.RUN_POSTDEPLOY_FAST_FROM_DEPLOY_WORKFLOW_RUN || vars.RUN_POSTDEPLOY_FAST_FROM_DEPLOY || 'false' }}
             RUN_POSTDEPLOY_GATE_AUTOMATION: ${{ vars.RUN_POSTDEPLOY_GATE_FROM_DEPLOY_WORKFLOW_RUN || vars.RUN_POSTDEPLOY_GATE_FROM_DEPLOY || 'false' }}
             POSTDEPLOY_FAST_WAIT_SECONDS: ${{ github.event.inputs.postdeploy_fast_wait_seconds || vars.POSTDEPLOY_FAST_WAIT_SECONDS || '45' }}
-            SKIP_PUBLIC_CONVERSION_SMOKE: ${{ vars.SKIP_PUBLIC_CONVERSION_SMOKE || 'false' }}
+            SKIP_PUBLIC_CONVERSION_SMOKE: ${{ github.event.inputs.skip_public_conversion_smoke || 'false' }}
             ADMIN_ROLLOUT_STAGE_PROPAGATED: ${{ github.event.inputs.admin_rollout_stage || vars.ADMIN_ROLLOUT_STAGE_DEPLOY_AUTOMATION || vars.ADMIN_ROLLOUT_STAGE || 'general' }}
             ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke_fast || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST || 'true' }}
             ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure_fast || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST || 'false' }}
