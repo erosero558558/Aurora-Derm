@@ -57,6 +57,7 @@ function normalizeStrategyActive(strategy) {
         title: String(strategy.title || '').trim(),
         objective: String(strategy.objective || '').trim(),
         owner: String(strategy.owner || '').trim(),
+        owner_policy: String(strategy.owner_policy || '').trim(),
         status: normalizeOptionalToken(strategy.status),
         started_at: String(strategy.started_at || '').trim(),
         review_due_at: String(strategy.review_due_at || '').trim(),
@@ -123,6 +124,10 @@ function normalizeTaskStrategyFields(task) {
 
 function getConfiguredStrategy(board) {
     return normalizeStrategyActive(board?.strategy?.active || null);
+}
+
+function getNextStrategy(board) {
+    return normalizeStrategyActive(board?.strategy?.next || null);
 }
 
 function getActiveStrategy(board) {
@@ -421,6 +426,7 @@ function buildStrategyCoverageSummary(board, options = {}) {
     const findCriticalScopeKeyword =
         options.findCriticalScopeKeyword || (() => null);
     const strategy = getConfiguredStrategy(board);
+    const nextStrategy = getNextStrategy(board);
     const activeStrategy = getActiveStrategy(board);
     const activeTasks = Array.isArray(board?.tasks)
         ? board.tasks.filter((task) =>
@@ -445,6 +451,7 @@ function buildStrategyCoverageSummary(board, options = {}) {
     const summary = {
         configured: strategy,
         active: activeStrategy,
+        next: nextStrategy,
         active_tasks_total: activeTasks.length,
         aligned_tasks: 0,
         primary_tasks: 0,
@@ -681,6 +688,7 @@ module.exports = {
     normalizeStrategyActive,
     normalizeTaskStrategyFields,
     getConfiguredStrategy,
+    getNextStrategy,
     getActiveStrategy,
     getSubfrontById,
     getSubfrontByCodexInstance,

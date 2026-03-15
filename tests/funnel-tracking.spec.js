@@ -28,7 +28,7 @@ async function expectLegacyBookingShellAbsent(page) {
     await expect(page.locator('#chatbotWidget')).toHaveCount(0);
 }
 
-test.describe('Public funnel routing on public-v6 maintenance flow', () => {
+test.describe('Public funnel routing on current public-v6 entry flow', () => {
     test.beforeEach(async ({ page }) => {
         await page.addInitScript(() => {
             localStorage.setItem(
@@ -41,18 +41,37 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
         });
     });
 
-    test('home keeps search and first-step routing available while online booking stays paused', async ({
+    test('home keeps route selection, search, and first-visit fallback available while booking stays paused', async ({
         page,
     }) => {
         await openPublicRoute(page, '/en/');
 
         const newsStrip = page.locator('[data-v6-news-strip]');
-        await expect(newsStrip).toContainText('online booking is paused');
+        await expect(newsStrip).toContainText('Three clear ways to begin');
+        await expect(newsStrip).toContainText(
+            'teledermatology when you need to move today'
+        );
 
         await page.locator('[data-v6-news-toggle]').click();
         await expect(page.locator('[data-v6-news-panel]')).toBeVisible();
         await expect(page.locator('[data-v6-news-panel]')).toContainText(
-            'teledermatology'
+            'Start with the route that sounds closest'
+        );
+        const specialtiesLink = page
+            .locator('[data-v6-news-panel]')
+            .getByRole('link', { name: 'See specialties' });
+        await expect(specialtiesLink).toHaveAttribute('href', '/en/services/');
+
+        const bookingStatus = page.locator('[data-v6-booking-status]');
+        await expect(bookingStatus).toContainText(
+            'Online booking under maintenance'
+        );
+        const firstVisitLink = bookingStatus.getByRole('link', {
+            name: 'Open first visit',
+        });
+        await expect(firstVisitLink).toHaveAttribute(
+            'href',
+            '/en/services/diagnostico-integral/'
         );
 
         await page.locator('[data-v6-search-open]').first().click();
@@ -78,7 +97,7 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
         );
     });
 
-    test('service detail exposes the telemedicine fallback instead of the legacy booking shell', async ({
+    test('service detail exposes the first-visit fallback instead of the legacy booking shell', async ({
         page,
     }) => {
         await openPublicRoute(page, '/en/services/acne-rosacea/');
@@ -90,9 +109,7 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
         const pageMenuPanel = page.locator('[data-v6-page-menu-panel]');
         await expect(pageMenuPanel).toBeVisible();
 
-        await pageMenuPanel
-            .getByRole('link', { name: 'Online booking' })
-            .click();
+        await pageMenuPanel.getByRole('link', { name: 'Next step' }).click();
         await expect(page).toHaveURL(/#v6-booking-status$/);
 
         const bookingStatus = page.locator('[data-v6-booking-status]');
@@ -100,16 +117,16 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
             'Online booking under maintenance'
         );
 
-        const telemedicineLink = bookingStatus.getByRole('link', {
-            name: 'Open teledermatology',
+        const firstVisitLink = bookingStatus.getByRole('link', {
+            name: 'Open first visit',
         });
-        await expect(telemedicineLink).toHaveAttribute(
+        await expect(firstVisitLink).toHaveAttribute(
             'href',
-            '/en/telemedicine/'
+            '/en/services/diagnostico-integral/'
         );
     });
 
-    test('telemedicine closes the public funnel loop back to services while booking is paused', async ({
+    test('telemedicine closes the public funnel into first visit when direct examination is needed', async ({
         page,
     }) => {
         await openPublicRoute(page, '/en/telemedicine/');
@@ -124,25 +141,23 @@ test.describe('Public funnel routing on public-v6 maintenance flow', () => {
             'Online booking under maintenance'
         );
 
-        const servicesLink = bookingStatus.getByRole('link', {
-            name: 'View services',
+        const firstVisitLink = bookingStatus.getByRole('link', {
+            name: 'Open first visit',
         });
-        await expect(servicesLink).toHaveAttribute('href', '/en/services/');
+        await expect(firstVisitLink).toHaveAttribute(
+            'href',
+            '/en/services/diagnostico-integral/'
+        );
 
         await Promise.all([
-            page.waitForURL(/\/en\/services\/$/),
-            servicesLink.click(),
+            page.waitForURL(/\/en\/services\/diagnostico-integral\/$/),
+            firstVisitLink.click(),
         ]);
 
-        await expect(page).toHaveURL(/\/en\/services\/$/);
+        await expect(page).toHaveURL(/\/en\/services\/diagnostico-integral\/$/);
         await expect(page.locator('h1')).toContainText(
-            'Dermatology specialties'
+            'Comprehensive diagnosis'
         );
-        await expect(
-            page.locator('[data-v6-hub-featured-card]').first()
-        ).toBeVisible();
-        await expect(
-            page.locator('[data-v6-catalog-card]').first()
-        ).toBeVisible();
+        await expect(page.locator('[data-v6-booking-status]')).toBeVisible();
     });
 });

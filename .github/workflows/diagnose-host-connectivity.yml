@@ -312,7 +312,7 @@ jobs:
                       if (!expectedClinicId && !expectedProfileFingerprint && !expectedReleaseMode) {
                         expectedMatch = false;
                         expectedReason = 'no_expected_profile';
-                      } elseif (expectedMismatches.length > 0) {
+                      } else if (expectedMismatches.length > 0) {
                         expectedMatch = false;
                         expectedReason = expectedMismatches.join(';');
                       } else {
