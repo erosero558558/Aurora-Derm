@@ -62,7 +62,7 @@ jobs:
             SSH_USERNAME: ${{ secrets.SSH_USERNAME || vars.SSH_USERNAME || secrets.FTP_USERNAME || vars.FTP_USERNAME || '' }}
             SSH_PASSWORD: ${{ secrets.SSH_PASSWORD || vars.SSH_PASSWORD || secrets.FTP_PASSWORD || vars.FTP_PASSWORD || '' }}
             SSH_REPO_DIR: ${{ github.event.inputs.repo_dir || vars.SSH_REPO_DIR || '/var/www/figo' }}
-            REPO_GIT_URL: https://github.com/erosero558558/piel-en-armonia.git
+            REPO_GIT_URL: https://github.com/erosero558558/Aurora-Derm.git
             PUBLIC_SYNC_HOST_WRAPPER_PATH: /root/sync-pielarmonia.sh
             PUBLIC_SYNC_REPO_WRAPPER_RELATIVE_PATH: bin/deploy-public-v3-cron-sync.sh
             HOST_CRON_WRAPPER_SYNC_STATE: not_evaluated
