@@ -161,6 +161,9 @@ test('deploy-frontend-selfhosted publica las superficies canonicas del turnero y
         "'sw.js'",
         "'manifest.json'",
         "'favicon.ico'",
+        "'admin.html'",
+        "'admin.js'",
+        "'src/apps/queue-shared/ops-theme-global.js'",
     ]) {
         assert.equal(
             raw.includes(snippet),

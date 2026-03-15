@@ -256,13 +256,16 @@ jobs:
                       'sw.js',
                       'manifest.json',
                       'favicon.ico',
+                      'admin.html',
+                      'admin.js',
                       'admin-v3.css',
                       'operador-turnos.html',
                       'kiosco-turnos.html',
                       'sala-turnos.html',
                       'queue-ops.css',
                       'queue-kiosk.css',
-                      'queue-display.css'
+                      'queue-display.css',
+                      'src/apps/queue-shared/ops-theme-global.js'
                     ];
                     const files = [];
                     const seen = new Set();
