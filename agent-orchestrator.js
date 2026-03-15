@@ -11,6 +11,7 @@
  *   node agent-orchestrator.js handoffs <status|lint|create|close>
  *   node agent-orchestrator.js policy lint [--json]
  *   node agent-orchestrator.js strategy <status|preview|set-next|activate-next|set-active|close|intake> [--json]
+ *   node agent-orchestrator.js focus [check] [--json]
  *   node agent-orchestrator.js codex-check
  *   node agent-orchestrator.js codex <start|stop> <CDX-ID> [--block C1] [--to done]
  *   node agent-orchestrator.js task <ls|claim|start|finish> [<AG-ID>] [...]
@@ -1335,6 +1336,62 @@ async function cmdStatus(args) {
     });
 }
 
+function cmdFocus(args = []) {
+    const parsed = parseFlags(args);
+    const [subcommand = 'check'] = parsed.positionals;
+    const wantsJson = isFlagEnabled(parsed.flags, 'json');
+
+    if (!['check', 'status'].includes(String(subcommand || '').trim())) {
+        throw new Error(`Comando focus no soportado: ${subcommand}`);
+    }
+
+    const board = parseBoard();
+    const strategy = buildStrategyCoverageSummary(board);
+    const activeTasks = (Array.isArray(board.tasks) ? board.tasks : [])
+        .filter((task) =>
+            ACTIVE_STATUSES.has(String(task?.status || '').trim())
+        )
+        .map((task) => toTaskJson(task));
+    const codexActiveTasks = activeTasks.filter(
+        (task) =>
+            String(task?.executor || '')
+                .trim()
+                .toLowerCase() === 'codex'
+    );
+    const ok =
+        Boolean(strategy?.active) &&
+        Number(strategy?.orphan_tasks || 0) === 0 &&
+        Number(strategy?.exception_expired_tasks || 0) === 0;
+    const payload = {
+        version: 1,
+        ok,
+        command: 'focus',
+        subcommand,
+        strategy_id: String(strategy?.active?.id || ''),
+        active_task_count: activeTasks.length,
+        codex_active_task_count: codexActiveTasks.length,
+        orphan_tasks: Number(strategy?.orphan_tasks || 0),
+        exception_expired_tasks: Number(strategy?.exception_expired_tasks || 0),
+        active_tasks: activeTasks,
+        codex_active_tasks: codexActiveTasks,
+    };
+
+    if (wantsJson) {
+        coreOutput.printJson(payload);
+        return;
+    }
+
+    const lines = [
+        `focus ${ok ? 'OK' : 'WARN'}: strategy=${payload.strategy_id || 'none'} active=${payload.active_task_count} codex=${payload.codex_active_task_count}`,
+    ];
+    if (!ok) {
+        lines.push(
+            `  orphan_tasks=${payload.orphan_tasks} exception_expired_tasks=${payload.exception_expired_tasks}`
+        );
+    }
+    process.stdout.write(`${lines.join('\n')}\n`);
+}
+
 function safeNumber(value, fallback = 0) {
     return domainMetrics.safeNumber(value, fallback);
 }
@@ -2155,6 +2212,7 @@ async function main() {
     const [command = 'status', ...args] = process.argv.slice(2);
     const commands = {
         status: () => cmdStatus(args),
+        focus: () => cmdFocus(args),
         conflicts: () => governanceRuntime.conflicts(args),
         intake: () => runtimeIntake.intake(args),
         score: () => runtimeIntake.score(args),

@@ -51,7 +51,7 @@
         "contactLabel": "WhatsApp",
         "contactHref": "https://wa.me/593982453672",
         "searchLabel": "Buscar por sintoma, servicio o tratamiento",
-        "menuLabel": "Ver secciones",
+        "menuLabel": "Menu",
         "closeMenuLabel": "Cerrar",
         "switchLabel": "EN",
         "switchHref": "/en/",
@@ -165,12 +165,6 @@
                 "href": "/es/telemedicina/",
                 "eyebrow": "Teledermatologia",
                 "deck": "Primera orientacion a distancia para decidir el siguiente paso con calma."
-            },
-            {
-                "label": "Legal y consentimiento",
-                "href": "/es/legal/terminos/",
-                "eyebrow": "Marco legal",
-                "deck": "Privacidad, terminos y limites explicados en lenguaje claro."
             }
         ]
     },
@@ -291,8 +285,8 @@
                 "heading": "Seguimiento",
                 "context": {
                     "eyebrow": "Acompanamiento continuo",
-                    "title": "Teledermatologia, controles y legal en un mismo recorrido",
-                    "deck": "Aqui encuentra orientacion remota, seguimiento y lo necesario para saber que esperar del sitio y la atencion.",
+                    "title": "Teledermatologia, controles y cambio de ruta en un mismo recorrido",
+                    "deck": "Aqui encuentra orientacion remota, seguimiento y el siguiente paso cuando el caso pide volver a primera consulta o pasar a revision presencial.",
                     "href": "/es/telemedicina/"
                 },
                 "items": [
@@ -311,6 +305,20 @@
                         ]
                     },
                     {
+                        "label": "Cambio de ruta",
+                        "href": "/es/servicios/diagnostico-integral/",
+                        "children": [
+                            {
+                                "label": "Volver a primera consulta",
+                                "href": "/es/servicios/diagnostico-integral/"
+                            },
+                            {
+                                "label": "Comparar especialidades",
+                                "href": "/es/servicios/"
+                            }
+                        ]
+                    },
+                    {
                         "label": "Seguimiento dermatologico",
                         "href": "/es/servicios/piel-cabello-unas/",
                         "children": [
@@ -321,20 +329,6 @@
                             {
                                 "label": "Dermatologia pediatrica",
                                 "href": "/es/servicios/dermatologia-pediatrica/"
-                            }
-                        ]
-                    },
-                    {
-                        "label": "Legal y consentimiento",
-                        "href": "/es/legal/terminos/",
-                        "children": [
-                            {
-                                "label": "Privacidad",
-                                "href": "/es/legal/privacidad/"
-                            },
-                            {
-                                "label": "Aviso medico",
-                                "href": "/es/legal/aviso-medico/"
                             }
                         ]
                     }
