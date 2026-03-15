@@ -55,7 +55,7 @@ Notas:
 - El cutover reusa el tunnel `pielarmonia-local-host` si ya existe en esta
   maquina.
 - `PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL` debe quedar en
-  `https://pielarmonia.com`; el helper OpenClaw sigue local en `127.0.0.1:4173`.
+  `https://pielarmonia.com`.
 - El entrypoint publico sale por Cloudflare Tunnel; no hace falta publicar
   `8011`, `4173` ni `9000`.
 - El configurador deja dos capas de arranque:
@@ -64,9 +64,9 @@ Notas:
 - Para evitar el limite de 261 caracteres de `schtasks /TR`, el configurador
   genera launchers cortos en `data/runtime/hosting/login-stack.cmd` y
   `data/runtime/hosting/boot-stack.cmd`.
-- El boot task publico arranca `Caddy + php-cgi + cloudflared` sin bridge; el
-  bridge OpenClaw sigue siendo de login del operador porque depende de su
-  sesion OAuth local.
+- El perfil productivo canonico de auth es `web_broker`; el helper local en
+  `127.0.0.1:4173` queda solo para soporte manual/laptop cuando se habilita
+  explicitamente `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=local_helper`.
 
 ## Archivos a subir
 
@@ -175,8 +175,26 @@ Notas:
 
 Configura estas variables en tu hosting:
 
-- `PIELARMONIA_ADMIN_PASSWORD` (obligatoria para login admin)
-- `PIELARMONIA_ADMIN_PASSWORD_HASH` (opcional, tiene prioridad)
+- `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt`
+- `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker`
+- `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`
+- `PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL=https://pielarmonia.com`
+- `OPENCLAW_AUTH_BROKER_AUTHORIZE_URL`
+- `OPENCLAW_AUTH_BROKER_TOKEN_URL`
+- `OPENCLAW_AUTH_BROKER_USERINFO_URL`
+- `OPENCLAW_AUTH_BROKER_CLIENT_ID`
+- opcional: `OPENCLAW_AUTH_BROKER_CLIENT_SECRET`
+- opcional para smoke live sandbox:
+  `OPENCLAW_AUTH_BROKER_SMOKE_ENABLED=true`,
+  `OPENCLAW_AUTH_BROKER_SMOKE_USERNAME`,
+  `OPENCLAW_AUTH_BROKER_SMOKE_PASSWORD`,
+  `OPENCLAW_AUTH_BROKER_SMOKE_TOTP_SECRET`,
+  `OPENCLAW_AUTH_BROKER_SMOKE_EXPECTED_EMAIL`
+- `PIELARMONIA_ADMIN_PASSWORD` y/o `PIELARMONIA_ADMIN_PASSWORD_HASH` solo si habilitas contingencia legacy
+- `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=false` por defecto; subirlo a `true` solo en incidente
+- `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST`, `PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN`,
+  `PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET` y `PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL`
+  solo aplican cuando se habilita `local_helper` para soporte local/manual
 - `PIELARMONIA_ADMIN_EMAIL` (recomendada para recibir aviso de nuevas citas)
 - `PIELARMONIA_EMAIL_FROM` (opcional, para correos de confirmacion)
 - `PIELARMONIA_DATA_DIR` (opcional, para forzar ruta de datos si `public_html/data` no tiene permisos)
@@ -207,7 +225,9 @@ Configura estas variables en tu hosting:
 Importante:
 
 - Ya no existe fallback `admin123`, incluso en local.
-- Debes configurar `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH`.
+- En produccion, el login admin/turnero debe entrar por OpenClaw `web_broker`.
+- `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` solo son obligatorios si vas a exponer la contingencia legacy.
+- `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST` no es requisito del corte cuando `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`.
 - Para notificaciones por email al administrador, configura `PIELARMONIA_ADMIN_EMAIL`.
 - Para cifrado de datos en reposo, configura `PIELARMONIA_DATA_ENCRYPTION_KEY` (32 bytes o texto que se deriva a SHA-256).
 - Si no puedes usar variables de entorno, tambien puedes crear `data/figo-config.json`.
@@ -243,6 +263,15 @@ Ejemplo recomendado de `data/figo-config.json`:
 2. Admin auth status:
 
 - `https://pielarmonia.com/admin-auth.php?action=status`
+- `https://pielarmonia.com/api.php?resource=operator-auth-status`
+- Esperado en perfil productivo: `mode=openclaw_chatgpt`, `transport=web_broker`,
+  `configured=true` y diagnostico remoto `openclaw_ready`.
+
+    2.1 Smoke live OpenClaw web broker:
+
+- `npm run smoke:admin:openclaw-auth:live:node`
+- o `node bin/operator-auth-live-smoke.js --transport web_broker --server-base-url https://pielarmonia.com`
+- Esperado: `callback_ok=true`, `shared_session_ok=true`, `logout_ok=true`.
 
 3. Bot Figo:
 

@@ -12,10 +12,8 @@ const { spawn } = require('child_process');
 const REPO_ROOT = resolve(__dirname, '..');
 const SCRIPT_PATH = resolve(
     REPO_ROOT,
-    'scripts',
-    'ops',
-    'admin',
-    'DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1'
+    'bin',
+    'admin-openclaw-rollout-diagnostic.js'
 );
 
 function sendJson(res, statusCode, payload) {
@@ -60,18 +58,8 @@ async function withMockServer(handler, callback) {
 function runDiagnostic(baseUrl, reportPath) {
     return new Promise((resolvePromise, rejectPromise) => {
         const child = spawn(
-            'powershell',
-            [
-                '-NoProfile',
-                '-ExecutionPolicy',
-                'Bypass',
-                '-File',
-                SCRIPT_PATH,
-                '-Domain',
-                baseUrl,
-                '-ReportPath',
-                reportPath,
-            ],
+            process.execPath,
+            [SCRIPT_PATH, '--domain', baseUrl, '--report-path', reportPath],
             {
                 cwd: REPO_ROOT,
                 stdio: ['ignore', 'pipe', 'pipe'],
@@ -369,6 +357,117 @@ test('diagnostico enumera env faltantes cuando OpenClaw esta activo pero incompl
                     report.next_action,
                     /PIELARMONIA_OPERATOR_AUTH_ALLOWLIST/
                 );
+            }
+        );
+    } finally {
+        rmSync(tempDir, {
+            recursive: true,
+            force: true,
+        });
+    }
+});
+
+test('diagnostico separa fallo de edge/origen cuando operator auth devuelve 530/1033', async () => {
+    const tempDir = mkdtempSync(
+        join(tmpdir(), 'openclaw-auth-diagnostic-edge-failure-')
+    );
+    const reportPath = join(tempDir, 'report.json');
+
+    try {
+        await withMockServer(
+            (req, res) => {
+                const url = new URL(req.url, 'http://127.0.0.1');
+
+                if (
+                    (url.pathname === '/api.php' &&
+                        url.searchParams.get('resource') ===
+                            'operator-auth-status') ||
+                    (url.pathname === '/admin-auth.php' &&
+                        url.searchParams.get('action') === 'status')
+                ) {
+                    res.writeHead(530, {
+                        'Content-Type': 'text/plain; charset=utf-8',
+                    });
+                    res.end('error code: 1033');
+                    return;
+                }
+
+                res.writeHead(404);
+                res.end();
+            },
+            async (baseUrl) => {
+                const result = await runDiagnostic(baseUrl, reportPath);
+                const report = readJson(reportPath);
+
+                assert.equal(result.status, 1, result.stderr || result.stdout);
+                assert.equal(report.ok, false);
+                assert.equal(report.diagnosis, 'operator_auth_edge_failure');
+                assert.equal(report.operator_auth_status.http_status, 530);
+                assert.equal(report.admin_auth_facade.http_status, 530);
+                assert.match(report.next_action, /Cloudflare\/origen/i);
+                assert.match(report.next_action, /1033/);
+            }
+        );
+    } finally {
+        rmSync(tempDir, {
+            recursive: true,
+            force: true,
+        });
+    }
+});
+
+test('diagnostico acepta web_broker listo sin exigir helper local', async () => {
+    const tempDir = mkdtempSync(
+        join(tmpdir(), 'openclaw-auth-diagnostic-web-broker-')
+    );
+    const reportPath = join(tempDir, 'report.json');
+
+    try {
+        await withMockServer(
+            (req, res) => {
+                const url = new URL(req.url, 'http://127.0.0.1');
+
+                if (
+                    (url.pathname === '/api.php' &&
+                        url.searchParams.get('resource') ===
+                            'operator-auth-status') ||
+                    (url.pathname === '/admin-auth.php' &&
+                        url.searchParams.get('action') === 'status')
+                ) {
+                    sendJson(
+                        res,
+                        200,
+                        operatorAuthConfiguredPayload({
+                            transport: 'web_broker',
+                            configuration: {
+                                helperBaseUrl: '',
+                                bridgeTokenConfigured: false,
+                                bridgeSecretConfigured: false,
+                                allowlistConfigured: false,
+                                brokerAuthorizeUrlConfigured: true,
+                                brokerTokenUrlConfigured: true,
+                                brokerUserinfoUrlConfigured: true,
+                                brokerClientIdConfigured: true,
+                                missing: [],
+                            },
+                        })
+                    );
+                    return;
+                }
+
+                res.writeHead(404);
+                res.end();
+            },
+            async (baseUrl) => {
+                const result = await runDiagnostic(baseUrl, reportPath);
+                const report = readJson(reportPath);
+
+                assert.equal(result.status, 0, result.stderr || result.stdout);
+                assert.equal(report.ok, true);
+                assert.equal(report.diagnosis, 'openclaw_ready');
+                assert.equal(report.resolved.transport, 'web_broker');
+                assert.equal(report.resolved.source, 'operator-auth-status');
+                assert.match(report.next_action, /web_broker/i);
             }
         );
     } finally {

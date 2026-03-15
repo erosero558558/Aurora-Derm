@@ -77,7 +77,10 @@ function createStubPair(mode = 'success') {
     }
 
     const backend = http.createServer(async (request, response) => {
-        const url = new URL(request.url || '/', serverBaseUrl || 'http://127.0.0.1');
+        const url = new URL(
+            request.url || '/',
+            serverBaseUrl || 'http://127.0.0.1'
+        );
         const action = url.searchParams.get('action');
         const sessionId = parseSessionId(request);
         const session = sessionId !== '' ? getSession(sessionId) : null;
@@ -161,7 +164,8 @@ function createStubPair(mode = 'success') {
         }
 
         if (request.method === 'POST' && action === 'start') {
-            const nextSessionId = sessionId || `session-${Date.now()}-${counter + 1}`;
+            const nextSessionId =
+                sessionId || `session-${Date.now()}-${counter + 1}`;
             const activeSession = getSession(nextSessionId);
             counter += 1;
             const challenge = buildChallenge(counter);
@@ -220,7 +224,10 @@ function createStubPair(mode = 'success') {
     });
 
     const helper = http.createServer((request, response) => {
-        const url = new URL(request.url || '/', helperBaseUrl || 'http://127.0.0.1');
+        const url = new URL(
+            request.url || '/',
+            helperBaseUrl || 'http://127.0.0.1'
+        );
         if (request.method === 'GET' && url.pathname === '/health') {
             response.writeHead(200, {
                 'Content-Type': 'application/json; charset=utf-8',
@@ -266,7 +273,8 @@ function createStubPair(mode = 'success') {
                               status: 'completed',
                               identity: {
                                   email: 'operator@example.com',
-                                  profileId: 'openai-codex:operator@example.com',
+                                  profileId:
+                                      'openai-codex:operator@example.com',
                                   accountId: 'acct-test-operator',
                               },
                           }
@@ -296,6 +304,204 @@ function createStubPair(mode = 'success') {
     };
 }
 
+function createWebBrokerBackend() {
+    const sessions = new Map();
+    let serverBaseUrl = '';
+    let counter = 0;
+
+    function parseSessionId(request) {
+        const cookieHeader = String(request.headers.cookie || '');
+        const match = cookieHeader.match(/SMOKE_SESSION=([^;]+)/);
+        return match ? match[1] : '';
+    }
+
+    function getSession(sessionId) {
+        if (!sessions.has(sessionId)) {
+            sessions.set(sessionId, {
+                status: 'anonymous',
+                pendingState: '',
+                redirectUrl: '',
+                operator: null,
+            });
+        }
+        return sessions.get(sessionId);
+    }
+
+    return http.createServer(async (request, response) => {
+        const url = new URL(
+            request.url || '/',
+            serverBaseUrl || 'http://127.0.0.1'
+        );
+        const sessionId = parseSessionId(request);
+        const activeSessionId =
+            sessionId || `web-broker-session-${Date.now()}-${counter + 1}`;
+        const session = getSession(activeSessionId);
+
+        if (
+            request.method === 'GET' &&
+            url.pathname === '/api.php' &&
+            url.searchParams.get('resource') === 'operator-auth-status'
+        ) {
+            response.writeHead(200, {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Set-Cookie': `SMOKE_SESSION=${activeSessionId}; Path=/; HttpOnly`,
+            });
+            response.end(
+                JSON.stringify({
+                    ok: true,
+                    authenticated: session.status === 'autenticado',
+                    status:
+                        session.status === 'autenticado'
+                            ? 'autenticado'
+                            : 'anonymous',
+                    mode: 'openclaw_chatgpt',
+                    transport: 'web_broker',
+                    operator: session.operator,
+                })
+            );
+            return;
+        }
+
+        if (
+            request.method === 'GET' &&
+            url.searchParams.get('action') === 'status'
+        ) {
+            response.writeHead(200, {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Set-Cookie': `SMOKE_SESSION=${activeSessionId}; Path=/; HttpOnly`,
+            });
+            response.end(
+                JSON.stringify(
+                    session.status === 'pending'
+                        ? {
+                              ok: true,
+                              authenticated: false,
+                              status: 'pending',
+                              mode: 'openclaw_chatgpt',
+                              transport: 'web_broker',
+                              redirectUrl: session.redirectUrl,
+                              expiresAt: new Date(
+                                  Date.now() + 60000
+                              ).toISOString(),
+                          }
+                        : session.status === 'autenticado'
+                          ? {
+                                ok: true,
+                                authenticated: true,
+                                status: 'autenticado',
+                                mode: 'openclaw_chatgpt',
+                                transport: 'web_broker',
+                                csrfToken: 'csrf-web-broker',
+                                operator: session.operator,
+                            }
+                          : {
+                                ok: true,
+                                authenticated: false,
+                                status: 'anonymous',
+                                mode: 'openclaw_chatgpt',
+                                transport: 'web_broker',
+                            }
+                )
+            );
+            return;
+        }
+
+        if (
+            request.method === 'POST' &&
+            url.searchParams.get('action') === 'start'
+        ) {
+            counter += 1;
+            const body = await readJsonBody(request);
+            session.status = 'pending';
+            session.pendingState = `state-${counter}`;
+            session.redirectUrl =
+                'https://broker.example.test/authorize?state=' +
+                encodeURIComponent(session.pendingState) +
+                '&returnTo=' +
+                encodeURIComponent(
+                    String(body.returnTo || '/operador-turnos.html')
+                );
+            session.operator = null;
+
+            response.writeHead(202, {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Set-Cookie': `SMOKE_SESSION=${activeSessionId}; Path=/; HttpOnly`,
+            });
+            response.end(
+                JSON.stringify({
+                    ok: true,
+                    authenticated: false,
+                    status: 'pending',
+                    mode: 'openclaw_chatgpt',
+                    transport: 'web_broker',
+                    redirectUrl: session.redirectUrl,
+                    expiresAt: new Date(Date.now() + 60000).toISOString(),
+                })
+            );
+            return;
+        }
+
+        if (
+            request.method === 'GET' &&
+            url.searchParams.get('action') === 'callback'
+        ) {
+            const state = String(url.searchParams.get('state') || '');
+            const code = String(url.searchParams.get('code') || '');
+            if (state === session.pendingState && code !== '') {
+                session.status = 'autenticado';
+                session.operator = {
+                    email: 'operator@example.com',
+                    profileId: 'openclaw-web-broker:operator@example.com',
+                    accountId: 'acct-test-web-broker',
+                    source: 'openclaw_chatgpt',
+                };
+                response.writeHead(302, {
+                    Location:
+                        '/operador-turnos.html?station=smoke&lock=1&one_tap=1',
+                    'Set-Cookie': `SMOKE_SESSION=${activeSessionId}; Path=/; HttpOnly`,
+                });
+                response.end('');
+                return;
+            }
+
+            response.writeHead(302, {
+                Location: '/admin.html?callback=failed',
+                'Set-Cookie': `SMOKE_SESSION=${activeSessionId}; Path=/; HttpOnly`,
+            });
+            response.end('');
+            return;
+        }
+
+        if (
+            request.method === 'POST' &&
+            url.searchParams.get('action') === 'logout'
+        ) {
+            session.status = 'anonymous';
+            session.operator = null;
+            await readJsonBody(request);
+            response.writeHead(200, {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Set-Cookie': `SMOKE_SESSION=${activeSessionId}; Path=/; HttpOnly`,
+            });
+            response.end(
+                JSON.stringify({
+                    ok: true,
+                    authenticated: false,
+                    status: 'logout',
+                    mode: 'openclaw_chatgpt',
+                    transport: 'web_broker',
+                })
+            );
+            return;
+        }
+
+        response.writeHead(404, {
+            'Content-Type': 'application/json; charset=utf-8',
+        });
+        response.end(JSON.stringify({ ok: false, error: 'Not found' }));
+    });
+}
+
 test('runSmoke completa preflight, resolve y logout con backend/helper vivos', async () => {
     const pair = createStubPair('success');
     const backendAddress = await listen(pair.backend);
@@ -314,7 +520,10 @@ test('runSmoke completa preflight, resolve y logout con backend/helper vivos', a
 
         assert.equal(report.ok, true);
         assert.equal(report.initialStatus.payload.status, 'anonymous');
-        assert.equal(report.helperHealth.payload.service, 'operator-auth-bridge');
+        assert.equal(
+            report.helperHealth.payload.service,
+            'operator-auth-bridge'
+        );
         assert.equal(report.start.payload.status, 'pending');
         assert.equal(report.resolve.payload.status, 'completed');
         assert.equal(report.finalStatus.status, 'autenticado');
@@ -351,5 +560,56 @@ test('runSmoke propaga estado terminal cuando OpenClaw no esta logueado', async 
     } finally {
         await closeServer(pair.backend);
         await closeServer(pair.helper);
+    }
+});
+
+test('runSmoke soporta web_broker y valida callback, sesion compartida y logout', async () => {
+    const backend = createWebBrokerBackend();
+    const address = await listen(backend);
+    const serverBaseUrl = `http://${address.address}:${address.port}`;
+
+    try {
+        const report = await runSmoke({
+            transport: 'web_broker',
+            serverBaseUrl,
+            requestTimeoutMs: 1000,
+            pollTimeoutMs: 1000,
+            expectedEmail: 'operator@example.com',
+            performWebBrokerLogin: async ({ cookieHeader, redirectUrl }) => {
+                const redirect = new URL(redirectUrl);
+                const state = String(redirect.searchParams.get('state') || '');
+                const response = await fetch(
+                    `${serverBaseUrl}/admin-auth.php?action=callback&state=${encodeURIComponent(
+                        state
+                    )}&code=smoke-code`,
+                    {
+                        headers: {
+                            Cookie: cookieHeader,
+                        },
+                        redirect: 'manual',
+                    }
+                );
+
+                return {
+                    ok: response.status === 302,
+                    callbackOk: response.status === 302,
+                    finalUrl: String(response.headers.get('location') || ''),
+                    cookieHeader,
+                };
+            },
+        });
+
+        assert.equal(report.ok, true);
+        assert.equal(report.transport, 'web_broker');
+        assert.equal(report.start.payload.transport, 'web_broker');
+        assert.match(report.redirect_url, /broker\.example\.test\/authorize/);
+        assert.equal(report.callback_ok, true);
+        assert.equal(report.shared_session_ok, true);
+        assert.equal(report.finalStatus.status, 'autenticado');
+        assert.equal(report.finalStatus.operator.email, 'operator@example.com');
+        assert.equal(report.logout.payload.status, 'logout');
+        assert.equal(report.logout_ok, true);
+    } finally {
+        await closeServer(backend);
     }
 });

@@ -116,6 +116,7 @@ function internal_console_readiness_snapshot(): array
             'primaryMode' => internal_console_primary_auth_mode(),
             'requiredMode' => OPERATOR_AUTH_SOURCE,
             'mode' => (string) ($authSnapshot['mode'] ?? 'disabled'),
+            'transport' => (string) ($authSnapshot['transport'] ?? ''),
             'enabled' => (bool) ($authSnapshot['enabled'] ?? false),
             'configured' => (bool) ($authSnapshot['configured'] ?? false),
             'ready' => $authReady,

@@ -39,6 +39,23 @@ function baseConfig(overrides = {}) {
 }
 
 function deriveNextAction(report) {
+    if (report.transport === 'web_broker') {
+        if (!report.broker.authorizeUrlConfigured) {
+            return 'Configura OPENCLAW_AUTH_BROKER_AUTHORIZE_URL para habilitar el login web.';
+        }
+        if (!report.broker.tokenUrlConfigured) {
+            return 'Configura OPENCLAW_AUTH_BROKER_TOKEN_URL para habilitar el intercambio del codigo.';
+        }
+        if (!report.broker.userinfoUrlConfigured) {
+            return 'Configura OPENCLAW_AUTH_BROKER_USERINFO_URL para resolver la identidad autenticada.';
+        }
+        if (!report.broker.clientIdConfigured) {
+            return 'Configura OPENCLAW_AUTH_BROKER_CLIENT_ID antes de habilitar web_broker.';
+        }
+
+        return 'Listo para abrir admin.html u operador-turnos.html y continuar con OpenClaw web.';
+    }
+
     if (!report.helper.configured) {
         return 'Configura PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL antes de iniciar el helper local.';
     }
@@ -63,6 +80,7 @@ async function buildOpenClawAuthPreflight(overrides = {}) {
     const report = {
         ok: false,
         readyForLogin: false,
+        transport: config.transport,
         helper: {
             baseUrl: config.helperBaseUrl,
             configured: config.helperBaseUrl !== '',
@@ -71,6 +89,18 @@ async function buildOpenClawAuthPreflight(overrides = {}) {
         bridge: {
             tokenConfigured: config.bridgeToken !== '',
             secretConfigured: config.bridgeSecret !== '',
+        },
+        broker: {
+            authorizeUrl: config.brokerAuthorizeUrl,
+            tokenUrl: config.brokerTokenUrl,
+            userinfoUrl: config.brokerUserinfoUrl,
+            clientIdConfigured: config.brokerClientId !== '',
+            clientSecretConfigured: config.brokerClientSecret !== '',
+            allowAnyAuthenticatedEmail:
+                config.allowAnyAuthenticatedEmail === true,
+            authorizeUrlConfigured: config.brokerAuthorizeUrl !== '',
+            tokenUrlConfigured: config.brokerTokenUrl !== '',
+            userinfoUrlConfigured: config.brokerUserinfoUrl !== '',
         },
         runtime: {
             baseUrl: config.runtimeBaseUrl,
@@ -84,6 +114,17 @@ async function buildOpenClawAuthPreflight(overrides = {}) {
         },
         nextAction: '',
     };
+
+    if (config.transport === 'web_broker') {
+        report.ok =
+            report.broker.authorizeUrlConfigured &&
+            report.broker.tokenUrlConfigured &&
+            report.broker.userinfoUrlConfigured &&
+            report.broker.clientIdConfigured;
+        report.readyForLogin = report.ok;
+        report.nextAction = deriveNextAction(report);
+        return report;
+    }
 
     try {
         const runtimeResponse = await requestJson(
@@ -123,9 +164,14 @@ async function buildOpenClawAuthPreflight(overrides = {}) {
 
 function formatTextReport(report) {
     const lines = [
+        `transport: ${report.transport || 'local_helper'}`,
         `helper_base_url: ${report.helper.baseUrl || '(missing)'}`,
         `bridge_token: ${report.bridge.tokenConfigured ? 'configured' : 'missing'}`,
         `bridge_secret: ${report.bridge.secretConfigured ? 'configured' : 'missing'}`,
+        `broker_authorize_url: ${report.broker.authorizeUrl || '(missing)'}`,
+        `broker_token_url: ${report.broker.tokenUrl || '(missing)'}`,
+        `broker_userinfo_url: ${report.broker.userinfoUrl || '(missing)'}`,
+        `broker_client_id: ${report.broker.clientIdConfigured ? 'configured' : 'missing'}`,
         `runtime_base_url: ${report.runtime.baseUrl || '(missing)'}`,
         `runtime_reachable: ${report.runtime.reachable ? 'yes' : 'no'}`,
         `runtime_status: ${report.runtime.status || 'n/a'}`,

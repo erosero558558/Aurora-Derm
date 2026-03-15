@@ -44,6 +44,8 @@ Adopcion operativa de `public_main_sync`:
 - En el mismo triage de `github.deployAlerts`, la categoria verbal exacta `turnero pilot blocked` queda reservada para el mismatch remoto del `clinic-profile` publicado.
 - `MONITOR-PRODUCCION.ps1`, `VERIFICAR-DESPLIEGUE.ps1` y `REPORTE-SEMANAL-PRODUCCION.ps1` consumen `checks.auth` para exponer `mode`, `status`, `configured`, `hardeningCompliant`, `recommendedMode`, `twoFactorEnabled`, `operatorAuthEnabled` y `legacyPasswordConfigured`.
 - `MONITOR-PRODUCCION.ps1` deja la postura de auth visible por default y permite endurecer con `-RequireAuthConfigured`, `-RequireOperatorAuth` y `-RequireAdminTwoFactor`. Cuando se activa `-RequireOperatorAuth`, tanto `MONITOR-PRODUCCION.ps1` como `VERIFICAR-DESPLIEGUE.ps1` corren `scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1`.
+- En consola y artefactos, ese `operator auth rollout diagnosis` separa `openclaw_mode_disabled`, `admin_auth_legacy_facade`, `facade_only_rollout`, `openclaw_not_configured`, `operator_auth_edge_failure` y `openclaw_ready`.
+- Ese diagnostico remoto ya separa `operator_auth_edge_failure` cuando `operator-auth-status` o `admin-auth.php?action=status` devuelven HTTP 52x/530 desde edge/origen (por ejemplo Cloudflare `1033`), para no confundir la caida de routing con `mode mismatch` o `openclaw_not_configured`.
 - `VERIFICAR-DESPLIEGUE.ps1` traduce esos guardrails a assets `health-auth-*` cuando el deploy no cumple la postura requerida.
 - `MONITOR-PRODUCCION.ps1` y `VERIFICAR-DESPLIEGUE.ps1` tambien consumen `checks.storage` para exponer `backend`, `source`, `encrypted`, `encryptionConfigured`, `encryptionRequired`, `encryptionStatus` y `encryptionCompliant`.
 - `MONITOR-PRODUCCION.ps1` deja el cifrado en reposo visible por default y permite endurecer con `-RequireStoreEncryption`; aun sin ese flag, si el runtime ya marca `encryptionRequired=true`, el monitor falla cuando `encryptionCompliant=false`. `VERIFICAR-DESPLIEGUE.ps1` traduce ese guardrail a `health-store-encryption-*`.
@@ -51,6 +53,9 @@ Adopcion operativa de `public_main_sync`:
 - Los mismos entrypoints aceptan `-RequireTurneroOperatorPilot` para bloquear si el piloto Windows del operador no publica `app-downloads`, `latest.yml` e instalador en `pilot`.
 - `check-public-routing-smoke.js` trata `/operador-turnos.html`, `/kiosco-turnos.html` y `/sala-turnos.html` como rutas publicas obligatorias; si una cae en redirect o 404, staging/prod no deben pasar.
 - `CHECKLIST-HOST-PUBLIC-SYNC.ps1` imprime un checklist host-side reutilizable para comparar `/root/sync-pielarmonia.sh` contra el wrapper canonico, capturar `public-sync-status.json`, revisar `health-diagnostics` y validar `storeEncryptionCompliant`.
+- El perfil productivo canonico de auth es `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt` + `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker` + `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`.
+- En ese perfil, `MONITOR-PRODUCCION.ps1` y `VERIFICAR-DESPLIEGUE.ps1` activan `RequireOperatorAuth` automaticamente cuando la politica efectiva del rollout admin exige OpenClaw.
+- `post-deploy-fast.yml` y `post-deploy-gate.yml` publican ademas un reporte de smoke live del broker web; el corte productivo espera `callback_ok=true`, `shared_session_ok=true` y `logout_ok=true`.
 
 Los entrypoints de triage `MONITOR-PRODUCCION.ps1`, `REPORTE-SEMANAL-PRODUCCION.ps1`,
 `SMOKE-PRODUCCION.ps1` y `VERIFICAR-DESPLIEGUE.ps1` consumen
@@ -73,6 +78,9 @@ warnings si `storeEncryptionStatus` sigue en `plaintext`, y escalan a fallo con
 Cuando necesites intervenir el VPS sin improvisar comandos, usa:
 
 - `npm run checklist:prod:public-sync:host`
+- `npm run gate:admin:rollout:openclaw:node`
+- `npm run diagnose:admin:openclaw-auth:rollout:node`
+- `npm run smoke:admin:openclaw-auth:live:node`
 - `npm run verify:prod:turnero:operator:pilot`
 - `npm run smoke:prod:turnero:operator:pilot`
 - `npm run gate:prod:turnero:operator:pilot`
@@ -81,6 +89,10 @@ Cuando necesites intervenir el VPS sin improvisar comandos, usa:
 
 El script no toca el host: solo imprime el bloque canonico de comandos y
 criterios de cierre para `public_main_sync`, auth y cifrado en reposo.
+Tambien exige confirmar que el `health` publico ya expone
+`checks.publicSync.jobId=8d31e299-7e57-4959-80b5-aaa2d73e9674`; si falta,
+hay que desplegar el `HealthController` actualizado antes de leer el caso como
+drift real del cron.
 
 El reporte semanal reutiliza ese mismo comando (`npm run checklist:prod:public-sync:host`)
 como `suggestedCommand` cuando un warning afecta `public_sync`, `github_deploy`,

@@ -34,8 +34,13 @@ function loadOpenClawOperatorAuthConfig(overrides = {}) {
         overrides.bridgeToken,
         env('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN')
     );
+    const transport = firstNonEmpty(
+        overrides.transport,
+        env('PIELARMONIA_OPERATOR_AUTH_TRANSPORT', 'local_helper')
+    );
 
     return {
+        transport: transport === 'web_broker' ? 'web_broker' : 'local_helper',
         helperBaseUrl: trimTrailingSlash(
             firstNonEmpty(
                 overrides.helperBaseUrl,
@@ -73,6 +78,37 @@ function loadOpenClawOperatorAuthConfig(overrides = {}) {
             env('OPENCLAW_HELPER_DEVICE_ID'),
             env('PIELARMONIA_OPERATOR_AUTH_DEVICE_ID')
         ),
+        brokerAuthorizeUrl: trimTrailingSlash(
+            firstNonEmpty(
+                overrides.brokerAuthorizeUrl,
+                env('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL')
+            )
+        ),
+        brokerTokenUrl: trimTrailingSlash(
+            firstNonEmpty(
+                overrides.brokerTokenUrl,
+                env('OPENCLAW_AUTH_BROKER_TOKEN_URL')
+            )
+        ),
+        brokerUserinfoUrl: trimTrailingSlash(
+            firstNonEmpty(
+                overrides.brokerUserinfoUrl,
+                env('OPENCLAW_AUTH_BROKER_USERINFO_URL')
+            )
+        ),
+        brokerClientId: firstNonEmpty(
+            overrides.brokerClientId,
+            env('OPENCLAW_AUTH_BROKER_CLIENT_ID')
+        ),
+        brokerClientSecret: firstNonEmpty(
+            overrides.brokerClientSecret,
+            env('OPENCLAW_AUTH_BROKER_CLIENT_SECRET')
+        ),
+        allowAnyAuthenticatedEmail:
+            firstNonEmpty(
+                overrides.allowAnyAuthenticatedEmail,
+                env('PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL')
+            ).toLowerCase() === 'true',
     };
 }
 

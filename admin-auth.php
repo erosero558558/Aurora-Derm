@@ -92,6 +92,10 @@ $legacyPasswordEnabled = function_exists('internal_console_allows_legacy_passwor
     ? internal_console_allows_legacy_password_auth()
     : !$prefersOpenClawAuth;
 
+if ($method === 'GET' && $action === 'callback') {
+    OperatorAuthController::callback();
+}
+
 if ($method === 'GET' && $action === 'status') {
     if ($prefersOpenClawAuth && operator_auth_is_enabled()) {
         if (legacy_admin_is_authenticated()) {

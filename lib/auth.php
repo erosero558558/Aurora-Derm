@@ -14,7 +14,11 @@ require_once __DIR__ . '/totp.php';
 const SESSION_TIMEOUT = 1800; // 30 minutos de inactividad
 const OPERATOR_AUTH_SESSION_KEY = 'operator_auth';
 const OPERATOR_AUTH_PENDING_CHALLENGE_KEY = 'operator_auth_pending_challenge_id';
+const OPERATOR_AUTH_PENDING_WEB_STATE_KEY = 'operator_auth_pending_web_state';
+const OPERATOR_AUTH_FLASH_ERROR_KEY = 'operator_auth_flash_error';
 const OPERATOR_AUTH_SOURCE = 'openclaw_chatgpt';
+const OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER = 'local_helper';
+const OPERATOR_AUTH_TRANSPORT_WEB_BROKER = 'web_broker';
 
 function start_secure_session(): void
 {
@@ -23,6 +27,9 @@ function start_secure_session(): void
     }
 
     $secure = is_https_request();
+    $sameSite = function_exists('operator_auth_session_cookie_samesite')
+        ? operator_auth_session_cookie_samesite()
+        : 'Strict';
 
     ini_set('session.use_only_cookies', '1');
     ini_set('session.use_strict_mode', '1');
@@ -36,11 +43,11 @@ function start_secure_session(): void
             'domain' => '',
             'secure' => $secure,
             'httponly' => true,
-            'samesite' => 'Strict'
+            'samesite' => $sameSite
         ]);
     } else {
-        ini_set('session.cookie_samesite', 'Strict');
-        session_set_cookie_params(0, '/; samesite=Strict', '', $secure, true);
+        ini_set('session.cookie_samesite', $sameSite);
+        session_set_cookie_params(0, '/; samesite=' . strtolower($sameSite), '', $secure, true);
     }
 
     session_start();
@@ -68,6 +75,9 @@ function destroy_secure_session(): void
 
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
+        $sameSite = function_exists('operator_auth_session_cookie_samesite')
+            ? operator_auth_session_cookie_samesite()
+            : 'Strict';
         if (PHP_VERSION_ID >= 70300) {
             setcookie(session_name(), '', [
                 'expires' => time() - 42000,
@@ -75,10 +85,10 @@ function destroy_secure_session(): void
                 'domain' => $params['domain'] ?? '',
                 'secure' => (bool) ($params['secure'] ?? false),
                 'httponly' => (bool) ($params['httponly'] ?? true),
-                'samesite' => 'Strict'
+                'samesite' => $sameSite
             ]);
         } else {
-            setcookie(session_name(), '', time() - 42000, ($params['path'] ?? '/') . '; samesite=Strict', $params['domain'] ?? '', (bool) ($params['secure'] ?? false), (bool) ($params['httponly'] ?? true));
+            setcookie(session_name(), '', time() - 42000, ($params['path'] ?? '/') . '; samesite=' . strtolower($sameSite), $params['domain'] ?? '', (bool) ($params['secure'] ?? false), (bool) ($params['httponly'] ?? true));
         }
     }
 
@@ -181,6 +191,47 @@ function operator_auth_mode(): string
     return $mode === OPERATOR_AUTH_SOURCE ? OPERATOR_AUTH_SOURCE : 'disabled';
 }
 
+function operator_auth_session_cookie_samesite(): string
+{
+    if (operator_auth_transport() === OPERATOR_AUTH_TRANSPORT_WEB_BROKER) {
+        return 'Lax';
+    }
+
+    return 'Strict';
+}
+
+function operator_auth_transport(): string
+{
+    $raw = getenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT');
+    $transport = is_string($raw) && trim($raw) !== ''
+        ? strtolower(trim($raw))
+        : OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER;
+
+    return $transport === OPERATOR_AUTH_TRANSPORT_WEB_BROKER
+        ? OPERATOR_AUTH_TRANSPORT_WEB_BROKER
+        : OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER;
+}
+
+function operator_auth_uses_web_broker(): bool
+{
+    return operator_auth_transport() === OPERATOR_AUTH_TRANSPORT_WEB_BROKER;
+}
+
+function operator_auth_env_flag(string $name, bool $default = false): bool
+{
+    $raw = getenv($name);
+    if (!is_string($raw)) {
+        return $default;
+    }
+
+    $normalized = strtolower(trim($raw));
+    if ($normalized === '') {
+        return $default;
+    }
+
+    return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+}
+
 function operator_auth_session_ttl_seconds(): int
 {
     $raw = getenv('PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS');
@@ -200,6 +251,11 @@ function operator_auth_bridge_timestamp_skew_seconds(): int
     $raw = getenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_MAX_SKEW_SECONDS');
     $value = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : 300;
     return max(30, min(1800, $value));
+}
+
+function operator_auth_allow_any_authenticated_email(): bool
+{
+    return operator_auth_env_flag('PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL', false);
 }
 
 function operator_auth_helper_base_url(): string
@@ -223,6 +279,49 @@ function operator_auth_server_base_url(): string
 
     $scheme = is_https_request() ? 'https' : 'http';
     return $scheme . '://' . $host;
+}
+
+function operator_auth_callback_url(): string
+{
+    return operator_auth_server_base_url() . '/admin-auth.php?action=callback';
+}
+
+function operator_auth_broker_authorize_url(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL');
+    return is_string($raw) ? trim($raw) : '';
+}
+
+function operator_auth_broker_token_url(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_TOKEN_URL');
+    return is_string($raw) ? trim($raw) : '';
+}
+
+function operator_auth_broker_userinfo_url(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_USERINFO_URL');
+    return is_string($raw) ? trim($raw) : '';
+}
+
+function operator_auth_broker_client_id(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_CLIENT_ID');
+    return is_string($raw) ? trim($raw) : '';
+}
+
+function operator_auth_broker_client_secret(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_CLIENT_SECRET');
+    return is_string($raw) ? trim($raw) : '';
+}
+
+function operator_auth_broker_scope(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_SCOPE');
+    return is_string($raw) && trim($raw) !== ''
+        ? trim($raw)
+        : 'openid email profile';
 }
 
 function operator_auth_bridge_token(): string
@@ -289,49 +388,83 @@ function operator_auth_allowed_emails(): array
     return array_values(array_unique($emails));
 }
 
+function operator_auth_allowlist_required(): bool
+{
+    return !(operator_auth_uses_web_broker() && operator_auth_allow_any_authenticated_email());
+}
+
 function operator_auth_configuration_snapshot(): array
 {
     $mode = operator_auth_mode();
     $enabled = operator_auth_is_enabled();
-    $bridgeTokenConfigured = operator_auth_bridge_token() !== '';
-    $bridgeSecretConfigured = operator_auth_bridge_signature_secret() !== '';
     $allowedEmails = operator_auth_allowed_emails();
+    $allowlistConfigured = count($allowedEmails) > 0;
     $missing = [];
 
     if (!$enabled) {
         $missing[] = 'mode';
     }
-    if (!$bridgeTokenConfigured) {
-        $missing[] = 'bridge_token';
+
+    $bridgeTokenConfigured = operator_auth_bridge_token() !== '';
+    $bridgeSecretConfigured = operator_auth_bridge_signature_secret() !== '';
+    $authorizeUrlConfigured = operator_auth_broker_authorize_url() !== '';
+    $tokenUrlConfigured = operator_auth_broker_token_url() !== '';
+    $userinfoUrlConfigured = operator_auth_broker_userinfo_url() !== '';
+    $clientIdConfigured = operator_auth_broker_client_id() !== '';
+    $clientSecretConfigured = operator_auth_broker_client_secret() !== '';
+
+    if (operator_auth_uses_web_broker()) {
+        if (!$authorizeUrlConfigured) {
+            $missing[] = 'broker_authorize_url';
+        }
+        if (!$tokenUrlConfigured) {
+            $missing[] = 'broker_token_url';
+        }
+        if (!$userinfoUrlConfigured) {
+            $missing[] = 'broker_userinfo_url';
+        }
+        if (!$clientIdConfigured) {
+            $missing[] = 'broker_client_id';
+        }
+    } else {
+        if (!$bridgeTokenConfigured) {
+            $missing[] = 'bridge_token';
+        }
+        if (!$bridgeSecretConfigured) {
+            $missing[] = 'bridge_secret';
+        }
     }
-    if (!$bridgeSecretConfigured) {
-        $missing[] = 'bridge_secret';
-    }
-    if (count($allowedEmails) === 0) {
+
+    if (operator_auth_allowlist_required() && !$allowlistConfigured) {
         $missing[] = 'allowlist';
     }
 
     return [
         'mode' => $mode,
+        'transport' => operator_auth_transport(),
         'enabled' => $enabled,
         'configured' => $enabled && count($missing) === 0,
         'bridgeTokenConfigured' => $bridgeTokenConfigured,
         'bridgeSecretConfigured' => $bridgeSecretConfigured,
-        'allowlistConfigured' => count($allowedEmails) > 0,
+        'allowlistConfigured' => $allowlistConfigured,
+        'allowAnyAuthenticatedEmail' => operator_auth_allow_any_authenticated_email(),
+        'brokerAuthorizeUrlConfigured' => $authorizeUrlConfigured,
+        'brokerTokenUrlConfigured' => $tokenUrlConfigured,
+        'brokerUserinfoUrlConfigured' => $userinfoUrlConfigured,
+        'brokerClientIdConfigured' => $clientIdConfigured,
+        'brokerClientSecretConfigured' => $clientSecretConfigured,
         'allowedEmails' => $allowedEmails,
         'allowedEmailCount' => count($allowedEmails),
         'helperBaseUrl' => operator_auth_helper_base_url(),
         'serverBaseUrl' => operator_auth_server_base_url(),
+        'callbackUrl' => operator_auth_callback_url(),
         'missing' => $missing,
     ];
 }
 
 function operator_auth_is_configured(): bool
 {
-    return operator_auth_is_enabled()
-        && operator_auth_bridge_token() !== ''
-        && operator_auth_bridge_signature_secret() !== ''
-        && count(operator_auth_allowed_emails()) > 0;
+    return (bool) (operator_auth_configuration_snapshot()['configured'] ?? false);
 }
 
 function operator_auth_is_email_allowed(string $email): bool
@@ -339,6 +472,10 @@ function operator_auth_is_email_allowed(string $email): bool
     $normalized = operator_auth_normalize_email($email);
     if ($normalized === '') {
         return false;
+    }
+
+    if (operator_auth_uses_web_broker() && operator_auth_allow_any_authenticated_email()) {
+        return true;
     }
 
     return in_array($normalized, operator_auth_allowed_emails(), true);
@@ -370,6 +507,10 @@ function admin_agent_has_editorial_access(): bool
 
     if (!operator_auth_is_authenticated()) {
         return false;
+    }
+
+    if (operator_auth_uses_web_broker() && operator_auth_allow_any_authenticated_email()) {
+        return true;
     }
 
     $allowlist = admin_agent_editorial_allowlist();
@@ -548,6 +689,44 @@ function operator_auth_build_helper_url(array $challenge): string
     return $base . '/resolve?' . $query;
 }
 
+function operator_auth_sanitize_return_to(?string $raw, string $fallback = '/admin.html'): string
+{
+    $value = trim((string) $raw);
+    if ($value === '' || preg_match('/[\r\n]/', $value) === 1) {
+        return $fallback;
+    }
+
+    if (substr($value, 0, 1) === '/') {
+        return $value;
+    }
+
+    if (filter_var($value, FILTER_VALIDATE_URL) === false) {
+        return $fallback;
+    }
+
+    $target = parse_url($value);
+    $server = parse_url(operator_auth_server_base_url());
+    if (!is_array($target) || !is_array($server)) {
+        return $fallback;
+    }
+
+    $sameHost = strtolower((string) ($target['host'] ?? '')) === strtolower((string) ($server['host'] ?? ''));
+    $sameScheme = strtolower((string) ($target['scheme'] ?? '')) === strtolower((string) ($server['scheme'] ?? ''));
+    $targetPort = isset($target['port']) ? (int) $target['port'] : (($target['scheme'] ?? '') === 'https' ? 443 : 80);
+    $serverPort = isset($server['port']) ? (int) $server['port'] : (($server['scheme'] ?? '') === 'https' ? 443 : 80);
+
+    if (!$sameHost || !$sameScheme || $targetPort !== $serverPort) {
+        return $fallback;
+    }
+
+    $path = (string) ($target['path'] ?? '/');
+    $query = isset($target['query']) && trim((string) $target['query']) !== ''
+        ? '?' . trim((string) $target['query'])
+        : '';
+
+    return $path . $query;
+}
+
 function operator_auth_config_error_payload(): array
 {
     $snapshot = operator_auth_configuration_snapshot();
@@ -556,6 +735,10 @@ function operator_auth_config_error_payload(): array
         'bridge_token' => 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN',
         'bridge_secret' => 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET',
         'allowlist' => 'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST',
+        'broker_authorize_url' => 'OPENCLAW_AUTH_BROKER_AUTHORIZE_URL',
+        'broker_token_url' => 'OPENCLAW_AUTH_BROKER_TOKEN_URL',
+        'broker_userinfo_url' => 'OPENCLAW_AUTH_BROKER_USERINFO_URL',
+        'broker_client_id' => 'OPENCLAW_AUTH_BROKER_CLIENT_ID',
     ];
     $missingItems = array_map(
         static fn (string $item): string => $missingLabels[$item] ?? $item,
@@ -570,6 +753,7 @@ function operator_auth_config_error_payload(): array
         'authenticated' => false,
         'status' => 'operator_auth_not_configured',
         'mode' => OPERATOR_AUTH_SOURCE,
+        'transport' => operator_auth_transport(),
         'configured' => false,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
         'capabilities' => [
@@ -584,6 +768,7 @@ function operator_auth_config_error_payload(): array
 function operator_auth_challenge_public_payload(array $challenge): array
 {
     return [
+        'transport' => OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER,
         'challengeId' => (string) ($challenge['challengeId'] ?? ''),
         'nonce' => (string) ($challenge['nonce'] ?? ''),
         'expiresAt' => (string) ($challenge['expiresAt'] ?? ''),
@@ -601,6 +786,7 @@ function operator_auth_authenticated_payload(array $operator, string $status = '
         'authenticated' => true,
         'status' => $status,
         'mode' => operator_auth_mode(),
+        'transport' => operator_auth_transport(),
         'configured' => true,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
         'csrfToken' => generate_csrf_token(),
@@ -624,6 +810,7 @@ function operator_auth_error_payload(array $challenge, string $status, string $e
         'authenticated' => false,
         'status' => $status,
         'mode' => operator_auth_mode(),
+        'transport' => operator_auth_transport(),
         'configured' => true,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
         'capabilities' => [
@@ -635,9 +822,33 @@ function operator_auth_error_payload(array $challenge, string $status, string $e
     ];
 }
 
+function operator_auth_flash_error_payload(string $status, string $error, array $overrides = []): array
+{
+    return array_merge([
+        'ok' => true,
+        'authenticated' => false,
+        'status' => $status,
+        'mode' => operator_auth_mode(),
+        'transport' => operator_auth_transport(),
+        'configured' => true,
+        'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'capabilities' => [
+            'adminAgent' => false,
+        ],
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
+        'error' => $error,
+    ], $overrides);
+}
+
 function operator_auth_clear_session_state(): void
 {
-    unset($_SESSION[OPERATOR_AUTH_SESSION_KEY], $_SESSION[OPERATOR_AUTH_PENDING_CHALLENGE_KEY], $_SESSION['csrf_token']);
+    unset(
+        $_SESSION[OPERATOR_AUTH_SESSION_KEY],
+        $_SESSION[OPERATOR_AUTH_PENDING_CHALLENGE_KEY],
+        $_SESSION[OPERATOR_AUTH_PENDING_WEB_STATE_KEY],
+        $_SESSION[OPERATOR_AUTH_FLASH_ERROR_KEY],
+        $_SESSION['csrf_token']
+    );
     unset($_SESSION['admin_logged_in'], $_SESSION['admin_partial_login'], $_SESSION['admin_partial_login_expires']);
 }
 
@@ -709,13 +920,185 @@ function operator_auth_pending_challenge_id(): string
     return operator_auth_is_valid_challenge_id($challengeId) ? $challengeId : '';
 }
 
+function operator_auth_random_hex(int $bytes, string $fallbackPrefix = 'operator-auth'): string
+{
+    try {
+        return bin2hex(random_bytes($bytes));
+    } catch (Throwable $e) {
+        return substr(hash('sha256', uniqid($fallbackPrefix, true)), 0, $bytes * 2);
+    }
+}
+
+function operator_auth_random_base64url(int $bytes, string $fallbackPrefix = 'operator-auth'): string
+{
+    try {
+        $raw = random_bytes($bytes);
+    } catch (Throwable $e) {
+        $raw = hash('sha256', uniqid($fallbackPrefix, true), true);
+    }
+
+    return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+}
+
+function operator_auth_pkce_code_challenge(string $codeVerifier): string
+{
+    return rtrim(strtr(base64_encode(hash('sha256', $codeVerifier, true)), '+/', '-_'), '=');
+}
+
+function operator_auth_pending_web_state(): ?array
+{
+    $raw = $_SESSION[OPERATOR_AUTH_PENDING_WEB_STATE_KEY] ?? null;
+    return is_array($raw) ? $raw : null;
+}
+
+function operator_auth_write_pending_web_state(array $attempt): void
+{
+    $_SESSION[OPERATOR_AUTH_PENDING_WEB_STATE_KEY] = $attempt;
+}
+
+function operator_auth_clear_pending_web_state(): void
+{
+    unset($_SESSION[OPERATOR_AUTH_PENDING_WEB_STATE_KEY]);
+}
+
+function operator_auth_pending_web_state_expires_at(array $attempt): int
+{
+    $expiresAt = strtotime((string) ($attempt['expiresAt'] ?? ''));
+    return $expiresAt === false ? 0 : (int) $expiresAt;
+}
+
+function operator_auth_pending_web_state_is_expired(array $attempt): bool
+{
+    $expiresAt = operator_auth_pending_web_state_expires_at($attempt);
+    return $expiresAt > 0 && $expiresAt <= time();
+}
+
+function operator_auth_pending_web_state_redirect_url(array $attempt): string
+{
+    $stored = trim((string) ($attempt['redirectUrl'] ?? ''));
+    if ($stored !== '') {
+        return $stored;
+    }
+
+    return operator_auth_build_broker_authorize_url($attempt);
+}
+
+function operator_auth_set_flash_error(string $status, string $error, array $extra = []): void
+{
+    $_SESSION[OPERATOR_AUTH_FLASH_ERROR_KEY] = array_merge([
+        'status' => $status,
+        'error' => $error,
+        'createdAt' => operator_auth_now_iso(),
+    ], $extra);
+}
+
+function operator_auth_consume_flash_error(): ?array
+{
+    $raw = $_SESSION[OPERATOR_AUTH_FLASH_ERROR_KEY] ?? null;
+    unset($_SESSION[OPERATOR_AUTH_FLASH_ERROR_KEY]);
+    return is_array($raw) ? $raw : null;
+}
+
+function operator_auth_build_broker_authorize_url(array $attempt): string
+{
+    $base = operator_auth_broker_authorize_url();
+    $query = http_build_query([
+        'response_type' => 'code',
+        'client_id' => operator_auth_broker_client_id(),
+        'redirect_uri' => operator_auth_callback_url(),
+        'scope' => operator_auth_broker_scope(),
+        'state' => (string) ($attempt['state'] ?? ''),
+        'code_challenge' => operator_auth_pkce_code_challenge((string) ($attempt['codeVerifier'] ?? '')),
+        'code_challenge_method' => 'S256',
+    ], '', '&', PHP_QUERY_RFC3986);
+
+    return $base . (strpos($base, '?') === false ? '?' : '&') . $query;
+}
+
+function operator_auth_optional_json_body(): array
+{
+    if (isset($GLOBALS['__TEST_JSON_BODY'])) {
+        $data = json_decode((string) $GLOBALS['__TEST_JSON_BODY'], true);
+        return is_array($data) ? $data : [];
+    }
+
+    $raw = file_get_contents('php://input');
+    if (!is_string($raw) || trim($raw) === '') {
+        return [];
+    }
+
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : [];
+}
+
+function operator_auth_create_web_broker_attempt(array $input = []): array
+{
+    $currentChallengeId = operator_auth_pending_challenge_id();
+    if ($currentChallengeId !== '') {
+        $current = operator_auth_read_challenge($currentChallengeId);
+        if (is_array($current) && (($current['status'] ?? '') === 'pending')) {
+            operator_auth_mark_challenge($current, 'superseded');
+        }
+    }
+
+    unset($_SESSION[OPERATOR_AUTH_PENDING_CHALLENGE_KEY]);
+
+    $attempt = [
+        'transport' => OPERATOR_AUTH_TRANSPORT_WEB_BROKER,
+        'state' => operator_auth_random_hex(24, 'operator-auth-broker-state'),
+        'codeVerifier' => operator_auth_random_base64url(48, 'operator-auth-broker-pkce'),
+        'returnTo' => operator_auth_sanitize_return_to(
+            isset($input['returnTo']) ? (string) $input['returnTo'] : '',
+            '/admin.html'
+        ),
+        'createdAt' => operator_auth_now_iso(),
+        'expiresAt' => operator_auth_now_iso(time() + operator_auth_challenge_ttl_seconds()),
+    ];
+    $attempt['redirectUrl'] = operator_auth_build_broker_authorize_url($attempt);
+
+    operator_auth_clear_pending_web_state();
+    operator_auth_write_pending_web_state($attempt);
+    unset($_SESSION[OPERATOR_AUTH_FLASH_ERROR_KEY]);
+
+    if (function_exists('audit_log_event')) {
+        audit_log_event('operator_auth.started', [
+            'transport' => OPERATOR_AUTH_TRANSPORT_WEB_BROKER,
+            'mode' => operator_auth_mode(),
+            'returnTo' => $attempt['returnTo'],
+        ]);
+    }
+
+    return [
+        'ok' => true,
+        'authenticated' => false,
+        'status' => 'pending',
+        'mode' => operator_auth_mode(),
+        'transport' => OPERATOR_AUTH_TRANSPORT_WEB_BROKER,
+        'configured' => true,
+        'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'capabilities' => [
+            'adminAgent' => false,
+        ],
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
+        'redirectUrl' => (string) $attempt['redirectUrl'],
+        'expiresAt' => (string) $attempt['expiresAt'],
+    ];
+}
+
 function operator_auth_create_challenge(): array
 {
     if (!operator_auth_is_configured()) {
         return operator_auth_config_error_payload();
     }
 
+    if (operator_auth_uses_web_broker()) {
+        $input = operator_auth_optional_json_body();
+        return operator_auth_create_web_broker_attempt($input);
+    }
+
     operator_auth_purge_expired_challenges();
+    operator_auth_clear_pending_web_state();
+    unset($_SESSION[OPERATOR_AUTH_FLASH_ERROR_KEY]);
 
     $currentChallengeId = operator_auth_pending_challenge_id();
     if ($currentChallengeId !== '') {
@@ -769,6 +1152,13 @@ function operator_auth_create_challenge(): array
         'authenticated' => false,
         'status' => 'pending',
         'mode' => operator_auth_mode(),
+        'transport' => OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER,
+        'configured' => true,
+        'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'capabilities' => [
+            'adminAgent' => false,
+        ],
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
         'challenge' => operator_auth_challenge_public_payload($challenge),
     ];
 }
@@ -992,6 +1382,292 @@ function operator_auth_complete_from_bridge(array $payload): array
     ];
 }
 
+function operator_auth_broker_request(string $method, string $url, array $options = []): array
+{
+    if (defined('TESTING_ENV') && isset($GLOBALS['__OPERATOR_AUTH_HTTP_CLIENT']) && is_callable($GLOBALS['__OPERATOR_AUTH_HTTP_CLIENT'])) {
+        $result = $GLOBALS['__OPERATOR_AUTH_HTTP_CLIENT']($method, $url, $options);
+        if (is_array($result)) {
+            return array_merge([
+                'ok' => false,
+                'status' => 0,
+                'json' => null,
+                'body' => '',
+                'error' => '',
+            ], $result);
+        }
+    }
+
+    if (!function_exists('curl_init')) {
+        return [
+            'ok' => false,
+            'status' => 0,
+            'json' => null,
+            'body' => '',
+            'error' => 'curl_unavailable',
+        ];
+    }
+
+    $headers = ['Accept: application/json'];
+    foreach ((array) ($options['headers'] ?? []) as $name => $value) {
+        if (is_int($name)) {
+            $headers[] = (string) $value;
+            continue;
+        }
+
+        $headers[] = trim((string) $name) . ': ' . trim((string) $value);
+    }
+
+    $body = null;
+    if (isset($options['form']) && is_array($options['form'])) {
+        $body = http_build_query($options['form'], '', '&', PHP_QUERY_RFC3986);
+        $headers[] = 'Content-Type: application/x-www-form-urlencoded';
+    } elseif (isset($options['body'])) {
+        $body = (string) $options['body'];
+    }
+
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return [
+            'ok' => false,
+            'status' => 0,
+            'json' => null,
+            'body' => '',
+            'error' => 'curl_init_failed',
+        ];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => strtoupper($method),
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+
+    if ($body !== null) {
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+    }
+
+    $raw = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = trim((string) curl_error($ch));
+    curl_close($ch);
+
+    $bodyText = is_string($raw) ? $raw : '';
+    $decoded = json_decode($bodyText, true);
+
+    return [
+        'ok' => $status >= 200 && $status < 300,
+        'status' => $status,
+        'json' => is_array($decoded) ? $decoded : null,
+        'body' => $bodyText,
+        'error' => $curlError,
+    ];
+}
+
+function operator_auth_broker_identity_from_payload(array $payload): array
+{
+    $emailCandidates = [
+        $payload['email'] ?? null,
+        $payload['preferred_username'] ?? null,
+        $payload['upn'] ?? null,
+    ];
+    $email = '';
+    foreach ($emailCandidates as $candidate) {
+        $normalized = operator_auth_normalize_email((string) $candidate);
+        if ($normalized !== '' && filter_var($normalized, FILTER_VALIDATE_EMAIL) !== false) {
+            $email = $normalized;
+            break;
+        }
+    }
+
+    return [
+        'email' => $email,
+        'profileId' => trim((string) ($payload['profileId'] ?? $payload['sub'] ?? '')),
+        'accountId' => trim((string) ($payload['accountId'] ?? $payload['account_id'] ?? $payload['tenant'] ?? '')),
+    ];
+}
+
+function operator_auth_callback_result(string $returnTo, bool $authenticated, string $status, string $error = '', array $extra = []): array
+{
+    return array_merge([
+        'redirectTo' => operator_auth_sanitize_return_to($returnTo, '/admin.html'),
+        'authenticated' => $authenticated,
+        'status' => $status,
+        'error' => $error,
+    ], $extra);
+}
+
+function operator_auth_handle_broker_callback(array $query = []): array
+{
+    $pending = operator_auth_pending_web_state();
+    $returnTo = operator_auth_sanitize_return_to(
+        is_array($pending) ? (string) ($pending['returnTo'] ?? '') : '',
+        '/admin.html'
+    );
+
+    $finishWithFlash = static function (string $status, string $error, array $extra = []) use ($returnTo): array {
+        operator_auth_set_flash_error($status, $error, $extra);
+        operator_auth_clear_pending_web_state();
+        return operator_auth_callback_result($returnTo, false, $status, $error, $extra);
+    };
+
+    if (!operator_auth_is_enabled() || !operator_auth_uses_web_broker() || !operator_auth_is_configured()) {
+        return $finishWithFlash(
+            'operator_auth_not_configured',
+            'El acceso OpenClaw web no esta configurado en este entorno.'
+        );
+    }
+
+    $brokerError = trim((string) ($query['error'] ?? ''));
+    if ($brokerError !== '') {
+        $description = trim((string) ($query['error_description'] ?? ''));
+        return $finishWithFlash(
+            'cancelled',
+            $description !== '' ? $description : 'La autenticacion en OpenClaw fue cancelada antes de completarse.',
+            ['brokerError' => $brokerError]
+        );
+    }
+
+    if (!is_array($pending)) {
+        return $finishWithFlash(
+            'invalid_state',
+            'La sesion de autenticacion ya no es valida. Inicia nuevamente desde este panel.'
+        );
+    }
+
+    $expectedState = trim((string) ($pending['state'] ?? ''));
+    $receivedState = trim((string) ($query['state'] ?? ''));
+    $expiresAt = isset($pending['expiresAt']) ? strtotime((string) $pending['expiresAt']) : false;
+    if ($expectedState === '' || $receivedState === '' || !hash_equals($expectedState, $receivedState)) {
+        return $finishWithFlash(
+            'invalid_state',
+            'No se pudo validar el estado del login web. Vuelve a iniciar sesion desde este panel.'
+        );
+    }
+    if (($expiresAt !== false) && ((int) $expiresAt) <= time()) {
+        return $finishWithFlash(
+            'invalid_state',
+            'La ventana del login web expiro antes de completarse. Genera un intento nuevo.'
+        );
+    }
+
+    $code = trim((string) ($query['code'] ?? ''));
+    if ($code === '') {
+        return $finishWithFlash(
+            'code_exchange_failed',
+            'OpenClaw no devolvio un codigo de autorizacion valido.'
+        );
+    }
+
+    $tokenResponse = operator_auth_broker_request('POST', operator_auth_broker_token_url(), [
+        'form' => array_filter([
+            'grant_type' => 'authorization_code',
+            'client_id' => operator_auth_broker_client_id(),
+            'client_secret' => operator_auth_broker_client_secret() !== '' ? operator_auth_broker_client_secret() : null,
+            'code' => $code,
+            'redirect_uri' => operator_auth_callback_url(),
+            'code_verifier' => (string) ($pending['codeVerifier'] ?? ''),
+        ], static fn ($value): bool => $value !== null && $value !== ''),
+    ]);
+
+    if (($tokenResponse['status'] ?? 0) >= 500 || trim((string) ($tokenResponse['error'] ?? '')) !== '' || (int) ($tokenResponse['status'] ?? 0) === 0) {
+        return $finishWithFlash(
+            'broker_unavailable',
+            'OpenClaw no respondio durante el intercambio del codigo. Intenta nuevamente en unos minutos.'
+        );
+    }
+
+    $tokenPayload = is_array($tokenResponse['json'] ?? null) ? $tokenResponse['json'] : [];
+    $accessToken = trim((string) ($tokenPayload['access_token'] ?? ''));
+    if (($tokenResponse['ok'] ?? false) !== true || $accessToken === '') {
+        $tokenError = trim((string) ($tokenPayload['error_description'] ?? $tokenPayload['error'] ?? ''));
+        return $finishWithFlash(
+            'code_exchange_failed',
+            $tokenError !== '' ? $tokenError : 'No se pudo completar el intercambio del codigo con OpenClaw.'
+        );
+    }
+
+    $userinfoResponse = operator_auth_broker_request('GET', operator_auth_broker_userinfo_url(), [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $accessToken,
+        ],
+    ]);
+
+    if (($userinfoResponse['status'] ?? 0) >= 500 || trim((string) ($userinfoResponse['error'] ?? '')) !== '' || (int) ($userinfoResponse['status'] ?? 0) === 0) {
+        return $finishWithFlash(
+            'broker_unavailable',
+            'OpenClaw no pudo devolver la identidad autenticada en este momento.'
+        );
+    }
+
+    $userinfoPayload = is_array($userinfoResponse['json'] ?? null) ? $userinfoResponse['json'] : [];
+    if (($userinfoResponse['ok'] ?? false) !== true) {
+        return $finishWithFlash(
+            'identity_missing',
+            'OpenClaw no devolvio una identidad usable para este inicio de sesion.'
+        );
+    }
+
+    $identity = operator_auth_broker_identity_from_payload($userinfoPayload);
+    if (trim((string) ($identity['email'] ?? '')) === '') {
+        return $finishWithFlash(
+            'identity_missing',
+            'OpenClaw autentico la cuenta, pero no expuso un email resoluble para este panel.'
+        );
+    }
+
+    if (!operator_auth_is_email_allowed((string) $identity['email'])) {
+        return $finishWithFlash(
+            'email_no_permitido',
+            'El email autenticado no esta autorizado para operar este panel.',
+            ['operator' => $identity]
+        );
+    }
+
+    $operator = operator_auth_establish_session($identity);
+    operator_auth_clear_pending_web_state();
+    unset($_SESSION[OPERATOR_AUTH_FLASH_ERROR_KEY]);
+
+    if (function_exists('audit_log_event')) {
+        audit_log_event('operator_auth.completed', [
+            'transport' => OPERATOR_AUTH_TRANSPORT_WEB_BROKER,
+            'email' => (string) ($operator['email'] ?? ''),
+            'profileId' => (string) ($operator['profileId'] ?? ''),
+        ]);
+    }
+
+    return operator_auth_callback_result($returnTo, true, 'authenticated', '', [
+        'operator' => $operator,
+    ]);
+}
+
+function operator_auth_anonymous_payload(array $overrides = []): array
+{
+    return array_merge([
+        'ok' => true,
+        'authenticated' => false,
+        'status' => 'anonymous',
+        'mode' => operator_auth_mode(),
+        'transport' => operator_auth_transport(),
+        'configured' => true,
+        'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'capabilities' => [
+            'adminAgent' => false,
+        ],
+        'fallbacks' => internal_console_auth_fallbacks_payload(),
+    ], $overrides);
+}
+
+function operator_auth_pending_web_state_payload(array $attempt): array
+{
+    return operator_auth_anonymous_payload([
+        'status' => 'pending',
+        'redirectUrl' => operator_auth_pending_web_state_redirect_url($attempt),
+        'expiresAt' => (string) ($attempt['expiresAt'] ?? ''),
+    ]);
+}
+
 function operator_auth_status_payload(): array
 {
     if (!operator_auth_is_configured()) {
@@ -1003,52 +1679,48 @@ function operator_auth_status_payload(): array
         return operator_auth_authenticated_payload($current);
     }
 
+    $flash = operator_auth_consume_flash_error();
+    if (is_array($flash)) {
+        return operator_auth_flash_error_payload(
+            trim((string) ($flash['status'] ?? 'anonymous')) ?: 'anonymous',
+            trim((string) ($flash['error'] ?? '')) ?: 'No se pudo completar la autenticacion.',
+            isset($flash['operator']) && is_array($flash['operator'])
+                ? ['operator' => $flash['operator']]
+                : []
+        );
+    }
+
+    if (operator_auth_uses_web_broker()) {
+        $pending = operator_auth_pending_web_state();
+        if (is_array($pending)) {
+            if (operator_auth_pending_web_state_is_expired($pending)) {
+                operator_auth_clear_pending_web_state();
+                return operator_auth_flash_error_payload(
+                    'invalid_state',
+                    'La ventana del login web expiro antes de completarse. Genera un intento nuevo.'
+                );
+            }
+
+            return operator_auth_pending_web_state_payload($pending);
+        }
+
+        return operator_auth_anonymous_payload();
+    }
+
     operator_auth_purge_expired_challenges();
     $challengeId = operator_auth_pending_challenge_id();
     if ($challengeId === '') {
-        return [
-            'ok' => true,
-            'authenticated' => false,
-            'status' => 'anonymous',
-            'mode' => operator_auth_mode(),
-            'configured' => true,
-            'recommendedMode' => OPERATOR_AUTH_SOURCE,
-            'capabilities' => [
-                'adminAgent' => false,
-            ],
-            'fallbacks' => internal_console_auth_fallbacks_payload(),
-        ];
+        return operator_auth_anonymous_payload();
     }
 
     $challenge = operator_auth_read_challenge($challengeId);
     if (!is_array($challenge)) {
         unset($_SESSION[OPERATOR_AUTH_PENDING_CHALLENGE_KEY]);
-        return [
-            'ok' => true,
-            'authenticated' => false,
-            'status' => 'anonymous',
-            'mode' => operator_auth_mode(),
-            'configured' => true,
-            'recommendedMode' => OPERATOR_AUTH_SOURCE,
-            'capabilities' => [
-                'adminAgent' => false,
-            ],
-            'fallbacks' => internal_console_auth_fallbacks_payload(),
-        ];
+        return operator_auth_anonymous_payload();
     }
 
     if (((string) ($challenge['sessionIdHash'] ?? '')) !== operator_auth_session_id_hash()) {
-        return [
-            'ok' => true,
-            'authenticated' => false,
-            'status' => 'anonymous',
-            'mode' => operator_auth_mode(),
-            'configured' => true,
-            'recommendedMode' => OPERATOR_AUTH_SOURCE,
-            'capabilities' => [
-                'adminAgent' => false,
-            ],
-        ];
+        return operator_auth_anonymous_payload();
     }
 
     $status = (string) ($challenge['status'] ?? 'pending');
@@ -1081,33 +1753,13 @@ function operator_auth_status_payload(): array
 
     if ($status === 'consumed' || $status === 'superseded') {
         unset($_SESSION[OPERATOR_AUTH_PENDING_CHALLENGE_KEY]);
-        return [
-            'ok' => true,
-            'authenticated' => false,
-            'status' => 'anonymous',
-            'mode' => operator_auth_mode(),
-            'configured' => true,
-            'recommendedMode' => OPERATOR_AUTH_SOURCE,
-            'capabilities' => [
-                'adminAgent' => false,
-            ],
-            'fallbacks' => internal_console_auth_fallbacks_payload(),
-        ];
+        return operator_auth_anonymous_payload();
     }
 
-    return [
-        'ok' => true,
-        'authenticated' => false,
+    return operator_auth_anonymous_payload([
         'status' => 'pending',
-        'mode' => operator_auth_mode(),
-        'configured' => true,
-        'recommendedMode' => OPERATOR_AUTH_SOURCE,
-        'capabilities' => [
-            'adminAgent' => false,
-        ],
-        'fallbacks' => internal_console_auth_fallbacks_payload(),
         'challenge' => operator_auth_challenge_public_payload($challenge),
-    ];
+    ]);
 }
 
 function operator_auth_logout_payload(): array
@@ -1132,6 +1784,7 @@ function operator_auth_logout_payload(): array
         'authenticated' => false,
         'status' => 'logout',
         'mode' => operator_auth_mode(),
+        'transport' => operator_auth_transport(),
         'configured' => operator_auth_is_configured(),
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
         'capabilities' => [

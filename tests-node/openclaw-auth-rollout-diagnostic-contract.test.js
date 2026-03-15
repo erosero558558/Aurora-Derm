@@ -86,6 +86,11 @@ test('diagnostico OpenClaw del rollout admin publica contrato y clasificaciones 
         'falta diagnostico admin_auth_legacy_facade'
     );
     assert.equal(
+        raw.includes("diagnosis = 'operator_auth_edge_failure'"),
+        true,
+        'falta diagnostico operator_auth_edge_failure'
+    );
+    assert.equal(
         raw.includes('[INFO] nextAction='),
         true,
         'falta salida nextAction en el diagnostico'

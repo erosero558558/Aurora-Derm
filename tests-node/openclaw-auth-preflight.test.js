@@ -153,3 +153,31 @@ test('preflight reports login step when runtime is reachable but session is miss
         }
     );
 });
+
+test('preflight accepts web_broker without helper local when broker env is complete', async () => {
+    await withEnv(
+        {
+            PIELARMONIA_OPERATOR_AUTH_TRANSPORT: 'web_broker',
+            OPENCLAW_AUTH_BROKER_AUTHORIZE_URL:
+                'https://broker.example.test/authorize',
+            OPENCLAW_AUTH_BROKER_TOKEN_URL: 'https://broker.example.test/token',
+            OPENCLAW_AUTH_BROKER_USERINFO_URL:
+                'https://broker.example.test/userinfo',
+            OPENCLAW_AUTH_BROKER_CLIENT_ID: 'broker-client-id',
+            PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL: '',
+            PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN: '',
+            PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET: '',
+            OPENCLAW_RUNTIME_BASE_URL: '',
+        },
+        async () => {
+            const report = await buildOpenClawAuthPreflight();
+
+            assert.equal(report.transport, 'web_broker');
+            assert.equal(report.ok, true);
+            assert.equal(report.readyForLogin, true);
+            assert.equal(report.broker.authorizeUrlConfigured, true);
+            assert.equal(report.runtime.reachable, false);
+            assert.match(report.nextAction, /continuar con OpenClaw web/i);
+        }
+    );
+});

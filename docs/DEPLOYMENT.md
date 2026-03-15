@@ -13,7 +13,7 @@ graph LR
     CI -->|Lint + QA + Build| Build[Astro and PHP Artifacts]
     Build -->|Canary + Prod Deploy| Server[Servidor Produccion]
     Server -->|Routing + Conversion Smoke| Valid[Validacion]
-    Server -->|Fallback Manual| VPS[OpenClaw or SSH]
+    Server -->|Fallback Manual| VPS[OpenClaw Web Broker or SSH]
 ```
 
 ## 2. Estrategia de Despliegue (Deployment Strategy)
@@ -31,7 +31,7 @@ El workflow `.github/workflows/deploy-hosting.yml` se encarga de:
 4.  Canary de staging y gate de aceptación cuando staging está configurado.
 5.  Publicación a producción por `git-sync`, FTP o SFTP según la configuración activa.
 6.  Smoke post-deploy de routing público, conversión pública y manifiesto de cutover.
-7.  Dispatch opcional de post-deploy (`post-deploy-fast.yml` y `post-deploy-gate.yml`) con propagación de `admin_rollout_stage` y flags del gate admin UI.
+7.  Dispatch opcional de post-deploy (`post-deploy-fast.yml` y `post-deploy-gate.yml`) con propagación de `admin_rollout_stage`, flags del gate admin UI y politica efectiva de OpenClaw (`require_openclaw_auth`, `require_openclaw_live_smoke`).
 
 Cuando la estrategia activa es `git-sync`, el host promueve los artefactos
 versionados ya comprometidos en `main`; no recompila Astro en el VPS durante el
@@ -165,9 +165,10 @@ php bin/verify-gate.php
 5.  [ ] El bridge de reserva (`#citas`, `#appointmentForm`, `#serviceSelect`) sigue visible.
 6.  [ ] El formulario de contacto/reserva se abre correctamente.
 7.  [ ] `admin.html` arranca en `sony_v3` aunque reciba params legacy (`admin_ui`, `admin_ui_reset`).
-8.  [ ] `GATE-ADMIN-ROLLOUT.ps1` valida shell `sony_v3`, ausencia de CSS legacy y runtime smoke V3-only.
+8.  [ ] `GATE-ADMIN-ROLLOUT.ps1 -RequireOpenClawAuth` valida shell `sony_v3`, ausencia de CSS legacy y contrato OpenClaw `web_broker`.
         Implementacion canonica: `scripts/ops/admin/GATE-ADMIN-ROLLOUT.ps1`.
-9.  [ ] Chunks admin sin residuos:
+9.  [ ] `npm run smoke:admin:openclaw-auth:live:node` valida broker sandbox, shared session admin/turnero y logout.
+10. [ ] Chunks admin sin residuos:
     - `npm run chunks:admin:prune` (incluido en `npm run build`)
     - opcional: `npm run chunks:admin:check`
-10. [ ] No hay errores de consola (F12) rojos.
+11. [ ] No hay errores de consola (F12) rojos.

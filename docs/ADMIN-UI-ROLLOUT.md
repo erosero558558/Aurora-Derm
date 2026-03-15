@@ -43,6 +43,7 @@ npm run test:frontend:qa:admin
 npm run gate:admin:rollout
 npm run gate:admin:rollout:openclaw
 npm run diagnose:admin:openclaw-auth:rollout
+npm run smoke:admin:openclaw-auth:live:node
 ```
 
 `npm run test:frontend:qa:admin` ya incluye `tests/admin-openclaw-login.spec.js`
@@ -53,9 +54,10 @@ Para local QA:
 - Playwright usa `127.0.0.1:8011` como servidor fresco por defecto.
 - Si ya existe un servidor levantado, usar `TEST_BASE_URL=http://127.0.0.1:8011`.
 - `TEST_REUSE_EXISTING_SERVER` queda como opt-in explicito.
-- Si el runtime usa `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt`, levantar el helper del operador con `npm run openclaw:auth:start`.
-- OpenClaw sigue siendo el acceso primario del operador local.
-- Si hace falta contingencia web desde otra PC, habilitar `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` y `PIELARMONIA_ADMIN_2FA_SECRET`.
+- El perfil productivo canonico de auth es `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt` + `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker`.
+- En `web_broker`, el login ocurre en la misma pestana y ya no requiere helper local, codigo manual ni polling.
+- Usa `npm run openclaw:auth:start` solo cuando quieras validar `local_helper` en el laptop del operador.
+- Si hace falta contingencia legacy, habilitar `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` y `PIELARMONIA_ADMIN_2FA_SECRET`.
 - La UI solo debe mostrar `Clave + 2FA de contingencia` cuando el backend anuncie `fallbacks.legacy_password.available=true`.
 
 ## Gate operativo
@@ -70,9 +72,10 @@ Para local QA:
 - las suites `admin-ui-runtime-smoke` y `admin-v3-runtime` pasan
 - la suite `admin-openclaw-login` pasa como parte del gate cuando el shell usa el contrato OpenClaw
 - las suites Playwright se ejecutan contra el `-Domain` solicitado via `TEST_BASE_URL`
-- `gate:admin:rollout:openclaw` endurece el gate para exigir `operator-auth-status` con `mode=openclaw_chatgpt` y `configured=true`
-- si `operator-auth-status` falla o sigue en 503, el gate consulta `admin-auth.php?action=status` para distinguir entre contrato OpenClaw valido y fachada legacy
-- `diagnose:admin:openclaw-auth:rollout` devuelve `diagnosis` y `nextAction` para separar rapido si el entorno esta en `facade_only_rollout`, `admin_auth_legacy_facade`, `openclaw_not_configured` o `openclaw_ready`
+- `gate:admin:rollout:openclaw` endurece el gate para exigir `operator-auth-status` con `mode=openclaw_chatgpt`, `configured=true` y perfil `web_broker` sano cuando ese transporte es el activo
+- si `operator-auth-status` falla o sigue en 503, el gate consulta `admin-auth.php?action=status` para distinguir entre contrato OpenClaw valido, fachada legacy o edge roto
+- `diagnose:admin:openclaw-auth:rollout` devuelve `diagnosis` y `nextAction` para separar rapido si el entorno esta en `facade_only_rollout`, `admin_auth_legacy_facade`, `openclaw_not_configured`, `operator_auth_edge_failure` o `openclaw_ready`
+- `smoke:admin:openclaw-auth:live:node` valida el flujo real `start -> redirectUrl -> callback -> shared session admin/turnero -> logout`
 
 ## Rollback
 

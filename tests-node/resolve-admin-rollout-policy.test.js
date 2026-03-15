@@ -21,6 +21,8 @@ test('resolver aplica guardrail interno cuando flags vienen en false', () => {
     assert.equal(result.stage_effective, 'internal');
     assert.equal(result.stage_profile, 'tolerant');
     assert.equal(result.skip_runtime_smoke_effective, true);
+    assert.equal(result.require_openclaw_auth_effective, false);
+    assert.equal(result.require_openclaw_live_smoke_effective, false);
     assert.equal(result.allow_feature_api_failure_effective, true);
     assert.equal(result.allow_missing_flag_effective, true);
     assert.equal(result.policy_source, 'internal_stage_guardrail');
@@ -37,6 +39,8 @@ test('resolver aplica fallback de stage invalido y conserva trazabilidad', () =>
 
     assert.equal(result.stage_effective, 'canary');
     assert.equal(result.stage_profile, 'progressive');
+    assert.equal(result.require_openclaw_auth_effective, true);
+    assert.equal(result.require_openclaw_live_smoke_effective, true);
     assert.equal(result.policy_source, 'invalid_stage_fallback');
 });
 
@@ -50,6 +54,8 @@ test('resolver combina fallback e internal guardrail cuando default-stage=intern
     });
 
     assert.equal(result.stage_effective, 'internal');
+    assert.equal(result.require_openclaw_auth_effective, false);
+    assert.equal(result.require_openclaw_live_smoke_effective, false);
     assert.equal(result.allow_feature_api_failure_effective, true);
     assert.equal(result.allow_missing_flag_effective, true);
     assert.equal(
@@ -63,6 +69,8 @@ test('resolver conserva values explicitos en stage general', () => {
         stage: 'general',
         defaultStage: 'general',
         skipRuntimeSmoke: 'false',
+        requireOpenClawAuth: 'false',
+        requireOpenClawLiveSmoke: 'false',
         allowFeatureApiFailure: 'true',
         allowMissingFlag: 'true',
     });
@@ -70,6 +78,8 @@ test('resolver conserva values explicitos en stage general', () => {
     assert.equal(result.stage_effective, 'general');
     assert.equal(result.stage_profile, 'strict');
     assert.equal(result.skip_runtime_smoke_effective, false);
+    assert.equal(result.require_openclaw_auth_effective, false);
+    assert.equal(result.require_openclaw_live_smoke_effective, false);
     assert.equal(result.allow_feature_api_failure_effective, true);
     assert.equal(result.allow_missing_flag_effective, true);
     assert.equal(result.policy_source, 'input_or_var');
@@ -87,7 +97,22 @@ test('resolver conserva stage stable cuando deploy-hosting lo propaga', () => {
     assert.equal(result.stage_effective, 'stable');
     assert.equal(result.stage_profile, 'strict');
     assert.equal(result.skip_runtime_smoke_effective, false);
+    assert.equal(result.require_openclaw_auth_effective, true);
+    assert.equal(result.require_openclaw_live_smoke_effective, true);
     assert.equal(result.allow_feature_api_failure_effective, false);
     assert.equal(result.allow_missing_flag_effective, false);
     assert.equal(result.policy_source, 'input_or_var');
+});
+
+test('resolver permite override explicito del smoke live sin afectar el requisito auth', () => {
+    const result = resolveAdminRolloutPolicy({
+        stage: 'canary',
+        defaultStage: 'general',
+        requireOpenClawAuth: 'true',
+        requireOpenClawLiveSmoke: 'false',
+    });
+
+    assert.equal(result.stage_effective, 'canary');
+    assert.equal(result.require_openclaw_auth_effective, true);
+    assert.equal(result.require_openclaw_live_smoke_effective, false);
 });

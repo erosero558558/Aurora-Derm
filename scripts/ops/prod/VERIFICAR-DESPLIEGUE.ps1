@@ -72,6 +72,73 @@ if ([string]::IsNullOrWhiteSpace($diagnosticsAccessToken)) {
 }
 $diagnosticsAuthConfigured = -not [string]::IsNullOrWhiteSpace($diagnosticsAccessToken)
 
+function Test-BooleanLike {
+    param(
+        [string]$Value,
+        [bool]$Default = $false
+    )
+
+    $normalized = ([string]$Value).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        return $Default
+    }
+    if ($normalized -in @('1', 'true', 'yes', 'on')) {
+        return $true
+    }
+    if ($normalized -in @('0', 'false', 'no', 'off')) {
+        return $false
+    }
+    return $Default
+}
+
+function Resolve-RequireOperatorAuthFlag {
+    param(
+        [switch]$ExplicitFlag
+    )
+
+    if ($ExplicitFlag) {
+        return $true
+    }
+
+    $explicitCandidates = @(
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_PRECHECK_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_INPUT,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH
+    )
+
+    foreach ($candidate in $explicitCandidates) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) {
+            return (Test-BooleanLike -Value ([string]$candidate) -Default:$false)
+        }
+    }
+
+    $stageCandidates = @(
+        $env:ADMIN_ROLLOUT_STAGE_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_STAGE_INPUT,
+        $env:ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_STAGE_FAST,
+        $env:ADMIN_ROLLOUT_STAGE
+    )
+
+    foreach ($candidate in $stageCandidates) {
+        $normalized = ([string]$candidate).Trim().ToLowerInvariant()
+        if ([string]::IsNullOrWhiteSpace($normalized)) {
+            continue
+        }
+        if ($normalized -in @('stable', 'general', 'canary')) {
+            return $true
+        }
+        if ($normalized -in @('internal', 'rollback')) {
+            return $false
+        }
+    }
+
+    return $false
+}
+
 function Invoke-HeadCheck {
     param(
         [string]$Name,
@@ -180,6 +247,11 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
 Write-Host "== Verificacion de despliegue =="
 Write-Host "Dominio: $base"
 Write-Host "Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+
+$effectiveRequireOperatorAuth = Resolve-RequireOperatorAuthFlag -ExplicitFlag:$RequireOperatorAuth
+if ($effectiveRequireOperatorAuth -and -not $RequireOperatorAuth) {
+    Write-Host "[INFO] RequireOperatorAuth activado automaticamente por la politica efectiva del rollout admin."
+}
 
 $deployFreshnessChecked = $false
 $deployFreshnessStale = $false
@@ -1219,7 +1291,7 @@ try {
                 RemoteUrl = $healthUrl
             }
         }
-        if ($RequireOperatorAuth -and -not $authRecommendedModeActive) {
+        if ($effectiveRequireOperatorAuth -and -not $authRecommendedModeActive) {
             $results += [PSCustomObject]@{
                 Asset = 'health-auth-mode'
                 Match = $false
@@ -1256,7 +1328,7 @@ try {
             Write-Host "[WARN] health auth hardening pendiente"
         }
 
-        if ($RequireOperatorAuth) {
+        if ($effectiveRequireOperatorAuth) {
             $operatorAuthRollout = Invoke-OpenClawAuthRolloutDiagnostic -BaseUrl $base -ScriptPath $openClawAuthDiagnosticScriptPath
             Write-Host "[INFO] operator auth rollout diagnosis=$($operatorAuthRollout.diagnosis) source=$($operatorAuthRollout.source) mode=$($operatorAuthRollout.mode) configured=$($operatorAuthRollout.configured)"
             if (-not $operatorAuthRollout.ok) {
@@ -1357,7 +1429,7 @@ try {
         $publicSyncNode = $null
     }
     if ($null -eq $publicSyncNode) {
-        Write-Host "[WARN] health no incluye checks.publicSync"
+        Write-Host "[WARN] health no incluye checks.publicSync; el host probablemente sigue con HealthController stale"
         if ($RequireCronReady) {
             $results += [PSCustomObject]@{
                 Asset = 'health-public-sync-missing'
@@ -1365,6 +1437,7 @@ try {
                 LocalHash = 'present'
                 RemoteHash = 'missing'
                 RemoteUrl = $healthUrl
+                Detail = 'health publico sin checks.publicSync; desplegar controllers/HealthController.php actualizado antes de clasificar public_main_sync'
             }
         }
     } else {

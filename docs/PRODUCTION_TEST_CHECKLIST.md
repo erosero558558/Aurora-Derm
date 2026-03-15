@@ -65,12 +65,22 @@ Compatibilidad opcional:
 2. Verifica variables de entorno:
 
 - `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt`
-- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN`
-- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET`
-- `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST`
-- `PIELARMONIA_ADMIN_PASSWORD`
-- opcional: `PIELARMONIA_ADMIN_PASSWORD_HASH`
-- opcional solo para soporte legacy: `PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password`
+- `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker`
+- `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`
+- `PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL=https://TU_DOMINIO`
+- `OPENCLAW_AUTH_BROKER_AUTHORIZE_URL`
+- `OPENCLAW_AUTH_BROKER_TOKEN_URL`
+- `OPENCLAW_AUTH_BROKER_USERINFO_URL`
+- `OPENCLAW_AUTH_BROKER_CLIENT_ID`
+- opcional: `OPENCLAW_AUTH_BROKER_CLIENT_SECRET`
+- opcional para smoke live sandbox:
+  `OPENCLAW_AUTH_BROKER_SMOKE_ENABLED=true`,
+  `OPENCLAW_AUTH_BROKER_SMOKE_USERNAME`,
+  `OPENCLAW_AUTH_BROKER_SMOKE_PASSWORD`,
+  `OPENCLAW_AUTH_BROKER_SMOKE_TOTP_SECRET`,
+  `OPENCLAW_AUTH_BROKER_SMOKE_EXPECTED_EMAIL`
+- opcional solo para soporte local/manual: `PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN`, `PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET`, `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST`
+- opcional solo para contingencia legacy: `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true`, `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH`, `PIELARMONIA_ADMIN_2FA_SECRET`
 - opcional: `PIELARMONIA_ADMIN_EMAIL` (para alertas de nuevas citas)
 - opcional: `PIELARMONIA_EMAIL_FROM`
 - opcional: `PIELARMONIA_DATA_DIR`
@@ -106,30 +116,46 @@ Compatibilidad opcional:
 1. Abre `https://TU_DOMINIO/admin.html`.
 2. Sin sesion, verifica el gate del modo activo:
 
-- Esperado por defecto: challenge/login de OpenClaw.
-- Solo si activaste `PIELARMONIA_INTERNAL_CONSOLE_AUTH_PRIMARY=legacy_password`: formulario de clave.
+- Esperado por defecto: CTA `Continuar con OpenClaw` con redirect same-tab al broker remoto.
+- No deben aparecer helper local, codigo manual ni polling local en `web_broker`.
+- Solo si activaste la contingencia legacy: formulario `Clave + 2FA de contingencia`.
 
-3. Si activaste soporte legacy, intenta login con contraseña incorrecta:
+3. Ejecuta el gate remoto del rollout auth:
+
+- `npm run gate:admin:rollout:openclaw:node`
+- `npm run diagnose:admin:openclaw-auth:rollout:node`
+- Esperado: gate verde y diagnostico `openclaw_ready`.
+
+4. Ejecuta el smoke live del broker sandbox:
+
+- `npm run smoke:admin:openclaw-auth:live:node`
+- o `node bin/operator-auth-live-smoke.js --transport web_broker --server-base-url https://TU_DOMINIO`
+- Esperado: `callback_ok=true`, `shared_session_ok=true`, `logout_ok=true`.
+
+5. Si activaste soporte legacy, intenta login con contraseña incorrecta:
 
 - Esperado: mensaje de error.
 
-4. Si activaste soporte legacy, login con contraseña correcta (`PIELARMONIA_ADMIN_PASSWORD`):
+6. Si activaste soporte legacy, login con contraseña correcta (`PIELARMONIA_ADMIN_PASSWORD`):
 
 - Esperado: carga dashboard.
 
-5. Si el entorno esta en modo OpenClaw, valida `start -> complete -> status authenticated -> logout`:
+7. Si el entorno esta en modo OpenClaw `web_broker`, valida `start -> redirectUrl -> callback -> status authenticated -> logout`:
 
 - `POST /admin-auth.php?action=start`
-- `POST /api.php?resource=operator-auth-complete`
+- redireccion al broker remoto (`redirectUrl`)
+- `GET /admin-auth.php?action=callback`
 - `GET /admin-auth.php?action=status`
+- `GET /api.php?resource=operator-auth-status`
 - `POST /admin-auth.php?action=logout`
+- Esperado adicional: admin y turnero comparten la misma sesion autenticada y el `returnTo` del turnero preserva `station`, `lock` y `one_tap`.
 
-6. Navega por secciones:
+8. Navega por secciones:
 
 - `Citas`, `Callbacks`, `Reseñas`, `Disponibilidad`
 - Esperado: sin errores visuales ni pantallas en blanco.
 
-7. Exportar datos:
+9. Exportar datos:
 
 - Boton `Exportar Datos`
 - Esperado: descarga de JSON correcta.
@@ -329,6 +355,8 @@ Opcional automatizado (PowerShell):
 
 - `api.php?resource=health`
 - `admin-auth.php?action=status`
+- `api.php?resource=operator-auth-status`
+- `verification/operator-auth-live-smoke/operator-auth-live-smoke-last.json`
 - `figo-chat.php`
 
 3. Revisa permisos de `data/`.

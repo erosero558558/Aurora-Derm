@@ -36,6 +36,72 @@ $openClawAuthDiagnosticScriptPath = Join-Path $repoRoot 'scripts/ops/admin/DIAGN
 $turneroClinicProfileScriptPath = Join-Path $repoRoot 'bin/turnero-clinic-profile.js'
 . $commonHttpPath
 
+function Test-BooleanLike {
+    param(
+        [string]$Value,
+        [bool]$Default = $false
+    )
+
+    $normalized = ([string]$Value).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        return $Default
+    }
+    if ($normalized -in @('1', 'true', 'yes', 'on')) {
+        return $true
+    }
+    if ($normalized -in @('0', 'false', 'no', 'off')) {
+        return $false
+    }
+    return $Default
+}
+
+function Resolve-RequireOperatorAuthFlag {
+    param(
+        [switch]$ExplicitFlag
+    )
+
+    if ($ExplicitFlag) {
+        return $true
+    }
+
+    $explicitCandidates = @(
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_INPUT,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH
+    )
+
+    foreach ($candidate in $explicitCandidates) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) {
+            return (Test-BooleanLike -Value ([string]$candidate) -Default:$false)
+        }
+    }
+
+    $stageCandidates = @(
+        $env:ADMIN_ROLLOUT_STAGE_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_STAGE_INPUT,
+        $env:ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_STAGE_FAST,
+        $env:ADMIN_ROLLOUT_STAGE
+    )
+
+    foreach ($candidate in $stageCandidates) {
+        $normalized = ([string]$candidate).Trim().ToLowerInvariant()
+        if ([string]::IsNullOrWhiteSpace($normalized)) {
+            continue
+        }
+        if ($normalized -in @('stable', 'general', 'canary')) {
+            return $true
+        }
+        if ($normalized -in @('internal', 'rollback')) {
+            return $false
+        }
+    }
+
+    return $false
+}
+
 $checks = @(
     @{ Name = 'home'; Url = "$base/"; MaxLatencyMs = 5000 },  # full HTML page — higher threshold
     @{ Name = 'health-diagnostics'; Url = "$base/api.php?resource=health-diagnostics" },
@@ -125,6 +191,11 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
 Write-Host "== Monitor Produccion =="
 Write-Host "Dominio: $base"
 Write-Host "Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+
+$effectiveRequireOperatorAuth = Resolve-RequireOperatorAuthFlag -ExplicitFlag:$RequireOperatorAuth
+if ($effectiveRequireOperatorAuth -and -not $RequireOperatorAuth) {
+    Write-Host "[INFO] RequireOperatorAuth activado automaticamente por la politica efectiva del rollout admin."
+}
 
 foreach ($c in $checks) {
     $r = Invoke-EndpointCheck -Name $c.Name -Url $c.Url -TimeoutSec $TimeoutSec
@@ -259,7 +330,7 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 if (-not $authConfigured) {
                     $failures += "[FAIL] health.auth.configured=false (mode=$authMode status=$authStatus)"
                 }
-                if ($RequireOperatorAuth -and -not $authRecommendedModeActive) {
+                if ($effectiveRequireOperatorAuth -and -not $authRecommendedModeActive) {
                     $failures += "[FAIL] health.auth.mode=$authMode (esperado=$authRecommendedMode)"
                 } elseif (-not $authRecommendedModeActive) {
                     Write-Host "[WARN] health.auth mode no recomendado (mode=$authMode expected=$authRecommendedMode)"
@@ -275,7 +346,7 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                     Write-Host "[WARN] health.auth hardening pendiente (mode=$authMode recommendedMode=$authRecommendedMode twoFactorEnabled=$authTwoFactorEnabled)"
                 }
 
-                if ($RequireOperatorAuth) {
+                if ($effectiveRequireOperatorAuth) {
                     $operatorAuthRollout = Invoke-OpenClawAuthRolloutDiagnostic -BaseUrl $base -ScriptPath $openClawAuthDiagnosticScriptPath
                     Write-Host "[INFO] operator auth rollout diagnosis=$($operatorAuthRollout.diagnosis) source=$($operatorAuthRollout.source) mode=$($operatorAuthRollout.mode) configured=$($operatorAuthRollout.configured)"
                     if (-not $operatorAuthRollout.ok) {
@@ -346,6 +417,14 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                     [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
                     $publicSyncDirtyPathsCount -le 0
                 )
+                $publicSyncUnverifiedTelemetry = (
+                    -not $publicSyncOperationallyHealthy -and
+                    $publicSyncState -eq 'unknown' -and
+                    $publicSyncFailureReason -eq 'unverified' -and
+                    [string]::IsNullOrWhiteSpace($publicSyncCurrentHead) -and
+                    [string]::IsNullOrWhiteSpace($publicSyncRemoteHead) -and
+                    $publicSyncDirtyPathsCount -le 0
+                )
                 if (-not $publicSyncRepoHygieneIssue) {
                     $publicSyncRepoHygieneIssue = (
                         $publicSyncFailureReason -eq 'working_tree_dirty' -and
@@ -383,6 +462,9 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 }
                 if ($publicSyncConfigured -and $publicSyncTelemetryGap) {
                     Add-MonitorFailure -Message "[FAIL] health.publicSync telemetry gap (failureReason=$publicSyncFailureReason lastErrorMessage=$publicSyncLastErrorMessage)" -AllowDegraded:$AllowDegradedPublicSync
+                }
+                if ($publicSyncConfigured -and $publicSyncUnverifiedTelemetry) {
+                    Write-Host '[WARN] health.publicSync unverified sin heads ni dirty paths; si jobs verify reporta verification_source=registry_only, confirmar health, health-diagnostics y public-sync-status antes de tratarlo como drift del repo'
                 }
                 if (
                     $publicSyncConfigured -and

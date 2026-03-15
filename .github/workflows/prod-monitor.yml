@@ -166,6 +166,8 @@ jobs:
         timeout-minutes: 10
         env:
             TARGET_DOMAIN: ${{ github.event.inputs.domain || 'https://pielarmonia.com' }}
+            ADMIN_ROLLOUT_STAGE: ${{ vars.ADMIN_ROLLOUT_STAGE || 'general' }}
+            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH: ${{ vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH || '' }}
             MAX_LATENCY_MS: ${{ github.event.inputs.max_latency_ms || '3500' }}
             ALLOW_DEGRADED_FIGO: ${{ github.event.inputs.allow_degraded_figo || 'false' }}
             ALLOW_STORE_CALENDAR: ${{ github.event.inputs.allow_store_calendar || vars.PROD_MONITOR_ALLOW_STORE_CALENDAR || 'true' }}

@@ -17,6 +17,14 @@ const STAGE_PROFILE_BY_STAGE = {
     rollback: 'rollback_strict',
 };
 
+const STAGE_OPENCLAW_REQUIREMENTS = {
+    stable: true,
+    internal: false,
+    canary: true,
+    general: true,
+    rollback: false,
+};
+
 function parseBooleanLike(value, defaultValue) {
     if (value === undefined || value === null || value === '') {
         return Boolean(defaultValue);
@@ -60,9 +68,19 @@ function normalizeStage(rawStage, fallbackStage) {
 
 function resolveAdminRolloutPolicy(options = {}) {
     const stageInfo = normalizeStage(options.stage, options.defaultStage);
+    const stageRequiresOpenClaw =
+        STAGE_OPENCLAW_REQUIREMENTS[stageInfo.effective] === true;
     const skipRuntimeSmoke = parseBooleanLike(
         options.skipRuntimeSmoke,
         options.defaultSkipRuntimeSmoke
+    );
+    const requireOpenClawAuth = parseBooleanLike(
+        options.requireOpenClawAuth,
+        options.defaultRequireOpenClawAuth ?? stageRequiresOpenClaw
+    );
+    const requireOpenClawLiveSmoke = parseBooleanLike(
+        options.requireOpenClawLiveSmoke,
+        options.defaultRequireOpenClawLiveSmoke ?? stageRequiresOpenClaw
     );
     let allowFeatureApiFailure = parseBooleanLike(
         options.allowFeatureApiFailure,
@@ -103,6 +121,8 @@ function resolveAdminRolloutPolicy(options = {}) {
             STAGE_PROFILE_BY_STAGE[stageInfo.effective] ||
             STAGE_PROFILE_BY_STAGE.general,
         skip_runtime_smoke_effective: skipRuntimeSmoke,
+        require_openclaw_auth_effective: requireOpenClawAuth,
+        require_openclaw_live_smoke_effective: requireOpenClawLiveSmoke,
         allow_feature_api_failure_effective: allowFeatureApiFailure,
         allow_missing_flag_effective: allowMissingFlag,
         policy_source: policySource,
@@ -135,6 +155,11 @@ function parseArgs(argv) {
         defaultStage: args['default-stage'] || args.defaultStage,
         skipRuntimeSmoke: args['skip-runtime-smoke'],
         defaultSkipRuntimeSmoke: args['default-skip-runtime-smoke'],
+        requireOpenClawAuth: args['require-openclaw-auth'],
+        defaultRequireOpenClawAuth: args['default-require-openclaw-auth'],
+        requireOpenClawLiveSmoke: args['require-openclaw-live-smoke'],
+        defaultRequireOpenClawLiveSmoke:
+            args['default-require-openclaw-live-smoke'],
         allowFeatureApiFailure: args['allow-feature-api-failure'],
         defaultAllowFeatureApiFailure:
             args['default-allow-feature-api-failure'],

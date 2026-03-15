@@ -20,10 +20,12 @@ $report = [ordered]@{
         contract_valid = $false
         http_status = 0
         error = ''
+        raw_body = ''
         payload_error = ''
         ok = $false
         authenticated = $false
         mode = ''
+        transport = ''
         status = ''
         configured = $false
         recommended_mode = ''
@@ -31,6 +33,10 @@ $report = [ordered]@{
         bridge_token_configured = $false
         bridge_secret_configured = $false
         allowlist_configured = $false
+        broker_authorize_url_configured = $false
+        broker_token_url_configured = $false
+        broker_userinfo_url_configured = $false
+        broker_client_id_configured = $false
         missing = @()
     }
     admin_auth_facade = [ordered]@{
@@ -40,10 +46,12 @@ $report = [ordered]@{
         contract_valid = $false
         http_status = 0
         error = ''
+        raw_body = ''
         payload_error = ''
         ok = $false
         authenticated = $false
         mode = ''
+        transport = ''
         status = ''
         configured = $false
         recommended_mode = ''
@@ -51,6 +59,10 @@ $report = [ordered]@{
         bridge_token_configured = $false
         bridge_secret_configured = $false
         allowlist_configured = $false
+        broker_authorize_url_configured = $false
+        broker_token_url_configured = $false
+        broker_userinfo_url_configured = $false
+        broker_client_id_configured = $false
         missing = @()
     }
     resolved = [ordered]@{
@@ -59,6 +71,7 @@ $report = [ordered]@{
         ok = $false
         authenticated = $false
         mode = ''
+        transport = ''
         status = ''
         configured = $false
         recommended_mode = ''
@@ -178,10 +191,12 @@ function Normalize-OperatorAuthSnapshot {
         contract_valid = [bool](Test-OperatorAuthContractPayload -Payload $payload)
         http_status = [int]$result.Status
         error = [string]$result.Error
+        raw_body = [string]$result.Body
         payload_error = [string](Get-ObjectPropertyValue -Object $payload -Name 'error' -Default '')
         ok = [bool](Get-ObjectPropertyValue -Object $payload -Name 'ok' -Default $false)
         authenticated = [bool](Get-ObjectPropertyValue -Object $payload -Name 'authenticated' -Default $false)
         mode = [string](Get-ObjectPropertyValue -Object $payload -Name 'mode' -Default '')
+        transport = [string](Get-ObjectPropertyValue -Object $payload -Name 'transport' -Default '')
         status = [string](Get-ObjectPropertyValue -Object $payload -Name 'status' -Default '')
         configured = [bool](Get-ObjectPropertyValue -Object $payload -Name 'configured' -Default $false)
         recommended_mode = [string](Get-ObjectPropertyValue -Object $payload -Name 'recommendedMode' -Default '')
@@ -189,6 +204,10 @@ function Normalize-OperatorAuthSnapshot {
         bridge_token_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'bridgeTokenConfigured' -Default $false)
         bridge_secret_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'bridgeSecretConfigured' -Default $false)
         allowlist_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'allowlistConfigured' -Default $false)
+        broker_authorize_url_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerAuthorizeUrlConfigured' -Default $false)
+        broker_token_url_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerTokenUrlConfigured' -Default $false)
+        broker_userinfo_url_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerUserinfoUrlConfigured' -Default $false)
+        broker_client_id_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerClientIdConfigured' -Default $false)
         missing = @(Get-ObjectPropertyValue -Object $configuration -Name 'missing' -Default @())
     }
 
@@ -220,6 +239,7 @@ function Merge-ResolvedSnapshot {
     $Resolved.ok = [bool]$Snapshot.ok
     $Resolved.authenticated = [bool]$Snapshot.authenticated
     $Resolved.mode = [string]$Snapshot.mode
+    $Resolved.transport = [string]$Snapshot.transport
     $Resolved.status = [string]$Snapshot.status
     $Resolved.configured = [bool]$Snapshot.configured
     $Resolved.recommended_mode = [string]$Snapshot.recommended_mode
@@ -237,6 +257,10 @@ function Format-MissingOperatorAuthEnv {
         bridge_token = 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN'
         bridge_secret = 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET'
         allowlist = 'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST'
+        broker_authorize_url = 'OPENCLAW_AUTH_BROKER_AUTHORIZE_URL'
+        broker_token_url = 'OPENCLAW_AUTH_BROKER_TOKEN_URL'
+        broker_userinfo_url = 'OPENCLAW_AUTH_BROKER_USERINFO_URL'
+        broker_client_id = 'OPENCLAW_AUTH_BROKER_CLIENT_ID'
     }
 
     $names = @()
@@ -273,11 +297,12 @@ function Resolve-OpenClawRolloutState {
     if ($primaryValid -and $facadeValid) {
         $surfaceMismatch = (
             ([string]$primary.mode -ne [string]$facade.mode) -or
+            ([string]$primary.transport -ne [string]$facade.transport) -or
             ([string]$primary.status -ne [string]$facade.status) -or
             ([bool]$primary.configured -ne [bool]$facade.configured)
         )
         if ($surfaceMismatch) {
-            Add-DiagnosticWarning -Report $Report -Message 'operator-auth-status y admin-auth.php?action=status no coinciden en mode/status/configured.'
+            Add-DiagnosticWarning -Report $Report -Message 'operator-auth-status y admin-auth.php?action=status no coinciden en mode/transport/status/configured.'
         }
     }
 
@@ -301,7 +326,11 @@ function Resolve-OpenClawRolloutState {
                 $Report.next_action = 'Completar configuracion remota: ' + ($missingEnv -join ', ') + '.'
             } else {
                 $Report.diagnosis = 'openclaw_not_configured'
-                $Report.next_action = 'Completar bridge, helper y allowlist del rollout OpenClaw en el entorno remoto.'
+                $Report.next_action = if ([string]$resolved.transport -eq 'web_broker') {
+                    'Completar broker OAuth/OpenID y callback remoto del rollout OpenClaw en el entorno remoto.'
+                } else {
+                    'Completar bridge, helper y allowlist del rollout OpenClaw en el entorno remoto.'
+                }
             }
             return
         }
@@ -314,7 +343,11 @@ function Resolve-OpenClawRolloutState {
         }
 
         $Report.diagnosis = 'openclaw_ready'
-        $Report.next_action = 'El rollout OpenClaw ya esta listo; continuar con smoke humano y gate admin.'
+        $Report.next_action = if ([string]$resolved.transport -eq 'web_broker') {
+            'El rollout OpenClaw web_broker ya esta listo; continuar con smoke web y gate admin.'
+        } else {
+            'El rollout OpenClaw ya esta listo; continuar con smoke humano y gate admin.'
+        }
         $Report.ok = $true
         return
     }
@@ -322,6 +355,43 @@ function Resolve-OpenClawRolloutState {
     if ([bool]$facade.reachable -and [bool]$facade.json_valid -and -not [bool]$facade.contract_valid) {
         $Report.diagnosis = 'admin_auth_legacy_facade'
         $Report.next_action = 'Desplegar la fachada admin-auth.php con contrato OpenClaw (mode/status/configured) y alinear operator-auth-status.'
+        return
+    }
+
+    $primaryEdgeFailure = [int]$primary.http_status -ge 520
+    $facadeEdgeFailure = [int]$facade.http_status -ge 520
+    if ($primaryEdgeFailure -or $facadeEdgeFailure) {
+        $affectedSurfaces = @()
+        if ($primaryEdgeFailure) {
+            $affectedSurfaces += 'api.php?resource=operator-auth-status'
+        }
+        if ($facadeEdgeFailure) {
+            $affectedSurfaces += 'admin-auth.php?action=status'
+        }
+
+        $statusLabel = @(
+            @($primary.http_status, $facade.http_status) |
+                Where-Object { [int]$_ -gt 0 } |
+                Select-Object -Unique
+        ) -join ','
+        $hasCloudflare1033 = (
+            ([string]$primary.raw_body -match '1033') -or
+            ([string]$facade.raw_body -match '1033')
+        )
+
+        $Report.diagnosis = 'operator_auth_edge_failure'
+        if ($hasCloudflare1033) {
+            $Report.next_action =
+                'Revisar Cloudflare/origen para ' + ($affectedSurfaces -join ' y ') +
+                '; el edge esta devolviendo HTTP ' + $statusLabel +
+                ' con error code 1033 en lugar del JSON canonico.'
+        } else {
+            $Report.next_action =
+                'Revisar Cloudflare/origen y el routing de ' +
+                ($affectedSurfaces -join ' y ') +
+                '; el edge esta devolviendo HTTP ' + $statusLabel +
+                ' antes de llegar al contrato OpenClaw.'
+        }
         return
     }
 
@@ -353,7 +423,7 @@ Resolve-OpenClawRolloutState -Report $report
 
 Write-Host '== Diagnostico OpenClaw Auth Rollout =='
 Write-Host "Dominio: $base"
-Write-Host "[INFO] operator-auth-status http=$($report.operator_auth_status.http_status) reachable=$($report.operator_auth_status.reachable) contract=$($report.operator_auth_status.contract_valid) mode=$($report.operator_auth_status.mode) status=$($report.operator_auth_status.status) configured=$($report.operator_auth_status.configured)"
+Write-Host "[INFO] operator-auth-status http=$($report.operator_auth_status.http_status) reachable=$($report.operator_auth_status.reachable) contract=$($report.operator_auth_status.contract_valid) mode=$($report.operator_auth_status.mode) transport=$($report.operator_auth_status.transport) status=$($report.operator_auth_status.status) configured=$($report.operator_auth_status.configured)"
 if (-not [string]::IsNullOrWhiteSpace([string]$report.operator_auth_status.error)) {
     Write-Host "[WARN] operator-auth-status error: $($report.operator_auth_status.error)"
 }
@@ -361,7 +431,7 @@ if (-not [string]::IsNullOrWhiteSpace([string]$report.operator_auth_status.paylo
     Write-Host "[WARN] operator-auth-status payload_error: $($report.operator_auth_status.payload_error)"
 }
 
-Write-Host "[INFO] admin-auth facade http=$($report.admin_auth_facade.http_status) reachable=$($report.admin_auth_facade.reachable) contract=$($report.admin_auth_facade.contract_valid) mode=$($report.admin_auth_facade.mode) status=$($report.admin_auth_facade.status) configured=$($report.admin_auth_facade.configured)"
+Write-Host "[INFO] admin-auth facade http=$($report.admin_auth_facade.http_status) reachable=$($report.admin_auth_facade.reachable) contract=$($report.admin_auth_facade.contract_valid) mode=$($report.admin_auth_facade.mode) transport=$($report.admin_auth_facade.transport) status=$($report.admin_auth_facade.status) configured=$($report.admin_auth_facade.configured)"
 if (-not [string]::IsNullOrWhiteSpace([string]$report.admin_auth_facade.error)) {
     Write-Host "[WARN] admin-auth facade error: $($report.admin_auth_facade.error)"
 }

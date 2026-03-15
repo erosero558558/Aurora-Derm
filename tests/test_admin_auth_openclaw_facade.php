@@ -243,6 +243,100 @@ try {
         }
     });
 
+    run_test('admin-auth start devuelve redirectUrl y sin challenge cuando OpenClaw usa web_broker', function () {
+        $overrideDataDir = sys_get_temp_dir() . '/pielarmonia-test-admin-auth-openclaw-web-broker-' . uniqid('', true);
+        $overrideServer = [];
+        ensure_clean_directory($overrideDataDir);
+
+        try {
+            $overrideServer = start_test_php_server([
+                'docroot' => __DIR__ . '/..',
+                'env' => [
+                    'PIELARMONIA_DATA_DIR' => $overrideDataDir,
+                    'PIELARMONIA_AVAILABILITY_SOURCE' => 'store',
+                    'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => 'web_broker',
+                    'OPENCLAW_AUTH_BROKER_AUTHORIZE_URL' => 'https://broker.example.test/authorize',
+                    'OPENCLAW_AUTH_BROKER_TOKEN_URL' => 'https://broker.example.test/token',
+                    'OPENCLAW_AUTH_BROKER_USERINFO_URL' => 'https://broker.example.test/userinfo',
+                    'OPENCLAW_AUTH_BROKER_CLIENT_ID' => 'broker-client-id',
+                ] + operator_auth_test_env(),
+                'startup_timeout_ms' => 12000,
+            ]);
+
+            $cookieFile = admin_auth_openclaw_cookie_file();
+            try {
+                $start = admin_auth_openclaw_request('POST', $overrideServer['base_url'], 'start', [
+                    'returnTo' => '/operador-turnos.html?station=c2',
+                ], $cookieFile);
+
+                assert_equals(202, $start['code'], 'web broker start should respond 202');
+                assert_equals('pending', $start['body']['status'] ?? '', 'web broker start should remain pending');
+                assert_equals('web_broker', $start['body']['transport'] ?? '', 'start should expose web_broker transport');
+                assert_true(isset($start['body']['redirectUrl']), 'start should expose redirectUrl');
+                assert_false(isset($start['body']['challenge']), 'web broker start should not expose helper challenge');
+                assert_true(
+                    str_contains((string) ($start['body']['redirectUrl'] ?? ''), 'https://broker.example.test/authorize'),
+                    'redirectUrl should point to broker authorize endpoint'
+                );
+            } finally {
+                admin_auth_openclaw_cleanup_cookie($cookieFile);
+            }
+        } finally {
+            stop_test_php_server($overrideServer);
+            delete_path_recursive($overrideDataDir);
+        }
+    });
+
+    run_test('admin-auth status conserva pending con redirectUrl mientras el intento web siga vigente', function () {
+        $overrideDataDir = sys_get_temp_dir() . '/pielarmonia-test-admin-auth-openclaw-web-broker-pending-' . uniqid('', true);
+        $overrideServer = [];
+        ensure_clean_directory($overrideDataDir);
+
+        try {
+            $overrideServer = start_test_php_server([
+                'docroot' => __DIR__ . '/..',
+                'env' => [
+                    'PIELARMONIA_DATA_DIR' => $overrideDataDir,
+                    'PIELARMONIA_AVAILABILITY_SOURCE' => 'store',
+                    'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => 'web_broker',
+                    'OPENCLAW_AUTH_BROKER_AUTHORIZE_URL' => 'https://broker.example.test/authorize',
+                    'OPENCLAW_AUTH_BROKER_TOKEN_URL' => 'https://broker.example.test/token',
+                    'OPENCLAW_AUTH_BROKER_USERINFO_URL' => 'https://broker.example.test/userinfo',
+                    'OPENCLAW_AUTH_BROKER_CLIENT_ID' => 'broker-client-id',
+                ] + operator_auth_test_env(),
+                'startup_timeout_ms' => 12000,
+            ]);
+
+            $cookieFile = admin_auth_openclaw_cookie_file();
+            try {
+                $start = admin_auth_openclaw_request('POST', $overrideServer['base_url'], 'start', [
+                    'returnTo' => '/admin.html?resume=web-broker',
+                ], $cookieFile);
+                assert_equals(202, $start['code'], 'web broker start should respond 202');
+
+                $status = admin_auth_openclaw_request('GET', $overrideServer['base_url'], 'status', null, $cookieFile);
+                assert_equals(200, $status['code'], 'status should respond 200');
+                assert_equals('pending', $status['body']['status'] ?? '', 'status should preserve pending while callback is missing');
+                assert_equals('web_broker', $status['body']['transport'] ?? '', 'status should preserve web_broker transport');
+                assert_equals(
+                    (string) ($start['body']['redirectUrl'] ?? ''),
+                    (string) ($status['body']['redirectUrl'] ?? ''),
+                    'status should keep the same redirectUrl while the attempt is active'
+                );
+                assert_equals(
+                    (string) ($start['body']['expiresAt'] ?? ''),
+                    (string) ($status['body']['expiresAt'] ?? ''),
+                    'status should keep the same expiry while the attempt is active'
+                );
+            } finally {
+                admin_auth_openclaw_cleanup_cookie($cookieFile);
+            }
+        } finally {
+            stop_test_php_server($overrideServer);
+            delete_path_recursive($overrideDataDir);
+        }
+    });
+
     run_test('admin-auth honors explicit legacy override even when openclaw mode is configured', function () {
         $overrideDataDir = sys_get_temp_dir() . '/pielarmonia-test-admin-auth-legacy-override-' . uniqid('', true);
         $overrideServer = [];

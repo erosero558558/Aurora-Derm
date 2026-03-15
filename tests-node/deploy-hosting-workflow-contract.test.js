@@ -48,9 +48,13 @@ test('deploy-hosting expone inputs de dispatch post-deploy', () => {
         'admin_rollout_skip_runtime_smoke_fast',
         'admin_rollout_allow_feature_api_failure_fast',
         'admin_rollout_allow_missing_flag_fast',
+        'admin_rollout_require_openclaw_auth_fast',
+        'admin_rollout_require_openclaw_live_smoke_fast',
         'admin_rollout_skip_runtime_smoke_gate',
         'admin_rollout_allow_feature_api_failure_gate',
         'admin_rollout_allow_missing_flag_gate',
+        'admin_rollout_require_openclaw_auth_gate',
+        'admin_rollout_require_openclaw_live_smoke_gate',
     ];
 
     for (const inputName of requiredInputs) {
@@ -635,6 +639,20 @@ test('deploy-hosting aplica guardrail de dispatch por tipo de evento', () => {
     );
     assert.equal(
         raw.includes(
+            'admin_rollout_require_openclaw_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de require_openclaw_auth al dispatch fast'
+    );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_require_openclaw_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de require_openclaw_live_smoke al dispatch fast'
+    );
+    assert.equal(
+        raw.includes(
             'admin_rollout_skip_runtime_smoke: process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_EFFECTIVE'
         ),
         true,
@@ -653,6 +671,20 @@ test('deploy-hosting aplica guardrail de dispatch por tipo de evento', () => {
         ),
         true,
         'falta propagacion de allow missing flag al dispatch gate'
+    );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_require_openclaw_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_GATE_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de require_openclaw_auth al dispatch gate'
+    );
+    assert.equal(
+        raw.includes(
+            'admin_rollout_require_openclaw_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_GATE_EFFECTIVE'
+        ),
+        true,
+        'falta propagacion de require_openclaw_live_smoke al dispatch gate'
     );
 });
 

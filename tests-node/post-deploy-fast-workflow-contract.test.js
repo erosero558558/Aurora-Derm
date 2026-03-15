@@ -188,9 +188,31 @@ test('post-deploy-fast integra gate admin rollout con resumen operativo', () => 
         'falta variable efectiva de stage profile para fast lane'
     );
     assert.equal(
+        raw.includes('ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE'),
+        true,
+        'falta variable efectiva de require OpenClaw auth para fast lane'
+    );
+    assert.equal(
+        raw.includes(
+            'ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE'
+        ),
+        true,
+        'falta variable efectiva de require OpenClaw live smoke para fast lane'
+    );
+    assert.equal(
         raw.includes('Admin rollout stage profile (fast):'),
         true,
         'falta linea de stage profile en resumen fast lane'
+    );
+    assert.equal(
+        raw.includes('Admin rollout require OpenClaw auth (fast):'),
+        true,
+        'falta linea require OpenClaw auth en resumen fast lane'
+    );
+    assert.equal(
+        raw.includes('Admin rollout require OpenClaw live smoke (fast):'),
+        true,
+        'falta linea require OpenClaw live smoke en resumen fast lane'
     );
     assert.equal(
         raw.includes('Public V4 rollout stage (effective):'),
@@ -369,6 +391,21 @@ test('post-deploy-fast integra gate admin rollout con resumen operativo', () => 
         true,
         'falta propagacion de allow missing admin flag al gate admin rollout fast'
     );
+    assert.equal(
+        raw.includes('-RequireOpenClawAuth:$requireOpenClawAuth'),
+        true,
+        'falta propagacion de RequireOpenClawAuth al gate admin rollout fast'
+    );
+    assert.equal(
+        stepNames.includes('Ejecutar smoke live OpenClaw web broker (fast)'),
+        true,
+        'falta step de smoke live OpenClaw en fast lane'
+    );
+    assert.equal(
+        raw.includes('post-deploy-fast-openclaw-live-smoke-report'),
+        true,
+        'falta artefacto del smoke live OpenClaw en fast lane'
+    );
 });
 
 test('post-deploy-fast usa resolver central de politica admin rollout', () => {
@@ -402,6 +439,20 @@ test('post-deploy-fast usa resolver central de politica admin rollout', () => {
         ),
         true,
         'falta propagacion de allow_missing_flag al resolver politica en fast lane'
+    );
+    assert.equal(
+        raw.includes(
+            '--require-openclaw-auth "$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST"'
+        ),
+        true,
+        'falta propagacion de require_openclaw_auth al resolver politica en fast lane'
+    );
+    assert.equal(
+        raw.includes(
+            '--require-openclaw-live-smoke "$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST"'
+        ),
+        true,
+        'falta propagacion de require_openclaw_live_smoke al resolver politica en fast lane'
     );
     assert.equal(
         raw.includes('admin_rollout_stage_profile'),
@@ -446,6 +497,8 @@ test('post-deploy-fast expone inputs para propagacion de admin rollout y public_
         'admin_rollout_skip_runtime_smoke',
         'admin_rollout_allow_feature_api_failure',
         'admin_rollout_allow_missing_flag',
+        'admin_rollout_require_openclaw_auth',
+        'admin_rollout_require_openclaw_live_smoke',
         'enable_public_v4_rollout_monitor',
         'public_v4_rollout_stage',
         'public_v4_rollout_surface_test',

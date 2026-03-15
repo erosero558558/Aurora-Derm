@@ -45,4 +45,27 @@ class OperatorAuthController
         start_secure_session();
         json_response(operator_auth_logout_payload());
     }
+
+    public static function callback(array $context = []): void
+    {
+        start_secure_session();
+
+        $result = operator_auth_handle_broker_callback($_GET);
+        $location = operator_auth_sanitize_return_to(
+            (string) ($result['redirectTo'] ?? '/admin.html'),
+            '/admin.html'
+        );
+
+        if (defined('TESTING_ENV')) {
+            $GLOBALS['__TEST_REDIRECT'] = [
+                'location' => $location,
+                'status' => 302,
+                'result' => $result,
+            ];
+            return;
+        }
+
+        header('Location: ' . $location, true, 302);
+        exit();
+    }
 }

@@ -156,9 +156,28 @@
 // Fallback web de contingencia: deja OpenClaw como primario y permite clave + 2FA
 // solo cuando este flag se habilita explicitamente en el entorno.
 // putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=false');
+// Transporte del flujo OpenClaw:
+// - web_broker: redirect web nativo desde cualquier computadora (recomendado para produccion)
+// - local_helper: challenge local + helper en 127.0.0.1 (solo soporte local/manual)
+// putenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker');
 // Lista blanca de correos permitidos para operar el admin.
 // Si no defines allowlist explicita, el backend puede reutilizar `PIELARMONIA_ADMIN_EMAIL` como fallback minimo.
 // putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=operador@pielarmonia.com,otra.persona@pielarmonia.com');
+// En web_broker, permite acceso admin completo a cualquier identidad autenticada
+// por el broker remoto, sin exigir allowlist local. Recomendado para el corte productivo.
+// putenv('PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true');
+// Endpoints del broker OAuth/OpenID Connect remoto usados por web_broker.
+// putenv('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL=https://openclaw.example.com/oauth/authorize');
+// putenv('OPENCLAW_AUTH_BROKER_TOKEN_URL=https://openclaw.example.com/oauth/token');
+// putenv('OPENCLAW_AUTH_BROKER_USERINFO_URL=https://openclaw.example.com/oauth/userinfo');
+// putenv('OPENCLAW_AUTH_BROKER_CLIENT_ID=cliente_openclaw_web');
+// putenv('OPENCLAW_AUTH_BROKER_CLIENT_SECRET=secreto_opcional');
+// Cuenta sandbox para smoke live post-deploy del broker web.
+// putenv('OPENCLAW_AUTH_BROKER_SMOKE_ENABLED=true');
+// putenv('OPENCLAW_AUTH_BROKER_SMOKE_USERNAME=smoke.operator@pielarmonia.com');
+// putenv('OPENCLAW_AUTH_BROKER_SMOKE_PASSWORD=clave_segura_rotada');
+// putenv('OPENCLAW_AUTH_BROKER_SMOKE_TOTP_SECRET=BASE32_OPCIONAL');
+// putenv('OPENCLAW_AUTH_BROKER_SMOKE_EXPECTED_EMAIL=smoke.operator@pielarmonia.com');
 // Token compartido entre el bridge local y el servidor.
 // putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN=token_bridge_largo_rotado');
 // Secreto HMAC opcional; si no se define se reutiliza el token del bridge.
