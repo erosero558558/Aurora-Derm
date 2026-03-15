@@ -32,8 +32,8 @@ const ctaLabel = hasText(section.ctaLabel) ? section.ctaLabel.trim() : '';
             </div>
             <div class="v6-corporate-matrix__grid">
                 {
-                    cards.map((card) => (
-                        <a class="v6-corporate-matrix__card" href={card.href}>
+                    cards.map((card, index) => (
+                        <a class:list={['v6-corporate-matrix__card', `is-slot-${index + 1}`]} href={card.href}>
                             <figure>
                                 <img
                                     src={card.image}
@@ -46,6 +46,7 @@ const ctaLabel = hasText(section.ctaLabel) ? section.ctaLabel.trim() : '';
                                 />
                             </figure>
                             <div class="v6-corporate-matrix__meta">
+                                <span class="v6-corporate-matrix__number">{String(index + 1).padStart(2, '0')}</span>
                                 {card.category ? <p><span>{card.category}</span></p> : null}
                                 <h3>{card.title}</h3>
                                 <p>{card.copy}</p>

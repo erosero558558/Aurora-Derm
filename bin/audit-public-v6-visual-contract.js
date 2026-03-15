@@ -1113,11 +1113,11 @@ async function run() {
         addCheck(
             checks,
             'VC-02',
-            'header uses a light Aurora shell',
+            'header uses a dark editorial shell',
             (() => {
                 const rgb = parseRgb(desktopHome.headerRgb);
                 return Boolean(
-                    rgb && rgb[0] >= 240 && rgb[1] >= 240 && rgb[2] >= 228
+                    rgb && rgb[0] <= 18 && rgb[1] <= 24 && rgb[2] <= 36
                 );
             })(),
             { headerRgb: desktopHome.headerRgb }
@@ -2006,7 +2006,7 @@ async function run() {
         addCheck(
             checks,
             'VC-104',
-            'page tools keep Aurora geometry for language and menu button',
+            'page tools keep editorial geometry for language and menu button',
             desktopHub.toolsRightAligned &&
                 desktopHub.langHasSlash &&
                 desktopHub.langFontSize >= 11 &&

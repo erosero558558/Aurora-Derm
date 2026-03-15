@@ -9,8 +9,15 @@ body {
     font-family: var(--v6-font-sans);
     color: var(--v6-color-ink);
     background:
-        radial-gradient(circle at top left, rgba(214, 176, 140, 0.12), transparent 26%),
-        linear-gradient(180deg, var(--v6-color-ivory) 0%, var(--v6-color-pearl) 100%);
+        radial-gradient(circle at 12% 0%, rgba(199, 163, 109, 0.24), transparent 18%),
+        radial-gradient(circle at 82% 4%, rgba(146, 165, 187, 0.18), transparent 22%),
+        linear-gradient(
+            180deg,
+            #060910 0,
+            #101826 180px,
+            #dfe6ed 360px,
+            var(--v6-color-pearl) 100%
+        );
 }
 
 a {
@@ -49,8 +56,9 @@ button {
     left: -999px;
     top: 0;
     padding: var(--v6-space-2) var(--v6-space-3);
-    background: var(--v6-color-ivory);
-    border: 1px solid var(--v6-color-line);
+    background: #0f1724;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #f4f7fb;
     z-index: 2000;
 }
 
@@ -65,11 +73,11 @@ button {
     bottom: 18px;
     width: 42px;
     height: 42px;
-    border: 1px solid rgba(78, 102, 92, 0.18);
-    background: rgba(255, 252, 247, 0.92);
-    color: var(--v6-color-moss);
-    border-radius: 12px;
-    box-shadow: 0 16px 34px rgba(68, 57, 43, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(9, 13, 19, 0.92);
+    color: #f4f7fb;
+    border-radius: 10px;
+    box-shadow: 0 16px 34px rgba(8, 13, 20, 0.26);
     z-index: 130;
     opacity: 0;
     pointer-events: none;

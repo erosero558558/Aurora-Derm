@@ -14,10 +14,12 @@
     gap: 24px;
     align-items: center;
     padding: 28px;
-    border-radius: 28px;
-    background: rgba(255, 252, 247, 0.92);
-    border: 1px solid rgba(222, 214, 204, 0.92);
-    box-shadow: 0 20px 44px rgba(68, 57, 43, 0.08);
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at top right, rgba(199, 163, 109, 0.18), transparent 34%),
+        linear-gradient(180deg, rgba(10, 15, 22, 0.98) 0%, rgba(16, 24, 38, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 44px rgba(8, 13, 20, 0.2);
 }
 
 .v6-booking-status__copy {
@@ -36,8 +38,8 @@
     height: 12px;
     margin-top: 6px;
     border-radius: 999px;
-    background: linear-gradient(180deg, rgba(127, 148, 135, 0.92) 0%, rgba(78, 102, 92, 0.96) 100%);
-    box-shadow: 0 0 0 6px rgba(127, 148, 135, 0.12);
+    background: linear-gradient(180deg, rgba(199, 163, 109, 0.94) 0%, rgba(150, 120, 70, 0.96) 100%);
+    box-shadow: 0 0 0 6px rgba(199, 163, 109, 0.12);
     flex: 0 0 auto;
 }
 
@@ -55,23 +57,23 @@
 
 .v6-booking-status__eyebrow {
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
     font-size: 12px;
-    color: var(--v6-color-sage);
+    color: rgba(199, 163, 109, 0.88);
     font-weight: 700;
 }
 
 .v6-booking-status h2 {
     font-family: var(--v6-font-display);
     font-size: clamp(30px, 2.5vw, 42px);
-    color: var(--v6-color-ink);
+    color: #f4f7fb;
     letter-spacing: -0.03em;
-    line-height: 1.08;
+    line-height: 1.04;
 }
 
 .v6-booking-status__description {
     max-width: 860px;
-    color: rgba(32, 38, 43, 0.72);
+    color: rgba(219, 227, 237, 0.76);
     font-size: 16px;
     line-height: 1.52;
 }
@@ -87,11 +89,11 @@
     align-items: center;
     gap: 8px;
     min-height: 48px;
-    border: 1px solid rgba(78, 102, 92, 0.2);
+    border: 1px solid rgba(199, 163, 109, 0.34);
     border-radius: 999px;
     padding: 0 18px;
-    color: var(--v6-color-moss);
-    background: rgba(246, 242, 235, 0.82);
+    color: #f4f7fb;
+    background: linear-gradient(180deg, rgba(199, 163, 109, 0.22) 0%, rgba(199, 163, 109, 0.08) 100%);
     font-weight: 700;
     transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
@@ -99,8 +101,8 @@
 .v6-booking-status__actions a:hover,
 .v6-booking-status__actions a:focus-visible {
     transform: translateY(-1px);
-    background: rgba(255, 252, 247, 0.98);
-    border-color: rgba(214, 176, 140, 0.72);
+    background: linear-gradient(180deg, rgba(199, 163, 109, 0.3) 0%, rgba(199, 163, 109, 0.12) 100%);
+    border-color: rgba(199, 163, 109, 0.72);
 }
 
 @media (max-width: 900px) {

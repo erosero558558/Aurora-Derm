@@ -316,8 +316,9 @@ const hubStats = [
 <style>
     .v6-page-hero-media--hub {
         background:
-            radial-gradient(circle at top left, rgba(143, 184, 255, 0.18), transparent 32%),
-            linear-gradient(180deg, #08101d 0%, #0d1a2e 100%);
+            radial-gradient(circle at top left, rgba(199, 163, 109, 0.2), transparent 28%),
+            radial-gradient(circle at 82% 18%, rgba(146, 165, 187, 0.18), transparent 32%),
+            linear-gradient(180deg, #05070b 0%, #0d1726 100%);
         padding: 24px clamp(18px, 3vw, 32px) 34px;
     }
 
@@ -350,9 +351,11 @@ const hubStats = [
         bottom: clamp(20px, 4vw, 40px);
         width: min(380px, calc(100% - 40px));
         border-radius: 24px;
-        background: linear-gradient(180deg, rgba(248, 250, 255, 0.98), rgba(235, 241, 250, 0.94));
-        border: 1px solid rgba(143, 158, 186, 0.28);
-        box-shadow: 0 24px 52px rgba(4, 15, 34, 0.2);
+        background:
+            radial-gradient(circle at top right, rgba(199, 163, 109, 0.16), transparent 34%),
+            linear-gradient(180deg, rgba(10, 15, 22, 0.94), rgba(16, 24, 38, 0.96));
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 24px 52px rgba(4, 15, 34, 0.28);
         padding: clamp(20px, 2.2vw, 30px);
         display: grid;
         gap: 16px;
@@ -368,22 +371,22 @@ const hubStats = [
     }
 
     .v6-hub-hero-shell__eyebrow {
-        color: #5b6b87;
+        color: rgba(199, 163, 109, 0.88);
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.16em;
         font-size: 11px;
         font-weight: 700;
     }
 
     .v6-hub-hero-shell__summary h2 {
-        color: #202b3d;
+        color: #f4f7fb;
         font-size: clamp(34px, 3vw, 46px);
-        line-height: 1.08;
-        letter-spacing: -0.02em;
+        line-height: 1.04;
+        letter-spacing: -0.03em;
     }
 
     .v6-hub-hero-shell__summary > p:last-of-type {
-        color: #4e5d75;
+        color: rgba(219, 227, 237, 0.76);
         font-size: clamp(16px, 1.18vw, 20px);
         line-height: 1.55;
     }
@@ -397,8 +400,8 @@ const hubStats = [
     .v6-hub-hero-shell__stat {
         min-height: 106px;
         border-radius: 18px;
-        border: 1px solid rgba(139, 155, 185, 0.2);
-        background: rgba(255, 255, 255, 0.74);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
         padding: 14px 15px 16px;
         display: grid;
         align-content: start;
@@ -406,15 +409,15 @@ const hubStats = [
     }
 
     .v6-hub-hero-shell__stat span {
-        color: #66758d;
+        color: rgba(185, 197, 212, 0.72);
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.12em;
         font-size: 10px;
         font-weight: 700;
     }
 
     .v6-hub-hero-shell__stat strong {
-        color: #213049;
+        color: #f4f7fb;
         font-size: clamp(20px, 1.85vw, 28px);
         line-height: 1.14;
         letter-spacing: -0.02em;

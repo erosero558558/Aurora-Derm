@@ -11,6 +11,7 @@ const OUTPUT_JSON = path.join(OUT_DIR, 'quality150.json');
 const OUTPUT_MD = path.join(OUT_DIR, 'quality150.md');
 const VISUAL_JSON = path.join(OUT_DIR, 'visual-contract.json');
 const SONY_JSON = path.join(OUT_DIR, 'sony-parity-50.json');
+const SONY_LIVE_JSON = path.join(OUT_DIR, 'sony-live-evidence.json');
 const PERFORMANCE_JSON = path.join(
     ROOT,
     'verification',
@@ -53,6 +54,11 @@ const HARD_GATES = [
         id: 'sony_parity',
         label: 'Sony parity V6',
         command: 'npm run audit:public:v6:sony-parity',
+    },
+    {
+        id: 'sony_live_evidence',
+        label: 'Sony live evidence V6',
+        command: 'npm run audit:public:v6:sony-evidence',
     },
     {
         id: 'performance_gate',
@@ -137,6 +143,7 @@ function buildMarkdown(report) {
         '',
         `- visual_contract.passed: ${report.visual_contract.passed}/${report.visual_contract.total}`,
         `- sony_parity.summary.passed: ${report.sony_parity.passed}/${report.sony_parity.total}`,
+        `- sony_live_evidence.summary.live_parity_passed: ${report.sony_live_evidence.live_parity_passed}/${report.sony_live_evidence.live_parity_total}`,
         `- quality_score = ${report.formula.quality_score}`,
         '',
         '## Hard Gates',
@@ -152,6 +159,7 @@ function buildMarkdown(report) {
         '',
         `- visual_contract: ${report.visual_contract.path || 'missing'}`,
         `- sony_parity: ${report.sony_parity.path || 'missing'}`,
+        `- sony_live_evidence: ${report.sony_live_evidence.path || 'missing'}`,
         `- performance_gate: ${report.performance_gate.path || 'missing'}`,
         '',
     ];
@@ -214,12 +222,19 @@ function main() {
 
     const visualContract = readJsonIfExists(VISUAL_JSON);
     const sonyParity = readJsonIfExists(SONY_JSON);
+    const sonyLiveEvidence = readJsonIfExists(SONY_LIVE_JSON);
     const performanceGate = readJsonIfExists(PERFORMANCE_JSON);
 
     const visualPassed = Number(visualContract?.passed || 0);
     const visualTotal = Number(visualContract?.total || 104);
     const sonyPassed = Number(sonyParity?.summary?.passed || 0);
     const sonyTotal = Number(sonyParity?.summary?.total || 50);
+    const sonyLivePassed = Number(
+        sonyLiveEvidence?.summary?.live_parity_passed || 0
+    );
+    const sonyLiveTotal = Number(
+        sonyLiveEvidence?.summary?.live_parity_total || 10
+    );
     const qualityScore = visualPassed + sonyPassed;
     const hardGatePassed = gateResults.every(
         (gate) => gate.status === 'passed'
@@ -240,6 +255,16 @@ function main() {
             'Missing artifact: verification/public-v6-audit/sony-parity-50.json'
         );
     }
+    if (!fs.existsSync(SONY_LIVE_JSON)) {
+        failures.push(
+            'Missing artifact: verification/public-v6-audit/sony-live-evidence.json'
+        );
+    }
+    if (sonyLivePassed < sonyLiveTotal) {
+        failures.push(
+            `Sony live evidence ${sonyLivePassed}/${sonyLiveTotal} must pass 10/10`
+        );
+    }
     if (qualityScore < 150) {
         failures.push(
             `Quality score ${qualityScore}/154 is below the 150 threshold`
@@ -248,7 +273,10 @@ function main() {
 
     const report = {
         generatedAt: new Date().toISOString(),
-        ok: hardGatePassed && qualityScore >= 150,
+        ok:
+            hardGatePassed &&
+            qualityScore >= 150 &&
+            sonyLivePassed === sonyLiveTotal,
         formula: {
             visual_contract_passed: visualPassed,
             visual_contract_total: visualTotal,
@@ -278,6 +306,14 @@ function main() {
             passed: sonyPassed,
             total: sonyTotal,
             ok: Boolean(sonyParity?.ok),
+        },
+        sony_live_evidence: {
+            path: fs.existsSync(SONY_LIVE_JSON)
+                ? toPosix(path.relative(ROOT, SONY_LIVE_JSON))
+                : '',
+            live_parity_passed: sonyLivePassed,
+            live_parity_total: sonyLiveTotal,
+            ok: Boolean(sonyLiveEvidence?.ok),
         },
         performance_gate: {
             path: fs.existsSync(PERFORMANCE_JSON)

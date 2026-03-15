@@ -36,8 +36,8 @@ const ctaLabel = hasText(section.ctaLabel) ? section.ctaLabel.trim() : '';
 
             <div class="v6-editorial__grid">
                 {
-                    cards.map((card) => (
-                        <article class:list={['v6-editorial__card', `is-${card.size}`, card.type === 'video' && 'is-video']}>
+                    cards.map((card, index) => (
+                        <article class:list={['v6-editorial__card', `is-${card.size}`, `is-slot-${index + 1}`, card.type === 'video' && 'is-video']}>
                             <a href={card.href}>
                                 <figure>
                                     <img
@@ -52,6 +52,7 @@ const ctaLabel = hasText(section.ctaLabel) ? section.ctaLabel.trim() : '';
                                     {card.type === 'video' ? <span class="v6-editorial__play" aria-hidden="true">{'>'}</span> : null}
                                 </figure>
                                 <div class="v6-editorial__meta">
+                                    <span class="v6-editorial__index">{String(index + 1).padStart(2, '0')}</span>
                                     {card.category ? <p>{card.category}</p> : null}
                                     <h3>{card.title}</h3>
                                     <p>{card.copy}</p>

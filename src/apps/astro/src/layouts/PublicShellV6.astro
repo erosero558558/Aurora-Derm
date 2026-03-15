@@ -124,7 +124,7 @@ const flagsJson = JSON.stringify(flags);
         <meta property="og:description" content={safeDescription} />
         <meta property="og:url" content={canonical} />
         <meta property="og:image" content={ogImage} />
-        <meta name="theme-color" content="#f6f2eb" />
+        <meta name="theme-color" content="#090d13" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         {
             preloadHref ? (
@@ -143,7 +143,7 @@ const flagsJson = JSON.stringify(flags);
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link rel="stylesheet" href={fontsHref} media="print" onload="this.media='all'" />
         <noscript><link rel="stylesheet" href={fontsHref} /></noscript>
-        <script src="/js/public-v6-shell.js?v=public-v6-shell-20260312-r1" defer></script>
+        <script src="/js/public-v6-shell.js?v=public-v6-shell-20260315-r3" defer></script>
         <script is:inline set:html={`window.__PUBLIC_V6_FLAGS = ${flagsJson};`}></script>
     </head>
     <body data-public-shell data-public-shell-version="v6" data-public-surface={safePathname} data-public-template-id={safeTemplateId}>
