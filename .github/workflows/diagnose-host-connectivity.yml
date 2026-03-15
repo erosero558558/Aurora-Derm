@@ -52,6 +52,11 @@ jobs:
             TURNERO_PILOT_DIAGNOSE_EXPECTED_REASON: not_evaluated
             TURNERO_PILOT_DIAGNOSE_RECOVERY_TARGETS: none
         steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 1
+
             - name: Diagnosticar puertos por origen de host
               shell: bash
               run: |

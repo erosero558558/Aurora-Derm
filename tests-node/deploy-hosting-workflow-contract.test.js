@@ -1110,6 +1110,7 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
     );
 
     for (const expectedStepName of [
+        'Checkout repository',
         'Diagnosticar puertos por origen de host',
         'Consolidar reporte de conectividad',
         'Resolver turneroPilot local para diagnose',
@@ -1129,6 +1130,8 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
         'connectivity-report.json',
         'connectivity-report.txt',
         'connectivity-report.tsv',
+        'uses: actions/checkout@v4',
+        'fetch-depth: 1',
         'GITHUB_TOKEN: ${{ github.token }}',
         "const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';",
         'authorization: `Bearer ${token}`',
