@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pielarmonia-v16-openclaw-sync-20260315';
+const CACHE_NAME = 'pielarmonia-v16-figo-20260226-themefix2';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
