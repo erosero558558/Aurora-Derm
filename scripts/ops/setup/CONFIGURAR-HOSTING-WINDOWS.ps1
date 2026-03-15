@@ -3,6 +3,8 @@ param(
     [string]$WwwDomain = 'www.pielarmonia.com',
     [string]$TunnelId = 'a2067e67-a462-41de-9d43-97cd7df4bda0',
     [string]$OperatorUserProfile = '',
+    [string]$MirrorRepoPath = 'C:\dev\pielarmonia-clean-main',
+    [string]$ExternalEnvPath = 'C:\ProgramData\Pielarmonia\hosting\env.php',
     [switch]$RouteDns,
     [switch]$OverwriteDns,
     [switch]$StartNow
@@ -11,13 +13,18 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
-$startScriptPath = Join-Path $repoRoot 'scripts\ops\setup\ARRANCAR-HOSTING-WINDOWS.ps1'
+$bootstrapSyncScriptPath = Join-Path $repoRoot 'scripts\ops\setup\SINCRONIZAR-HOSTING-WINDOWS.ps1'
+$mirrorRepoPathResolved = [System.IO.Path]::GetFullPath($MirrorRepoPath)
+$mirrorStartScriptPath = Join-Path $mirrorRepoPathResolved 'scripts\ops\setup\ARRANCAR-HOSTING-WINDOWS.ps1'
+$mirrorSyncScriptPath = Join-Path $mirrorRepoPathResolved 'scripts\ops\setup\SINCRONIZAR-HOSTING-WINDOWS.ps1'
 $runtimeRoot = Join-Path $repoRoot 'data\runtime\hosting'
 $startupDir = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup'
 $startupCmdPath = Join-Path $startupDir 'Pielarmonia Hosting Stack.cmd'
 $loginLauncherPath = Join-Path $runtimeRoot 'login-stack.cmd'
 $bootLauncherPath = Join-Path $runtimeRoot 'boot-stack.cmd'
+$mainSyncLauncherPath = Join-Path $runtimeRoot 'main-sync.cmd'
 $bootTaskName = 'Pielarmonia Hosting Stack'
+$mainSyncTaskName = 'Pielarmonia Hosting Main Sync'
 $runKeyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $runKeyName = 'PielarmoniaHostingStack'
 $resolvedOperatorUserProfile = if ([string]::IsNullOrWhiteSpace($OperatorUserProfile)) {
@@ -93,24 +100,84 @@ function Invoke-Schtasks {
     }
 
     $commandLine = 'schtasks.exe ' + ($escapedArguments -join ' ')
-
-    try {
-        $output = & cmd.exe /d /c $commandLine 2>&1
-        $exitCode = $LASTEXITCODE
-        return [PSCustomObject]@{
-            ExitCode = $exitCode
-            Output = @($output) -join [Environment]::NewLine
-        }
-    } finally {
+    $output = & cmd.exe /d /c $commandLine 2>&1
+    $exitCode = $LASTEXITCODE
+    return [PSCustomObject]@{
+        ExitCode = $exitCode
+        Output = @($output) -join [Environment]::NewLine
     }
+}
+
+function Invoke-BootstrapSync {
+    param(
+        [string]$ScriptPath,
+        [string]$MirrorPath,
+        [string]$EnvPath,
+        [string]$Domain,
+        [string]$CurrentTunnelId,
+        [string]$CurrentOperatorUserProfile,
+        [string]$CurrentCaddyExePath,
+        [string]$CurrentCloudflaredExePath,
+        [string]$CurrentPhpCgiExePath
+    )
+
+    $arguments = @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $ScriptPath,
+        '-MirrorRepoPath', $MirrorPath,
+        '-ExternalEnvPath', $EnvPath,
+        '-PublicDomain', $Domain,
+        '-TunnelId', $CurrentTunnelId,
+        '-OperatorUserProfile', $CurrentOperatorUserProfile,
+        '-CaddyExePath', $CurrentCaddyExePath,
+        '-CloudflaredExePath', $CurrentCloudflaredExePath,
+        '-PhpCgiExePath', $CurrentPhpCgiExePath
+    )
+
+    Write-Info "Bootstrapping mirror limpio: $MirrorPath"
+    & powershell.exe @arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw 'No se pudo bootstrapear el mirror limpio de hosting.'
+    }
+}
+
+if (-not (Test-Path -LiteralPath $bootstrapSyncScriptPath)) {
+    throw "No existe el script de sync canonico: $bootstrapSyncScriptPath"
+}
+
+if (-not (Test-Path -LiteralPath $ExternalEnvPath)) {
+    throw "No existe el env externo canonico: $ExternalEnvPath"
 }
 
 $caddyExePath = (Get-Command caddy -ErrorAction Stop).Source
 $cloudflaredExePath = (Get-Command cloudflared -ErrorAction Stop).Source
 $phpCgiExePath = (Get-Command 'php-cgi' -ErrorAction Stop).Source
 
+$mirrorRepoReady = Test-Path -LiteralPath (Join-Path $mirrorRepoPathResolved '.git')
+if (-not $mirrorRepoReady -or $StartNow) {
+    Invoke-BootstrapSync `
+        -ScriptPath $bootstrapSyncScriptPath `
+        -MirrorPath $mirrorRepoPathResolved `
+        -EnvPath $ExternalEnvPath `
+        -Domain $PublicDomain `
+        -CurrentTunnelId $TunnelId `
+        -CurrentOperatorUserProfile $resolvedOperatorUserProfile `
+        -CurrentCaddyExePath $caddyExePath `
+        -CurrentCloudflaredExePath $cloudflaredExePath `
+        -CurrentPhpCgiExePath $phpCgiExePath
+}
+
+if (-not (Test-Path -LiteralPath $mirrorStartScriptPath)) {
+    throw "El mirror limpio no expone ARRANCAR-HOSTING-WINDOWS.ps1: $mirrorStartScriptPath"
+}
+
+if (-not (Test-Path -LiteralPath $mirrorSyncScriptPath)) {
+    throw "El mirror limpio no expone SINCRONIZAR-HOSTING-WINDOWS.ps1: $mirrorSyncScriptPath"
+}
+
 $commonStartArguments = @(
-    $startScriptPath,
+    $mirrorStartScriptPath,
     '-PublicDomain', $PublicDomain,
     '-TunnelId', $TunnelId,
     '-OperatorUserProfile', $resolvedOperatorUserProfile,
@@ -120,16 +187,32 @@ $commonStartArguments = @(
     '-StopLegacy',
     '-Quiet'
 )
+$commonSyncArguments = @(
+    $mirrorSyncScriptPath,
+    '-MirrorRepoPath', $mirrorRepoPathResolved,
+    '-ExternalEnvPath', $ExternalEnvPath,
+    '-PublicDomain', $PublicDomain,
+    '-TunnelId', $TunnelId,
+    '-OperatorUserProfile', $resolvedOperatorUserProfile,
+    '-CaddyExePath', $caddyExePath,
+    '-CloudflaredExePath', $cloudflaredExePath,
+    '-PhpCgiExePath', $phpCgiExePath,
+    '-Quiet'
+)
 
 $loginStartCommand = New-StartCommand -StartArguments $commonStartArguments
 $bootStartCommand = New-StartCommand -StartArguments ($commonStartArguments + @('-SkipBridge'))
+$mainSyncCommand = New-StartCommand -StartArguments $commonSyncArguments
 $loginLauncherCommand = ConvertTo-CommandToken -Value ([System.IO.Path]::GetFullPath($loginLauncherPath))
 $bootLauncherCommand = ConvertTo-CommandToken -Value ([System.IO.Path]::GetFullPath($bootLauncherPath))
+$mainSyncLauncherCommand = ConvertTo-CommandToken -Value ([System.IO.Path]::GetFullPath($mainSyncLauncherPath))
 
 Write-LauncherScript -Path $loginLauncherPath -Command $loginStartCommand
 Write-LauncherScript -Path $bootLauncherPath -Command $bootStartCommand
+Write-LauncherScript -Path $mainSyncLauncherPath -Command $mainSyncCommand
 Write-Info "Launcher login actualizado: $loginLauncherPath"
 Write-Info "Launcher boot actualizado: $bootLauncherPath"
+Write-Info "Launcher main sync actualizado: $mainSyncLauncherPath"
 
 if (-not (Test-Path -LiteralPath $startupDir)) {
     New-Item -ItemType Directory -Path $startupDir -Force | Out-Null
@@ -160,19 +243,40 @@ if (Test-IsElevated) {
         '/TN', $bootTaskName,
         '/TR', $bootLauncherCommand
     )
+    $mainSyncTaskArgs = @(
+        '/Create',
+        '/F',
+        '/SC', 'MINUTE',
+        '/MO', '1',
+        '/RL', 'HIGHEST',
+        '/RU', 'SYSTEM',
+        '/TN', $mainSyncTaskName,
+        '/TR', $mainSyncLauncherCommand
+    )
 
     try {
-        $taskResult = Invoke-Schtasks -Arguments $bootTaskArgs
-        if ($taskResult.ExitCode -eq 0) {
+        $bootTaskResult = Invoke-Schtasks -Arguments $bootTaskArgs
+        if ($bootTaskResult.ExitCode -eq 0) {
             Write-Info "Tarea programada de boot instalada: $bootTaskName"
         } else {
-            Write-Warning ("No se pudo registrar la tarea de boot sin login. {0}" -f $taskResult.Output.Trim())
+            Write-Warning ("No se pudo registrar la tarea de boot sin login. {0}" -f $bootTaskResult.Output.Trim())
         }
     } catch {
         Write-Warning ("No se pudo registrar la tarea de boot sin login. {0}" -f $_.Exception.Message.Trim())
     }
+
+    try {
+        $mainSyncTaskResult = Invoke-Schtasks -Arguments $mainSyncTaskArgs
+        if ($mainSyncTaskResult.ExitCode -eq 0) {
+            Write-Info "Tarea programada de sync instalada: $mainSyncTaskName"
+        } else {
+            Write-Warning ("No se pudo registrar la tarea de sync por minuto. {0}" -f $mainSyncTaskResult.Output.Trim())
+        }
+    } catch {
+        Write-Warning ("No se pudo registrar la tarea de sync por minuto. {0}" -f $_.Exception.Message.Trim())
+    }
 } else {
-    Write-Warning 'La sesion actual no esta elevada. El stack queda resiliente al iniciar sesion via Startup + HKCU\\Run, pero el arranque pre-login requiere reejecutar este script como Administrador.'
+    Write-Warning 'La sesion actual no esta elevada. El stack queda resiliente al iniciar sesion via Startup + HKCU\\Run, pero el arranque pre-login y el sync por minuto requieren reejecutar este script como Administrador.'
 }
 
 if ($RouteDns) {
@@ -192,18 +296,4 @@ if ($RouteDns) {
         throw "No se pudo enrutar DNS para $WwwDomain"
     }
     Write-Info "DNS del dominio www apuntado al tunnel: $WwwDomain"
-}
-
-if ($StartNow) {
-    & $startScriptPath `
-        -PublicDomain $PublicDomain `
-        -TunnelId $TunnelId `
-        -OperatorUserProfile $resolvedOperatorUserProfile `
-        -CaddyExePath $caddyExePath `
-        -CloudflaredExePath $cloudflaredExePath `
-        -PhpCgiExePath $phpCgiExePath `
-        -StopLegacy
-    if ($LASTEXITCODE -ne 0) {
-        throw 'El stack de hosting no pudo iniciarse durante la configuracion.'
-    }
 }

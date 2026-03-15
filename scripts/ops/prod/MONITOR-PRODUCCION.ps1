@@ -400,16 +400,16 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
         }
     }
 
-    $diagnosticReportPath = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-auth-rollout-monitor-" + [Guid]::NewGuid().ToString('N') + '.json')
+    $reportPath = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-auth-rollout-monitor-" + [Guid]::NewGuid().ToString('N') + '.json')
 
     try {
-        & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $diagnosticReportPath *> $null
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $reportPath *> $null
 
-        if (-not (Test-Path $diagnosticReportPath)) {
+        if (-not (Test-Path $reportPath)) {
             throw 'No se genero reporte del diagnostico OpenClaw.'
         }
 
-        $raw = Get-Content -Path $diagnosticReportPath -Raw
+        $raw = Get-Content -Path $reportPath -Raw
         $payload = ($raw -replace "^\uFEFF", '') | ConvertFrom-Json -Depth 12
 
         return [PSCustomObject]@{
@@ -434,7 +434,7 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
             error = $_.Exception.Message
         }
     } finally {
-        Remove-Item -Path $diagnosticReportPath -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $reportPath -Force -ErrorAction SilentlyContinue
     }
 }
 

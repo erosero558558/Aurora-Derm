@@ -55,7 +55,7 @@ Adopcion operativa de `public_main_sync`:
 - `verify:prod:turnero:operator:pilot`, `smoke:prod:turnero:operator:pilot` y `gate:prod:turnero:operator:pilot` quedan para el release ampliado del lane nativo/operator pilot.
 - `check-public-routing-smoke.js` trata `/operador-turnos.html`, `/kiosco-turnos.html` y `/sala-turnos.html` como rutas publicas obligatorias; si una cae en redirect o 404, staging/prod no deben pasar.
 - `CHECKLIST-HOST-PUBLIC-SYNC.ps1` imprime un checklist host-side reutilizable para comparar `/root/sync-pielarmonia.sh` contra el wrapper canonico, capturar `public-sync-status.json`, revisar `health-diagnostics` y validar `storeEncryptionCompliant`.
-- El perfil productivo canonico de auth es `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt` + `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker` + `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`.
+- El perfil productivo canonico de auth es `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt` + `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker` + `PIELARMONIA_ADMIN_EMAIL=<correo_operativo>` + `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=<correo_operativo>` + `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=false`.
 - En ese perfil, `MONITOR-PRODUCCION.ps1` y `VERIFICAR-DESPLIEGUE.ps1` activan `RequireOperatorAuth` automaticamente cuando la politica efectiva del rollout admin exige OpenClaw.
 - `post-deploy-fast.yml` y `post-deploy-gate.yml` publican ademas un reporte de smoke live del broker web; el corte productivo espera `callback_ok=true`, `shared_session_ok=true` y `logout_ok=true`.
 

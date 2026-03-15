@@ -324,6 +324,36 @@ function operator_auth_broker_scope(): string
         : 'openid email profile';
 }
 
+function operator_auth_broker_jwks_url(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_JWKS_URL');
+    return is_string($raw) ? trim($raw) : '';
+}
+
+function operator_auth_broker_expected_issuer(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER');
+    return is_string($raw) ? trim($raw) : '';
+}
+
+function operator_auth_broker_expected_audience(): string
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE');
+    return is_string($raw) ? trim($raw) : '';
+}
+
+function operator_auth_broker_require_email_verified(): bool
+{
+    return operator_auth_env_flag('OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED', true);
+}
+
+function operator_auth_broker_clock_skew_seconds(): int
+{
+    $raw = getenv('OPENCLAW_AUTH_BROKER_CLOCK_SKEW_SECONDS');
+    $value = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : 120;
+    return max(0, min(600, $value));
+}
+
 function operator_auth_bridge_token(): string
 {
     $raw = getenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN');
@@ -412,6 +442,14 @@ function operator_auth_configuration_snapshot(): array
     $userinfoUrlConfigured = operator_auth_broker_userinfo_url() !== '';
     $clientIdConfigured = operator_auth_broker_client_id() !== '';
     $clientSecretConfigured = operator_auth_broker_client_secret() !== '';
+    $jwksUrlConfigured = operator_auth_broker_jwks_url() !== '';
+    $issuerPinned = operator_auth_broker_expected_issuer() !== '';
+    $audiencePinned = operator_auth_broker_expected_audience() !== '';
+    $emailVerifiedRequired = operator_auth_broker_require_email_verified();
+    $brokerTrustConfigured = $jwksUrlConfigured
+        && $issuerPinned
+        && $audiencePinned
+        && $emailVerifiedRequired;
 
     if (operator_auth_uses_web_broker()) {
         if (!$authorizeUrlConfigured) {
@@ -425,6 +463,18 @@ function operator_auth_configuration_snapshot(): array
         }
         if (!$clientIdConfigured) {
             $missing[] = 'broker_client_id';
+        }
+        if (!$jwksUrlConfigured) {
+            $missing[] = 'broker_jwks_url';
+        }
+        if (!$issuerPinned) {
+            $missing[] = 'broker_expected_issuer';
+        }
+        if (!$audiencePinned) {
+            $missing[] = 'broker_expected_audience';
+        }
+        if (!$emailVerifiedRequired) {
+            $missing[] = 'broker_require_email_verified';
         }
     } else {
         if (!$bridgeTokenConfigured) {
@@ -453,6 +503,11 @@ function operator_auth_configuration_snapshot(): array
         'brokerUserinfoUrlConfigured' => $userinfoUrlConfigured,
         'brokerClientIdConfigured' => $clientIdConfigured,
         'brokerClientSecretConfigured' => $clientSecretConfigured,
+        'brokerJwksConfigured' => $jwksUrlConfigured,
+        'brokerIssuerPinned' => $issuerPinned,
+        'brokerAudiencePinned' => $audiencePinned,
+        'brokerEmailVerifiedRequired' => $emailVerifiedRequired,
+        'brokerTrustConfigured' => $brokerTrustConfigured,
         'allowedEmails' => $allowedEmails,
         'allowedEmailCount' => count($allowedEmails),
         'helperBaseUrl' => operator_auth_helper_base_url(),
@@ -730,6 +785,7 @@ function operator_auth_sanitize_return_to(?string $raw, string $fallback = '/adm
 function operator_auth_config_error_payload(): array
 {
     $snapshot = operator_auth_configuration_snapshot();
+    $publicSnapshot = operator_auth_public_configuration_snapshot($snapshot);
     $missingLabels = [
         'mode' => 'PIELARMONIA_OPERATOR_AUTH_MODE',
         'bridge_token' => 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN',
@@ -739,6 +795,10 @@ function operator_auth_config_error_payload(): array
         'broker_token_url' => 'OPENCLAW_AUTH_BROKER_TOKEN_URL',
         'broker_userinfo_url' => 'OPENCLAW_AUTH_BROKER_USERINFO_URL',
         'broker_client_id' => 'OPENCLAW_AUTH_BROKER_CLIENT_ID',
+        'broker_jwks_url' => 'OPENCLAW_AUTH_BROKER_JWKS_URL',
+        'broker_expected_issuer' => 'OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER',
+        'broker_expected_audience' => 'OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE',
+        'broker_require_email_verified' => 'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED=true',
     ];
     $missingItems = array_map(
         static fn (string $item): string => $missingLabels[$item] ?? $item,
@@ -756,13 +816,21 @@ function operator_auth_config_error_payload(): array
         'transport' => operator_auth_transport(),
         'configured' => false,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'csrfToken' => generate_csrf_token(),
         'capabilities' => [
             'adminAgent' => false,
         ],
         'fallbacks' => internal_console_auth_fallbacks_payload(),
-        'configuration' => $snapshot,
+        'configuration' => $publicSnapshot,
         'error' => $error,
     ];
+}
+
+function operator_auth_public_configuration_snapshot(?array $snapshot = null): array
+{
+    $snapshot = is_array($snapshot) ? $snapshot : operator_auth_configuration_snapshot();
+    unset($snapshot['allowedEmails']);
+    return $snapshot;
 }
 
 function operator_auth_challenge_public_payload(array $challenge): array
@@ -813,6 +881,7 @@ function operator_auth_error_payload(array $challenge, string $status, string $e
         'transport' => operator_auth_transport(),
         'configured' => true,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'csrfToken' => generate_csrf_token(),
         'capabilities' => [
             'adminAgent' => false,
         ],
@@ -832,6 +901,7 @@ function operator_auth_flash_error_payload(string $status, string $error, array 
         'transport' => operator_auth_transport(),
         'configured' => true,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'csrfToken' => generate_csrf_token(),
         'capabilities' => [
             'adminAgent' => false,
         ],
@@ -1008,6 +1078,7 @@ function operator_auth_build_broker_authorize_url(array $attempt): string
         'redirect_uri' => operator_auth_callback_url(),
         'scope' => operator_auth_broker_scope(),
         'state' => (string) ($attempt['state'] ?? ''),
+        'nonce' => (string) ($attempt['nonce'] ?? ''),
         'code_challenge' => operator_auth_pkce_code_challenge((string) ($attempt['codeVerifier'] ?? '')),
         'code_challenge_method' => 'S256',
     ], '', '&', PHP_QUERY_RFC3986);
@@ -1046,6 +1117,7 @@ function operator_auth_create_web_broker_attempt(array $input = []): array
     $attempt = [
         'transport' => OPERATOR_AUTH_TRANSPORT_WEB_BROKER,
         'state' => operator_auth_random_hex(24, 'operator-auth-broker-state'),
+        'nonce' => operator_auth_random_base64url(24, 'operator-auth-broker-nonce'),
         'codeVerifier' => operator_auth_random_base64url(48, 'operator-auth-broker-pkce'),
         'returnTo' => operator_auth_sanitize_return_to(
             isset($input['returnTo']) ? (string) $input['returnTo'] : '',
@@ -1076,6 +1148,7 @@ function operator_auth_create_web_broker_attempt(array $input = []): array
         'transport' => OPERATOR_AUTH_TRANSPORT_WEB_BROKER,
         'configured' => true,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'csrfToken' => generate_csrf_token(),
         'capabilities' => [
             'adminAgent' => false,
         ],
@@ -1155,6 +1228,7 @@ function operator_auth_create_challenge(): array
         'transport' => OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER,
         'configured' => true,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'csrfToken' => generate_csrf_token(),
         'capabilities' => [
             'adminAgent' => false,
         ],
@@ -1488,6 +1562,445 @@ function operator_auth_broker_identity_from_payload(array $payload): array
     ];
 }
 
+function operator_auth_base64url_decode(string $value): ?string
+{
+    $normalized = strtr(trim($value), '-_', '+/');
+    if ($normalized === '') {
+        return null;
+    }
+
+    $remainder = strlen($normalized) % 4;
+    if ($remainder > 0) {
+        $normalized .= str_repeat('=', 4 - $remainder);
+    }
+
+    $decoded = base64_decode($normalized, true);
+    return is_string($decoded) ? $decoded : null;
+}
+
+function operator_auth_base64url_encode(string $value): string
+{
+    return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+}
+
+function operator_auth_asn1_encode_length(int $length): string
+{
+    if ($length < 0x80) {
+        return chr($length);
+    }
+
+    $encoded = '';
+    while ($length > 0) {
+        $encoded = chr($length & 0xff) . $encoded;
+        $length >>= 8;
+    }
+
+    return chr(0x80 | strlen($encoded)) . $encoded;
+}
+
+function operator_auth_asn1_wrap(string $tag, string $value): string
+{
+    return $tag . operator_auth_asn1_encode_length(strlen($value)) . $value;
+}
+
+function operator_auth_asn1_integer(string $value): string
+{
+    $encoded = $value;
+    if ($encoded === '') {
+        $encoded = "\x00";
+    }
+    if ((ord($encoded[0]) & 0x80) !== 0) {
+        $encoded = "\x00" . $encoded;
+    }
+
+    return operator_auth_asn1_wrap("\x02", $encoded);
+}
+
+function operator_auth_asn1_sequence(string $value): string
+{
+    return operator_auth_asn1_wrap("\x30", $value);
+}
+
+function operator_auth_asn1_bit_string(string $value): string
+{
+    return operator_auth_asn1_wrap("\x03", "\x00" . $value);
+}
+
+function operator_auth_asn1_null(): string
+{
+    return "\x05\x00";
+}
+
+function operator_auth_asn1_oid(string $oid): string
+{
+    $parts = array_map('intval', explode('.', $oid));
+    if (count($parts) < 2) {
+        return '';
+    }
+
+    $encoded = chr((40 * $parts[0]) + $parts[1]);
+    for ($index = 2; $index < count($parts); $index += 1) {
+        $value = $parts[$index];
+        $segment = chr($value & 0x7f);
+        while ($value > 0x7f) {
+            $value >>= 7;
+            $segment = chr(($value & 0x7f) | 0x80) . $segment;
+        }
+        $encoded .= $segment;
+    }
+
+    return operator_auth_asn1_wrap("\x06", $encoded);
+}
+
+function operator_auth_jwk_to_pem(array $jwk): ?string
+{
+    if (strtoupper(trim((string) ($jwk['kty'] ?? ''))) !== 'RSA') {
+        return null;
+    }
+
+    $modulus = operator_auth_base64url_decode((string) ($jwk['n'] ?? ''));
+    $exponent = operator_auth_base64url_decode((string) ($jwk['e'] ?? ''));
+    if (!is_string($modulus) || $modulus === '' || !is_string($exponent) || $exponent === '') {
+        return null;
+    }
+
+    $rsaPublicKey = operator_auth_asn1_sequence(
+        operator_auth_asn1_integer($modulus)
+        . operator_auth_asn1_integer($exponent)
+    );
+    $subjectPublicKeyInfo = operator_auth_asn1_sequence(
+        operator_auth_asn1_sequence(
+            operator_auth_asn1_oid('1.2.840.113549.1.1.1')
+            . operator_auth_asn1_null()
+        )
+        . operator_auth_asn1_bit_string($rsaPublicKey)
+    );
+
+    return "-----BEGIN PUBLIC KEY-----\n"
+        . chunk_split(base64_encode($subjectPublicKeyInfo), 64, "\n")
+        . "-----END PUBLIC KEY-----\n";
+}
+
+function operator_auth_jwt_segments(string $jwt): ?array
+{
+    $parts = explode('.', trim($jwt));
+    if (count($parts) !== 3) {
+        return null;
+    }
+
+    [$encodedHeader, $encodedPayload, $encodedSignature] = $parts;
+    $headerJson = operator_auth_base64url_decode($encodedHeader);
+    $payloadJson = operator_auth_base64url_decode($encodedPayload);
+    $signature = operator_auth_base64url_decode($encodedSignature);
+    $header = json_decode(is_string($headerJson) ? $headerJson : '', true);
+    $payload = json_decode(is_string($payloadJson) ? $payloadJson : '', true);
+    if (!is_array($header) || !is_array($payload) || !is_string($signature)) {
+        return null;
+    }
+
+    return [
+        'encodedHeader' => $encodedHeader,
+        'encodedPayload' => $encodedPayload,
+        'encodedSignature' => $encodedSignature,
+        'header' => $header,
+        'payload' => $payload,
+        'signature' => $signature,
+        'signingInput' => $encodedHeader . '.' . $encodedPayload,
+    ];
+}
+
+function operator_auth_jwt_openssl_algorithm(string $alg)
+{
+    return match (strtoupper(trim($alg))) {
+        'RS256' => OPENSSL_ALGO_SHA256,
+        'RS384' => OPENSSL_ALGO_SHA384,
+        'RS512' => OPENSSL_ALGO_SHA512,
+        default => false,
+    };
+}
+
+function operator_auth_jwks_keys(array $payload): array
+{
+    $keys = $payload['keys'] ?? null;
+    return is_array($keys) ? array_values(array_filter($keys, 'is_array')) : [];
+}
+
+function operator_auth_find_matching_jwk(array $keys, array $header): ?array
+{
+    $kid = trim((string) ($header['kid'] ?? ''));
+    $alg = strtoupper(trim((string) ($header['alg'] ?? '')));
+
+    foreach ($keys as $key) {
+        if (strtoupper(trim((string) ($key['kty'] ?? ''))) !== 'RSA') {
+            continue;
+        }
+        if ($kid !== '' && trim((string) ($key['kid'] ?? '')) !== $kid) {
+            continue;
+        }
+        $keyAlg = strtoupper(trim((string) ($key['alg'] ?? '')));
+        if ($keyAlg !== '' && $alg !== '' && $keyAlg !== $alg) {
+            continue;
+        }
+
+        return $key;
+    }
+
+    if ($kid === '') {
+        $rsaKeys = array_values(array_filter(
+            $keys,
+            static fn (array $key): bool => strtoupper(trim((string) ($key['kty'] ?? ''))) === 'RSA'
+        ));
+        if (count($rsaKeys) === 1) {
+            return $rsaKeys[0];
+        }
+    }
+
+    return null;
+}
+
+function operator_auth_claim_is_verified(array $payload): ?bool
+{
+    if (!array_key_exists('email_verified', $payload)) {
+        return null;
+    }
+
+    $value = $payload['email_verified'];
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    $normalized = strtolower(trim((string) $value));
+    if ($normalized === '') {
+        return null;
+    }
+
+    return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+}
+
+function operator_auth_claim_audience_matches($audience, string $expected): bool
+{
+    if ($expected === '') {
+        return false;
+    }
+
+    if (is_string($audience)) {
+        return hash_equals($expected, trim($audience));
+    }
+
+    if (!is_array($audience)) {
+        return false;
+    }
+
+    foreach ($audience as $item) {
+        if (is_string($item) && hash_equals($expected, trim($item))) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function operator_auth_fetch_broker_jwks(): array
+{
+    $response = operator_auth_broker_request('GET', operator_auth_broker_jwks_url());
+    if (($response['status'] ?? 0) >= 500 || (int) ($response['status'] ?? 0) === 0 || trim((string) ($response['error'] ?? '')) !== '') {
+        return [
+            'ok' => false,
+            'status' => 'broker_unavailable',
+            'error' => 'OpenClaw no pudo publicar sus llaves JWKS en este momento.',
+        ];
+    }
+
+    if (($response['ok'] ?? false) !== true || !is_array($response['json'] ?? null)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'OpenClaw devolvio un documento JWKS invalido para validar la identidad.',
+        ];
+    }
+
+    $keys = operator_auth_jwks_keys($response['json']);
+    if ($keys === []) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'OpenClaw no expuso ninguna llave valida en el JWKS configurado.',
+        ];
+    }
+
+    return [
+        'ok' => true,
+        'keys' => $keys,
+    ];
+}
+
+function operator_auth_validate_broker_identity(array $tokenPayload, array $userinfoPayload, array $pending): array
+{
+    $idToken = trim((string) ($tokenPayload['id_token'] ?? ''));
+    if ($idToken === '') {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'OpenClaw no devolvio un id_token firmado para este login.',
+        ];
+    }
+
+    $segments = operator_auth_jwt_segments($idToken);
+    if (!is_array($segments)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'El id_token devuelto por OpenClaw no tiene un formato JWT valido.',
+        ];
+    }
+
+    $alg = strtoupper(trim((string) ($segments['header']['alg'] ?? '')));
+    $opensslAlgorithm = operator_auth_jwt_openssl_algorithm($alg);
+    if ($alg === '' || $opensslAlgorithm === false) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'OpenClaw devolvio un algoritmo de firma no soportado para el id_token.',
+        ];
+    }
+
+    $jwks = operator_auth_fetch_broker_jwks();
+    if (($jwks['ok'] ?? false) !== true) {
+        return $jwks;
+    }
+
+    $jwk = operator_auth_find_matching_jwk((array) ($jwks['keys'] ?? []), (array) ($segments['header'] ?? []));
+    if (!is_array($jwk)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'No se encontro una llave JWKS compatible para validar el id_token de OpenClaw.',
+        ];
+    }
+
+    $pem = operator_auth_jwk_to_pem($jwk);
+    if (!is_string($pem) || $pem === '' || !function_exists('openssl_verify')) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'El entorno no pudo materializar una llave publica valida para verificar el id_token.',
+        ];
+    }
+
+    $verified = openssl_verify(
+        (string) $segments['signingInput'],
+        (string) $segments['signature'],
+        $pem,
+        $opensslAlgorithm
+    );
+    if ($verified !== 1) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'La firma del id_token de OpenClaw no pudo validarse.',
+        ];
+    }
+
+    $claims = is_array($segments['payload'] ?? null) ? $segments['payload'] : [];
+    $issuer = trim((string) ($claims['iss'] ?? ''));
+    $expectedIssuer = operator_auth_broker_expected_issuer();
+    if ($issuer === '' || !hash_equals($expectedIssuer, $issuer)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'El issuer del id_token no coincide con el broker OpenClaw configurado.',
+        ];
+    }
+
+    if (!operator_auth_claim_audience_matches($claims['aud'] ?? null, operator_auth_broker_expected_audience())) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'La audiencia del id_token no coincide con el cliente OpenClaw autorizado.',
+        ];
+    }
+
+    $expectedNonce = trim((string) ($pending['nonce'] ?? ''));
+    $nonce = trim((string) ($claims['nonce'] ?? ''));
+    if ($expectedNonce === '' || $nonce === '' || !hash_equals($expectedNonce, $nonce)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'El nonce del id_token no coincide con el intento web generado por este panel.',
+        ];
+    }
+
+    $clockSkew = operator_auth_broker_clock_skew_seconds();
+    $now = time();
+    $iat = is_numeric($claims['iat'] ?? null) ? (int) $claims['iat'] : 0;
+    $exp = is_numeric($claims['exp'] ?? null) ? (int) $claims['exp'] : 0;
+    if ($iat <= 0 || $iat > ($now + $clockSkew)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'La fecha de emision del id_token no es valida para este login.',
+        ];
+    }
+    if ($exp <= 0 || $exp < ($now - $clockSkew)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'El id_token de OpenClaw ya expiro para este login.',
+        ];
+    }
+
+    $idTokenSub = trim((string) ($claims['sub'] ?? ''));
+    $userinfoSub = trim((string) ($userinfoPayload['sub'] ?? ''));
+    if ($idTokenSub === '' || $userinfoSub === '' || !hash_equals($idTokenSub, $userinfoSub)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'La identidad devuelta por userinfo no coincide con el subject firmado en el id_token.',
+        ];
+    }
+
+    $idTokenIdentity = operator_auth_broker_identity_from_payload($claims);
+    $userinfoIdentity = operator_auth_broker_identity_from_payload($userinfoPayload);
+    $signedEmail = trim((string) ($idTokenIdentity['email'] ?? ''));
+    $resolvedEmail = trim((string) ($userinfoIdentity['email'] ?? ''));
+    if ($signedEmail === '' && $resolvedEmail === '') {
+        return [
+            'ok' => false,
+            'status' => 'identity_missing',
+            'error' => 'OpenClaw no devolvio un email utilizable en el id_token ni en userinfo.',
+        ];
+    }
+    if ($signedEmail !== '' && $resolvedEmail !== '' && !hash_equals($signedEmail, $resolvedEmail)) {
+        return [
+            'ok' => false,
+            'status' => 'broker_claims_invalid',
+            'error' => 'El email de userinfo no coincide con el email firmado dentro del id_token.',
+        ];
+    }
+
+    $email = $signedEmail !== '' ? $signedEmail : $resolvedEmail;
+    $verifiedClaims = operator_auth_claim_is_verified($claims);
+    $verifiedUserinfo = operator_auth_claim_is_verified($userinfoPayload);
+    $emailVerified = $verifiedClaims ?? $verifiedUserinfo ?? false;
+    if (operator_auth_broker_require_email_verified() && $emailVerified !== true) {
+        return [
+            'ok' => false,
+            'status' => 'identity_unverified',
+            'error' => 'OpenClaw autentico la cuenta, pero no confirmo un email verificado para este panel.',
+        ];
+    }
+
+    return [
+        'ok' => true,
+        'identity' => [
+            'email' => $email,
+            'profileId' => $idTokenSub,
+            'accountId' => trim((string) ($userinfoIdentity['accountId'] ?? $idTokenIdentity['accountId'] ?? '')),
+            'emailVerified' => $emailVerified === true,
+        ],
+    ];
+}
+
 function operator_auth_callback_result(string $returnTo, bool $authenticated, string $status, string $error = '', array $extra = []): array
 {
     return array_merge([
@@ -1610,12 +2123,14 @@ function operator_auth_handle_broker_callback(array $query = []): array
     }
 
     $identity = operator_auth_broker_identity_from_payload($userinfoPayload);
-    if (trim((string) ($identity['email'] ?? '')) === '') {
+    $validatedIdentity = operator_auth_validate_broker_identity($tokenPayload, $userinfoPayload, $pending);
+    if (($validatedIdentity['ok'] ?? false) !== true) {
         return $finishWithFlash(
-            'identity_missing',
-            'OpenClaw autentico la cuenta, pero no expuso un email resoluble para este panel.'
+            (string) ($validatedIdentity['status'] ?? 'broker_claims_invalid'),
+            (string) ($validatedIdentity['error'] ?? 'No se pudo validar la identidad firmada devuelta por OpenClaw.')
         );
     }
+    $identity = is_array($validatedIdentity['identity'] ?? null) ? $validatedIdentity['identity'] : $identity;
 
     if (!operator_auth_is_email_allowed((string) $identity['email'])) {
         return $finishWithFlash(
@@ -1652,6 +2167,7 @@ function operator_auth_anonymous_payload(array $overrides = []): array
         'transport' => operator_auth_transport(),
         'configured' => true,
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'csrfToken' => generate_csrf_token(),
         'capabilities' => [
             'adminAgent' => false,
         ],
@@ -1772,6 +2288,7 @@ function operator_auth_logout_payload(): array
 
     operator_auth_clear_session_state();
     destroy_secure_session();
+    start_secure_session();
 
     if (function_exists('audit_log_event')) {
         audit_log_event('operator_auth.logout', [
@@ -1787,6 +2304,7 @@ function operator_auth_logout_payload(): array
         'transport' => operator_auth_transport(),
         'configured' => operator_auth_is_configured(),
         'recommendedMode' => OPERATOR_AUTH_SOURCE,
+        'csrfToken' => generate_csrf_token(),
         'capabilities' => [
             'adminAgent' => false,
         ],

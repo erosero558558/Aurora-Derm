@@ -312,8 +312,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
               )
             : '';
     const csrfToken = String(
-        payload?.csrfToken ||
-            (authenticated ? '' : currentAuth.csrfToken || '')
+        payload?.csrfToken || (authenticated ? '' : currentAuth.csrfToken || '')
     );
     const status = String(
         payload?.status || (authenticated ? 'autenticado' : 'anonymous')

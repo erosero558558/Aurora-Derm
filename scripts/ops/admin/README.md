@@ -34,7 +34,9 @@ Perfil productivo canonico:
 
 - `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt`
 - `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker`
-- `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`
+- `PIELARMONIA_ADMIN_EMAIL=<correo_operativo>`
+- `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=<correo_operativo>`
+- `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=false`
 - `OPENCLAW_AUTH_BROKER_AUTHORIZE_URL`
 - `OPENCLAW_AUTH_BROKER_TOKEN_URL`
 - `OPENCLAW_AUTH_BROKER_USERINFO_URL`
@@ -42,7 +44,8 @@ Perfil productivo canonico:
 - opcional: `OPENCLAW_AUTH_BROKER_CLIENT_SECRET`
 
 En ese perfil, admin y turnero usan redirect same-tab al broker remoto, sin
-helper local, sin codigo manual y sin allowlist obligatoria.
+helper local, sin codigo manual y con una allowlist explicita para la cuenta
+operativa autorizada.
 
 `auth:operator:bridge` queda solo como alias de compatibilidad y delega al
 launcher canonico `openclaw:auth:start`.
@@ -56,7 +59,12 @@ criterio de cierre del login OpenClaw.
 calcula `diagnosis` + `nextAction` y deja un reporte en
 `verification/last-admin-openclaw-auth-diagnostic.json`.
 En `web_broker`, el diagnostico sano debe resolver `openclaw_ready` sin exigir
-helper local ni allowlist cuando `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`.
+helper local; si `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=false`,
+la allowlist debe quedar configurada para la cuenta autorizada.
+
+Si quieres un perfil mas amplio a proposito, puedes volver a
+`PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`, pero deja de ser
+el perfil recomendado para este corte.
 
 `smoke:admin:openclaw-auth:local` ejecuta el smoke no interactivo
 `start -> helper -> status -> logout` contra `admin-auth.php` usando el helper

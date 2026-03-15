@@ -104,6 +104,25 @@ function loadOpenClawOperatorAuthConfig(overrides = {}) {
             overrides.brokerClientSecret,
             env('OPENCLAW_AUTH_BROKER_CLIENT_SECRET')
         ),
+        brokerJwksUrl: trimTrailingSlash(
+            firstNonEmpty(
+                overrides.brokerJwksUrl,
+                env('OPENCLAW_AUTH_BROKER_JWKS_URL')
+            )
+        ),
+        brokerExpectedIssuer: firstNonEmpty(
+            overrides.brokerExpectedIssuer,
+            env('OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER')
+        ),
+        brokerExpectedAudience: firstNonEmpty(
+            overrides.brokerExpectedAudience,
+            env('OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE')
+        ),
+        brokerRequireEmailVerified:
+            firstNonEmpty(
+                overrides.brokerRequireEmailVerified,
+                env('OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED', 'true')
+            ).toLowerCase() !== 'false',
         allowAnyAuthenticatedEmail:
             firstNonEmpty(
                 overrides.allowAnyAuthenticatedEmail,

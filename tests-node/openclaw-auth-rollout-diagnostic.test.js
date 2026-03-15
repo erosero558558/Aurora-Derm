@@ -101,6 +101,7 @@ function operatorAuthConfiguredPayload(overrides = {}) {
         ok: true,
         authenticated: false,
         mode: 'openclaw_chatgpt',
+        transport: 'web_broker',
         status: 'anonymous',
         configured: true,
         configuration: {
@@ -108,6 +109,15 @@ function operatorAuthConfiguredPayload(overrides = {}) {
             bridgeTokenConfigured: true,
             bridgeSecretConfigured: true,
             allowlistConfigured: true,
+            brokerAuthorizeUrlConfigured: true,
+            brokerTokenUrlConfigured: true,
+            brokerUserinfoUrlConfigured: true,
+            brokerClientIdConfigured: true,
+            brokerTrustConfigured: true,
+            brokerIssuerPinned: true,
+            brokerAudiencePinned: true,
+            brokerJwksConfigured: true,
+            brokerEmailVerifiedRequired: true,
             missing: [],
         },
         ...overrides,
@@ -272,6 +282,96 @@ test('diagnostico queda en verde cuando operator-auth-status ya publica contrato
                 assert.equal(report.resolved.source, 'operator-auth-status');
                 assert.equal(report.resolved.mode, 'openclaw_chatgpt');
                 assert.equal(report.resolved.configured, true);
+            }
+        );
+    } finally {
+        rmSync(tempDir, {
+            recursive: true,
+            force: true,
+        });
+    }
+});
+
+test('diagnostico no marca openclaw_ready cuando web_broker sigue sin trust OIDC completo', async () => {
+    const tempDir = mkdtempSync(
+        join(tmpdir(), 'openclaw-auth-diagnostic-trust-missing-')
+    );
+    const reportPath = join(tempDir, 'report.json');
+
+    try {
+        await withMockServer(
+            (req, res) => {
+                const url = new URL(req.url, 'http://127.0.0.1');
+
+                if (
+                    url.pathname === '/api.php' &&
+                    url.searchParams.get('resource') === 'operator-auth-status'
+                ) {
+                    sendJson(
+                        res,
+                        200,
+                        operatorAuthConfiguredPayload({
+                            configuration: {
+                                helperBaseUrl: 'http://127.0.0.1:4173',
+                                bridgeTokenConfigured: true,
+                                bridgeSecretConfigured: true,
+                                allowlistConfigured: true,
+                                brokerAuthorizeUrlConfigured: true,
+                                brokerTokenUrlConfigured: true,
+                                brokerUserinfoUrlConfigured: true,
+                                brokerClientIdConfigured: true,
+                                brokerTrustConfigured: false,
+                                brokerIssuerPinned: false,
+                                brokerAudiencePinned: false,
+                                brokerJwksConfigured: false,
+                                brokerEmailVerifiedRequired: false,
+                                missing: [],
+                            },
+                        })
+                    );
+                    return;
+                }
+
+                if (
+                    url.pathname === '/admin-auth.php' &&
+                    url.searchParams.get('action') === 'status'
+                ) {
+                    sendJson(
+                        res,
+                        200,
+                        operatorAuthConfiguredPayload({
+                            configuration: {
+                                helperBaseUrl: 'http://127.0.0.1:4173',
+                                bridgeTokenConfigured: true,
+                                bridgeSecretConfigured: true,
+                                allowlistConfigured: true,
+                                brokerAuthorizeUrlConfigured: true,
+                                brokerTokenUrlConfigured: true,
+                                brokerUserinfoUrlConfigured: true,
+                                brokerClientIdConfigured: true,
+                                brokerTrustConfigured: false,
+                                brokerIssuerPinned: false,
+                                brokerAudiencePinned: false,
+                                brokerJwksConfigured: false,
+                                brokerEmailVerifiedRequired: false,
+                                missing: [],
+                            },
+                        })
+                    );
+                    return;
+                }
+
+                res.writeHead(404);
+                res.end();
+            },
+            async (baseUrl) => {
+                const result = await runDiagnostic(baseUrl, reportPath);
+                const report = readJson(reportPath);
+
+                assert.equal(result.status, 1, result.stderr || result.stdout);
+                assert.equal(report.ok, false);
+                assert.equal(report.diagnosis, 'openclaw_not_configured');
+                assert.match(report.next_action, /trust OIDC/i);
             }
         );
     } finally {
@@ -448,6 +548,11 @@ test('diagnostico acepta web_broker listo sin exigir helper local', async () => 
                                 brokerTokenUrlConfigured: true,
                                 brokerUserinfoUrlConfigured: true,
                                 brokerClientIdConfigured: true,
+                                brokerTrustConfigured: true,
+                                brokerIssuerPinned: true,
+                                brokerAudiencePinned: true,
+                                brokerJwksConfigured: true,
+                                brokerEmailVerifiedRequired: true,
                                 missing: [],
                             },
                         })

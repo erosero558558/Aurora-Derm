@@ -7,6 +7,7 @@ class OperatorAuthController
     public static function start(array $context = []): void
     {
         start_secure_session();
+        require_csrf();
 
         if (operator_auth_is_authenticated()) {
             json_response(operator_auth_authenticated_payload(operator_auth_current_identity(false) ?: []));
@@ -43,6 +44,7 @@ class OperatorAuthController
     public static function logout(array $context = []): void
     {
         start_secure_session();
+        require_csrf();
         json_response(operator_auth_logout_payload());
     }
 

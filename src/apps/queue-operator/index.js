@@ -744,6 +744,36 @@ function resolveOperatorAuthCopy(auth) {
                 showRetry: true,
                 showLinkHint: false,
             };
+        case 'identity_unverified':
+            return {
+                tone: 'danger',
+                title: 'Email no verificado',
+                message:
+                    auth?.error ||
+                    'OpenClaw autentico la cuenta, pero no confirmo un email verificado para este turnero.',
+                summary:
+                    'Usa una cuenta con email verificado o corrige la configuracion del broker antes de reintentar.',
+                primaryLabel: 'Reintentar',
+                helperMeta:
+                    'El siguiente intento repetira la validacion fuerte del broker web.',
+                showRetry: true,
+                showLinkHint: false,
+            };
+        case 'broker_claims_invalid':
+            return {
+                tone: 'danger',
+                title: 'Identidad no confiable',
+                message:
+                    auth?.error ||
+                    'No se pudieron validar los claims firmados que OpenClaw devolvio para este acceso.',
+                summary:
+                    'Inicia un intento nuevo o revisa la configuracion OIDC del broker si el error persiste.',
+                primaryLabel: 'Reintentar',
+                helperMeta:
+                    'El siguiente intento pedira otra vez el id_token firmado y su cruce con userinfo.',
+                showRetry: true,
+                showLinkHint: false,
+            };
         case 'operator_auth_not_configured':
             return {
                 tone: 'danger',
@@ -845,11 +875,7 @@ function syncOperatorLoginSurface(auth = getState().auth) {
             transport !== 'local_helper' ||
                 (helperUrl === '' && !copy.showLinkHint)
         );
-        if (
-            transport === 'local_helper' &&
-            helperUrl === '' &&
-            copy.showLinkHint
-        ) {
+        if (transport === 'local_helper' && helperUrl === '' && copy.showLinkHint) {
             helperLinkRow.classList.remove('is-hidden');
         }
     }

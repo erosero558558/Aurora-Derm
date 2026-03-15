@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pielarmonia-v15-figo-20260226-themefix2';
+const CACHE_NAME = 'pielarmonia-v16-openclaw-sync-20260315';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -8,10 +8,10 @@ const STATIC_ASSETS = [
     '/kiosco-turnos.html',
     '/sala-turnos.html',
     '/admin-v3.css?v=admin-v3-20260314-sony150',
-    '/admin.js?v=admin-20260314-rc1-shell1',
+    '/admin.js?v=admin-20260315-openclaw-sync1',
     '/queue-ops.css?v=queue-ops-20260314-sony150',
     '/js/admin-preboot-shortcuts.js?v=admin-20260314-rc1-preboot1',
-    '/js/queue-operator.js?v=queue-operator-20260310-src1',
+    '/js/queue-operator.js?v=queue-operator-20260315-openclaw-sync1',
     '/queue-kiosk.css?v=queue-20260227-fix1',
     '/js/queue-kiosk.js?v=queue-20260227-fix1',
     '/queue-display.css?v=queue-20260227-fix1',

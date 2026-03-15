@@ -104,7 +104,8 @@ try {
                 'POST',
                 $serverBaseUrl . '/api.php?resource=operator-auth-start',
                 [],
-                $cookieFile
+                $cookieFile,
+                operator_auth_test_csrf_headers($serverBaseUrl, $cookieFile)
             );
             assert_equals(202, $start['code'], 'start should create challenge');
             $challenge = is_array($start['body']['challenge'] ?? null) ? $start['body']['challenge'] : [];
@@ -135,7 +136,8 @@ try {
                 'POST',
                 $serverBaseUrl . '/api.php?resource=operator-auth-start',
                 [],
-                $cookieFile
+                $cookieFile,
+                operator_auth_test_csrf_headers($serverBaseUrl, $cookieFile)
             );
             assert_equals(202, $start['code'], 'start should create challenge');
             $challenge = is_array($start['body']['challenge'] ?? null) ? $start['body']['challenge'] : [];
@@ -157,7 +159,8 @@ try {
                 'POST',
                 $serverBaseUrl . '/api.php?resource=operator-auth-start',
                 [],
-                $cookieFile
+                $cookieFile,
+                operator_auth_test_csrf_headers($serverBaseUrl, $cookieFile)
             );
             assert_equals(202, $start['code'], 'start should create challenge');
             $challenge = is_array($start['body']['challenge'] ?? null) ? $start['body']['challenge'] : [];
@@ -195,7 +198,8 @@ try {
                 'POST',
                 $serverBaseUrl . '/api.php?resource=operator-auth-start',
                 [],
-                $cookieFile
+                $cookieFile,
+                operator_auth_test_csrf_headers($serverBaseUrl, $cookieFile)
             );
             assert_equals(202, $start['code'], 'start should create challenge');
             $challenge = is_array($start['body']['challenge'] ?? null) ? $start['body']['challenge'] : [];
@@ -225,7 +229,8 @@ try {
                 'POST',
                 $serverBaseUrl . '/api.php?resource=operator-auth-start',
                 [],
-                $cookieFile
+                $cookieFile,
+                operator_auth_test_csrf_headers($serverBaseUrl, $cookieFile)
             );
             assert_equals(202, $start['code'], 'start should create challenge');
             $challenge = is_array($start['body']['challenge'] ?? null) ? $start['body']['challenge'] : [];

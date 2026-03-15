@@ -129,6 +129,57 @@ function Wait-ForHttp {
     return $false
 }
 
+function Invoke-JsonGetSafe {
+    param(
+        [string]$Url,
+        [hashtable]$Headers = @{},
+        [int]$TimeoutSec = 5
+    )
+
+    try {
+        $response = Invoke-WebRequest -Uri $Url -Headers $Headers -UseBasicParsing -TimeoutSec $TimeoutSec
+        $content = [string]$response.Content
+        if ([string]::IsNullOrWhiteSpace($content)) {
+            return $null
+        }
+
+        return $content | ConvertFrom-Json
+    } catch {
+        return $null
+    }
+}
+
+function Resolve-OperatorAuthTransport {
+    param(
+        [string]$Fallback = 'local_helper',
+        [int]$Attempts = 10,
+        [int]$DelayMs = 500
+    )
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt += 1) {
+        $payload = Invoke-JsonGetSafe `
+            -Url 'http://127.0.0.1/admin-auth.php?action=status' `
+            -Headers @{ Accept = 'application/json' }
+        $transport = [string]($payload.transport)
+        if (-not [string]::IsNullOrWhiteSpace($transport)) {
+            if ([string]::Equals($transport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)) {
+                return 'web_broker'
+            }
+
+            return 'local_helper'
+        }
+
+        Start-Sleep -Milliseconds $DelayMs
+    }
+
+    $envTransport = [string]$env:PIELARMONIA_OPERATOR_AUTH_TRANSPORT
+    if ([string]::Equals($envTransport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)) {
+        return 'web_broker'
+    }
+
+    return $Fallback
+}
+
 function Wait-ForTcp {
     param(
         [int]$Port,
@@ -345,6 +396,9 @@ if (-not (Wait-ForHttp -Url 'http://127.0.0.1/healthz')) {
     throw 'Caddy no responde en http://127.0.0.1/healthz'
 }
 
+$operatorAuthTransport = Resolve-OperatorAuthTransport
+Write-Info ("Operator auth transport detectado: {0}" -f $operatorAuthTransport)
+
 Start-ManagedProcess `
     -FilePath $cloudflaredExe `
     -Arguments @('tunnel', '--metrics', '127.0.0.1:20241', '--pidfile', $cloudflaredPidPath, '--logfile', $cloudflaredLogPath, 'run', '--credentials-file', $cloudflaredCredPath, '--url', 'http://127.0.0.1', $TunnelId) `
@@ -354,7 +408,7 @@ Start-ManagedProcess `
     -AlreadyRunningNeedles @('cloudflared.exe', $TunnelId, '--url http://127.0.0.1') `
     -Label 'Cloudflare tunnel' | Out-Null
 
-if (-not $SkipBridge) {
+if ((-not $SkipBridge) -and $operatorAuthTransport -eq 'local_helper') {
     Start-ManagedProcess `
         -FilePath $powershellExe `
         -Arguments @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $helperScriptPath) `
@@ -368,7 +422,11 @@ if (-not $SkipBridge) {
         throw 'El helper local de OpenClaw no responde en 127.0.0.1:4173/health'
     }
 } else {
-    Write-Info 'OpenClaw auth helper omitido en modo boot/public stack.'
+    if ($SkipBridge) {
+        Write-Info 'OpenClaw auth helper omitido en modo boot/public stack.'
+    } else {
+        Write-Info ("OpenClaw auth helper omitido; transport activo: {0}" -f $operatorAuthTransport)
+    }
 }
 
 Write-Info ("Stack listo. Public domain esperado: https://{0}" -f $PublicDomain)

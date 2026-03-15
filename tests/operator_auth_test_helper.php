@@ -139,6 +139,27 @@ function operator_auth_test_http_request(
     ];
 }
 
+function operator_auth_test_csrf_headers(string $serverBaseUrl, ?string $cookieFile = null): array
+{
+    $status = operator_auth_test_http_request(
+        'GET',
+        rtrim($serverBaseUrl, '/') . '/api.php?resource=operator-auth-status',
+        null,
+        $cookieFile
+    );
+
+    $csrfToken = is_array($status['body'] ?? null)
+        ? (string) ($status['body']['csrfToken'] ?? '')
+        : '';
+    if ($csrfToken === '') {
+        throw new RuntimeException(
+            'operator-auth status no devolvio csrfToken para iniciar el flujo.'
+        );
+    }
+
+    return ['X-CSRF-Token: ' . $csrfToken];
+}
+
 if (!function_exists('operator_auth_test_build_completion_payload')) {
     function operator_auth_test_build_completion_payload(array $challenge, array $overrides = []): array
     {
@@ -192,7 +213,8 @@ function operator_auth_test_login(string $serverBaseUrl, string $cookieFile, arr
         'POST',
         $baseUrl . '/api.php?resource=operator-auth-start',
         [],
-        $cookieFile
+        $cookieFile,
+        operator_auth_test_csrf_headers($baseUrl, $cookieFile)
     );
     if ($start['code'] !== 202) {
         return [

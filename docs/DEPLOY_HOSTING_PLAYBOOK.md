@@ -34,21 +34,35 @@ Uso:
 - Prueba sin cambios: `dry_run = true`.
 - Si falla `Timeout (control socket)`: prueba `protocol=sftp`, `server_port=22` (o `protocol=ftp`, `server_port=21`).
 
-## Cutover rapido en Windows con este workspace
+## Cutover rapido en Windows con mirror limpio
 
-Si el hosting viejo va a desaparecer y necesitas servir `pielarmonia.com` desde
-`C:\dev\pielarmonia-workspace`, la ruta canonica en Windows es:
+Si el hosting viejo va a desaparecer y necesitas servir `pielarmonia.com`
+desde Windows, no sirvas trafico desde el workspace de trabajo.
+La ruta canonica es mantener un mirror limpio en
+`C:\dev\pielarmonia-clean-main` y usar el workspace solo para operar el sync:
 
 - `ops/caddy/Caddyfile` para edge local y redirects canonicos.
 - `php-cgi.exe` en `127.0.0.1:9000` como backend FastCGI.
 - `cloudflared` para exponer el mismo dominio sin depender de NAT/router.
-- `scripts/ops/setup/CONFIGURAR-HOSTING-WINDOWS.ps1` para autoarranque y cutover.
+- `scripts/ops/setup/SINCRONIZAR-HOSTING-WINDOWS.ps1` para clonar/resetear `origin/main`,
+  reinyectar `C:\ProgramData\Pielarmonia\hosting\env.php` y reiniciar solo si
+  cambia el `HEAD` o el hash del `env.php`.
+- `scripts/ops/setup/CONFIGURAR-HOSTING-WINDOWS.ps1` para registrar:
+  `Pielarmonia Hosting Stack` en boot/login y `Pielarmonia Hosting Main Sync`
+  cada 1 minuto via Task Scheduler.
 
 Secuencia recomendada:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\ops\setup\CONFIGURAR-HOSTING-WINDOWS.ps1 -RouteDns -OverwriteDns -StartNow
 ```
+
+Notas operativas:
+
+- Linux ya tiene el cron canonico `public_main_sync` cada minuto; no dupliques
+  otro cron en ese host.
+- En Windows usa Task Scheduler sobre el mirror limpio, no `git pull` ni
+  `git reset` sobre el workspace activo.
 
 Notas:
 
@@ -177,7 +191,9 @@ Configura estas variables en tu hosting:
 
 - `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt`
 - `PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker`
-- `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`
+- `PIELARMONIA_ADMIN_EMAIL=<correo_operativo>`
+- `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=<correo_operativo>`
+- `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=false`
 - `PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL=https://pielarmonia.com`
 - `OPENCLAW_AUTH_BROKER_AUTHORIZE_URL`
 - `OPENCLAW_AUTH_BROKER_TOKEN_URL`
@@ -227,7 +243,8 @@ Importante:
 - Ya no existe fallback `admin123`, incluso en local.
 - En produccion, el login admin/turnero debe entrar por OpenClaw `web_broker`.
 - `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` solo son obligatorios si vas a exponer la contingencia legacy.
-- `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST` no es requisito del corte cuando `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true`.
+- En el perfil restringido recomendado, `PIELARMONIA_OPERATOR_AUTH_ALLOWLIST` debe contener la cuenta operativa autorizada.
+- `PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true` queda solo como opt-in para entornos que quieran permitir cualquier identidad verificada por el broker.
 - Para notificaciones por email al administrador, configura `PIELARMONIA_ADMIN_EMAIL`.
 - Para cifrado de datos en reposo, configura `PIELARMONIA_DATA_ENCRYPTION_KEY` (32 bytes o texto que se deriva a SHA-256).
 - Si no puedes usar variables de entorno, tambien puedes crear `data/figo-config.json`.

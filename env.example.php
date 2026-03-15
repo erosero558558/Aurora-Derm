@@ -160,11 +160,12 @@
 // - web_broker: redirect web nativo desde cualquier computadora (recomendado para produccion)
 // - local_helper: challenge local + helper en 127.0.0.1 (solo soporte local/manual)
 // putenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker');
-// Lista blanca de correos permitidos para operar el admin.
-// Si no defines allowlist explicita, el backend puede reutilizar `PIELARMONIA_ADMIN_EMAIL` como fallback minimo.
-// putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=operador@pielarmonia.com,otra.persona@pielarmonia.com');
-// En web_broker, permite acceso admin completo a cualquier identidad autenticada
-// por el broker remoto, sin exigir allowlist local. Recomendado para el corte productivo.
+// Perfil recomendado para una sola cuenta operativa autorizada:
+// putenv('PIELARMONIA_ADMIN_EMAIL=tu_correo_windows@outlook.com');
+// putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=tu_correo_windows@outlook.com');
+// Mantener en false para exigir allowlist explicita aun cuando el broker autentique correctamente.
+// putenv('PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=false');
+// Solo activa `true` si quieres abrir el admin a cualquier identidad verificada por el broker remoto.
 // putenv('PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true');
 // Endpoints del broker OAuth/OpenID Connect remoto usados por web_broker.
 // putenv('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL=https://openclaw.example.com/oauth/authorize');
@@ -172,6 +173,11 @@
 // putenv('OPENCLAW_AUTH_BROKER_USERINFO_URL=https://openclaw.example.com/oauth/userinfo');
 // putenv('OPENCLAW_AUTH_BROKER_CLIENT_ID=cliente_openclaw_web');
 // putenv('OPENCLAW_AUTH_BROKER_CLIENT_SECRET=secreto_opcional');
+// putenv('OPENCLAW_AUTH_BROKER_JWKS_URL=https://openclaw.example.com/.well-known/jwks.json');
+// putenv('OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER=https://openclaw.example.com');
+// putenv('OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE=cliente_openclaw_web');
+// putenv('OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED=true');
+// putenv('OPENCLAW_AUTH_BROKER_CLOCK_SKEW_SECONDS=120');
 // Cuenta sandbox para smoke live post-deploy del broker web.
 // putenv('OPENCLAW_AUTH_BROKER_SMOKE_ENABLED=true');
 // putenv('OPENCLAW_AUTH_BROKER_SMOKE_USERNAME=smoke.operator@pielarmonia.com');

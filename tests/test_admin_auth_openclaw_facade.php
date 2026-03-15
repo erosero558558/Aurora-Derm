@@ -80,6 +80,19 @@ function admin_auth_openclaw_cleanup_cookie(string $path): void
     }
 }
 
+function admin_auth_openclaw_csrf_headers(string $baseUrl, ?string $cookieFile = null): array
+{
+    $status = admin_auth_openclaw_request('GET', $baseUrl, 'status', null, $cookieFile);
+    $csrfToken = is_array($status['body'] ?? null)
+        ? (string) ($status['body']['csrfToken'] ?? '')
+        : '';
+    if ($csrfToken === '') {
+        throw new RuntimeException('admin-auth status no devolvio csrfToken para iniciar el flujo.');
+    }
+
+    return ['X-CSRF-Token: ' . $csrfToken];
+}
+
 function admin_auth_current_totp_code(string $secret): string
 {
     $reflection = new ReflectionClass(TOTP::class);
@@ -128,7 +141,14 @@ try {
     run_test('admin-auth start status logout completes an operator session through facade', function () use ($serverBaseUrl) {
         $cookieFile = admin_auth_openclaw_cookie_file();
         try {
-            $start = admin_auth_openclaw_request('POST', $serverBaseUrl, 'start', [], $cookieFile);
+            $start = admin_auth_openclaw_request(
+                'POST',
+                $serverBaseUrl,
+                'start',
+                [],
+                $cookieFile,
+                admin_auth_openclaw_csrf_headers($serverBaseUrl, $cookieFile)
+            );
             assert_equals(202, $start['code'], 'start should create challenge');
             assert_equals('pending', $start['body']['status'] ?? '', 'start should leave challenge pending');
             assert_equals('openclaw_chatgpt', $start['body']['mode'] ?? '', 'start should report openclaw mode');
@@ -151,7 +171,14 @@ try {
                 'authenticated operator should expose admin agent capabilities when editorial allowlist is open'
             );
 
-            $logout = admin_auth_openclaw_request('POST', $serverBaseUrl, 'logout', [], $cookieFile);
+            $logout = admin_auth_openclaw_request(
+                'POST',
+                $serverBaseUrl,
+                'logout',
+                [],
+                $cookieFile,
+                admin_auth_openclaw_csrf_headers($serverBaseUrl, $cookieFile)
+            );
             assert_equals(200, $logout['code'], 'logout should respond 200');
             assert_false($logout['body']['authenticated'] ?? true, 'logout should clear authentication');
             assert_equals('logout', $logout['body']['status'] ?? '', 'logout should expose logout status');
@@ -259,15 +286,26 @@ try {
                     'OPENCLAW_AUTH_BROKER_TOKEN_URL' => 'https://broker.example.test/token',
                     'OPENCLAW_AUTH_BROKER_USERINFO_URL' => 'https://broker.example.test/userinfo',
                     'OPENCLAW_AUTH_BROKER_CLIENT_ID' => 'broker-client-id',
+                    'OPENCLAW_AUTH_BROKER_JWKS_URL' => 'https://broker.example.test/jwks',
+                    'OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER' => 'https://broker.example.test',
+                    'OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE' => 'broker-audience',
+                    'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED' => 'true',
                 ] + operator_auth_test_env(),
                 'startup_timeout_ms' => 12000,
             ]);
 
             $cookieFile = admin_auth_openclaw_cookie_file();
             try {
-                $start = admin_auth_openclaw_request('POST', $overrideServer['base_url'], 'start', [
-                    'returnTo' => '/operador-turnos.html?station=c2',
-                ], $cookieFile);
+                $start = admin_auth_openclaw_request(
+                    'POST',
+                    $overrideServer['base_url'],
+                    'start',
+                    [
+                        'returnTo' => '/operador-turnos.html?station=c2',
+                    ],
+                    $cookieFile,
+                    admin_auth_openclaw_csrf_headers($overrideServer['base_url'], $cookieFile)
+                );
 
                 assert_equals(202, $start['code'], 'web broker start should respond 202');
                 assert_equals('pending', $start['body']['status'] ?? '', 'web broker start should remain pending');
@@ -303,15 +341,26 @@ try {
                     'OPENCLAW_AUTH_BROKER_TOKEN_URL' => 'https://broker.example.test/token',
                     'OPENCLAW_AUTH_BROKER_USERINFO_URL' => 'https://broker.example.test/userinfo',
                     'OPENCLAW_AUTH_BROKER_CLIENT_ID' => 'broker-client-id',
+                    'OPENCLAW_AUTH_BROKER_JWKS_URL' => 'https://broker.example.test/jwks',
+                    'OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER' => 'https://broker.example.test',
+                    'OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE' => 'broker-audience',
+                    'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED' => 'true',
                 ] + operator_auth_test_env(),
                 'startup_timeout_ms' => 12000,
             ]);
 
             $cookieFile = admin_auth_openclaw_cookie_file();
             try {
-                $start = admin_auth_openclaw_request('POST', $overrideServer['base_url'], 'start', [
-                    'returnTo' => '/admin.html?resume=web-broker',
-                ], $cookieFile);
+                $start = admin_auth_openclaw_request(
+                    'POST',
+                    $overrideServer['base_url'],
+                    'start',
+                    [
+                        'returnTo' => '/admin.html?resume=web-broker',
+                    ],
+                    $cookieFile,
+                    admin_auth_openclaw_csrf_headers($overrideServer['base_url'], $cookieFile)
+                );
                 assert_equals(202, $start['code'], 'web broker start should respond 202');
 
                 $status = admin_auth_openclaw_request('GET', $overrideServer['base_url'], 'status', null, $cookieFile);
@@ -327,6 +376,55 @@ try {
                     (string) ($start['body']['expiresAt'] ?? ''),
                     (string) ($status['body']['expiresAt'] ?? ''),
                     'status should keep the same expiry while the attempt is active'
+                );
+            } finally {
+                admin_auth_openclaw_cleanup_cookie($cookieFile);
+            }
+        } finally {
+            stop_test_php_server($overrideServer);
+            delete_path_recursive($overrideDataDir);
+        }
+    });
+
+    run_test('admin-auth status sigue configurado con allowlist restringida para web_broker', function () {
+        $overrideDataDir = sys_get_temp_dir() . '/pielarmonia-test-admin-auth-openclaw-web-broker-allowlist-' . uniqid('', true);
+        $overrideServer = [];
+        ensure_clean_directory($overrideDataDir);
+
+        try {
+            $overrideServer = start_test_php_server([
+                'docroot' => __DIR__ . '/..',
+                'env' => [
+                    'PIELARMONIA_DATA_DIR' => $overrideDataDir,
+                    'PIELARMONIA_AVAILABILITY_SOURCE' => 'store',
+                    'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => 'web_broker',
+                    'PIELARMONIA_ADMIN_EMAIL' => 'restricted.operator@example.com',
+                    'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST' => 'restricted.operator@example.com',
+                    'PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL' => 'false',
+                    'OPENCLAW_AUTH_BROKER_AUTHORIZE_URL' => 'https://broker.example.test/authorize',
+                    'OPENCLAW_AUTH_BROKER_TOKEN_URL' => 'https://broker.example.test/token',
+                    'OPENCLAW_AUTH_BROKER_USERINFO_URL' => 'https://broker.example.test/userinfo',
+                    'OPENCLAW_AUTH_BROKER_CLIENT_ID' => 'broker-client-id',
+                    'OPENCLAW_AUTH_BROKER_JWKS_URL' => 'https://broker.example.test/jwks',
+                    'OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER' => 'https://broker.example.test',
+                    'OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE' => 'broker-audience',
+                    'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED' => 'true',
+                ] + operator_auth_test_env(),
+                'startup_timeout_ms' => 12000,
+            ]);
+
+            $cookieFile = admin_auth_openclaw_cookie_file();
+            try {
+                $status = admin_auth_openclaw_request('GET', $overrideServer['base_url'], 'status', null, $cookieFile);
+                assert_equals(200, $status['code'], 'status should respond 200');
+                assert_true($status['body']['configured'] ?? false, 'web broker should remain configured with explicit allowlist');
+                assert_equals('openclaw_chatgpt', $status['body']['mode'] ?? '', 'status should preserve openclaw mode');
+                assert_equals('web_broker', $status['body']['transport'] ?? '', 'status should preserve web_broker transport');
+                assert_false($status['body']['authenticated'] ?? true, 'anonymous status should remain unauthenticated before redirect');
+                assert_equals('anonymous', $status['body']['status'] ?? '', 'restricted profile should remain anonymous until redirect starts');
+                assert_false(
+                    $status['body']['fallbacks']['legacy_password']['available'] ?? true,
+                    'legacy fallback should remain hidden in the restricted web_broker profile'
                 );
             } finally {
                 admin_auth_openclaw_cleanup_cookie($cookieFile);
