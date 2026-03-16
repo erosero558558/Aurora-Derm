@@ -40,13 +40,13 @@
         }
     },
     "release": {
-        "mode": "web_pilot",
+        "mode": "suite_v2",
         "admin_mode_default": "basic",
         "separate_deploy": true,
-        "native_apps_blocking": false,
+        "native_apps_blocking": true,
         "notes": [
-            "El piloto a produccion usa las superficies web como canon operativo.",
-            "Instaladores desktop y Android TV quedan como siguiente release, no como bloqueo de salida."
+            "La suite v2 usa operator desktop, kiosk desktop y sala TV Android como bloqueo de salida.",
+            "Las superficies web quedan activas como fallback y soporte operativo."
         ]
     }
 }

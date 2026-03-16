@@ -40,12 +40,12 @@
         }
     },
     "release": {
-        "mode": "web_pilot",
+        "mode": "suite_v2",
         "admin_mode_default": "basic",
         "separate_deploy": true,
-        "native_apps_blocking": false,
+        "native_apps_blocking": true,
         "notes": [
-            "Perfil de demostracion para validar deploy separado por clinica.",
+            "Perfil de demostracion para validar suite_v2 con deploy separado por clinica.",
             "No usar este perfil como multi-tenant compartido."
         ]
     }

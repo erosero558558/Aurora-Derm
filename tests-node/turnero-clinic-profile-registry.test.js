@@ -28,7 +28,7 @@ test('lista perfiles turnero catalogados para despliegues separados', () => {
     );
 });
 
-test('valida perfil turnero y exige separate_deploy para el piloto', () => {
+test('valida perfil turnero y exige separate_deploy para suite_v2', () => {
     const validation = validateTurneroClinicProfile({
         schema: PROFILE_SCHEMA,
         clinic_id: 'clinica-demo',
@@ -65,10 +65,10 @@ test('valida perfil turnero y exige separate_deploy para el piloto', () => {
             },
         },
         release: {
-            mode: 'web_pilot',
+            mode: 'suite_v2',
             admin_mode_default: 'basic',
             separate_deploy: false,
-            native_apps_blocking: false,
+            native_apps_blocking: true,
             notes: [],
         },
     });
@@ -77,6 +77,58 @@ test('valida perfil turnero y exige separate_deploy para el piloto', () => {
     assert.match(
         validation.errors.join('\n'),
         /separate_deploy debe quedar en true/i
+    );
+});
+
+test('valida perfil turnero y exige native_apps_blocking para suite_v2', () => {
+    const validation = validateTurneroClinicProfile({
+        schema: PROFILE_SCHEMA,
+        clinic_id: 'clinica-demo',
+        branding: {
+            name: 'Clinica Demo',
+            short_name: 'Demo',
+            city: 'Quito',
+            base_url: 'https://demo.example.com',
+        },
+        consultorios: {
+            c1: { label: 'Uno', short_label: 'U1' },
+            c2: { label: 'Dos', short_label: 'D2' },
+        },
+        surfaces: {
+            admin: {
+                enabled: true,
+                label: 'Admin',
+                route: '/admin.html#queue',
+            },
+            operator: {
+                enabled: true,
+                label: 'Operador',
+                route: '/operador-turnos.html',
+            },
+            kiosk: {
+                enabled: true,
+                label: 'Kiosco',
+                route: '/kiosco-turnos.html',
+            },
+            display: {
+                enabled: true,
+                label: 'Sala',
+                route: '/sala-turnos.html',
+            },
+        },
+        release: {
+            mode: 'suite_v2',
+            admin_mode_default: 'basic',
+            separate_deploy: true,
+            native_apps_blocking: false,
+            notes: [],
+        },
+    });
+
+    assert.equal(validation.ok, false);
+    assert.match(
+        validation.errors.join('\n'),
+        /native_apps_blocking debe quedar en true para suite_v2/i
     );
 });
 
@@ -159,10 +211,10 @@ test('status detecta cuando el clinic-profile activo coincide con un catalogo', 
             },
         },
         release: {
-            mode: 'web_pilot',
+            mode: 'suite_v2',
             admin_mode_default: 'basic',
             separate_deploy: true,
-            native_apps_blocking: false,
+            native_apps_blocking: true,
             notes: [],
         },
     };

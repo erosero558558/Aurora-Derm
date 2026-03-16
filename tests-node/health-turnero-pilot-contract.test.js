@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const { resolve } = require('node:path');
 
-test('HealthController expone checks.turneroPilot para el piloto web por clínica', () => {
+test('HealthController expone checks.turneroPilot para Turnero V2 por clínica', () => {
     const phpScript = `
         $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'health-turnero-pilot-' . bin2hex(random_bytes(6));
         mkdir($tempDir, 0777, true);
@@ -41,6 +41,7 @@ test('HealthController expone checks.turneroPilot para el piloto web por clínic
 
     const payload = JSON.parse(result.stdout);
     const snapshot = payload?.checks?.turneroPilot;
+    const authSnapshot = payload?.checks?.auth;
 
     assert.equal(payload.ok, true);
     assert.equal(payload.status, 'ok');
@@ -52,13 +53,16 @@ test('HealthController expone checks.turneroPilot para el piloto web por clínic
     assert.equal(snapshot?.catalogMatched, true);
     assert.equal(snapshot?.catalogReady, true);
     assert.equal(snapshot?.catalogEntryId, 'piel-armonia-quito');
-    assert.equal(snapshot?.releaseMode, 'web_pilot');
+    assert.equal(snapshot?.releaseMode, 'suite_v2');
     assert.equal(snapshot?.adminModeDefault, 'basic');
     assert.equal(snapshot?.separateDeploy, true);
-    assert.equal(snapshot?.nativeAppsBlocking, false);
+    assert.equal(snapshot?.nativeAppsBlocking, true);
     assert.equal(snapshot?.surfaces?.admin?.route, '/admin.html#queue');
     assert.equal(snapshot?.surfaces?.operator?.route, '/operador-turnos.html');
     assert.equal(snapshot?.surfaces?.kiosk?.route, '/kiosco-turnos.html');
     assert.equal(snapshot?.surfaces?.display?.route, '/sala-turnos.html');
     assert.match(String(snapshot?.profileFingerprint || ''), /^[0-9a-f]{8}$/);
+    assert.equal(authSnapshot?.operatorPinMode, 'operator_pin');
+    assert.equal(authSnapshot?.operatorPinConfigured, false);
+    assert.equal(authSnapshot?.operatorPinSessionTtlHours, 8);
 });

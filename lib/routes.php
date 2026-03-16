@@ -14,6 +14,11 @@ function register_api_routes(Router $router): void
     $router->add('GET', 'operator-auth-status', [OperatorAuthController::class, 'status']);
     $router->add('POST', 'operator-auth-complete', [OperatorAuthController::class, 'complete']);
     $router->add('POST', 'operator-auth-logout', [OperatorAuthController::class, 'logout']);
+    $router->add('GET', 'operator-pin-status', [OperatorPinController::class, 'status']);
+    $router->add('GET', 'operator-session-status', [OperatorPinController::class, 'sessionStatus']);
+    $router->add('POST', 'operator-pin-login', [OperatorPinController::class, 'login']);
+    $router->add('POST', 'operator-pin-logout', [OperatorPinController::class, 'logout']);
+    $router->add('POST', 'operator-pin-rotate', [OperatorPinController::class, 'rotate']);
 
     $router->add('GET', 'figo-config', [ConfigController::class, 'getFigoConfig']);
     $router->add('POST', 'figo-config', [ConfigController::class, 'updateFigoConfig']);

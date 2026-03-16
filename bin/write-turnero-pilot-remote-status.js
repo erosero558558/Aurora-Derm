@@ -215,7 +215,7 @@ function main(argv) {
         'unknown'
     );
     const snapshot =
-        releaseMode !== 'web_pilot'
+        !['web_pilot', 'suite_v2'].includes(releaseMode)
             ? buildNotRequiredSnapshot()
             : buildVerifiedSnapshot(options);
 

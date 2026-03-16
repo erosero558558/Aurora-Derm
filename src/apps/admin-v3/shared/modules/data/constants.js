@@ -16,6 +16,8 @@ export const LOCAL_DATA_KEYS = {
     turneroClinicProfile: 'turnero-clinic-profile',
     turneroClinicProfileMeta: 'turnero-clinic-profile-meta',
     turneroClinicProfileCatalogStatus: 'turnero-clinic-profile-catalog-status',
+    turneroOperatorAccessMeta: 'turnero-operator-access-meta',
+    turneroV2Readiness: 'turnero-v2-readiness',
     internalConsoleMeta: 'internal-console-meta',
     health: 'health-status',
 };

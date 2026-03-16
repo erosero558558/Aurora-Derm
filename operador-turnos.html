@@ -54,11 +54,11 @@
                         data-state="neutral"
                     >
                         <strong id="operatorLoginStatusTitle">
-                            Acceso protegido
+                            PIN operativo
                         </strong>
                         <p id="operatorLoginStatusMessage">
-                            Inicia sesión para abrir la consola operativa del
-                            turnero.
+                            Ingresa el PIN de la clínica para abrir la consola
+                            operativa del turnero.
                         </p>
                     </div>
 
@@ -116,13 +116,14 @@
 
                         <div id="operatorLegacyLoginFields">
                             <label class="admin-login-field" for="operatorPassword">
-                                <span>Contraseña</span>
+                                <span>PIN de operador</span>
                                 <input
                                     id="operatorPassword"
                                     type="password"
                                     required
-                                    placeholder="Ingresa tu clave"
-                                    autocomplete="current-password"
+                                    placeholder="Ingresa el PIN de la clínica"
+                                    inputmode="numeric"
+                                    autocomplete="one-time-code"
                                 />
                             </label>
 

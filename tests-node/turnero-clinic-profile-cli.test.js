@@ -211,10 +211,10 @@ test('CLI verify-remote falla cuando /health expone otra clínica', async () => 
                         catalogMatched: true,
                         catalogReady: true,
                         catalogEntryId: 'clinica-distinta',
-                        releaseMode: 'web_pilot',
+                        releaseMode: 'suite_v2',
                         adminModeDefault: 'basic',
                         separateDeploy: true,
-                        nativeAppsBlocking: false,
+                        nativeAppsBlocking: true,
                         surfaces: {
                             admin: {
                                 enabled: true,

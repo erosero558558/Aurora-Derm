@@ -58,13 +58,13 @@ function turnero_clinic_profile_defaults(): array
             ],
         ],
         'release' => [
-            'mode' => 'web_pilot',
+            'mode' => 'suite_v2',
             'admin_mode_default' => 'basic',
             'separate_deploy' => true,
-            'native_apps_blocking' => false,
+            'native_apps_blocking' => true,
             'notes' => [
-                'El piloto a produccion usa las superficies web como canon operativo.',
-                'Instaladores desktop y Android TV quedan como siguiente release, no como bloqueo de salida.',
+                'La suite v2 usa operator desktop, kiosk desktop y sala TV Android como bloqueo de salida.',
+                'Las superficies web quedan activas como fallback y soporte operativo.',
             ],
         ],
     ];
@@ -149,10 +149,10 @@ function turnero_clinic_profile_normalize(array $profile): array
             ],
         ],
         'release' => [
-            'mode' => (string) (($release['mode'] ?? null) ?: 'web_pilot'),
+            'mode' => (string) (($release['mode'] ?? null) ?: 'suite_v2'),
             'admin_mode_default' => (string) (($release['admin_mode_default'] ?? null) ?: 'basic'),
             'separate_deploy' => (bool) ($release['separate_deploy'] ?? true),
-            'native_apps_blocking' => (bool) ($release['native_apps_blocking'] ?? false),
+            'native_apps_blocking' => (bool) ($release['native_apps_blocking'] ?? true),
             'notes' => isset($release['notes']) && is_array($release['notes'])
                 ? array_values(array_map(static fn ($note): string => (string) $note, $release['notes']))
                 : [],
@@ -365,6 +365,9 @@ function read_turnero_clinic_profile_health_snapshot(): array
     $adminModeDefault = (string) ($release['admin_mode_default'] ?? '');
     $separateDeploy = (bool) ($release['separate_deploy'] ?? false);
     $nativeAppsBlocking = (bool) ($release['native_apps_blocking'] ?? false);
+    $releaseModeSupported = in_array($releaseMode, ['web_pilot', 'suite_v2'], true);
+    $blockingSemanticsValid = ($releaseMode === 'web_pilot' && $nativeAppsBlocking === false)
+        || ($releaseMode === 'suite_v2' && $nativeAppsBlocking === true);
     $requiredRoutesReady = true;
 
     foreach (['admin', 'operator', 'kiosk', 'display'] as $surfaceKey) {
@@ -378,7 +381,8 @@ function read_turnero_clinic_profile_health_snapshot(): array
     $ready = $profileSource === 'file'
         && !empty($profile['clinic_id'])
         && $catalogStatus['ready'] === true
-        && $releaseMode === 'web_pilot'
+        && $releaseModeSupported
+        && $blockingSemanticsValid
         && $adminModeDefault === 'basic'
         && $separateDeploy === true
         && $requiredRoutesReady;
@@ -394,9 +398,11 @@ function read_turnero_clinic_profile_health_snapshot(): array
         'catalogReady' => (bool) ($catalogStatus['ready'] ?? false),
         'catalogEntryId' => (string) ($catalogStatus['matchingProfileId'] ?? ''),
         'releaseMode' => $releaseMode,
+        'releaseModeSupported' => $releaseModeSupported,
         'adminModeDefault' => $adminModeDefault,
         'separateDeploy' => $separateDeploy,
         'nativeAppsBlocking' => $nativeAppsBlocking,
+        'blockingSemanticsValid' => $blockingSemanticsValid,
         'surfaces' => $surfaceSnapshot,
     ];
 }

@@ -32,10 +32,10 @@ const FALLBACK_PROFILE = Object.freeze({
         display: { enabled: true, label: 'Sala web', route: '/sala-turnos.html' },
     },
     release: {
-        mode: 'web_pilot',
+        mode: 'suite_v2',
         admin_mode_default: 'basic',
         separate_deploy: true,
-        native_apps_blocking: false,
+        native_apps_blocking: true,
         notes: [],
     },
 });
@@ -187,7 +187,7 @@ export function normalizeTurneroClinicProfile(rawProfile) {
             native_apps_blocking:
                 typeof release.native_apps_blocking === 'boolean'
                     ? release.native_apps_blocking
-                    : false,
+                    : true,
             notes: Array.isArray(release.notes)
                 ? release.notes.map((note) => toString(note)).filter(Boolean)
                 : [],

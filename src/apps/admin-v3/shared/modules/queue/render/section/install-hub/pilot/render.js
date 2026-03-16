@@ -105,7 +105,7 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                             <p id="queueOpsPilotReadinessSummary" class="queue-ops-pilot__readiness-summary">${escapeHtml(
                                 pilot.readinessSummary
                             )}</p>
-                            <div id="queueOpsPilotReadinessItems" class="queue-ops-pilot__readiness-items" role="list" aria-label="Checklist de readiness del piloto web">
+                            <div id="queueOpsPilotReadinessItems" class="queue-ops-pilot__readiness-items" role="list" aria-label="Checklist de readiness de Turnero V2">
                                 ${pilot.readinessItems
                                     .map(
                                         (item) => `
@@ -172,7 +172,7 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                             <p id="queueOpsPilotIssuesSummary" class="queue-ops-pilot__issues-summary">${escapeHtml(
                                 pilot.goLiveSummary
                             )}</p>
-                            <div id="queueOpsPilotIssuesItems" class="queue-ops-pilot__issues-items" role="list" aria-label="Bloqueos accionables del piloto web">
+                            <div id="queueOpsPilotIssuesItems" class="queue-ops-pilot__issues-items" role="list" aria-label="Bloqueos accionables de Turnero V2">
                                 ${
                                     pilot.goLiveIssues.length > 0
                                         ? pilot.goLiveIssues
@@ -238,7 +238,7 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                                     <strong>Sin bloqueos activos</strong>
                                                     <span class="queue-ops-pilot__issues-item-badge">Listo</span>
                                                 </div>
-                                                <p>El piloto web ya no tiene bloqueos de salida por perfil, canon, publicación o smoke.</p>
+                                                <p>Turnero V2 ya no tiene bloqueos de salida por perfil, canon, publicación, PIN o smoke.</p>
                                             </article>
                                         `
                                 }
@@ -250,7 +250,7 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                         <section id="queueOpsPilotCanon" class="queue-ops-pilot__canon">
                             <div class="queue-ops-pilot__canon-head">
                                 <div>
-                                    <p class="queue-app-card__eyebrow">Canon web</p>
+                                    <p class="queue-app-card__eyebrow">Fallback web</p>
                                     <h6 id="queueOpsPilotCanonTitle">Rutas por clínica</h6>
                                 </div>
                                 <span id="queueOpsPilotCanonStatus" class="queue-ops-pilot__canon-status">
@@ -259,7 +259,7 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                     )}
                                 </span>
                             </div>
-                            <div id="queueOpsPilotCanonItems" class="queue-ops-pilot__canon-items" role="list" aria-label="Superficies web canonicas del piloto">
+                            <div id="queueOpsPilotCanonItems" class="queue-ops-pilot__canon-items" role="list" aria-label="Superficies web canonicas de Turnero V2">
                                 ${pilot.canonicalSurfaces
                                     .map(
                                         (item) => `
@@ -290,7 +290,7 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                                 <p>${escapeHtml(
                                                     item.detail ||
                                                         item.url ||
-                                                        'Ruta local del piloto'
+                                                        'Ruta local de Turnero V2'
                                                 )}</p>
                                             </article>
                                         `
@@ -324,7 +324,7 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                             <p id="queueOpsPilotSmokeSummary" class="queue-ops-pilot__smoke-summary">${escapeHtml(
                                 pilot.smokeSummary
                             )}</p>
-                            <div id="queueOpsPilotSmokeItems" class="queue-ops-pilot__smoke-items" role="list" aria-label="Secuencia de smoke del piloto web">
+                            <div id="queueOpsPilotSmokeItems" class="queue-ops-pilot__smoke-items" role="list" aria-label="Secuencia de smoke de Turnero V2">
                                 ${pilot.smokeSteps
                                     .map(
                                         (step) => `
@@ -398,7 +398,7 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                             <p id="queueOpsPilotHandoffSummary" class="queue-ops-pilot__handoff-summary">${escapeHtml(
                                 pilot.handoffSummary
                             )}</p>
-                            <div id="queueOpsPilotHandoffItems" class="queue-ops-pilot__handoff-items" role="list" aria-label="Paquete del piloto web por clínica">
+                            <div id="queueOpsPilotHandoffItems" class="queue-ops-pilot__handoff-items" role="list" aria-label="Paquete de Turnero V2 por clínica">
                                 ${pilot.handoffItems
                                     .map(
                                         (item) => `

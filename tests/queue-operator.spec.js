@@ -849,7 +849,7 @@ test.describe('Turnero Operador', () => {
             /is-hidden/
         );
         await expect(page.locator('#operatorLoginStatusTitle')).toContainText(
-            'Acceso protegido'
+            'PIN operativo'
         );
     });
 
