@@ -153,6 +153,21 @@ function Invoke-Git {
     return Invoke-CommandWithOutput -FilePath $gitExe -Arguments $Arguments
 }
 
+function Add-OptionalNamedArgument {
+    param(
+        [System.Collections.Generic.List[string]]$Arguments,
+        [string]$Name,
+        [string]$Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return
+    }
+
+    $Arguments.Add($Name) | Out-Null
+    $Arguments.Add($Value) | Out-Null
+}
+
 function Get-GitHeadSafe {
     param([string]$RepoPath)
 
@@ -480,19 +495,22 @@ function Invoke-StartMirrorStack {
         throw "No existe el script de arranque del mirror: $StartScriptPath"
     }
 
-    $arguments = @(
+    $arguments = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($token in @(
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
         '-File', $StartScriptPath,
         '-PublicDomain', $CurrentPublicDomain,
         '-TunnelId', $CurrentTunnelId,
         '-OperatorUserProfile', $CurrentOperatorUserProfile,
-        '-CaddyExePath', $CurrentCaddyExePath,
-        '-CloudflaredExePath', $CurrentCloudflaredExePath,
-        '-PhpCgiExePath', $CurrentPhpCgiExePath,
         '-StopLegacy',
         '-Quiet'
-    )
+    )) {
+        $arguments.Add([string]$token) | Out-Null
+    }
+    Add-OptionalNamedArgument -Arguments $arguments -Name '-CaddyExePath' -Value $CurrentCaddyExePath
+    Add-OptionalNamedArgument -Arguments $arguments -Name '-CloudflaredExePath' -Value $CurrentCloudflaredExePath
+    Add-OptionalNamedArgument -Arguments $arguments -Name '-PhpCgiExePath' -Value $CurrentPhpCgiExePath
 
     $result = Invoke-CommandWithOutput -FilePath $powershellExe -Arguments $arguments
     if ($result.ExitCode -ne 0) {

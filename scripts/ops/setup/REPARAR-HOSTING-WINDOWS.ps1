@@ -116,6 +116,21 @@ function Invoke-Git {
     return Invoke-CommandWithOutput -FilePath $gitExe -Arguments $Arguments
 }
 
+function Add-OptionalNamedArgument {
+    param(
+        [System.Collections.Generic.List[string]]$Arguments,
+        [string]$Name,
+        [string]$Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return
+    }
+
+    $Arguments.Add($Name) | Out-Null
+    $Arguments.Add($Value) | Out-Null
+}
+
 function Stop-TaskIfPresent {
     param([string]$TaskName)
 
@@ -277,7 +292,8 @@ try {
         Write-Info ("Release target actualizado manualmente: {0}" -f $TargetCommit)
     }
 
-    $syncArguments = @(
+    $syncArguments = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($token in @(
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
         '-File', $syncScriptPath,
@@ -287,12 +303,14 @@ try {
         '-PublicDomain', $PublicDomain,
         '-TunnelId', $TunnelId,
         '-OperatorUserProfile', $resolvedOperatorUserProfile,
-        '-CaddyExePath', $CaddyExePath,
-        '-CloudflaredExePath', $CloudflaredExePath,
-        '-PhpCgiExePath', $PhpCgiExePath,
         '-BootstrapReleaseTargetIfMissing',
         '-Quiet'
-    )
+    )) {
+        $syncArguments.Add([string]$token) | Out-Null
+    }
+    Add-OptionalNamedArgument -Arguments $syncArguments -Name '-CaddyExePath' -Value $CaddyExePath
+    Add-OptionalNamedArgument -Arguments $syncArguments -Name '-CloudflaredExePath' -Value $CloudflaredExePath
+    Add-OptionalNamedArgument -Arguments $syncArguments -Name '-PhpCgiExePath' -Value $PhpCgiExePath
     $syncResult = Invoke-CommandWithOutput -FilePath $powershellExe -Arguments $syncArguments
     if ($syncResult.ExitCode -ne 0) {
         throw ("SINCRONIZAR-HOSTING-WINDOWS.ps1 no pudo recuperar el servicio. {0}" -f $syncResult.Output.Trim())

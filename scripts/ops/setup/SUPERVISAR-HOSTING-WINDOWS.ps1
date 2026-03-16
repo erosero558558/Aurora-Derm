@@ -82,6 +82,21 @@ function Write-JsonFile {
     $Payload | ConvertTo-Json -Depth 20 | Set-Content -Path $Path -Encoding UTF8
 }
 
+function Add-OptionalNamedArgument {
+    param(
+        [System.Collections.Generic.List[string]]$Arguments,
+        [string]$Name,
+        [string]$Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return
+    }
+
+    $Arguments.Add($Name) | Out-Null
+    $Arguments.Add($Value) | Out-Null
+}
+
 function Test-ProcessExists {
     param([int]$ProcessId)
 
@@ -257,23 +272,28 @@ function Invoke-Repair {
         throw "No existe REPARAR-HOSTING-WINDOWS.ps1 en el mirror: $ScriptPath"
     }
 
+    $arguments = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($token in @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $ScriptPath,
+        '-MirrorRepoPath', $mirrorRepoPathResolved,
+        '-ExternalEnvPath', $externalEnvPathResolved,
+        '-ReleaseTargetPath', $releaseTargetPathResolved,
+        '-PublicDomain', $PublicDomain,
+        '-TunnelId', $TunnelId,
+        '-OperatorUserProfile', $resolvedOperatorUserProfile,
+        '-Quiet'
+    )) {
+        $arguments.Add([string]$token) | Out-Null
+    }
+    Add-OptionalNamedArgument -Arguments $arguments -Name '-CaddyExePath' -Value $CaddyExePath
+    Add-OptionalNamedArgument -Arguments $arguments -Name '-CloudflaredExePath' -Value $CloudflaredExePath
+    Add-OptionalNamedArgument -Arguments $arguments -Name '-PhpCgiExePath' -Value $PhpCgiExePath
+
     $result = Start-Process `
         -FilePath $powershellExe `
-        -ArgumentList @(
-            '-NoProfile',
-            '-ExecutionPolicy', 'Bypass',
-            '-File', $ScriptPath,
-            '-MirrorRepoPath', $mirrorRepoPathResolved,
-            '-ExternalEnvPath', $externalEnvPathResolved,
-            '-ReleaseTargetPath', $releaseTargetPathResolved,
-            '-PublicDomain', $PublicDomain,
-            '-TunnelId', $TunnelId,
-            '-OperatorUserProfile', $resolvedOperatorUserProfile,
-            '-CaddyExePath', $CaddyExePath,
-            '-CloudflaredExePath', $CloudflaredExePath,
-            '-PhpCgiExePath', $PhpCgiExePath,
-            '-Quiet'
-        ) `
+        -ArgumentList $arguments `
         -NoNewWindow `
         -Wait `
         -PassThru
