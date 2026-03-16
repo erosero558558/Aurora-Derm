@@ -8,6 +8,7 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
 source "${SCRIPT_DIR}/windows-hosting-ssh-common.sh"
 
 windows_hosting_init_env
+windows_hosting_resolve_expected_commit "${REPO_ROOT}"
 windows_hosting_prepare_ssh
 windows_hosting_warn_local_dirty_tree "${REPO_ROOT}"
 windows_hosting_verify_remote_main_pin "${REPO_ROOT}"

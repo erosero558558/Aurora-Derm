@@ -10,8 +10,11 @@ Entrypoints:
 
 Contrato operativo:
 
-- Solo trabaja contra `origin/main@c7619c25ad5ad5ad0436b80d75d6effb7d9f1e8b`
-  salvo override explicito con `WINDOWS_EXPECTED_COMMIT`.
+- Por defecto toma el pin desde `origin/main` actual y lo verifica otra vez
+  antes de mutar el host.
+- Si necesitas fijar un release concreto, usa `WINDOWS_EXPECTED_COMMIT`.
+- El fallback historico conservador queda en
+  `c7619c25ad5ad5ad0436b80d75d6effb7d9f1e8b`.
 - El mirror productivo debe ser `C:\dev\pielarmonia-clean-main`.
 - El env sensible canonico debe vivir en
   `C:\ProgramData\Pielarmonia\hosting\env.php`.

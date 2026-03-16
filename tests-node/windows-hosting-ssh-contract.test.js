@@ -38,11 +38,13 @@ function load(filePath) {
 test('helper SSH fija pin, target Windows y encoded command canonico', () => {
     const raw = load(COMMON_PATH);
     const requiredSnippets = [
-        'WINDOWS_EXPECTED_COMMIT_DEFAULT="c7619c25ad5ad5ad0436b80d75d6effb7d9f1e8b"',
+        'WINDOWS_EXPECTED_COMMIT_FALLBACK="c7619c25ad5ad5ad0436b80d75d6effb7d9f1e8b"',
         "WINDOWS_MIRROR_PATH_DEFAULT='C:\\dev\\pielarmonia-clean-main'",
         "WINDOWS_ENV_PATH_DEFAULT='C:\\ProgramData\\Pielarmonia\\hosting\\env.php'",
         "WINDOWS_RELEASE_TARGET_PATH_DEFAULT='C:\\ProgramData\\Pielarmonia\\hosting\\release-target.json'",
         "WINDOWS_HOSTING_DIR_DEFAULT='C:\\ProgramData\\Pielarmonia\\hosting'",
+        'windows_hosting_resolve_expected_commit()',
+        'WINDOWS_EXPECTED_COMMIT no estaba definido; se usa origin/main=${WINDOWS_EXPECTED_COMMIT}',
         'SSH_HOST_ALIAS',
         'SSH_HOST',
         'SSH_USERNAME',
@@ -63,6 +65,7 @@ test('helper SSH fija pin, target Windows y encoded command canonico', () => {
 test('wrapper diagnostico valida runtime fingerprint, auth local/publica y status files', () => {
     const raw = load(DIAG_PATH);
     const requiredSnippets = [
+        'windows_hosting_resolve_expected_commit "${REPO_ROOT}"',
         'windows_hosting_verify_remote_main_pin',
         "__hosting/runtime",
         'admin-auth.php?action=status',
@@ -86,6 +89,7 @@ test('wrapper diagnostico valida runtime fingerprint, auth local/publica y statu
 test('wrapper ejecucion remota aplica flujo canonico y evidencia final', () => {
     const raw = load(EXEC_PATH);
     const requiredSnippets = [
+        'windows_hosting_resolve_expected_commit "${REPO_ROOT}"',
         'windows_hosting_verify_remote_main_pin',
         'git_fetch_origin',
         "Invoke-ExternalCommandSection -Name 'git_fetch_origin' -FilePath 'git' -Arguments @('fetch', 'origin')",
@@ -133,7 +137,8 @@ test('documentacion setup expone wrappers remotos y variables canonicas', () => 
         'WINDOWS_EXPECTED_COMMIT',
         '__hosting/runtime',
         'C:\\dev\\pielarmonia-clean-main',
-        'origin/main@c7619c25ad5ad5ad0436b80d75d6effb7d9f1e8b',
+        '`origin/main` actual',
+        'c7619c25ad5ad5ad0436b80d75d6effb7d9f1e8b',
     ];
 
     for (const snippet of requiredSnippets) {

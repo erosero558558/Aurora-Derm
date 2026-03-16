@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-WINDOWS_EXPECTED_COMMIT_DEFAULT="c7619c25ad5ad5ad0436b80d75d6effb7d9f1e8b"
+WINDOWS_EXPECTED_COMMIT_FALLBACK="c7619c25ad5ad5ad0436b80d75d6effb7d9f1e8b"
 WINDOWS_MIRROR_PATH_DEFAULT='C:\dev\pielarmonia-clean-main'
 WINDOWS_ENV_PATH_DEFAULT='C:\ProgramData\Pielarmonia\hosting\env.php'
 WINDOWS_RELEASE_TARGET_PATH_DEFAULT='C:\ProgramData\Pielarmonia\hosting\release-target.json'
@@ -23,7 +23,7 @@ windows_hosting_require_command() {
 }
 
 windows_hosting_init_env() {
-    export WINDOWS_EXPECTED_COMMIT="${WINDOWS_EXPECTED_COMMIT:-$WINDOWS_EXPECTED_COMMIT_DEFAULT}"
+    export WINDOWS_EXPECTED_COMMIT="${WINDOWS_EXPECTED_COMMIT:-}"
     export WINDOWS_MIRROR_PATH="${WINDOWS_MIRROR_PATH:-$WINDOWS_MIRROR_PATH_DEFAULT}"
     export WINDOWS_ENV_PATH="${WINDOWS_ENV_PATH:-$WINDOWS_ENV_PATH_DEFAULT}"
     export WINDOWS_RELEASE_TARGET_PATH="${WINDOWS_RELEASE_TARGET_PATH:-$WINDOWS_RELEASE_TARGET_PATH_DEFAULT}"
@@ -34,6 +34,25 @@ windows_hosting_init_env() {
     export SSH_SERVER_ALIVE_INTERVAL="${SSH_SERVER_ALIVE_INTERVAL:-15}"
     export SSH_SERVER_ALIVE_COUNT_MAX="${SSH_SERVER_ALIVE_COUNT_MAX:-4}"
     export SSH_STRICT_HOST_KEY_CHECKING="${SSH_STRICT_HOST_KEY_CHECKING:-accept-new}"
+}
+
+windows_hosting_resolve_expected_commit() {
+    local repo_root="$1"
+    local remote_head
+
+    if [[ -n "${WINDOWS_EXPECTED_COMMIT:-}" ]]; then
+        return
+    fi
+
+    remote_head="$(git -C "${repo_root}" ls-remote origin refs/heads/main | awk '{print $1}')"
+    if [[ -n "${remote_head}" ]]; then
+        export WINDOWS_EXPECTED_COMMIT="${remote_head}"
+        windows_hosting_log "WINDOWS_EXPECTED_COMMIT no estaba definido; se usa origin/main=${WINDOWS_EXPECTED_COMMIT}"
+        return
+    fi
+
+    export WINDOWS_EXPECTED_COMMIT="${WINDOWS_EXPECTED_COMMIT_FALLBACK}"
+    windows_hosting_log "No se pudo resolver origin/main; se usa fallback WINDOWS_EXPECTED_COMMIT=${WINDOWS_EXPECTED_COMMIT}"
 }
 
 windows_hosting_ps_literal() {
