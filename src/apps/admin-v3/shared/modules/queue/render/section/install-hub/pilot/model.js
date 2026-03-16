@@ -80,9 +80,30 @@ function getCurrentPilotRoute() {
         return '';
     }
 
-    return normalizePilotRoute(
-        `${window.location.pathname || ''}${window.location.hash || ''}`
-    );
+    const pathname = String(window.location.pathname || '').trim();
+    const hash = String(window.location.hash || '').trim();
+
+    if (hash) {
+        return normalizePilotRoute(`${pathname}${hash}`);
+    }
+
+    if (typeof document !== 'undefined') {
+        const activeSection = String(
+            document.documentElement?.getAttribute('data-admin-section') ||
+                document.body?.getAttribute('data-admin-section') ||
+                document.querySelector('.admin-section.active')?.id ||
+                document
+                    .querySelector('.nav-item[data-section].active')
+                    ?.getAttribute('data-section') ||
+                ''
+        ).trim();
+
+        if (activeSection) {
+            return normalizePilotRoute(`${pathname}#${activeSection}`);
+        }
+    }
+
+    return normalizePilotRoute(pathname);
 }
 
 function getSurfaceTelemetryDetails(telemetryEntry) {
@@ -215,7 +236,7 @@ function buildPilotHealthReadinessDetail(
     telemetryCount
 ) {
     if (!turneroPilotHealth || turneroPilotHealth.available !== true) {
-        return 'El host no publica `checks.turneroPilot`; falta confirmar clinic_id, catálogo, canon y la señal viva + heartbeats del piloto desde `/health`.';
+        return 'El host no publica `checks.turneroPilot`; falta confirmar clinic_id, catálogo, canon y la señal viva + heartbeats de Turnero V2 desde `/health`.';
     }
 
     if (turneroPilotHealth.configured !== true) {
@@ -233,7 +254,7 @@ function buildPilotHealthReadinessDetail(
                 .trim()
                 .toLowerCase()
     ) {
-        return `Health público reporta clinic_id ${turneroPilotHealth.clinicId}, pero el piloto activo exige ${clinicId}.`;
+        return `Health público reporta clinic_id ${turneroPilotHealth.clinicId}, pero Turnero V2 activo exige ${clinicId}.`;
     }
 
     if (
@@ -249,7 +270,7 @@ function buildPilotHealthReadinessDetail(
     }
 
     if (turneroPilotHealth.ready !== true) {
-        return `Health público todavía no marca ${clinicName} como piloto listo; revisa release, catálogo y rutas activas.`;
+        return `Health público todavía no marca ${clinicName} como Turnero V2 listo; revisa release, catálogo y rutas activas.`;
     }
 
     if (
@@ -313,6 +334,8 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
         getTurneroClinicProfile,
         getTurneroClinicProfileMeta,
         getTurneroClinicProfileCatalogStatus,
+        getTurneroOperatorAccessMeta,
+        getTurneroV2Readiness,
         getTurneroClinicBrandName,
         getTurneroPublicSyncStatus,
         getTurneroPilotHealthStatus,
@@ -391,6 +414,86 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
         typeof getTurneroPilotHealthStatus === 'function'
             ? getTurneroPilotHealthStatus()
             : null;
+    const operatorAccessMeta =
+        typeof getTurneroOperatorAccessMeta === 'function'
+            ? getTurneroOperatorAccessMeta()
+            : null;
+    const turneroV2Readiness =
+        typeof getTurneroV2Readiness === 'function'
+            ? getTurneroV2Readiness()
+            : null;
+    const releaseMode = String(release?.mode || '')
+        .trim()
+        .toLowerCase();
+    const suiteV2Enabled = releaseMode === 'suite_v2';
+    const operatorAccessConfigured =
+        turneroV2Readiness?.operatorAccess?.configured === true ||
+        operatorAccessMeta?.configured === true ||
+        turneroPilotHealth?.operatorPinConfigured === true;
+    const operatorPinMaskedLabel = String(
+        operatorAccessMeta?.maskedPinLabel || ''
+    ).trim();
+    const operatorPinSessionTtlHours = Number(
+        operatorAccessMeta?.sessionTtlHours ||
+            turneroPilotHealth?.operatorPinSessionTtlHours ||
+            0
+    );
+    const nativeSurfaceReadiness =
+        turneroV2Readiness?.surfaces &&
+        typeof turneroV2Readiness.surfaces === 'object'
+            ? turneroV2Readiness.surfaces
+            : {};
+    const hardwareReadiness =
+        turneroV2Readiness?.hardware &&
+        typeof turneroV2Readiness.hardware === 'object'
+            ? turneroV2Readiness.hardware
+            : {};
+    const nativeSurfaceLabels = {
+        operator: 'Operator desktop',
+        kiosk: 'Kiosk desktop',
+        display: 'Sala TV Android',
+    };
+    const hardwareLabels = {
+        assistant: 'Asistente de kiosco',
+        printer: 'Impresora térmica',
+        numpad: 'Numpad operador',
+        desktopShell: 'Shell desktop',
+        tvAudio: 'Audio sala TV',
+        syncMode: 'Sync clínico',
+    };
+    const nativeSurfaceBlocking = ['operator', 'kiosk', 'display']
+        .map((surfaceKey) => {
+            const surface = nativeSurfaceReadiness[surfaceKey];
+            if (surface?.ready === true) {
+                return '';
+            }
+
+            return String(
+                surface?.summary ||
+                    `${nativeSurfaceLabels[surfaceKey]} todavía no reporta readiness nativa.`
+            ).trim();
+        })
+        .filter(Boolean);
+    const hardwareBlocking = [
+        'assistant',
+        'printer',
+        'numpad',
+        'desktopShell',
+        'tvAudio',
+        'syncMode',
+    ]
+        .map((hardwareKey) => {
+            const item = hardwareReadiness[hardwareKey];
+            if (item?.ready === true) {
+                return '';
+            }
+
+            return String(
+                item?.summary ||
+                    `${hardwareLabels[hardwareKey]} todavía no quedó validado.`
+            ).trim();
+        })
+        .filter(Boolean);
     const requiredSurfaceKeys = ['admin', 'operator', 'kiosk', 'display'];
     const enabledSurfaceKeys = requiredSurfaceKeys.filter(
         (surfaceKey) =>
@@ -484,7 +587,7 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
         ) {
             state = 'alert';
             badge = 'Bloquea';
-            detail = `Heartbeat reporta clinic_id ${telemetryClinicId}, pero el piloto activo exige ${clinicId}.`;
+            detail = `Heartbeat reporta clinic_id ${telemetryClinicId}, pero Turnero V2 activo exige ${clinicId}.`;
         } else if (
             enabled &&
             profileFingerprint &&
@@ -539,32 +642,37 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
     ).length;
     const canonicalSupport =
         canonicalSurfaceAlertCount > 0
-            ? `${canonicalSurfaceAlertCount} superficie(s) del piloto están fuera de su ruta canónica y bloquean la apertura.`
+            ? `${canonicalSurfaceAlertCount} superficie(s) ${
+                  suiteV2Enabled ? 'de Turnero V2' : 'del piloto web'
+              } están fuera de su ruta canónica y bloquean la apertura.`
             : canonicalSurfaceVerifiedCount === canonicalSurfaces.length
               ? 'Todas las superficies activas ya verificaron su ruta canónica en esta clínica.'
               : `${canonicalSurfaceVerifiedCount}/${canonicalSurfaces.length} superficies ya verificaron su ruta; las demás siguen declaradas a la espera del heartbeat vivo.`;
+    const profileReleaseReady =
+        Boolean(profile) &&
+        profileSource === 'remote' &&
+        String(profile?.clinic_id || '').trim() !== '' &&
+        release?.separate_deploy === true &&
+        String(release?.admin_mode_default || '').trim() === 'basic' &&
+        (suiteV2Enabled
+            ? releaseMode === 'suite_v2' &&
+              release?.native_apps_blocking === true
+            : releaseMode === 'web_pilot');
     const readinessItems = [
         {
             id: 'profile',
-            ready:
-                Boolean(profile) &&
-                profileSource === 'remote' &&
-                String(profile?.clinic_id || '').trim() !== '' &&
-                String(release?.mode || '').trim() === 'web_pilot' &&
-                release?.separate_deploy === true &&
-                String(release?.admin_mode_default || '').trim() === 'basic',
+            ready: profileReleaseReady,
             label: 'Perfil por clínica',
             detail:
                 Boolean(profile) && profileSource !== 'remote'
                     ? 'El admin sigue usando un perfil cacheado localmente. Recupera `/data` o vuelve a publicar antes de abrir esta clínica.'
-                    : Boolean(profile) &&
-                        String(profile?.clinic_id || '').trim() !== '' &&
-                        String(release?.mode || '').trim() === 'web_pilot' &&
-                        release?.separate_deploy === true &&
-                        String(release?.admin_mode_default || '').trim() ===
-                            'basic'
-                      ? `${clinicName} ya quedó perfilada como piloto web separado.`
-                      : 'Falta cerrar `clinic_id`, release web o `basic` por defecto antes de abrir otra clínica.',
+                    : profileReleaseReady
+                      ? suiteV2Enabled
+                          ? `${clinicName} ya quedó perfilada como suite_v2 separada y con apps nativas bloqueantes.`
+                          : `${clinicName} ya quedó perfilada como piloto web separado.`
+                      : suiteV2Enabled
+                        ? 'Falta cerrar `clinic_id`, `suite_v2`, `basic` por defecto o apps nativas bloqueantes antes de abrir otra clínica.'
+                        : 'Falta cerrar `clinic_id`, release web o `basic` por defecto antes de abrir otra clínica.',
             blocker: true,
         },
         {
@@ -586,15 +694,61 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             ready:
                 enabledSurfaceKeys.length === requiredSurfaceKeys.length &&
                 canonicalSurfaceAlertCount === 0,
-            label: 'Superficies web canónicas',
+            label: suiteV2Enabled
+                ? 'Fallback web canónico'
+                : 'Superficies web canónicas',
             detail:
                 enabledSurfaceKeys.length !== requiredSurfaceKeys.length
-                    ? `Solo ${enabledSurfaceKeys.length}/${requiredSurfaceKeys.length} superficies del piloto quedaron habilitadas en el perfil.`
+                    ? suiteV2Enabled
+                        ? `Solo ${enabledSurfaceKeys.length}/${requiredSurfaceKeys.length} superficies web de fallback quedaron habilitadas en el perfil.`
+                        : `Solo ${enabledSurfaceKeys.length}/${requiredSurfaceKeys.length} superficies del piloto quedaron habilitadas en el perfil.`
                     : canonicalSurfaceAlertCount > 0
                       ? `${canonicalSurfaceAlertCount} superficie(s) están vivas fuera de la ruta canónica del perfil.`
-                      : 'Admin, operador, kiosco y sala web ya están declarados como superficies activas del piloto.',
+                      : suiteV2Enabled
+                        ? 'Admin, operador, kiosco y sala web ya están declarados como fallback y soporte canónico de la clínica.'
+                        : 'Admin, operador, kiosco y sala web ya están declarados como superficies activas del piloto.',
             blocker: true,
         },
+    ];
+    if (suiteV2Enabled) {
+        readinessItems.push(
+            {
+                id: 'operator_access',
+                ready: operatorAccessConfigured,
+                label: 'PIN operativo',
+                detail: operatorAccessConfigured
+                    ? operatorPinMaskedLabel && operatorPinSessionTtlHours > 0
+                        ? `PIN ${operatorPinMaskedLabel} configurado con sesión operativa de ${operatorPinSessionTtlHours}h.`
+                        : 'PIN operativo configurado y listo para el ingreso diario del operador.'
+                    : String(
+                          turneroV2Readiness?.operatorAccess?.detail ||
+                              'Falta configurar el PIN operativo desde admin.'
+                      ).trim(),
+                blocker: true,
+            },
+            {
+                id: 'native_surfaces',
+                ready: nativeSurfaceBlocking.length === 0,
+                label: 'Superficies nativas bloqueantes',
+                detail:
+                    nativeSurfaceBlocking.length === 0
+                        ? 'Operator desktop, kiosk desktop y sala TV Android reportan readiness de salida.'
+                        : nativeSurfaceBlocking.join(' '),
+                blocker: true,
+            },
+            {
+                id: 'hardware',
+                ready: hardwareBlocking.length === 0,
+                label: 'Hardware crítico',
+                detail:
+                    hardwareBlocking.length === 0
+                        ? 'Asistente, impresora, numpad, shell desktop, audio TV y sync clínico quedaron validados.'
+                        : hardwareBlocking.join(' '),
+                blocker: true,
+            }
+        );
+    }
+    readinessItems.push(
         {
             id: 'publish',
             ready: publicationReady,
@@ -643,8 +797,8 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                 ? 'Ya existe evidencia reciente de llamado end-to-end o el smoke quedó confirmado en apertura.'
                 : 'Todavía falta un llamado real o de prueba que cierre el flujo completo antes de producción.',
             blocker: false,
-        },
-    ];
+        }
+    );
     const readinessBlockingCount = readinessItems.filter(
         (item) => !item.ready
     ).length;
@@ -659,23 +813,38 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
               : 'warning';
     const readinessTitle =
         readinessState === 'ready'
-            ? 'Piloto web listo para abrir'
+            ? suiteV2Enabled
+                ? 'Turnero V2 listo para operar'
+                : 'Piloto web listo para abrir'
             : readinessState === 'alert'
-              ? 'Piloto web bloqueado'
-              : 'Piloto web casi listo';
+              ? suiteV2Enabled
+                  ? 'Turnero V2 bloqueado'
+                  : 'Piloto web bloqueado'
+              : suiteV2Enabled
+                ? 'Turnero V2 casi listo'
+                : 'Piloto web casi listo';
     const readinessSummary =
         readinessState === 'ready'
-            ? `${clinicName} ya cumple el corte web del piloto: perfil separado, superficies activas, publicación verificada, señal estable y smoke confirmado.`
+            ? suiteV2Enabled
+                ? `${clinicName} ya cumple el corte de Turnero V2: perfil separado, PIN operativo, apps nativas listas, fallback web canonizado, publicación verificada y smoke confirmado.`
+                : `${clinicName} ya cumple el corte web del piloto: perfil separado, superficies activas, publicación verificada, señal estable y smoke confirmado.`
             : readinessState === 'alert'
-              ? `Faltan ${readinessBlockingCount} bloqueo(s) para abrir ${clinicName} en piloto web. Resuelve primero perfil, superficies o publicación antes del smoke final.`
-              : `Faltan ${readinessBlockingCount} cierre(s) operativos para abrir ${clinicName} en piloto web sin depender del modo expert.`;
-    const nativeAppsSupport =
-        release?.native_apps_blocking === false
-            ? 'Los instaladores quedan fuera del bloqueo de go-live en este corte web.'
-            : 'La política de release todavía marca apps nativas como bloqueantes.';
+              ? suiteV2Enabled
+                  ? `Faltan ${readinessBlockingCount} bloqueo(s) para abrir ${clinicName} en Turnero V2. Resuelve primero perfil, PIN, superficies nativas o publicación antes del smoke final.`
+                  : `Faltan ${readinessBlockingCount} bloqueo(s) para abrir ${clinicName} en piloto web. Resuelve primero perfil, superficies o publicación antes del smoke final.`
+              : suiteV2Enabled
+                ? `Faltan ${readinessBlockingCount} cierre(s) operativos para abrir ${clinicName} en Turnero V2 sin depender del modo expert.`
+                : `Faltan ${readinessBlockingCount} cierre(s) operativos para abrir ${clinicName} en piloto web sin depender del modo expert.`;
+    const nativeAppsSupport = suiteV2Enabled
+        ? release?.native_apps_blocking === true
+            ? 'Las apps nativas y el hardware crítico sí bloquean el go-live de Turnero V2.'
+            : 'La política de release todavía no cumple el estándar de Turnero V2 para apps nativas bloqueantes.'
+        : release?.native_apps_blocking === false
+          ? 'Los instaladores quedan fuera del bloqueo de go-live en este corte web.'
+          : 'La política de release todavía marca apps nativas como bloqueantes.';
     const readinessSupport = publicationReady
         ? `La clínica ya quedó publicada con commit verificable. ${nativeAppsSupport}`
-        : `Este gate ahora separa "lista localmente" de "publicada". ${nativeAppsSupport}`;
+        : `Este gate separa "lista localmente" de "publicada". ${nativeAppsSupport}`;
     const smokeSteps = [
         {
             id: 'admin',
@@ -688,8 +857,12 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             detail:
                 canonicalSurfaceMap.admin?.ready &&
                 String(release?.admin_mode_default || '').trim() === 'basic'
-                    ? 'Verifica que la cola abra en `basic` y muestre el sello de la clínica piloto.'
-                    : 'Falta una ruta canónica de admin o el piloto no arranca en `basic` por defecto.',
+                    ? suiteV2Enabled
+                        ? 'Verifica que la cola abra en `basic` y muestre el sello de la clínica activa.'
+                        : 'Verifica que la cola abra en `basic` y muestre el sello de la clínica piloto.'
+                    : suiteV2Enabled
+                      ? 'Falta una ruta canónica de admin o Turnero V2 no arranca en `basic` por defecto.'
+                      : 'Falta una ruta canónica de admin o el piloto no arranca en `basic` por defecto.',
             href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
             actionLabel: 'Abrir admin',
         },
@@ -708,7 +881,7 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                     'alert'
                     ? getSurfaceTelemetryAlertDetail(
                           telemetryMap.operator,
-                          'Operador fuera del canon del piloto.'
+                          'Operador fuera del canon de Turnero V2.'
                       )
                     : canonicalSurfaceMap.operator?.ready &&
                         getSurfaceTelemetryClinicId(telemetryMap.operator) &&
@@ -751,7 +924,7 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                 getSurfaceTelemetryContractState(telemetryMap.kiosk) === 'alert'
                     ? getSurfaceTelemetryAlertDetail(
                           telemetryMap.kiosk,
-                          'Kiosco fuera del canon del piloto.'
+                          'Kiosco fuera del canon de Turnero V2.'
                       )
                     : canonicalSurfaceMap.kiosk?.ready &&
                         getSurfaceTelemetryClinicId(telemetryMap.kiosk) &&
@@ -776,7 +949,7 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                           ? 'Kiosco listo para probar check-in con cita o sin cita desde la ruta canónica.'
                           : canonicalSurfaceMap.kiosk?.ready
                             ? `Falta cerrar el smoke de check-in en kiosco: ${telemetryMap.kiosk?.summary || 'heartbeat no listo.'}`
-                            : 'Falta declarar la ruta canónica del kiosco dentro del perfil del piloto.',
+                            : 'Falta declarar la ruta canónica del kiosco dentro del perfil activo.',
             href: canonicalSurfaceMap.kiosk?.url || '',
             actionLabel: 'Abrir kiosco',
         },
@@ -795,7 +968,7 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                     'alert'
                     ? getSurfaceTelemetryAlertDetail(
                           telemetryMap.display,
-                          'Sala fuera del canon del piloto.'
+                          'Sala fuera del canon de Turnero V2.'
                       )
                     : canonicalSurfaceMap.display?.ready &&
                         getSurfaceTelemetryClinicId(telemetryMap.display) &&
@@ -820,7 +993,7 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
                           ? `Sala lista: ${telemetryMap.display.summary || 'refleja llamado y audio activo.'}`
                           : canonicalSurfaceMap.display?.ready
                             ? `Falta validar la sala antes de abrir: ${telemetryMap.display?.summary || 'heartbeat no listo.'}`
-                            : 'Falta declarar la ruta canónica de sala dentro del perfil del piloto.',
+                            : 'Falta declarar la ruta canónica de sala dentro del perfil activo.',
             href: canonicalSurfaceMap.display?.url || '',
             actionLabel: 'Abrir sala',
         },
@@ -829,7 +1002,9 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             label: 'Llamado final',
             state: smokeReady ? 'ready' : 'warning',
             detail: smokeReady
-                ? 'Ya existe un llamado end-to-end reciente para cerrar el piloto web de la clínica.'
+                ? suiteV2Enabled
+                    ? 'Ya existe un llamado end-to-end reciente para cerrar Turnero V2 de la clínica.'
+                    : 'Ya existe un llamado end-to-end reciente para cerrar el piloto web de la clínica.'
                 : 'Cierra la secuencia con un llamado real o de prueba desde la cola antes de abrir la clínica.',
             href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
             actionLabel: 'Cerrar smoke',
@@ -846,7 +1021,9 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
           : 'warning';
     const smokeSummary =
         smokeState === 'ready'
-            ? `${clinicName} ya tiene una secuencia repetible de smoke web por clínica.`
+            ? suiteV2Enabled
+                ? `${clinicName} ya tiene una secuencia repetible de Turnero V2 por clínica.`
+                : `${clinicName} ya tiene una secuencia repetible de smoke web por clínica.`
             : smokeState === 'alert'
               ? 'La secuencia de smoke tiene bloqueos de perfil o rutas canónicas antes del go-live.'
               : 'La secuencia ya está armada; solo faltan validar superficies pendientes y cerrar el llamado final.';
@@ -929,13 +1106,58 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
         addGoLiveIssue(
             buildGoLiveIssue({
                 id: 'surfaces',
-                label: 'Superficies web canónicas',
+                label: 'Fallback web canónico',
                 state: readinessItemsById.surfaces?.blocker
                     ? 'alert'
                     : 'warning',
                 detail: readinessItemsById.surfaces?.detail,
                 href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
                 actionLabel: 'Revisar canon',
+            })
+        );
+    }
+
+    if (suiteV2Enabled && !readinessItemsById.operator_access?.ready) {
+        addGoLiveIssue(
+            buildGoLiveIssue({
+                id: 'operator_access',
+                label: 'PIN operativo',
+                state: readinessItemsById.operator_access?.blocker
+                    ? 'alert'
+                    : 'warning',
+                detail: readinessItemsById.operator_access?.detail,
+                href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
+                actionLabel: 'Configurar PIN',
+            })
+        );
+    }
+
+    if (suiteV2Enabled && !readinessItemsById.native_surfaces?.ready) {
+        addGoLiveIssue(
+            buildGoLiveIssue({
+                id: 'native_surfaces',
+                label: 'Superficies nativas bloqueantes',
+                state: readinessItemsById.native_surfaces?.blocker
+                    ? 'alert'
+                    : 'warning',
+                detail: readinessItemsById.native_surfaces?.detail,
+                href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
+                actionLabel: 'Revisar surfaces',
+            })
+        );
+    }
+
+    if (suiteV2Enabled && !readinessItemsById.hardware?.ready) {
+        addGoLiveIssue(
+            buildGoLiveIssue({
+                id: 'hardware',
+                label: 'Hardware crítico',
+                state: readinessItemsById.hardware?.blocker
+                    ? 'alert'
+                    : 'warning',
+                detail: readinessItemsById.hardware?.detail,
+                href: canonicalSurfaceMap.admin?.url || '/admin.html#queue',
+                actionLabel: 'Revisar hardware',
             })
         );
     }
@@ -991,7 +1213,9 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
               : 'warning';
     const goLiveSummary =
         goLiveIssues.length === 0
-            ? `${clinicName} ya no tiene bloqueos de salida para el piloto web.`
+            ? suiteV2Enabled
+                ? `${clinicName} ya no tiene bloqueos de salida para Turnero V2.`
+                : `${clinicName} ya no tiene bloqueos de salida para el piloto web.`
             : goLiveBlockingCount > 0
               ? `${goLiveBlockingCount} bloqueo(s) siguen frenando el go-live de ${clinicName}.`
               : `${goLiveIssues.length} pendiente(s) menores todavía requieren cierre antes del go-live.`;
@@ -1034,7 +1258,9 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
         {
             id: 'release',
             label: 'Release',
-            value: `web_pilot · basic · ${release?.separate_deploy === true ? 'deploy separado' : 'deploy sin aislar'}`,
+            value: suiteV2Enabled
+                ? `suite_v2 · basic · ${release?.separate_deploy === true ? 'deploy separado' : 'deploy sin aislar'} · ${release?.native_apps_blocking === true ? 'nativas bloqueantes' : 'nativas no bloqueantes'}`
+                : `web_pilot · basic · ${release?.separate_deploy === true ? 'deploy separado' : 'deploy sin aislar'}`,
         },
         {
             id: 'publish',
@@ -1064,13 +1290,50 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             value: `${smokeReadyCount}/${smokeSteps.length} pasos listos`,
         },
     ];
+    if (suiteV2Enabled) {
+        handoffItems.splice(
+            4,
+            0,
+            {
+                id: 'pin',
+                label: 'PIN',
+                value: operatorAccessConfigured
+                    ? operatorPinMaskedLabel && operatorPinSessionTtlHours > 0
+                        ? `${operatorPinMaskedLabel} · ${operatorPinSessionTtlHours}h`
+                        : 'configurado'
+                    : 'pendiente',
+            },
+            {
+                id: 'native',
+                label: 'Nativo',
+                value:
+                    nativeSurfaceBlocking.length === 0
+                        ? 'operator + kiosk + sala_tv listos'
+                        : `${nativeSurfaceBlocking.length} bloqueo(s) nativos`,
+            },
+            {
+                id: 'hardware',
+                label: 'Hardware',
+                value:
+                    hardwareBlocking.length === 0
+                        ? 'assistant, printer, numpad, shell y tv audio listos'
+                        : `${hardwareBlocking.length} bloqueo(s) de hardware`,
+            }
+        );
+    }
     const handoffSummary =
         readinessState === 'ready'
-            ? `Paquete listo para compartir con ${clinicName}: el piloto ya tiene gate en verde, publicación verificable y secuencia repetible.`
-            : `Paquete listo para handoff interno: comparte este resumen antes de abrir ${clinicName} para que todos usen el mismo estado del piloto.`;
+            ? suiteV2Enabled
+                ? `Paquete listo para compartir con ${clinicName}: Turnero V2 ya tiene gate en verde, publicación verificable y secuencia repetible.`
+                : `Paquete listo para compartir con ${clinicName}: el piloto ya tiene gate en verde, publicación verificable y secuencia repetible.`
+            : suiteV2Enabled
+              ? `Paquete listo para handoff interno: comparte este resumen antes de abrir ${clinicName} para que todos usen el mismo estado de Turnero V2.`
+              : `Paquete listo para handoff interno: comparte este resumen antes de abrir ${clinicName} para que todos usen el mismo estado del piloto.`;
     const handoffSupport =
         readinessState === 'ready'
-            ? 'Usa “Copiar paquete” para pasar el estado del go-live con las rutas web activas de la clínica.'
+            ? suiteV2Enabled
+                ? 'Usa “Copiar paquete” para pasar el estado del go-live con surfaces nativas y fallback web de la clínica.'
+                : 'Usa “Copiar paquete” para pasar el estado del go-live con las rutas web activas de la clínica.'
             : 'Aunque el gate siga en warning o alert, este paquete resume exactamente qué falta antes del go-live.';
     const sharedPilotPayload = {
         progressPct,

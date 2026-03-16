@@ -35,6 +35,7 @@ require_once __DIR__ . '/controllers/ServicePriorityController.php';
 require_once __DIR__ . '/controllers/SystemController.php';
 require_once __DIR__ . '/controllers/ConfigController.php';
 require_once __DIR__ . '/controllers/OperatorAuthController.php';
+require_once __DIR__ . '/controllers/OperatorPinController.php';
 require_once __DIR__ . '/controllers/PushController.php';
 require_once __DIR__ . '/controllers/AnalyticsController.php';
 require_once __DIR__ . '/controllers/QueueController.php';

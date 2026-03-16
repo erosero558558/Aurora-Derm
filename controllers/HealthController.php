@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/TurneroClinicProfile.php';
+require_once __DIR__ . '/../lib/TurneroOperatorAccess.php';
 require_once __DIR__ . '/../lib/telemedicine/TelemedicineOpsSnapshot.php';
 require_once __DIR__ . '/../lib/PatientCaseService.php';
 require_once __DIR__ . '/../lib/InternalConsoleReadiness.php';
@@ -482,6 +483,7 @@ class HealthController
                 && $brokerEmailVerifiedRequired)
             || (!$operatorAuthEnabled && $mode === 'legacy_password' && $twoFactorEnabled)
         );
+        $operatorPinMeta = turnero_operator_access_meta();
 
         return [
             'mode' => $mode,
@@ -499,6 +501,9 @@ class HealthController
             'brokerAudiencePinned' => $brokerAudiencePinned,
             'brokerJwksConfigured' => $brokerJwksConfigured,
             'brokerEmailVerifiedRequired' => $brokerEmailVerifiedRequired,
+            'operatorPinMode' => TURNERO_OPERATOR_MODE,
+            'operatorPinConfigured' => (bool) ($operatorPinMeta['configured'] ?? false),
+            'operatorPinSessionTtlHours' => (int) ($operatorPinMeta['sessionTtlHours'] ?? TURNERO_OPERATOR_DEFAULT_SESSION_TTL_HOURS),
             'operatorAuthMissing' => is_array($operatorAuthConfig['missing'] ?? null)
                 ? array_values($operatorAuthConfig['missing'])
                 : [],

@@ -214,10 +214,9 @@ function main(argv) {
         process.env.TURNERO_PILOT_RELEASE_MODE,
         'unknown'
     );
-    const snapshot =
-        releaseMode !== 'web_pilot'
-            ? buildNotRequiredSnapshot()
-            : buildVerifiedSnapshot(options);
+    const snapshot = !['web_pilot', 'suite_v2'].includes(releaseMode)
+        ? buildNotRequiredSnapshot()
+        : buildVerifiedSnapshot(options);
 
     writeSnapshot(remotePath, snapshot);
     appendGithubOutputs(snapshot);

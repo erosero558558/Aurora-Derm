@@ -7,6 +7,7 @@ require_once __DIR__ . '/metrics.php';
 require_once __DIR__ . '/http.php';
 require_once __DIR__ . '/api_helpers.php';
 require_once __DIR__ . '/ApiConfig.php';
+require_once __DIR__ . '/TurneroOperatorAccess.php';
 
 class ApiKernel
 {
@@ -144,7 +145,18 @@ class ApiKernel
         }
 
         $isAdmin = false;
+        $isQueueOperator = false;
+        $queueOperatorSession = null;
         $diagnosticsAuthorized = false;
+        $queueOperatorAllowedEndpoints = [
+            'GET:data',
+            'POST:operator-pin-logout',
+            'POST:queue-call-next',
+            'PATCH:queue-ticket',
+            'PATCH:queue-help-request',
+            'POST:queue-reprint',
+        ];
+        $queueOperatorScope = $method . ':' . $resource;
         if ($isDiagnostics) {
             $diagnosticsAuthorized = diagnostics_request_authorized([
                 'method' => $method,
@@ -169,11 +181,14 @@ class ApiKernel
         } elseif (!$isPublic) {
             start_secure_session();
             $isAdmin = legacy_admin_is_authenticated() || operator_auth_is_authenticated();
-            if (!$isAdmin) {
+            $queueOperatorSession = turnero_operator_session_current();
+            $isQueueOperator = is_array($queueOperatorSession);
+            $queueOperatorAllowed = $isQueueOperator && in_array($queueOperatorScope, $queueOperatorAllowedEndpoints, true);
+            if (!$isAdmin && !$queueOperatorAllowed) {
                 audit_log_event('api.unauthorized', [
                     'method' => $method,
                     'resource' => $resource,
-                    'reason' => 'admin_required'
+                    'reason' => $isQueueOperator ? 'queue_operator_scope_denied' : 'admin_required'
                 ]);
                 json_response([
                     'ok' => false,
@@ -185,6 +200,7 @@ class ApiKernel
         $shouldAuditAccess = true;
         if (
             !$isAdmin &&
+            !$isQueueOperator &&
             !$diagnosticsAuthorized &&
             $method === 'GET' &&
             !api_should_audit_public_get($resource)
@@ -196,12 +212,16 @@ class ApiKernel
             audit_log_event('api.access', [
                 'method' => $method,
                 'resource' => $resource,
-                'scope' => $isAdmin ? 'admin' : ($diagnosticsAuthorized ? 'diagnostics' : 'public')
+                'scope' => $isAdmin
+                    ? 'admin'
+                    : ($isQueueOperator
+                        ? 'queue_operator'
+                        : ($diagnosticsAuthorized ? 'diagnostics' : 'public'))
             ]);
         }
 
         // CSRF: validar token en mutaciones autenticadas (no publicas)
-        if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && $isAdmin) {
+        if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && ($isAdmin || $isQueueOperator)) {
             require_csrf();
         }
 
@@ -209,6 +229,8 @@ class ApiKernel
         $context = [
             'store' => $store,
             'isAdmin' => $isAdmin,
+            'isQueueOperator' => $isQueueOperator,
+            'queueOperatorSession' => $queueOperatorSession,
             'agentAccess' => $isAdmin ? admin_agent_has_editorial_access() : false,
             'diagnosticsAuthorized' => $diagnosticsAuthorized,
             'requestStartedAt' => $requestStartedAt,

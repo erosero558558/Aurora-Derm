@@ -1,175 +1,34 @@
 param(
     [string]$OutputDir = '_deploy_bundle',
-    [switch]$IncludeTooling
+    [switch]$IncludeTooling,
+    [switch]$SkipBuild,
+    [switch]$Json
 )
 
 $ErrorActionPreference = 'Stop'
 
-function Ensure-Directory {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) {
-        New-Item -ItemType Directory -Path $Path | Out-Null
-    }
+$repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
+$scriptPath = Join-Path $repoRoot 'bin\prepare-deploy-bundle.js'
+
+if (-not (Test-Path -LiteralPath $scriptPath)) {
+    throw "No existe $scriptPath"
 }
 
-function Add-FileToStage {
-    param(
-        [string]$RelativePath,
-        [string]$StageRoot,
-        [System.Collections.Generic.List[string]]$Missing
-    )
-
-    $source = Join-Path (Get-Location) $RelativePath
-    if (-not (Test-Path $source -PathType Leaf)) {
-        $Missing.Add($RelativePath)
-        return
-    }
-
-    $target = Join-Path $StageRoot $RelativePath
-    $targetDir = Split-Path -Parent $target
-    Ensure-Directory -Path $targetDir
-    Copy-Item -Path $source -Destination $target -Force
-}
-
-function Add-DirectoryToStage {
-    param(
-        [string]$RelativePath,
-        [string]$StageRoot,
-        [System.Collections.Generic.List[string]]$Missing
-    )
-
-    $source = Join-Path (Get-Location) $RelativePath
-    if (-not (Test-Path $source -PathType Container)) {
-        $Missing.Add($RelativePath)
-        return
-    }
-
-    $target = Join-Path $StageRoot $RelativePath
-    Ensure-Directory -Path (Split-Path -Parent $target)
-    Copy-Item -Path $source -Destination $target -Recurse -Force
-}
-
-$timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$bundleRoot = [System.IO.Path]::GetFullPath(
-    (Join-Path (Get-Location) $OutputDir)
-)
-Ensure-Directory -Path $bundleRoot
-
-$stageDirName = "pielarmonia-deploy-$timestamp"
-$stageDir = [System.IO.Path]::GetFullPath((Join-Path $bundleRoot $stageDirName))
-Ensure-Directory -Path $stageDir
-
-$files = @(
-    '.htaccess',
-    'index.php',
-    'styles.css',
-    'styles-deferred.css',
-    'script.js',
-    'sw.js',
-    'manifest.json',
-    'js/public-v6-shell.js',
-    'js/admin-preboot-shortcuts.js',
-    'js/admin-runtime.js',
-    'js/monitoring-loader.js',
-    'js/queue-operator.js',
-    'js/queue-kiosk.js',
-    'js/queue-display.js',
-    'admin.html',
-    'admin-v3.css',
-    'queue-ops.css',
-    'admin.js',
-    'operador-turnos.html',
-    'kiosco-turnos.html',
-    'sala-turnos.html',
-    'queue-kiosk.css',
-    'queue-display.css',
-    'admin-auth.php',
-    'api.php',
-    'api-lib.php',
-    'payment-lib.php',
-    'figo-chat.php',
-    'figo-backend.php',
-    'content/index.json',
-    'content/es.json',
-    'content/en.json',
-    'terminos.html',
-    'privacidad.html',
-    'cookies.html',
-    'aviso-medico.html',
-    'telemedicina.html',
-    'legal.css',
-    'favicon.ico',
-    'hero-woman.jpg',
-    'images/icon-192.png',
-    'images/icon-512.png',
-    'robots.txt',
-    'sitemap.xml',
-    'nginx-pielarmonia.conf'
-)
-
-$directories = @(
-    '_astro',
-    'es',
-    'en',
-    'fonts',
-    'images/optimized',
-    'js/chunks',
-    'js/engines',
-    'js/admin-chunks',
-    'servicios'
-)
-
+$arguments = @($scriptPath, '--output-dir', $OutputDir)
 if ($IncludeTooling) {
-    $files += @(
-        'SMOKE-PRODUCCION.ps1',
-        'VERIFICAR-DESPLIEGUE.ps1',
-        'BENCH-API-PRODUCCION.ps1',
-        'GATE-POSTDEPLOY.ps1',
-        'CONFIGURAR-TELEGRAM-WEBHOOK.ps1',
-        'docs/DEPLOYMENT.md',
-        'docs/DEPLOY_HOSTING_PLAYBOOK.md',
-        'docs/PRODUCTION_TEST_CHECKLIST.md'
-    )
-    $directories += @(
-        'bin/powershell',
-        'scripts/ops/prod',
-        'scripts/ops/setup'
-    )
+    $arguments += '--include-tooling'
+}
+if ($SkipBuild) {
+    $arguments += '--skip-build'
+}
+if ($Json) {
+    $arguments += '--json'
 }
 
-$missing = New-Object 'System.Collections.Generic.List[string]'
-foreach ($file in $files) {
-    Add-FileToStage -RelativePath $file -StageRoot $stageDir -Missing $missing
+Push-Location $repoRoot
+try {
+    & node @arguments
+    exit $LASTEXITCODE
+} finally {
+    Pop-Location
 }
-foreach ($dir in $directories) {
-    Add-DirectoryToStage -RelativePath $dir -StageRoot $stageDir -Missing $missing
-}
-
-$manifestFiles = Get-ChildItem -Path $stageDir -Recurse -File | Sort-Object FullName
-$manifestPath = Join-Path $stageDir 'manifest-sha256.txt'
-$manifestLines = @()
-foreach ($item in $manifestFiles) {
-    $relative = $item.FullName.Substring($stageDir.Length + 1).Replace('\', '/')
-    $hash = (Get-FileHash -Algorithm SHA256 -Path $item.FullName).Hash.ToLowerInvariant()
-    $manifestLines += "$hash  $relative"
-}
-Set-Content -Path $manifestPath -Value ($manifestLines -join [Environment]::NewLine)
-
-$zipPath = Join-Path $bundleRoot "$stageDirName.zip"
-if (Test-Path $zipPath) {
-    Remove-Item -Path $zipPath -Force
-}
-Compress-Archive -Path (Join-Path $stageDir '*') -DestinationPath $zipPath -CompressionLevel Optimal
-
-$fileCount = (Get-ChildItem -Path $stageDir -Recurse -File | Measure-Object).Count
-Write-Host "Paquete listo: $zipPath"
-Write-Host "Archivos incluidos: $fileCount"
-if ($missing.Count -gt 0) {
-    Write-Host "Advertencia: faltaron rutas (no incluidas):"
-    $missing | ForEach-Object { Write-Host " - $_" }
-}
-
-Write-Host ""
-Write-Host "Siguiente paso sugerido:"
-Write-Host "1) Sube el contenido del zip al raiz de produccion (public_html o equivalente)."
-Write-Host "2) Ejecuta: npm run verify:prod -- -AllowDegradedFigo -AllowRecursiveFigo"

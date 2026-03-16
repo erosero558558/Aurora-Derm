@@ -30,6 +30,28 @@
         data-ops-family="command"
         data-ops-tone="light"
     >
+        <section
+            class="turnero-stage-chrome turnero-stage-chrome--ops"
+            data-turnero-stage-chrome
+            data-turnero-stage-surface="operator"
+        >
+            <div class="turnero-stage-chrome__copy">
+                <p class="turnero-stage-chrome__eyebrow">Aurora Derm · clinica piloto</p>
+                <strong data-turnero-stage-label>Recepcion / consultorio</strong>
+                <span data-turnero-stage-order
+                    >Etapa 02 / 04 · Llegada -> Recepcion -> Sala -> Gerencia</span
+                >
+            </div>
+            <div class="turnero-stage-chrome__actions">
+                <a href="/es/software/turnero-clinicas/" data-turnero-stage-entry
+                    >Abrir narrativa del producto</a
+                >
+                <a href="/sala-turnos.html" data-turnero-stage-next
+                    >Siguiente: sala de espera</a
+                >
+            </div>
+        </section>
+
         <div id="operatorLoginView" class="queue-operator-login-shell">
             <div class="queue-operator-login-stage">
                 <section class="queue-operator-login-card">
@@ -54,11 +76,11 @@
                         data-state="neutral"
                     >
                         <strong id="operatorLoginStatusTitle">
-                            Acceso protegido
+                            PIN operativo
                         </strong>
                         <p id="operatorLoginStatusMessage">
-                            Inicia sesión para abrir la consola operativa del
-                            turnero.
+                            Ingresa el PIN de la clínica para abrir la consola
+                            operativa del turnero.
                         </p>
                     </div>
 
@@ -116,13 +138,14 @@
 
                         <div id="operatorLegacyLoginFields">
                             <label class="admin-login-field" for="operatorPassword">
-                                <span>Contraseña</span>
+                                <span>PIN de operador</span>
                                 <input
                                     id="operatorPassword"
                                     type="password"
                                     required
-                                    placeholder="Ingresa tu clave"
-                                    autocomplete="current-password"
+                                    placeholder="Ingresa el PIN de la clínica"
+                                    inputmode="numeric"
+                                    autocomplete="one-time-code"
                                 />
                             </label>
 

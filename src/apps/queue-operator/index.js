@@ -29,7 +29,7 @@ import {
     logoutSession,
     pollOperatorAuthStatus,
     startOperatorAuth,
-} from '../admin-v3/shared/modules/auth.js';
+} from './pin-auth.js';
 import {
     refreshAdminData,
     refreshStatusLabel,
@@ -512,6 +512,14 @@ function setOperatorLoginMode(operatorMode) {
     }
 }
 
+function isOperatorOpenClawFlowVisible() {
+    const operatorFlow = getById('operatorOpenClawFlow');
+    return (
+        operatorFlow instanceof HTMLElement &&
+        !operatorFlow.classList.contains('is-hidden')
+    );
+}
+
 function formatOperatorChallengeExpiry(challenge) {
     const expiresAt = String(challenge?.expiresAt || '').trim();
     if (expiresAt === '') {
@@ -540,6 +548,22 @@ function getOperatorAuthTransport(auth) {
         return 'local_helper';
     }
     return '';
+}
+
+function prefersOperatorOpenClaw(auth = getState().auth) {
+    return (
+        isOperatorAuthMode(auth) ||
+        String(auth?.recommendedMode || '')
+            .trim()
+            .toLowerCase() === 'openclaw_chatgpt' ||
+        String(auth?.loginSurfaceMode || '')
+            .trim()
+            .toLowerCase() === 'openclaw_chatgpt' ||
+        getOperatorAuthTransport(auth) !== '' ||
+        getOperatorAuthTransport({
+            transport: auth?.openClawSnapshot?.transport,
+        }) !== ''
+    );
 }
 
 function resolveOperatorAuthCopy(auth) {
@@ -807,7 +831,7 @@ function resolveOperatorAuthCopy(auth) {
 }
 
 function syncOperatorLoginSurface(auth = getState().auth) {
-    const operatorMode = isOperatorAuthMode(auth);
+    const operatorMode = prefersOperatorOpenClaw(auth);
     const openButton = getById('operatorOpenClawBtn');
     const retryButton = getById('operatorOpenClawRetryBtn');
     const summaryNode = getById('operatorOpenClawSummary');
@@ -822,10 +846,12 @@ function syncOperatorLoginSurface(auth = getState().auth) {
     if (!operatorMode) {
         setLoginStatus(
             auth.requires2FA ? 'warning' : 'neutral',
-            auth.requires2FA ? 'Código 2FA requerido' : 'Acceso protegido',
+            auth.requires2FA ? 'Código requerido' : 'PIN operativo',
             auth.requires2FA
-                ? 'La contraseña fue validada. Ingresa ahora el código de seis dígitos.'
-                : 'Inicia sesión para abrir la consola operativa del turnero.'
+                ? 'El PIN fue validado. Ingresa ahora el código solicitado.'
+                : auth.configured
+                  ? 'Ingresa el PIN de la clínica para abrir la consola operativa del turnero.'
+                  : 'Pide a admin que configure el PIN operativo antes de usar esta consola.'
         );
         return;
     }
@@ -1708,7 +1734,7 @@ function syncShellSettingsButton() {
 
 function syncLoggedOutAccessState() {
     const state = getState();
-    if (isOperatorAuthMode(state.auth)) {
+    if (prefersOperatorOpenClaw(state.auth)) {
         return;
     }
 
@@ -1730,8 +1756,10 @@ function syncLoggedOutAccessState() {
 
     setLoginStatus(
         'neutral',
-        'Acceso protegido',
-        'Inicia sesión para abrir la consola operativa del turnero.'
+        'PIN operativo',
+        state.auth.configured
+            ? 'Ingresa el PIN de la clínica para abrir la consola operativa del turnero.'
+            : 'Pide a admin que configure el PIN operativo antes de usar esta consola.'
     );
 }
 
@@ -1967,8 +1995,9 @@ async function startOperatorAuthFlow(forceNew = false) {
             createToast(
                 snapshot.helperUrlOpened
                     ? 'OpenClaw listo para confirmar'
-                    : 'Usa el enlace manual de OpenClaw si la ventana no se abrio',
-                snapshot.helperUrlOpened ? 'info' : 'warning'
+                    : 'Usa el enlace manual de OpenClaw si la ventana no se abrió',
+                snapshot.helperUrlOpened ? 'info' : 'warning',
+                snapshot.helperUrlOpened ? undefined : { sticky: true }
             );
             void ensureOperatorAuthPolling();
             return snapshot;
@@ -2028,12 +2057,10 @@ async function handleLoginSubmit(event) {
         setSubmitting(true);
         setLoginStatus(
             state.auth.requires2FA ? 'warning' : 'neutral',
+            state.auth.requires2FA ? 'Validando código' : 'Validando PIN',
             state.auth.requires2FA
-                ? 'Validando segundo factor'
-                : 'Validando credenciales',
-            state.auth.requires2FA
-                ? 'Comprobando el código 2FA antes de abrir la consola operativa.'
-                : 'Comprobando tu sesión de operador.'
+                ? 'Comprobando el código adicional antes de abrir la consola operativa.'
+                : 'Comprobando el PIN operativo de la clínica.'
         );
 
         if (state.auth.requires2FA) {
@@ -2044,8 +2071,8 @@ async function handleLoginSubmit(event) {
                 show2FA(true);
                 setLoginStatus(
                     'warning',
-                    'Código 2FA requerido',
-                    'La contraseña fue validada. Ingresa ahora el código de seis dígitos.'
+                    'Código requerido',
+                    'El PIN fue validado. Ingresa ahora el código solicitado.'
                 );
                 focusLoginField('2fa');
                 return;
@@ -2064,7 +2091,7 @@ async function handleLoginSubmit(event) {
         setLoginStatus(
             'danger',
             'No se pudo iniciar sesión',
-            error?.message || 'Verifica la clave o el código 2FA.'
+            error?.message || 'Verifica el PIN operativo.'
         );
         focusLoginField(getState().auth.requires2FA ? '2fa' : 'password');
         createToast(error?.message || 'No se pudo iniciar sesión', 'error');
@@ -2083,11 +2110,7 @@ function resetTwoFactorStage() {
             requires2FA: false,
         },
     }));
-    setLoginStatus(
-        'neutral',
-        'Acceso protegido',
-        'Volviste al paso de contraseña.'
-    );
+    setLoginStatus('neutral', 'PIN operativo', 'Volviste al paso de PIN.');
     focusLoginField('password');
 }
 
@@ -2113,10 +2136,14 @@ async function handleDocumentClick(event) {
         resetLoginForm({ clearPassword: true });
         show2FA(false);
         syncOperatorLoginSurface(getState().auth);
-        syncLoggedOutAccessState();
+        if (!isOperatorOpenClawFlowVisible()) {
+            syncLoggedOutAccessState();
+        }
         createToast('Sesión cerrada', 'info');
         focusLoginField(
-            isOperatorAuthMode(getState().auth) ? 'operator_auth' : 'password'
+            prefersOperatorOpenClaw(getState().auth)
+                ? 'operator_auth'
+                : 'password'
         );
         return;
     }
@@ -2398,8 +2425,12 @@ async function boot() {
     mountLoggedOutView();
     syncOperatorLoginSurface(auth);
     show2FA(false);
-    syncLoggedOutAccessState();
-    focusLoginField(isOperatorAuthMode(auth) ? 'operator_auth' : 'password');
+    if (!isOperatorOpenClawFlowVisible()) {
+        syncLoggedOutAccessState();
+    }
+    focusLoginField(
+        prefersOperatorOpenClaw(auth) ? 'operator_auth' : 'password'
+    );
     if (isOperatorAuthMode(auth) && String(auth.status || '') === 'pending') {
         void ensureOperatorAuthPolling();
     }
