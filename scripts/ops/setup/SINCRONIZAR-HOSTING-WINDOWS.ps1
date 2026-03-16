@@ -98,7 +98,30 @@ function Get-FileHashSafe {
         return ''
     }
 
-    return [string]((Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash).ToLowerInvariant()
+    $getFileHashCommand = Get-Command Get-FileHash -ErrorAction SilentlyContinue
+    if ($null -ne $getFileHashCommand) {
+        return [string]((Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash).ToLowerInvariant()
+    }
+
+    $stream = $null
+    $sha256 = $null
+    try {
+        $stream = [System.IO.File]::OpenRead($Path)
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        $hashBytes = $sha256.ComputeHash($stream)
+        $builder = New-Object System.Text.StringBuilder
+        foreach ($byte in $hashBytes) {
+            [void]$builder.AppendFormat('{0:x2}', $byte)
+        }
+        return [string]$builder.ToString()
+    } finally {
+        if ($null -ne $sha256) {
+            $sha256.Dispose()
+        }
+        if ($null -ne $stream) {
+            $stream.Dispose()
+        }
+    }
 }
 
 function Invoke-CommandWithOutput {
