@@ -82,6 +82,42 @@ if (-not $curlCommand) {
     $curlCommand = 'curl'
 }
 
+function Convert-ResponseContentToText {
+    param(
+        [object]$Content
+    )
+
+    if ($null -eq $Content) {
+        return ''
+    }
+
+    if ($Content -is [string]) {
+        return $Content
+    }
+
+    if ($Content -is [byte[]]) {
+        if ($Content.Length -eq 0) {
+            return ''
+        }
+        return [System.Text.Encoding]::UTF8.GetString($Content)
+    }
+
+    if ($Content -is [System.Collections.IEnumerable] -and -not ($Content -is [string])) {
+        try {
+            $byteItems = @($Content | ForEach-Object { [byte]$_ })
+            if ($byteItems.Count -gt 0) {
+                return [System.Text.Encoding]::UTF8.GetString([byte[]]$byteItems)
+            }
+        } catch {}
+    }
+
+    try {
+        return [string]$Content
+    } catch {
+        return ''
+    }
+}
+
 function Get-RefFromIndex {
     param(
         [string]$IndexHtml,
@@ -394,7 +430,7 @@ function Invoke-StrictGetCheck {
         }
         $sw.Stop()
         $status = [int]$resp.StatusCode
-        $bodyText = [string]$resp.Content
+        $bodyText = Convert-ResponseContentToText -Content $resp.Content
         if ($status -ge 200 -and $status -lt 300) {
             Write-Host "[OK]  $Name -> HTTP $status ($([int]$sw.ElapsedMilliseconds) ms)"
         } else {
@@ -501,7 +537,7 @@ function Invoke-JsonPostCheck {
                 'User-Agent' = 'PielArmoniaSmoke/1.0'
             }
             $status = [int]$resp.StatusCode
-            $bodyText = [string]$resp.Content
+            $bodyText = Convert-ResponseContentToText -Content $resp.Content
             $ok = $true
         } catch {
             $response = $_.Exception.Response
@@ -724,7 +760,7 @@ try {
         'User-Agent' = 'PielArmoniaSmoke/1.0'
     }
     $homeHtml = ''
-    try { $homeHtml = [string]$homeHeaderResp.Content } catch { $homeHtml = '' }
+    try { $homeHtml = Convert-ResponseContentToText -Content $homeHeaderResp.Content } catch { $homeHtml = '' }
     foreach ($headerName in @('Content-Security-Policy', 'X-Content-Type-Options', 'Referrer-Policy')) {
         if ($null -eq $homeHeaderResp.Headers[$headerName]) {
             if ($headerName -eq 'Content-Security-Policy' -and $AllowMetaCspFallback -and [regex]::IsMatch($homeHtml, '<meta[^>]+http-equiv\s*=\s*["'']Content-Security-Policy["'']', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
