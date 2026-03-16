@@ -132,6 +132,7 @@ de backend descubiertos por el hosting/tooling:
 - `figo-backend.php`
 - `figo-brain.php`
 - `figo-ai-bridge.php`
+- `hosting-runtime.php`
 - `backup-receiver.php`
 - `verify-backup.php`
 - `check-ai-response.php`

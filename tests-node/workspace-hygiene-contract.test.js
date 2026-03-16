@@ -39,7 +39,10 @@ function ensureGeneratedRuntimeArtifact(relativePath) {
         .trim()
         .replace(/\\/g, '/');
     const generatedPath = resolve(GENERATED_SITE_ROOT, normalizedPath);
-    if (existsSync(generatedPath) || !isGeneratedRuntimeArtifact(normalizedPath)) {
+    if (
+        existsSync(generatedPath) ||
+        !isGeneratedRuntimeArtifact(normalizedPath)
+    ) {
         return generatedPath;
     }
 
@@ -528,6 +531,7 @@ test('frontera de html css php y ps1 en raiz queda explicita y limitada', () => 
         'figo-backend.php',
         'figo-brain.php',
         'figo-chat.php',
+        'hosting-runtime.php',
         'index.php',
         'legacy.php',
         'payment-lib.php',
