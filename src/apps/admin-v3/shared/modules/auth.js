@@ -53,7 +53,7 @@ function normalizeRecommendedMode(payload, fallback = 'legacy_password') {
     );
 }
 
-function normalizeTransport(value, fallback = 'local_helper') {
+function normalizeTransport(value, fallback = '') {
     const raw = String(value || '')
         .trim()
         .toLowerCase();
@@ -157,14 +157,14 @@ function buildOpenClawSnapshot(
     status,
     challenge,
     lastError,
-    transport = 'local_helper',
+    transport = '',
     redirectUrl = '',
     expiresAt = ''
 ) {
     return {
         status: String(status || 'anonymous').trim() || 'anonymous',
         challenge: normalizeChallenge(challenge),
-        transport: normalizeTransport(transport, 'local_helper'),
+        transport: normalizeTransport(transport, ''),
         redirectUrl: String(redirectUrl || '').trim(),
         expiresAt: String(expiresAt || '').trim(),
         lastError: String(lastError || '').trim(),
@@ -306,16 +306,18 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     const currentAuth = getState().auth;
     const transport =
         mode === 'openclaw_chatgpt'
-            ? normalizeTransport(
-                  payload?.transport,
-                  currentAuth.transport || 'local_helper'
-              )
+            ? normalizeTransport(payload?.transport, '')
             : '';
+    const transportMisconfigured =
+        mode === 'openclaw_chatgpt' && !authenticated && transport === '';
     const csrfToken = String(
-        payload?.csrfToken || (authenticated ? '' : currentAuth.csrfToken || '')
+        payload?.csrfToken ||
+            (authenticated ? '' : currentAuth.csrfToken || '')
     );
     const status = String(
-        payload?.status || (authenticated ? 'autenticado' : 'anonymous')
+        transportMisconfigured
+            ? payload?.status || 'transport_misconfigured'
+            : payload?.status || (authenticated ? 'autenticado' : 'anonymous')
     ).trim();
     const fallbackPayload = normalizeFallbacks(
         payload?.fallbacks,
@@ -339,7 +341,12 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
             : String(payload?.expiresAt || challenge?.expiresAt || '').trim();
     const payloadError = authenticated
         ? ''
-        : String(payload?.error || '').trim();
+        : transportMisconfigured
+          ? String(
+                payload?.error ||
+                    'El runtime devolvio un estado OpenClaw sin transport valido. Actualiza el entorno o vuelve a desplegar antes de iniciar sesion.'
+            ).trim()
+          : String(payload?.error || '').trim();
     const openClawSnapshot =
         mode === 'openclaw_chatgpt'
             ? buildOpenClawSnapshot(
@@ -360,6 +367,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
               );
     const operator = normalizeOperator(payload?.operator);
     const configured =
+        !transportMisconfigured &&
         payload?.configured !== false &&
         status !== 'legacy_auth_not_configured' &&
         status !== 'operator_auth_not_configured';
@@ -452,7 +460,7 @@ export function isOperatorAuthMode(auth = getState().auth) {
 }
 
 export function isOpenClawWebBrokerTransport(auth = getState().auth) {
-    return normalizeTransport(auth?.transport, 'local_helper') === 'web_broker';
+    return normalizeTransport(auth?.transport, '') === 'web_broker';
 }
 
 export function getReusableOpenClawRedirectUrl(auth = getState().auth) {
@@ -577,7 +585,7 @@ export async function startOperatorAuth(options = {}) {
 
     const auth = getState().auth;
     const helperUrl =
-        normalizeTransport(auth.transport, 'local_helper') === 'local_helper'
+        normalizeTransport(auth.transport, '') === 'local_helper'
             ? String(auth.challenge?.helperUrl || '').trim()
             : '';
     const helperUrlOpened = openHelper ? openHelperWindow(helperUrl) : false;
@@ -611,8 +619,7 @@ export async function pollOperatorAuthStatus(options = {}) {
             snapshot.authenticated ||
             !isOperatorAuthMode(snapshot) ||
             String(snapshot.status || '') !== 'pending' ||
-            normalizeTransport(snapshot.transport, 'local_helper') !==
-                'local_helper'
+            normalizeTransport(snapshot.transport, '') !== 'local_helper'
         ) {
             return snapshot;
         }

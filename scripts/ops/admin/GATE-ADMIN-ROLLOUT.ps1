@@ -57,6 +57,15 @@ $report = [ordered]@{
         bridge_token_configured = $false
         bridge_secret_configured = $false
         allowlist_configured = $false
+        broker_authorize_url_configured = $false
+        broker_token_url_configured = $false
+        broker_userinfo_url_configured = $false
+        broker_client_id_configured = $false
+        broker_trust_configured = $false
+        broker_issuer_pinned = $false
+        broker_audience_pinned = $false
+        broker_jwks_configured = $false
+        broker_email_verified_required = $true
         missing = @()
     }
     runtime_smoke = [ordered]@{
@@ -241,6 +250,15 @@ function Set-OperatorAuthReportFromPayload {
     $Report['bridge_token_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'bridgeTokenConfigured' -Default $false)
     $Report['bridge_secret_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'bridgeSecretConfigured' -Default $false)
     $Report['allowlist_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'allowlistConfigured' -Default $false)
+    $Report['broker_authorize_url_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerAuthorizeUrlConfigured' -Default $false)
+    $Report['broker_token_url_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerTokenUrlConfigured' -Default $false)
+    $Report['broker_userinfo_url_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerUserinfoUrlConfigured' -Default $false)
+    $Report['broker_client_id_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerClientIdConfigured' -Default $false)
+    $Report['broker_trust_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerTrustConfigured' -Default $false)
+    $Report['broker_issuer_pinned'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerIssuerPinned' -Default $false)
+    $Report['broker_audience_pinned'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerAudiencePinned' -Default $false)
+    $Report['broker_jwks_configured'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerJwksConfigured' -Default $false)
+    $Report['broker_email_verified_required'] = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerEmailVerifiedRequired' -Default $true)
     $Report['missing'] = @(Get-ObjectPropertyValue -Object $configuration -Name 'missing' -Default @())
 }
 
@@ -364,15 +382,28 @@ if (-not $operatorAuthContractValid) {
 }
 
 if ($RequireOpenClawAuth) {
+    $brokerTrustReady = (
+        $report.operator_auth.transport -ne 'web_broker' -or (
+            [bool]$report.operator_auth.broker_trust_configured -and
+            [bool]$report.operator_auth.broker_issuer_pinned -and
+            [bool]$report.operator_auth.broker_audience_pinned -and
+            [bool]$report.operator_auth.broker_jwks_configured -and
+            [bool]$report.operator_auth.broker_email_verified_required
+        )
+    )
     if (
         $report.operator_auth.contract_valid -and
         $report.operator_auth.mode -eq 'openclaw_chatgpt' -and
-        $report.operator_auth.configured
+        $report.operator_auth.configured -and
+        $brokerTrustReady
     ) {
         Write-Host "[OK]  operator auth OpenClaw configurado"
     } else {
         if (-not $report.operator_auth.contract_valid) {
             Write-Host "[WARN] operator auth sin contrato OpenClaw valido. source=$($report.operator_auth.source)"
+        }
+        if ($report.operator_auth.transport -eq 'web_broker' -and -not $brokerTrustReady) {
+            Write-Host "[WARN] operator auth web_broker sin trust OIDC completo (JWKS/issuer/audience/email_verified)."
         }
         Write-Host "[FAIL] operator auth OpenClaw no esta configurado para este rollout"
         $failures += 1

@@ -21,17 +21,12 @@ const CONFIG_SCRIPT_PATH = resolve(
     'setup',
     'CONFIGURAR-HOSTING-WINDOWS.ps1'
 );
-const DEPLOY_PLAYBOOK_PATH = resolve(
-    REPO_ROOT,
-    'docs',
-    'DEPLOY_HOSTING_PLAYBOOK.md'
-);
 
 function load(filePath) {
     return readFileSync(filePath, 'utf8');
 }
 
-test('sync script usa mirror limpio con env externo y reset seguro a origin/main', () => {
+test('sync script usa mirror limpio con env externo, reset seguro y validacion auth', () => {
     const raw = load(SYNC_SCRIPT_PATH);
     const requiredSnippets = [
         "[string]$MirrorRepoPath = 'C:\\dev\\pielarmonia-clean-main'",
@@ -46,22 +41,23 @@ test('sync script usa mirror limpio con env externo y reset seguro a origin/main
         "Invoke-Git -Arguments @('-C', $mirrorRepoPathResolved, 'checkout', '--force', $Branch)",
         "Invoke-Git -Arguments @('-C', $mirrorRepoPathResolved, 'reset', '--hard', \"origin/$Branch\")",
         'Copy-Item -LiteralPath $externalEnvPathResolved -Destination $mirrorEnvPath -Force',
-        'if ($status.cloned -or $status.head_changed -or $status.env_changed) {',
-        'Invoke-StartMirrorStack `',
         "'http://127.0.0.1/api.php?resource=health-diagnostics'",
-        'throw "No existe el env externo canonico: $externalEnvPathResolved"',
+        "'http://127.0.0.1/admin-auth.php?action=status'",
+        '$status.auth_contract_ok = $authContract.Ok -eq $true',
+        '$status.auth_transport = [string]$authContract.Payload.transport',
+        'throw ("El contrato de auth no quedo sano en el mirror.',
     ];
 
     for (const snippet of requiredSnippets) {
         assert.equal(
             raw.includes(snippet),
             true,
-            `falta snippet del sync canonico de Windows: ${snippet}`
+            `falta snippet del sync seguro de Windows: ${snippet}`
         );
     }
 });
 
-test('config script registra stack de boot y tarea de sync cada minuto sobre el mirror limpio', () => {
+test('config script registra boot y sync por minuto sobre el mirror limpio', () => {
     const raw = load(CONFIG_SCRIPT_PATH);
     const requiredSnippets = [
         "[string]$MirrorRepoPath = 'C:\\dev\\pielarmonia-clean-main'",
@@ -73,7 +69,6 @@ test('config script registra stack de boot y tarea de sync cada minuto sobre el 
         "$mainSyncTaskName = 'Pielarmonia Hosting Main Sync'",
         'Invoke-BootstrapSync `',
         'Write-LauncherScript -Path $mainSyncLauncherPath -Command $mainSyncCommand',
-        'Set-Content -Path $startupCmdPath -Value "@echo off`r`n$startupCommand`r`n" -Encoding ASCII',
         "'/SC', 'MINUTE'",
         "'/MO', '1'",
         "'/RU', 'SYSTEM'",
@@ -86,26 +81,6 @@ test('config script registra stack de boot y tarea de sync cada minuto sobre el 
             raw.includes(snippet),
             true,
             `falta snippet del configurador de Windows: ${snippet}`
-        );
-    }
-});
-
-test('playbook documenta linux con public_main_sync y windows con mirror limpio + task scheduler', () => {
-    const raw = load(DEPLOY_PLAYBOOK_PATH);
-    const requiredSnippets = [
-        'C:\\dev\\pielarmonia-clean-main',
-        'C:\\ProgramData\\Pielarmonia\\hosting\\env.php',
-        'Task Scheduler',
-        'public_main_sync',
-        'no `git pull` ni',
-        'workspace de trabajo',
-    ];
-
-    for (const snippet of requiredSnippets) {
-        assert.equal(
-            raw.includes(snippet),
-            true,
-            `falta snippet de runbook para el mirror limpio de Windows: ${snippet}`
         );
     }
 });

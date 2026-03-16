@@ -200,12 +200,32 @@ function operator_auth_session_cookie_samesite(): string
     return 'Strict';
 }
 
-function operator_auth_transport(): string
+function operator_auth_raw_transport(): string
 {
     $raw = getenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT');
-    $transport = is_string($raw) && trim($raw) !== ''
-        ? strtolower(trim($raw))
-        : OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER;
+    return is_string($raw) ? strtolower(trim($raw)) : '';
+}
+
+function operator_auth_transport_is_valid(?string $transport): bool
+{
+    return in_array(
+        strtolower(trim((string) $transport)),
+        [OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER, OPERATOR_AUTH_TRANSPORT_WEB_BROKER],
+        true
+    );
+}
+
+function operator_auth_transport_is_explicitly_configured(): bool
+{
+    return operator_auth_transport_is_valid(operator_auth_raw_transport());
+}
+
+function operator_auth_transport(): string
+{
+    $transport = operator_auth_raw_transport();
+    if (!operator_auth_transport_is_valid($transport)) {
+        return '';
+    }
 
     return $transport === OPERATOR_AUTH_TRANSPORT_WEB_BROKER
         ? OPERATOR_AUTH_TRANSPORT_WEB_BROKER
@@ -427,12 +447,16 @@ function operator_auth_configuration_snapshot(): array
 {
     $mode = operator_auth_mode();
     $enabled = operator_auth_is_enabled();
+    $transport = operator_auth_transport();
+    $transportExplicitlyConfigured = operator_auth_transport_is_explicitly_configured();
     $allowedEmails = operator_auth_allowed_emails();
     $allowlistConfigured = count($allowedEmails) > 0;
     $missing = [];
 
     if (!$enabled) {
         $missing[] = 'mode';
+    } elseif (!$transportExplicitlyConfigured) {
+        $missing[] = 'transport';
     }
 
     $bridgeTokenConfigured = operator_auth_bridge_token() !== '';
@@ -451,7 +475,7 @@ function operator_auth_configuration_snapshot(): array
         && $audiencePinned
         && $emailVerifiedRequired;
 
-    if (operator_auth_uses_web_broker()) {
+    if ($transport === OPERATOR_AUTH_TRANSPORT_WEB_BROKER) {
         if (!$authorizeUrlConfigured) {
             $missing[] = 'broker_authorize_url';
         }
@@ -476,7 +500,7 @@ function operator_auth_configuration_snapshot(): array
         if (!$emailVerifiedRequired) {
             $missing[] = 'broker_require_email_verified';
         }
-    } else {
+    } elseif ($transport === OPERATOR_AUTH_TRANSPORT_LOCAL_HELPER) {
         if (!$bridgeTokenConfigured) {
             $missing[] = 'bridge_token';
         }
@@ -491,7 +515,8 @@ function operator_auth_configuration_snapshot(): array
 
     return [
         'mode' => $mode,
-        'transport' => operator_auth_transport(),
+        'transport' => $transport,
+        'transportExplicitlyConfigured' => $transportExplicitlyConfigured,
         'enabled' => $enabled,
         'configured' => $enabled && count($missing) === 0,
         'bridgeTokenConfigured' => $bridgeTokenConfigured,
@@ -788,6 +813,7 @@ function operator_auth_config_error_payload(): array
     $publicSnapshot = operator_auth_public_configuration_snapshot($snapshot);
     $missingLabels = [
         'mode' => 'PIELARMONIA_OPERATOR_AUTH_MODE',
+        'transport' => 'PIELARMONIA_OPERATOR_AUTH_TRANSPORT=local_helper|web_broker',
         'bridge_token' => 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN',
         'bridge_secret' => 'PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET',
         'allowlist' => 'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST',
@@ -804,14 +830,17 @@ function operator_auth_config_error_payload(): array
         static fn (string $item): string => $missingLabels[$item] ?? $item,
         is_array($snapshot['missing'] ?? null) ? $snapshot['missing'] : []
     );
-    $error = count($missingItems) > 0
-        ? 'Configuracion incompleta de OpenClaw/ChatGPT. Falta: ' . implode(', ', $missingItems) . '.'
-        : 'El acceso OpenClaw/ChatGPT no esta configurado en este entorno.';
+    $transportMisconfigured = in_array('transport', is_array($snapshot['missing'] ?? null) ? $snapshot['missing'] : [], true);
+    $error = $transportMisconfigured
+        ? 'El runtime de OpenClaw no declara un transporte valido. Configure PIELARMONIA_OPERATOR_AUTH_TRANSPORT como web_broker o local_helper antes de iniciar sesion.'
+        : (count($missingItems) > 0
+            ? 'Configuracion incompleta de OpenClaw/ChatGPT. Falta: ' . implode(', ', $missingItems) . '.'
+            : 'El acceso OpenClaw/ChatGPT no esta configurado en este entorno.');
 
     return [
         'ok' => true,
         'authenticated' => false,
-        'status' => 'operator_auth_not_configured',
+        'status' => $transportMisconfigured ? 'transport_misconfigured' : 'operator_auth_not_configured',
         'mode' => OPERATOR_AUTH_SOURCE,
         'transport' => operator_auth_transport(),
         'configured' => false,

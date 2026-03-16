@@ -186,6 +186,11 @@ function createOperatorAuthReport(base) {
         broker_token_url_configured: false,
         broker_userinfo_url_configured: false,
         broker_client_id_configured: false,
+        broker_trust_configured: false,
+        broker_issuer_pinned: false,
+        broker_audience_pinned: false,
+        broker_jwks_configured: false,
+        broker_email_verified_required: true,
         missing: [],
     };
 }
@@ -212,6 +217,14 @@ function applySnapshotToOperatorAuth(target, snapshot, source) {
         snapshot.broker_userinfo_url_configured === true;
     target.broker_client_id_configured =
         snapshot.broker_client_id_configured === true;
+    target.broker_trust_configured =
+        snapshot.broker_trust_configured === true;
+    target.broker_issuer_pinned = snapshot.broker_issuer_pinned === true;
+    target.broker_audience_pinned =
+        snapshot.broker_audience_pinned === true;
+    target.broker_jwks_configured = snapshot.broker_jwks_configured === true;
+    target.broker_email_verified_required =
+        snapshot.broker_email_verified_required !== false;
     target.missing = Array.isArray(snapshot.missing)
         ? [...snapshot.missing]
         : [];
@@ -479,16 +492,32 @@ async function buildGateReport(options = {}) {
     }
 
     if (options.requireOpenClawAuth) {
+        const brokerTrustReady =
+            report.operator_auth.transport !== 'web_broker' ||
+            (report.operator_auth.broker_trust_configured === true &&
+                report.operator_auth.broker_issuer_pinned === true &&
+                report.operator_auth.broker_audience_pinned === true &&
+                report.operator_auth.broker_jwks_configured === true &&
+                report.operator_auth.broker_email_verified_required === true);
         if (
             report.operator_auth.contract_valid &&
             report.operator_auth.mode === 'openclaw_chatgpt' &&
-            report.operator_auth.configured
+            report.operator_auth.configured &&
+            brokerTrustReady
         ) {
             process.stdout.write('[OK]  operator auth OpenClaw configurado\n');
         } else {
             if (!report.operator_auth.contract_valid) {
                 process.stdout.write(
                     `[WARN] operator auth sin contrato OpenClaw valido. source=${report.operator_auth.source}\n`
+                );
+            }
+            if (
+                report.operator_auth.transport === 'web_broker' &&
+                !brokerTrustReady
+            ) {
+                process.stdout.write(
+                    '[WARN] operator auth web_broker sin trust OIDC completo (JWKS/issuer/audience/email_verified).\n'
                 );
             }
             process.stdout.write(

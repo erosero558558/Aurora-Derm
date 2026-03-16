@@ -37,6 +37,11 @@ $report = [ordered]@{
         broker_token_url_configured = $false
         broker_userinfo_url_configured = $false
         broker_client_id_configured = $false
+        broker_trust_configured = $false
+        broker_issuer_pinned = $false
+        broker_audience_pinned = $false
+        broker_jwks_configured = $false
+        broker_email_verified_required = $true
         missing = @()
     }
     admin_auth_facade = [ordered]@{
@@ -63,6 +68,11 @@ $report = [ordered]@{
         broker_token_url_configured = $false
         broker_userinfo_url_configured = $false
         broker_client_id_configured = $false
+        broker_trust_configured = $false
+        broker_issuer_pinned = $false
+        broker_audience_pinned = $false
+        broker_jwks_configured = $false
+        broker_email_verified_required = $true
         missing = @()
     }
     resolved = [ordered]@{
@@ -76,6 +86,11 @@ $report = [ordered]@{
         configured = $false
         recommended_mode = ''
         helper_base_url = ''
+        broker_trust_configured = $false
+        broker_issuer_pinned = $false
+        broker_audience_pinned = $false
+        broker_jwks_configured = $false
+        broker_email_verified_required = $true
         missing = @()
     }
     diagnosis = ''
@@ -208,6 +223,11 @@ function Normalize-OperatorAuthSnapshot {
         broker_token_url_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerTokenUrlConfigured' -Default $false)
         broker_userinfo_url_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerUserinfoUrlConfigured' -Default $false)
         broker_client_id_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerClientIdConfigured' -Default $false)
+        broker_trust_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerTrustConfigured' -Default $false)
+        broker_issuer_pinned = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerIssuerPinned' -Default $false)
+        broker_audience_pinned = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerAudiencePinned' -Default $false)
+        broker_jwks_configured = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerJwksConfigured' -Default $false)
+        broker_email_verified_required = [bool](Get-ObjectPropertyValue -Object $configuration -Name 'brokerEmailVerifiedRequired' -Default $true)
         missing = @(Get-ObjectPropertyValue -Object $configuration -Name 'missing' -Default @())
     }
 
@@ -244,6 +264,11 @@ function Merge-ResolvedSnapshot {
     $Resolved.configured = [bool]$Snapshot.configured
     $Resolved.recommended_mode = [string]$Snapshot.recommended_mode
     $Resolved.helper_base_url = [string]$Snapshot.helper_base_url
+    $Resolved.broker_trust_configured = [bool]$Snapshot.broker_trust_configured
+    $Resolved.broker_issuer_pinned = [bool]$Snapshot.broker_issuer_pinned
+    $Resolved.broker_audience_pinned = [bool]$Snapshot.broker_audience_pinned
+    $Resolved.broker_jwks_configured = [bool]$Snapshot.broker_jwks_configured
+    $Resolved.broker_email_verified_required = [bool]$Snapshot.broker_email_verified_required
     $Resolved.missing = @($Snapshot.missing)
 }
 
@@ -261,6 +286,10 @@ function Format-MissingOperatorAuthEnv {
         broker_token_url = 'OPENCLAW_AUTH_BROKER_TOKEN_URL'
         broker_userinfo_url = 'OPENCLAW_AUTH_BROKER_USERINFO_URL'
         broker_client_id = 'OPENCLAW_AUTH_BROKER_CLIENT_ID'
+        broker_jwks_url = 'OPENCLAW_AUTH_BROKER_JWKS_URL'
+        broker_expected_issuer = 'OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER'
+        broker_expected_audience = 'OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE'
+        broker_require_email_verified = 'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED=true'
     }
 
     $names = @()
@@ -332,6 +361,20 @@ function Resolve-OpenClawRolloutState {
                     'Completar bridge, helper y allowlist del rollout OpenClaw en el entorno remoto.'
                 }
             }
+            return
+        }
+
+        if (
+            [string]$resolved.transport -eq 'web_broker' -and (
+                -not [bool]$resolved.broker_trust_configured -or
+                -not [bool]$resolved.broker_issuer_pinned -or
+                -not [bool]$resolved.broker_audience_pinned -or
+                -not [bool]$resolved.broker_jwks_configured -or
+                -not [bool]$resolved.broker_email_verified_required
+            )
+        ) {
+            $Report.diagnosis = 'openclaw_not_configured'
+            $Report.next_action = 'Completar trust OIDC del broker: JWKS, issuer, audience y email verificado obligatorio antes de pasar a openclaw_ready.'
             return
         }
 

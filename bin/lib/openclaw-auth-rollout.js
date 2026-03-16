@@ -84,7 +84,22 @@ function testOperatorAuthContractPayload(payload) {
 
     return (
         Object.prototype.hasOwnProperty.call(payload, 'mode') &&
-        Object.prototype.hasOwnProperty.call(payload, 'status')
+        Object.prototype.hasOwnProperty.call(payload, 'status') &&
+        Object.prototype.hasOwnProperty.call(payload, 'transport')
+    );
+}
+
+function looksLikeOpenClawTransportDrift(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') {
+        return false;
+    }
+
+    return (
+        snapshot.reachable === true &&
+        snapshot.json_valid === true &&
+        stringValue(snapshot.mode) === 'openclaw_chatgpt' &&
+        stringValue(snapshot.transport) === '' &&
+        stringValue(snapshot.status) !== ''
     );
 }
 
@@ -170,7 +185,8 @@ function mergeResolvedSnapshot(resolved, snapshot, source) {
     resolved.broker_trust_configured =
         snapshot.broker_trust_configured === true;
     resolved.broker_issuer_pinned = snapshot.broker_issuer_pinned === true;
-    resolved.broker_audience_pinned = snapshot.broker_audience_pinned === true;
+    resolved.broker_audience_pinned =
+        snapshot.broker_audience_pinned === true;
     resolved.broker_jwks_configured = snapshot.broker_jwks_configured === true;
     resolved.broker_email_verified_required =
         snapshot.broker_email_verified_required !== false;
@@ -247,6 +263,16 @@ function resolveOpenClawRolloutState(report) {
             return report;
         }
 
+        if (
+            resolved.transport !== 'web_broker' &&
+            resolved.transport !== 'local_helper'
+        ) {
+            report.diagnosis = 'transport_misconfigured';
+            report.next_action =
+                'Corregir el contrato OpenClaw para que admin-auth.php?action=status y operator-auth-status publiquen transport=web_broker o transport=local_helper.';
+            return report;
+        }
+
         if (resolved.configured !== true) {
             const missingEnv = formatMissingOperatorAuthEnv(resolved.missing);
             report.diagnosis = 'openclaw_not_configured';
@@ -287,6 +313,16 @@ function resolveOpenClawRolloutState(report) {
                 ? 'El rollout OpenClaw web_broker ya esta listo; continuar con smoke web y gate admin.'
                 : 'El rollout OpenClaw ya esta listo; continuar con smoke humano y gate admin.';
         report.ok = true;
+        return report;
+    }
+
+    if (
+        looksLikeOpenClawTransportDrift(primary) ||
+        looksLikeOpenClawTransportDrift(facade)
+    ) {
+        report.diagnosis = 'transport_misconfigured';
+        report.next_action =
+            'Corregir el contrato OpenClaw para que admin-auth.php?action=status y operator-auth-status publiquen transport=web_broker o transport=local_helper.';
         return report;
     }
 

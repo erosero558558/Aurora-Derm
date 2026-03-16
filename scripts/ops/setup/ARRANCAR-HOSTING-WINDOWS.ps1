@@ -18,11 +18,6 @@ $logRoot = Join-Path $runtimeRoot 'logs'
 $pidRoot = Join-Path $runtimeRoot 'pids'
 $caddyConfigPath = Join-Path $repoRoot 'ops\caddy\Caddyfile'
 $helperScriptPath = Join-Path $repoRoot 'scripts\ops\admin\INICIAR-OPENCLAW-AUTH-HELPER.ps1'
-$turneroReleaseRoot = Join-Path $repoRoot 'release\turnero-apps-pilot-local'
-$turneroAppDownloadsSource = Join-Path $turneroReleaseRoot 'app-downloads\pilot'
-$turneroDesktopUpdatesSource = Join-Path $turneroReleaseRoot 'desktop-updates\pilot'
-$turneroAppDownloadsTarget = Join-Path $repoRoot 'app-downloads\pilot'
-$turneroDesktopUpdatesTarget = Join-Path $repoRoot 'desktop-updates\pilot'
 $resolvedOperatorUserProfile = if ([string]::IsNullOrWhiteSpace($OperatorUserProfile)) {
     $env:USERPROFILE
 } else {
@@ -160,6 +155,11 @@ function Resolve-OperatorAuthTransport {
         $payload = Invoke-JsonGetSafe `
             -Url 'http://127.0.0.1/admin-auth.php?action=status' `
             -Headers @{ Accept = 'application/json' }
+        if ($null -eq $payload) {
+            Start-Sleep -Milliseconds $DelayMs
+            continue
+        }
+
         $transport = [string]($payload.transport)
         if (-not [string]::IsNullOrWhiteSpace($transport)) {
             if ([string]::Equals($transport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -169,12 +169,24 @@ function Resolve-OperatorAuthTransport {
             return 'local_helper'
         }
 
+        $mode = [string]($payload.mode)
+        $status = [string]($payload.status)
+        if (
+            [string]::Equals($mode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -or
+            [string]::Equals($status, 'transport_misconfigured', [System.StringComparison]::OrdinalIgnoreCase)
+        ) {
+            throw 'admin-auth.php?action=status no publico un transport valido para OpenClaw. Corrige el runtime antes de iniciar el stack.'
+        }
+
         Start-Sleep -Milliseconds $DelayMs
     }
 
     $envTransport = [string]$env:PIELARMONIA_OPERATOR_AUTH_TRANSPORT
     if ([string]::Equals($envTransport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)) {
         return 'web_broker'
+    }
+    if ([string]::Equals($env:PIELARMONIA_OPERATOR_AUTH_MODE, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'PIELARMONIA_OPERATOR_AUTH_TRANSPORT no esta declarado explicitamente para OpenClaw. Configure web_broker o local_helper antes de iniciar el stack.'
     }
 
     return $Fallback
@@ -227,27 +239,6 @@ function Stop-ProcessesById {
     }
 }
 
-function Sync-DirectoryTree {
-    param(
-        [string]$SourcePath,
-        [string]$TargetPath,
-        [string]$Label
-    )
-
-    if (-not (Test-Path -LiteralPath $SourcePath)) {
-        Write-Info ("{0} source missing: {1}" -f $Label, $SourcePath)
-        return
-    }
-
-    if (Test-Path -LiteralPath $TargetPath) {
-        Remove-Item -LiteralPath $TargetPath -Recurse -Force
-    }
-
-    New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
-    Copy-Item -Path (Join-Path $SourcePath '*') -Destination $TargetPath -Recurse -Force
-    Write-Info ("{0} synced: {1} -> {2}" -f $Label, $SourcePath, $TargetPath)
-}
-
 function Ensure-PhpCgiListener {
     param(
         [string]$PhpCgiExecutable,
@@ -256,9 +247,7 @@ function Ensure-PhpCgiListener {
         [string]$StdErrPath
     )
 
-    $phpNeedles = @('php-cgi.exe', '-b 127.0.0.1:9000', 'cgi.force_redirect=0')
-    $phpFallbackNeedles = @('php-cgi.exe', '-b 127.0.0.1:9000')
-    $phpArguments = @('-d', 'cgi.force_redirect=0', '-b', '127.0.0.1:9000')
+    $phpNeedles = @('php-cgi.exe', '-b 127.0.0.1:9000')
     $listener = Get-ListeningTcpProcess -Port 9000
     if ($null -ne $listener) {
         $listenerProcess = Get-ProcessByIdSafe -ProcessId $listener.OwningProcess
@@ -267,27 +256,14 @@ function Ensure-PhpCgiListener {
         }
 
         if ([string]::Equals([string]$listenerProcess.Name, 'php-cgi.exe', [System.StringComparison]::OrdinalIgnoreCase)) {
-            if (Test-CommandLineMatch -CommandLine ([string]$listenerProcess.CommandLine) -Needles $phpNeedles) {
-                Write-Info ("PHP-CGI listener already active ({0})" -f $listener.OwningProcess)
-            } else {
-                Stop-ProcessesById -ProcessIds @([int]$listener.OwningProcess) -Label 'stale PHP-CGI listener'
-                $listener = $null
-            }
+            Write-Info ("PHP-CGI listener already active ({0})" -f $listener.OwningProcess)
         } else {
             throw ("El puerto 9000 ya esta ocupado por {0} (pid={1})." -f $listenerProcess.Name, $listener.OwningProcess)
         }
-    }
-
-    if ($null -eq $listener) {
-        $stalePhp = Get-ProcessesByNeedle -Needles $phpFallbackNeedles |
-            Where-Object { -not (Test-CommandLineMatch -CommandLine ([string]$_.CommandLine) -Needles $phpNeedles) }
-        if ($stalePhp.Count -gt 0) {
-            Stop-ProcessesById -ProcessIds ($stalePhp | ForEach-Object { [int]$_.ProcessId }) -Label 'stale PHP-CGI fallback'
-        }
-
+    } else {
         Start-ManagedProcess `
             -FilePath $PhpCgiExecutable `
-            -Arguments $phpArguments `
+            -Arguments @('-b', '127.0.0.1:9000') `
             -WorkingDirectory $WorkingDirectory `
             -StdOutPath $StdOutPath `
             -StdErrPath $StdErrPath `
@@ -348,9 +324,6 @@ if (-not (Test-Path -LiteralPath $cloudflaredCredPath)) {
     throw "No existe el archivo de credenciales del tunnel: $cloudflaredCredPath"
 }
 
-Sync-DirectoryTree -SourcePath $turneroAppDownloadsSource -TargetPath $turneroAppDownloadsTarget -Label 'Turnero app-downloads pilot'
-Sync-DirectoryTree -SourcePath $turneroDesktopUpdatesSource -TargetPath $turneroDesktopUpdatesTarget -Label 'Turnero desktop-updates pilot'
-
 $caddyExe = Resolve-ExecutablePath -ConfiguredPath $CaddyExePath -CommandName 'caddy'
 $cloudflaredExe = Resolve-ExecutablePath -ConfiguredPath $CloudflaredExePath -CommandName 'cloudflared'
 $phpCgiExe = Resolve-ExecutablePath -ConfiguredPath $PhpCgiExePath -CommandName 'php-cgi'
@@ -369,13 +342,6 @@ if ($StopLegacy) {
     Stop-ProcessesByNeedle -Needles @('C:\srv\pielarmonia\config\Caddyfile', 'caddy.exe') -Label 'legacy Caddy'
     Stop-ProcessesByNeedle -Needles @('--url http://127.0.0.1:8011', $TunnelId, 'cloudflared.exe') -Label 'legacy cloudflared tunnel'
 }
-
-# Always recycle the canonical stack on explicit start so new deploys pick up
-# updated Caddy rules, php-cgi flags and turnero pilot artifacts immediately.
-Stop-ProcessesByNeedle -Needles @('openclaw-auth-helper.js') -Label 'OpenClaw auth helper'
-Stop-ProcessesByNeedle -Needles @('php-cgi.exe', '-b 127.0.0.1:9000') -Label 'PHP-CGI'
-Stop-ProcessesByNeedle -Needles @('cloudflared.exe', $TunnelId, '--url http://127.0.0.1') -Label 'Cloudflare tunnel'
-Stop-ProcessesByNeedle -Needles @($caddyConfigPath, 'caddy.exe', 'run') -Label 'Caddy edge'
 
 Ensure-PhpCgiListener `
     -PhpCgiExecutable $phpCgiExe `

@@ -5,7 +5,6 @@ import {
     getReusableOpenClawRedirectUrl,
     getActiveLoginSurfaceMode,
     getVisibleOpenClawState,
-    isOpenClawWebBrokerTransport,
     loginWith2FA,
     loginWithPassword,
     startOpenClawLogin,
@@ -29,6 +28,7 @@ import { refreshDataAndRender } from './rendering.js';
 const OPENCLAW_TERMINAL_STATUSES = new Set([
     'anonymous',
     'operator_auth_not_configured',
+    'transport_misconfigured',
     'openclaw_no_logueado',
     'email_no_permitido',
     'challenge_expirado',
@@ -38,6 +38,8 @@ const OPENCLAW_TERMINAL_STATUSES = new Set([
     'broker_unavailable',
     'code_exchange_failed',
     'identity_missing',
+    'identity_unverified',
+    'broker_claims_invalid',
 ]);
 
 let openClawPollTimer = 0;
@@ -47,6 +49,60 @@ function normalizeAuthStatus(status) {
     return String(status || 'anonymous')
         .trim()
         .toLowerCase();
+}
+
+function normalizeOpenClawTransport(transport) {
+    const normalized = String(transport || '')
+        .trim()
+        .toLowerCase();
+    if (normalized === 'web_broker' || normalized === 'local_helper') {
+        return normalized;
+    }
+    return '';
+}
+
+function getFailClosedOpenClawState(auth = getState().auth) {
+    const openClawState = getVisibleOpenClawState(auth);
+    const recommendedMode = String(
+        auth?.recommendedMode || auth?.mode || 'legacy_password'
+    )
+        .trim()
+        .toLowerCase();
+
+    if (recommendedMode !== 'openclaw_chatgpt' || auth?.authenticated) {
+        return openClawState;
+    }
+
+    const authTransport = normalizeOpenClawTransport(auth?.transport);
+    const visibleTransport = normalizeOpenClawTransport(openClawState.transport);
+    const authStatus = normalizeAuthStatus(auth?.status);
+    const visibleStatus = normalizeAuthStatus(openClawState.status);
+    const lastError = String(
+        auth?.lastError || openClawState.lastError || ''
+    ).trim();
+
+    const transportDrift =
+        visibleTransport === '' &&
+        (visibleStatus === 'transport_misconfigured' ||
+            authStatus === 'transport_misconfigured' ||
+            authTransport !== '' ||
+            lastError !== '');
+
+    if (!transportDrift) {
+        return openClawState;
+    }
+
+    return {
+        ...openClawState,
+        status: 'transport_misconfigured',
+        challenge: null,
+        transport: '',
+        redirectUrl: '',
+        expiresAt: '',
+        lastError:
+            lastError ||
+            'El backend respondio sin un transport valido para OpenClaw. Bloqueamos el helper local para evitar abrir localhost por error.',
+    };
 }
 
 function clearOpenClawPollTimer() {
@@ -74,9 +130,9 @@ function buildOpenClawFeedback(auth) {
     const status = normalizeAuthStatus(auth.status);
     const challenge = auth.challenge || null;
     const transport =
-        String(auth.transport || challenge?.transport || 'local_helper')
+        String(auth.transport || challenge?.transport || '')
             .trim()
-            .toLowerCase() || 'local_helper';
+            .toLowerCase();
 
     switch (status) {
         case 'pending':
@@ -143,6 +199,14 @@ function buildOpenClawFeedback(auth) {
                 message:
                     auth.lastError ||
                     'Este entorno aun no tiene configurado el acceso delegado por OpenClaw para el consultorio.',
+            };
+        case 'transport_misconfigured':
+            return {
+                tone: 'danger',
+                title: 'Runtime de OpenClaw desalineado',
+                message:
+                    auth.lastError ||
+                    'El backend respondio sin un transport valido para OpenClaw. Bloqueamos el helper local para evitar abrir localhost por error.',
             };
         case 'cancelled':
             return {
@@ -262,15 +326,17 @@ function syncLoginSurfaceFromState() {
     const fallbackAvailable =
         auth.fallbacks?.legacy_password?.available === true;
     const status = normalizeAuthStatus(auth.status);
+    const openClawState = getFailClosedOpenClawState(auth);
+    const surfaceTransport =
+        mode === 'openclaw_chatgpt' ? openClawState.transport : auth.transport;
 
     setLoginMode(mode, {
         recommendedMode,
         fallbackAvailable,
-        transport: auth.transport,
+        transport: surfaceTransport,
     });
 
     if (mode === 'openclaw_chatgpt') {
-        const openClawState = getVisibleOpenClawState(auth);
         setOpenClawChallenge(openClawState.challenge, {
             status: normalizeAuthStatus(openClawState.status),
             error: openClawState.lastError,
@@ -286,6 +352,7 @@ function syncLoginSurfaceFromState() {
                 ...auth,
                 status: openClawState.status,
                 challenge: openClawState.challenge,
+                transport: openClawState.transport,
                 lastError: openClawState.lastError,
             })
         );
@@ -363,7 +430,7 @@ async function pollOpenClawStatus() {
     if (
         status === 'pending' &&
         auth.challenge &&
-        String(auth.transport || 'local_helper') === 'local_helper'
+        String(auth.transport || '').trim().toLowerCase() === 'local_helper'
     ) {
         scheduleOpenClawPoll(auth.challenge.pollAfterMs || 1200);
         return;
@@ -376,15 +443,26 @@ async function pollOpenClawStatus() {
 
 async function handleOpenClawSubmit() {
     const auth = getState().auth;
-    const openClawState = getVisibleOpenClawState(auth);
+    const openClawState = getFailClosedOpenClawState(auth);
     const openClawStatus = normalizeAuthStatus(openClawState.status);
     const localHelperUrl = String(
         openClawState.challenge?.helperUrl || ''
     ).trim();
     const localPending =
         openClawStatus === 'pending' &&
-        String(openClawState.transport || auth.transport || 'local_helper') ===
-            'local_helper';
+        String(openClawState.transport || auth.transport || '')
+            .trim()
+            .toLowerCase() === 'local_helper';
+
+    if (openClawStatus === 'transport_misconfigured') {
+        syncLoginSurfaceFromState();
+        createToast(
+            openClawState.lastError ||
+                'El runtime de OpenClaw no publico un transport valido.',
+            'error'
+        );
+        return;
+    }
 
     if (localPending && localHelperUrl) {
         setLoginSubmittingState(true, {
@@ -419,7 +497,13 @@ async function handleOpenClawSubmit() {
         return;
     }
 
-    const reusableRedirectUrl = getReusableOpenClawRedirectUrl(auth);
+    const reusableRedirectUrl = getReusableOpenClawRedirectUrl({
+        ...auth,
+        transport: openClawState.transport,
+        status: openClawState.status,
+        redirectUrl: openClawState.redirectUrl,
+        attemptExpiresAt: openClawState.expiresAt,
+    });
     if (reusableRedirectUrl) {
         setLoginSubmittingState(true, {
             mode: 'openclaw_chatgpt',
@@ -437,7 +521,8 @@ async function handleOpenClawSubmit() {
     }
 
     clearOpenClawPollTimer();
-    const webBroker = isOpenClawWebBrokerTransport(getState().auth);
+    const webBroker =
+        normalizeOpenClawTransport(openClawState.transport) === 'web_broker';
     setLoginSubmittingState(true, {
         mode: 'openclaw_chatgpt',
         status: getState().auth.status,
@@ -667,7 +752,7 @@ export function resumeOpenClawPolling() {
         String(auth.mode || '') !== 'openclaw_chatgpt' ||
         normalizeAuthStatus(auth.status) !== 'pending' ||
         !auth.challenge ||
-        String(auth.transport || 'local_helper') !== 'local_helper'
+        String(auth.transport || '').trim().toLowerCase() !== 'local_helper'
     ) {
         return;
     }
@@ -697,11 +782,13 @@ export function showPrimaryLoginSurface() {
     syncLoginSurfaceFromState();
 
     if (nextMode === 'openclaw_chatgpt') {
-        const openClawState = getVisibleOpenClawState(getState().auth);
+        const openClawState = getFailClosedOpenClawState(getState().auth);
         if (
             normalizeAuthStatus(openClawState.status) === 'pending' &&
             openClawState.challenge &&
-            String(openClawState.transport || 'local_helper') === 'local_helper'
+            String(openClawState.transport || '')
+                .trim()
+                .toLowerCase() === 'local_helper'
         ) {
             scheduleOpenClawPoll(openClawState.challenge.pollAfterMs || 1200);
         }

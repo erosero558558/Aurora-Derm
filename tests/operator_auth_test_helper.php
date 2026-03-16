@@ -6,6 +6,7 @@ function operator_auth_test_defaults(array $overrides = []): array
 {
     $defaults = [
         'mode' => 'openclaw_chatgpt',
+        'transport' => 'local_helper',
         'allowlist' => 'operator@example.com',
         'email' => 'operator@example.com',
         'profile_id' => 'openai-codex:test-profile',
@@ -35,6 +36,7 @@ function operator_auth_test_env(array $overrides = []): array
     return [
         'PIELARMONIA_SKIP_ENV_FILE' => 'true',
         'PIELARMONIA_OPERATOR_AUTH_MODE' => (string) $defaults['mode'],
+        'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => (string) $defaults['transport'],
         'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST' => (string) $defaults['allowlist'],
         'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN' => (string) $defaults['bridge_token'],
         'PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET' => (string) $defaults['bridge_secret'],
@@ -147,14 +149,11 @@ function operator_auth_test_csrf_headers(string $serverBaseUrl, ?string $cookieF
         null,
         $cookieFile
     );
-
     $csrfToken = is_array($status['body'] ?? null)
         ? (string) ($status['body']['csrfToken'] ?? '')
         : '';
     if ($csrfToken === '') {
-        throw new RuntimeException(
-            'operator-auth status no devolvio csrfToken para iniciar el flujo.'
-        );
+        throw new RuntimeException('operator-auth-status no devolvio csrfToken para iniciar el flujo.');
     }
 
     return ['X-CSRF-Token: ' . $csrfToken];

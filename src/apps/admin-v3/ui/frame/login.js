@@ -8,18 +8,23 @@ function normalizeRecommendedMode(mode = 'legacy_password') {
         : 'legacy_password';
 }
 
-function normalizeTransport(transport = 'local_helper') {
-    return String(transport || '')
+function normalizeTransport(transport = '') {
+    const raw = String(transport || '')
         .trim()
-        .toLowerCase() === 'web_broker'
-        ? 'web_broker'
-        : 'local_helper';
+        .toLowerCase();
+    if (raw === 'web_broker') {
+        return 'web_broker';
+    }
+    if (raw === 'local_helper') {
+        return 'local_helper';
+    }
+    return '';
 }
 
 function syncContingencyActions({
     mode = 'legacy_password',
     recommendedMode = 'legacy_password',
-    transport = 'local_helper',
+    transport = '',
     fallbackAvailable = false,
 } = {}) {
     const fallbackBtn = qs('#loginFallbackToggleBtn');
@@ -55,7 +60,9 @@ function syncContingencyActions({
                 ? 'Esta pantalla esta en contingencia. Cuando OpenClaw vuelva a estar disponible, regrese a la via principal.'
                 : normalizeTransport(transport) === 'web_broker'
                   ? 'Si la redireccion web falla y el backend mantiene la contingencia activa, podra entrar con clave + 2FA.'
-                  : 'Si este equipo no logra abrir el helper local y el backend mantiene la contingencia activa, podra entrar con clave + 2FA.';
+                  : normalizeTransport(transport) === 'local_helper'
+                    ? 'Si este equipo no logra abrir el helper local y el backend mantiene la contingencia activa, podra entrar con clave + 2FA.'
+                    : 'El runtime debe exponer un transport valido antes de habilitar OpenClaw o la contingencia.';
     }
 }
 
@@ -114,7 +121,7 @@ export function setLoginMode(mode = 'legacy_password', options = {}) {
     const recommendedMode = normalizeRecommendedMode(
         options.recommendedMode || normalized
     );
-    const transport = normalizeTransport(options.transport || 'local_helper');
+    const transport = normalizeTransport(options.transport || '');
     const fallbackAvailable = options.fallbackAvailable === true;
     const openClawPrimary = recommendedMode === 'openclaw_chatgpt';
     const legacyStage = qs('#legacyLoginStage');
@@ -150,7 +157,7 @@ export function setLoginMode(mode = 'legacy_password', options = {}) {
             setLoginNextStep(
                 'Presione el boton principal para continuar con OpenClaw en esta misma pestana. Si el intento ya estaba abierto, puede retomarlo sin empezar de cero.'
             );
-        } else {
+        } else if (transport === 'local_helper') {
             setLoginRouteCard({
                 eyebrow: 'Via activa',
                 title: 'OpenClaw en este equipo',
@@ -159,6 +166,16 @@ export function setLoginMode(mode = 'legacy_password', options = {}) {
             });
             setLoginNextStep(
                 'Presione el boton principal para abrir OpenClaw en este equipo. Cuando aparezca el codigo temporal, confirmelo en el helper local y vuelva a esta pantalla.'
+            );
+        } else {
+            setLoginRouteCard({
+                eyebrow: 'Diagnostico',
+                title: 'Runtime de OpenClaw desalineado',
+                message:
+                    'Este entorno no publico un transport valido para OpenClaw. Bloqueamos el helper local para evitar abrir localhost por error.',
+            });
+            setLoginNextStep(
+                'Vuelva a desplegar el runtime o corrija la configuracion de auth hasta que el backend publique transport=web_broker o transport=local_helper.'
             );
         }
         return;
@@ -195,7 +212,7 @@ export function setLogin2FAVisibility(visible, options = {}) {
     const recommendedMode = normalizeRecommendedMode(
         options.recommendedMode || 'legacy_password'
     );
-    const transport = normalizeTransport(options.transport || 'local_helper');
+    const transport = normalizeTransport(options.transport || '');
     const fallbackAvailable = options.fallbackAvailable === true;
     const openClawPrimary = recommendedMode === 'openclaw_chatgpt';
 
@@ -265,7 +282,7 @@ export function setOpenClawChallenge(challenge, options = {}) {
     const helperLink = qs('#adminOpenClawHelperLink');
     const introTitle = qs('#adminOpenClawIntroTitle');
     const introMessage = qs('#adminOpenClawIntroMessage');
-    const transport = normalizeTransport(options.transport || 'local_helper');
+    const transport = normalizeTransport(options.transport || '');
     const status = String(options.status || 'anonymous')
         .trim()
         .toLowerCase();
@@ -300,7 +317,9 @@ export function setOpenClawChallenge(challenge, options = {}) {
             introTitle.textContent =
                 transport === 'web_broker'
                     ? 'Entrada por navegador'
-                    : 'Entrada en este equipo';
+                    : transport === 'local_helper'
+                      ? 'Entrada en este equipo'
+                      : 'Runtime sin transporte valido';
         }
         if (introMessage) {
             introMessage.textContent =
@@ -308,9 +327,11 @@ export function setOpenClawChallenge(challenge, options = {}) {
                     ? status === 'pending'
                         ? 'OpenClaw dejo este intento pendiente. Puede retomarlo desde el boton principal sin generar otro inicio.'
                         : 'Esta ruta redirige en la misma pestana y no usa helper local ni codigo manual.'
-                    : status === 'openclaw_no_logueado'
-                      ? 'Abra su sesion de OpenClaw en este equipo y vuelva a intentar el acceso.'
-                      : 'Esta ruta usa el helper local de este equipo para confirmar la identidad del operador.';
+                    : transport === 'local_helper'
+                      ? status === 'openclaw_no_logueado'
+                          ? 'Abra su sesion de OpenClaw en este equipo y vuelva a intentar el acceso.'
+                          : 'Esta ruta usa el helper local de este equipo para confirmar la identidad del operador.'
+                      : 'El backend no devolvio un transport valido para OpenClaw. Corrija el runtime antes de reintentar.';
         }
         return;
     }
@@ -379,7 +400,7 @@ export function setLoginSubmittingState(submitting, options = {}) {
             .toLowerCase() === 'openclaw_chatgpt'
             ? 'openclaw_chatgpt'
             : 'legacy_password';
-    const transport = normalizeTransport(options.transport || 'local_helper');
+    const transport = normalizeTransport(options.transport || '');
     const status = String(options.status || 'anonymous')
         .trim()
         .toLowerCase();
@@ -393,7 +414,8 @@ export function setLoginSubmittingState(submitting, options = {}) {
               status === 'code_exchange_failed' ||
               status === 'identity_missing' ||
               status === 'identity_unverified' ||
-              status === 'broker_claims_invalid'
+              status === 'broker_claims_invalid' ||
+              status === 'transport_misconfigured'
             : status === 'openclaw_no_logueado' ||
               status === 'email_no_permitido' ||
               status === 'challenge_expirado' ||
@@ -404,7 +426,8 @@ export function setLoginSubmittingState(submitting, options = {}) {
               status === 'code_exchange_failed' ||
               status === 'identity_missing' ||
               status === 'identity_unverified' ||
-              status === 'broker_claims_invalid';
+              status === 'broker_claims_invalid' ||
+              status === 'transport_misconfigured';
     const requires2FA =
         mode === 'legacy_password'
             ? Boolean(group && !group.classList.contains('is-hidden'))
@@ -432,13 +455,17 @@ export function setLoginSubmittingState(submitting, options = {}) {
                           : shouldRetryOpenClaw
                             ? 'Reintentar en OpenClaw'
                             : 'Continuar con OpenClaw'
-                    : submitting
-                      ? 'Abriendo helper...'
-                      : status === 'pending'
-                        ? 'Abrir helper otra vez'
-                        : shouldRetryOpenClaw
-                          ? 'Generar nuevo codigo'
-                          : 'Continuar con OpenClaw';
+                    : transport === 'local_helper'
+                      ? submitting
+                          ? 'Abriendo helper...'
+                          : status === 'pending'
+                            ? 'Abrir helper otra vez'
+                            : shouldRetryOpenClaw
+                              ? 'Generar nuevo codigo'
+                              : 'Continuar con OpenClaw'
+                      : shouldRetryOpenClaw
+                        ? 'Revisar runtime'
+                        : 'OpenClaw no disponible';
         } else {
             button.textContent = submitting
                 ? requires2FA

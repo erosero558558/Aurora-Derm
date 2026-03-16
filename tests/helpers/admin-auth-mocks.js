@@ -26,6 +26,19 @@ function buildLegacyFallbackPayload(overrides = {}) {
     };
 }
 
+function resolveMockTransport(value, fallback = '') {
+    const raw = String(value ?? fallback ?? '')
+        .trim()
+        .toLowerCase();
+    if (raw === 'web_broker') {
+        return 'web_broker';
+    }
+    if (raw === 'local_helper') {
+        return 'local_helper';
+    }
+    return '';
+}
+
 function buildOperatorAuthChallenge(overrides = {}, defaults = {}) {
     const challengeId = String(
         overrides.challengeId ||
@@ -153,7 +166,9 @@ function buildOperatorOpenClawAnonymousPayload(overrides = {}) {
         ok: true,
         authenticated: false,
         mode: 'openclaw_chatgpt',
-        transport: overrides.transport || 'local_helper',
+        transport: Object.prototype.hasOwnProperty.call(overrides, 'transport')
+            ? resolveMockTransport(overrides.transport)
+            : 'local_helper',
         status: 'anonymous',
         recommendedMode: 'openclaw_chatgpt',
         csrfToken: 'csrf_operator_auth',
@@ -167,7 +182,9 @@ function buildOperatorOpenClawPendingPayload(challenge, overrides = {}) {
         ok: true,
         authenticated: false,
         mode: 'openclaw_chatgpt',
-        transport: overrides.transport || 'local_helper',
+        transport: Object.prototype.hasOwnProperty.call(overrides, 'transport')
+            ? resolveMockTransport(overrides.transport)
+            : 'local_helper',
         status: 'pending',
         recommendedMode: 'openclaw_chatgpt',
         csrfToken: 'csrf_operator_auth',
@@ -187,7 +204,9 @@ function buildOperatorOpenClawAuthenticatedPayload(overrides = {}) {
         ok: true,
         authenticated: true,
         mode: 'openclaw_chatgpt',
-        transport: overrides.transport || 'local_helper',
+        transport: Object.prototype.hasOwnProperty.call(overrides, 'transport')
+            ? resolveMockTransport(overrides.transport)
+            : 'local_helper',
         status: 'autenticado',
         recommendedMode: 'openclaw_chatgpt',
         csrfToken: 'csrf_operator_auth',
@@ -328,17 +347,13 @@ async function installOperatorOpenClawAuthMock(target, options = {}) {
         typeof options.startResponseFactory === 'function'
             ? options.startResponseFactory
             : null;
-    const initialTransport =
-        String(
-            options.transport ||
-                options.anonymousPayload?.transport ||
-                options.pendingPayload?.transport ||
-                'local_helper'
-        )
-            .trim()
-            .toLowerCase() === 'web_broker'
-            ? 'web_broker'
-            : 'local_helper';
+    const initialTransport = resolveMockTransport(
+        Object.prototype.hasOwnProperty.call(options, 'transport')
+            ? options.transport
+            : options.anonymousPayload?.transport ??
+                  options.pendingPayload?.transport ??
+                  'local_helper'
+    );
 
     let statusIndex = 0;
     let startIndex = 0;
@@ -375,9 +390,7 @@ async function installOperatorOpenClawAuthMock(target, options = {}) {
             mode:
                 String(payload?.mode || 'openclaw_chatgpt').trim() ||
                 'openclaw_chatgpt',
-            transport:
-                String(payload?.transport || 'local_helper').trim() ||
-                'local_helper',
+            transport: resolveMockTransport(payload?.transport),
             csrfToken: authenticated ? String(payload?.csrfToken || '') : '',
             operator: authenticated ? payload?.operator || null : null,
             challenge,
@@ -590,7 +603,9 @@ function buildOpenClawAdminAuthPayload(overrides = {}) {
         authenticated,
         configured: true,
         mode: 'openclaw_chatgpt',
-        transport: overrides.transport || 'local_helper',
+        transport: Object.prototype.hasOwnProperty.call(overrides, 'transport')
+            ? resolveMockTransport(overrides.transport)
+            : 'local_helper',
         recommendedMode: 'openclaw_chatgpt',
         status: authenticated ? 'autenticado' : 'pending',
         fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
@@ -617,12 +632,17 @@ function buildOpenClawAdminAuthPayload(overrides = {}) {
 }
 
 async function installOpenClawAdminAuthMock(page, options = {}) {
-    const transport =
-        String(options.transport || 'local_helper')
-            .trim()
-            .toLowerCase() === 'web_broker'
-            ? 'web_broker'
-            : 'local_helper';
+    const transport = Object.prototype.hasOwnProperty.call(options, 'transport')
+        ? resolveMockTransport(options.transport)
+        : resolveMockTransport(
+              options.anonymousPayload?.transport ??
+                  options.startPayload?.transport ??
+                  options.pendingPayload?.transport ??
+                  options.authenticatedPayload?.transport ??
+                  options.terminalPayload?.transport ??
+                  options.logoutPayload?.transport,
+              'local_helper'
+          );
     const terminalStatus =
         typeof options.terminalStatus === 'string' &&
         options.terminalStatus.trim()

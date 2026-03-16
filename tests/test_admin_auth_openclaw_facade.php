@@ -435,6 +435,43 @@ try {
         }
     });
 
+    run_test('admin-auth expone transport_misconfigured cuando OpenClaw no declara transporte explicito', function () {
+        $overrideDataDir = sys_get_temp_dir() . '/pielarmonia-test-admin-auth-openclaw-missing-transport-' . uniqid('', true);
+        $overrideServer = [];
+        ensure_clean_directory($overrideDataDir);
+
+        try {
+            $overrideServer = start_test_php_server([
+                'docroot' => __DIR__ . '/..',
+                'env' => [
+                    'PIELARMONIA_DATA_DIR' => $overrideDataDir,
+                    'PIELARMONIA_AVAILABILITY_SOURCE' => 'store',
+                ] + operator_auth_test_env([
+                    'transport' => '',
+                ]),
+                'startup_timeout_ms' => 12000,
+            ]);
+
+            $cookieFile = admin_auth_openclaw_cookie_file();
+            try {
+                $status = admin_auth_openclaw_request('GET', $overrideServer['base_url'], 'status', null, $cookieFile);
+                assert_equals(200, $status['code'], 'status should respond 200');
+                assert_false($status['body']['configured'] ?? true, 'missing transport should fail closed');
+                assert_equals('transport_misconfigured', $status['body']['status'] ?? '', 'missing transport should expose transport_misconfigured');
+                assert_equals('', $status['body']['transport'] ?? '', 'transport should remain blank when misconfigured');
+                assert_true(
+                    str_contains((string) ($status['body']['error'] ?? ''), 'PIELARMONIA_OPERATOR_AUTH_TRANSPORT'),
+                    'error should point to explicit transport configuration'
+                );
+            } finally {
+                admin_auth_openclaw_cleanup_cookie($cookieFile);
+            }
+        } finally {
+            stop_test_php_server($overrideServer);
+            delete_path_recursive($overrideDataDir);
+        }
+    });
+
     run_test('admin-auth honors explicit legacy override even when openclaw mode is configured', function () {
         $overrideDataDir = sys_get_temp_dir() . '/pielarmonia-test-admin-auth-legacy-override-' . uniqid('', true);
         $overrideServer = [];

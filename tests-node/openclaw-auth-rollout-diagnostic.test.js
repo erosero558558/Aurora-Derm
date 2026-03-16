@@ -292,6 +292,82 @@ test('diagnostico queda en verde cuando operator-auth-status ya publica contrato
     }
 });
 
+test('diagnostico marca transport_misconfigured cuando la surface OpenClaw omite transport', async () => {
+    const tempDir = mkdtempSync(
+        join(tmpdir(), 'openclaw-auth-diagnostic-missing-transport-')
+    );
+    const reportPath = join(tempDir, 'report.json');
+
+    try {
+        await withMockServer(
+            (req, res) => {
+                const url = new URL(req.url, 'http://127.0.0.1');
+
+                if (
+                    url.pathname === '/api.php' &&
+                    url.searchParams.get('resource') === 'operator-auth-status'
+                ) {
+                    sendJson(res, 200, {
+                        ok: true,
+                        authenticated: false,
+                        mode: 'openclaw_chatgpt',
+                        status: 'anonymous',
+                        configured: true,
+                        configuration: {
+                            brokerTrustConfigured: true,
+                            brokerIssuerPinned: true,
+                            brokerAudiencePinned: true,
+                            brokerJwksConfigured: true,
+                            brokerEmailVerifiedRequired: true,
+                            missing: [],
+                        },
+                    });
+                    return;
+                }
+
+                if (
+                    url.pathname === '/admin-auth.php' &&
+                    url.searchParams.get('action') === 'status'
+                ) {
+                    sendJson(res, 200, {
+                        ok: true,
+                        authenticated: false,
+                        mode: 'openclaw_chatgpt',
+                        status: 'anonymous',
+                        configured: true,
+                        configuration: {
+                            brokerTrustConfigured: true,
+                            brokerIssuerPinned: true,
+                            brokerAudiencePinned: true,
+                            brokerJwksConfigured: true,
+                            brokerEmailVerifiedRequired: true,
+                            missing: [],
+                        },
+                    });
+                    return;
+                }
+
+                res.writeHead(404);
+                res.end();
+            },
+            async (baseUrl) => {
+                const result = await runDiagnostic(baseUrl, reportPath);
+                const report = readJson(reportPath);
+
+                assert.equal(result.status, 1, result.stderr || result.stdout);
+                assert.equal(report.ok, false);
+                assert.equal(report.diagnosis, 'transport_misconfigured');
+                assert.match(report.next_action, /transport=web_broker/i);
+            }
+        );
+    } finally {
+        rmSync(tempDir, {
+            recursive: true,
+            force: true,
+        });
+    }
+});
+
 test('diagnostico no marca openclaw_ready cuando web_broker sigue sin trust OIDC completo', async () => {
     const tempDir = mkdtempSync(
         join(tmpdir(), 'openclaw-auth-diagnostic-trust-missing-')

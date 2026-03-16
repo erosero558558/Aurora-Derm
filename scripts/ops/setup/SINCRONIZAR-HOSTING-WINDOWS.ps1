@@ -158,6 +158,38 @@ function Invoke-HealthDiagnostics {
     }
 }
 
+function Invoke-OperatorAuthStatus {
+    try {
+        $response = Invoke-WebRequest `
+            -Uri 'http://127.0.0.1/admin-auth.php?action=status' `
+            -Headers @{ Accept = 'application/json' } `
+            -UseBasicParsing `
+            -TimeoutSec 20
+        $payload = $response.Content | ConvertFrom-Json
+        $mode = [string]($payload.mode)
+        $transport = [string]($payload.transport)
+        $status = [string]($payload.status)
+        $transportValid =
+            [string]::Equals($transport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase) -or
+            [string]::Equals($transport, 'local_helper', [System.StringComparison]::OrdinalIgnoreCase)
+        $ok =
+            [string]::Equals($mode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -and
+            $transportValid -and
+            (-not [string]::Equals($status, 'transport_misconfigured', [System.StringComparison]::OrdinalIgnoreCase))
+        return [PSCustomObject]@{
+            Ok = $ok
+            Payload = $payload
+            Error = if ($ok) { '' } else { 'admin-auth.php?action=status no publico un contrato OpenClaw valido.' }
+        }
+    } catch {
+        return [PSCustomObject]@{
+            Ok = $false
+            Payload = $null
+            Error = $_.Exception.Message
+        }
+    }
+}
+
 function Invoke-StartMirrorStack {
     param(
         [string]$StartScriptPath,
@@ -215,6 +247,10 @@ $status = [ordered]@{
     restarted = $false
     cloned = $false
     health_ok = $false
+    auth_contract_ok = $false
+    auth_mode = ''
+    auth_transport = ''
+    auth_status = ''
     error = ''
 }
 
@@ -298,22 +334,32 @@ try {
             -CurrentCloudflaredExePath $CloudflaredExePath `
             -CurrentPhpCgiExePath $PhpCgiExePath
 
-        $health = Invoke-HealthDiagnostics
-        if ($health.Ok -ne $true) {
-            throw ("El health local no quedo sano despues del restart del mirror. {0}" -f [string]$health.Error)
-        }
-
-        $status.health_ok = $true
         $status.restarted = $true
         $status.state = 'updated'
     } else {
-        $status.health_ok = $true
         $status.state = 'idle'
+    }
+
+    $health = Invoke-HealthDiagnostics
+    if ($health.Ok -ne $true) {
+        throw ("El health local no quedo sano en el mirror. {0}" -f [string]$health.Error)
+    }
+    $status.health_ok = $true
+
+    $authContract = Invoke-OperatorAuthStatus
+    $status.auth_contract_ok = $authContract.Ok -eq $true
+    if ($authContract.Payload) {
+        $status.auth_mode = [string]$authContract.Payload.mode
+        $status.auth_transport = [string]$authContract.Payload.transport
+        $status.auth_status = [string]$authContract.Payload.status
+    }
+    if ($authContract.Ok -ne $true) {
+        throw ("El contrato de auth no quedo sano en el mirror. {0}" -f [string]$authContract.Error)
     }
 
     $status.ok = $true
     Write-Status -Payload $status
-    Write-Info ("Sync completado: state={0} head={1}" -f $status.state, $status.current_head)
+    Write-Info ("Sync completado: state={0} head={1} transport={2}" -f $status.state, $status.current_head, $status.auth_transport)
 } catch {
     $status.ok = $false
     $status.state = 'failed'

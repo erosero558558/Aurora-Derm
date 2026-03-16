@@ -48,6 +48,19 @@ final class HealthVisibilityTest extends TestCase
         foreach ([
             'PIELARMONIA_DATA_DIR',
             'PIELARMONIA_AVAILABILITY_SOURCE',
+            'PIELARMONIA_OPERATOR_AUTH_MODE',
+            'PIELARMONIA_OPERATOR_AUTH_TRANSPORT',
+            'PIELARMONIA_ADMIN_EMAIL',
+            'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST',
+            'PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL',
+            'OPENCLAW_AUTH_BROKER_AUTHORIZE_URL',
+            'OPENCLAW_AUTH_BROKER_TOKEN_URL',
+            'OPENCLAW_AUTH_BROKER_USERINFO_URL',
+            'OPENCLAW_AUTH_BROKER_CLIENT_ID',
+            'OPENCLAW_AUTH_BROKER_JWKS_URL',
+            'OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER',
+            'OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE',
+            'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED',
             'PIELARMONIA_WHATSAPP_OPENCLAW_ENABLED',
             'PIELARMONIA_WHATSAPP_OPENCLAW_MODE',
             'PIELARMONIA_WHATSAPP_BRIDGE_TOKEN',
@@ -171,6 +184,42 @@ final class HealthVisibilityTest extends TestCase
         $this->assertSame(1, (int) ($response['payload']['checks']['whatsappOpenclaw']['bookingsClosed'] ?? 0));
         $this->assertSame(1, (int) ($response['payload']['checks']['whatsappOpenclaw']['paymentsStarted'] ?? 0));
         $this->assertSame(1, (int) ($response['payload']['checks']['whatsappOpenclaw']['paymentsCompleted'] ?? 0));
+    }
+
+    public function testAuthorizedHealthRedactsAllowedEmailsButKeepsRestrictedAllowlistCount(): void
+    {
+        putenv('PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt');
+        putenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT=web_broker');
+        putenv('PIELARMONIA_ADMIN_EMAIL=restricted.operator@example.com');
+        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=restricted.operator@example.com');
+        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=false');
+        putenv('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL=https://broker.example.test/authorize');
+        putenv('OPENCLAW_AUTH_BROKER_TOKEN_URL=https://broker.example.test/token');
+        putenv('OPENCLAW_AUTH_BROKER_USERINFO_URL=https://broker.example.test/userinfo');
+        putenv('OPENCLAW_AUTH_BROKER_CLIENT_ID=broker-client-id');
+        putenv('OPENCLAW_AUTH_BROKER_JWKS_URL=https://broker.example.test/jwks');
+        putenv('OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER=https://broker.example.test');
+        putenv('OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE=broker-audience');
+        putenv('OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED=true');
+
+        $response = $this->captureJsonResponse(static function (): void {
+            \HealthController::check([
+                'store' => \read_store(),
+                'method' => 'GET',
+                'resource' => 'health',
+                'diagnosticsAuthorized' => true,
+            ]);
+        });
+
+        $this->assertSame(200, $response['status']);
+        $this->assertTrue((bool) ($response['payload']['ok'] ?? false));
+        $this->assertSame('openclaw_chatgpt', (string) ($response['payload']['authMode'] ?? ''));
+        $this->assertTrue((bool) ($response['payload']['authConfigured'] ?? false));
+        $this->assertSame(1, (int) ($response['payload']['checks']['auth']['operatorAuthAllowedEmailCount'] ?? 0));
+        $this->assertTrue((bool) ($response['payload']['checks']['auth']['brokerTrustConfigured'] ?? false));
+        $this->assertSame(1, (int) ($response['payload']['checks']['internalConsole']['auth']['allowedEmailCount'] ?? 0));
+        $this->assertArrayNotHasKey('allowedEmails', $response['payload']['checks']['auth'] ?? []);
+        $this->assertArrayNotHasKey('allowedEmails', $response['payload']['checks']['internalConsole']['auth'] ?? []);
     }
 
     public function testHealthDiagnosticsRejectsUnauthorizedRequest(): void

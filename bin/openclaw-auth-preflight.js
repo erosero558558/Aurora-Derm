@@ -52,6 +52,18 @@ function deriveNextAction(report) {
         if (!report.broker.clientIdConfigured) {
             return 'Configura OPENCLAW_AUTH_BROKER_CLIENT_ID antes de habilitar web_broker.';
         }
+        if (!report.broker.jwksUrlConfigured) {
+            return 'Configura OPENCLAW_AUTH_BROKER_JWKS_URL para validar firmas del id_token.';
+        }
+        if (!report.broker.expectedIssuerConfigured) {
+            return 'Configura OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER para fijar el issuer del broker.';
+        }
+        if (!report.broker.expectedAudienceConfigured) {
+            return 'Configura OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE para fijar la audiencia esperada.';
+        }
+        if (!report.broker.emailVerifiedRequired) {
+            return 'Activa OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED=true antes de habilitar produccion.';
+        }
 
         return 'Listo para abrir admin.html u operador-turnos.html y continuar con OpenClaw web.';
     }
@@ -96,6 +108,14 @@ async function buildOpenClawAuthPreflight(overrides = {}) {
             userinfoUrl: config.brokerUserinfoUrl,
             clientIdConfigured: config.brokerClientId !== '',
             clientSecretConfigured: config.brokerClientSecret !== '',
+            jwksUrl: config.brokerJwksUrl,
+            expectedIssuer: config.brokerExpectedIssuer,
+            expectedAudience: config.brokerExpectedAudience,
+            jwksUrlConfigured: config.brokerJwksUrl !== '',
+            expectedIssuerConfigured: config.brokerExpectedIssuer !== '',
+            expectedAudienceConfigured: config.brokerExpectedAudience !== '',
+            emailVerifiedRequired:
+                config.brokerRequireEmailVerified === true,
             allowAnyAuthenticatedEmail:
                 config.allowAnyAuthenticatedEmail === true,
             authorizeUrlConfigured: config.brokerAuthorizeUrl !== '',
@@ -120,7 +140,11 @@ async function buildOpenClawAuthPreflight(overrides = {}) {
             report.broker.authorizeUrlConfigured &&
             report.broker.tokenUrlConfigured &&
             report.broker.userinfoUrlConfigured &&
-            report.broker.clientIdConfigured;
+            report.broker.clientIdConfigured &&
+            report.broker.jwksUrlConfigured &&
+            report.broker.expectedIssuerConfigured &&
+            report.broker.expectedAudienceConfigured &&
+            report.broker.emailVerifiedRequired;
         report.readyForLogin = report.ok;
         report.nextAction = deriveNextAction(report);
         return report;
@@ -172,6 +196,10 @@ function formatTextReport(report) {
         `broker_token_url: ${report.broker.tokenUrl || '(missing)'}`,
         `broker_userinfo_url: ${report.broker.userinfoUrl || '(missing)'}`,
         `broker_client_id: ${report.broker.clientIdConfigured ? 'configured' : 'missing'}`,
+        `broker_jwks_url: ${report.broker.jwksUrl || '(missing)'}`,
+        `broker_expected_issuer: ${report.broker.expectedIssuer || '(missing)'}`,
+        `broker_expected_audience: ${report.broker.expectedAudience || '(missing)'}`,
+        `broker_email_verified_required: ${report.broker.emailVerifiedRequired ? 'yes' : 'no'}`,
         `runtime_base_url: ${report.runtime.baseUrl || '(missing)'}`,
         `runtime_reachable: ${report.runtime.reachable ? 'yes' : 'no'}`,
         `runtime_status: ${report.runtime.status || 'n/a'}`,

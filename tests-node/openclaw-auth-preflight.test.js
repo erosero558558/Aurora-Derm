@@ -164,6 +164,12 @@ test('preflight accepts web_broker without helper local when broker env is compl
             OPENCLAW_AUTH_BROKER_USERINFO_URL:
                 'https://broker.example.test/userinfo',
             OPENCLAW_AUTH_BROKER_CLIENT_ID: 'broker-client-id',
+            OPENCLAW_AUTH_BROKER_JWKS_URL:
+                'https://broker.example.test/jwks',
+            OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER:
+                'https://broker.example.test',
+            OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE: 'broker-client-id',
+            OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED: 'true',
             PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL: '',
             PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN: '',
             PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET: '',

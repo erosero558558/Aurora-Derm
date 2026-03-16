@@ -150,6 +150,7 @@ test('admin rollout gate acepta stage general y switches de tolerancia usados po
                         ok: true,
                         authenticated: false,
                         mode: 'openclaw_chatgpt',
+                        transport: 'local_helper',
                         status: 'anonymous',
                         configured: true,
                         configuration: {
@@ -157,6 +158,15 @@ test('admin rollout gate acepta stage general y switches de tolerancia usados po
                             bridgeTokenConfigured: true,
                             bridgeSecretConfigured: true,
                             allowlistConfigured: true,
+                            brokerAuthorizeUrlConfigured: true,
+                            brokerTokenUrlConfigured: true,
+                            brokerUserinfoUrlConfigured: true,
+                            brokerClientIdConfigured: true,
+                            brokerTrustConfigured: true,
+                            brokerIssuerPinned: true,
+                            brokerAudiencePinned: true,
+                            brokerJwksConfigured: true,
+                            brokerEmailVerifiedRequired: true,
                             missing: [],
                         },
                     });
@@ -298,6 +308,7 @@ test('admin rollout gate acepta operator-auth-status cuando ya expone contrato O
                         ok: true,
                         authenticated: false,
                         mode: 'openclaw_chatgpt',
+                        transport: 'local_helper',
                         status: 'anonymous',
                         configured: true,
                         configuration: {
@@ -305,6 +316,15 @@ test('admin rollout gate acepta operator-auth-status cuando ya expone contrato O
                             bridgeTokenConfigured: true,
                             bridgeSecretConfigured: true,
                             allowlistConfigured: true,
+                            brokerAuthorizeUrlConfigured: true,
+                            brokerTokenUrlConfigured: true,
+                            brokerUserinfoUrlConfigured: true,
+                            brokerClientIdConfigured: true,
+                            brokerTrustConfigured: true,
+                            brokerIssuerPinned: true,
+                            brokerAudiencePinned: true,
+                            brokerJwksConfigured: true,
+                            brokerEmailVerifiedRequired: true,
                             missing: [],
                         },
                     });
@@ -396,6 +416,11 @@ test('admin rollout gate acepta web_broker configurado sin exigir helper local',
                             brokerTokenUrlConfigured: true,
                             brokerUserinfoUrlConfigured: true,
                             brokerClientIdConfigured: true,
+                            brokerTrustConfigured: true,
+                            brokerIssuerPinned: true,
+                            brokerAudiencePinned: true,
+                            brokerJwksConfigured: true,
+                            brokerEmailVerifiedRequired: true,
                             missing: [],
                         },
                     });
@@ -422,6 +447,81 @@ test('admin rollout gate acepta web_broker configurado sin exigir helper local',
                 assert.equal(report.operator_auth.transport, 'web_broker');
                 assert.equal(report.operator_auth.status, 'pending');
                 assert.equal(report.operator_auth.configured, true);
+            }
+        );
+    } finally {
+        rmSync(tempDir, {
+            recursive: true,
+            force: true,
+        });
+    }
+});
+
+test('admin rollout gate falla si web_broker no tiene trust OIDC completo', async () => {
+    const tempDir = mkdtempSync(
+        join(tmpdir(), 'admin-rollout-gate-web-broker-trust-')
+    );
+    const reportPath = join(tempDir, 'report.json');
+
+    try {
+        await withMockServer(
+            (req, res) => {
+                const url = new URL(req.url, 'http://127.0.0.1');
+
+                if (url.pathname === '/admin.html') {
+                    res.writeHead(200, {
+                        'Content-Type': 'text/html; charset=utf-8',
+                    });
+                    res.end(adminShellHtml());
+                    return;
+                }
+
+                if (
+                    url.pathname === '/api.php' &&
+                    url.searchParams.get('resource') === 'operator-auth-status'
+                ) {
+                    sendJson(res, 200, {
+                        ok: true,
+                        authenticated: false,
+                        mode: 'openclaw_chatgpt',
+                        transport: 'web_broker',
+                        status: 'pending',
+                        configured: true,
+                        configuration: {
+                            helperBaseUrl: '',
+                            bridgeTokenConfigured: false,
+                            bridgeSecretConfigured: false,
+                            allowlistConfigured: false,
+                            brokerAuthorizeUrlConfigured: true,
+                            brokerTokenUrlConfigured: true,
+                            brokerUserinfoUrlConfigured: true,
+                            brokerClientIdConfigured: true,
+                            brokerTrustConfigured: false,
+                            brokerIssuerPinned: false,
+                            brokerAudiencePinned: false,
+                            brokerJwksConfigured: false,
+                            brokerEmailVerifiedRequired: false,
+                            missing: [],
+                        },
+                    });
+                    return;
+                }
+
+                res.writeHead(404, {
+                    'Content-Type': 'text/plain; charset=utf-8',
+                });
+                res.end('not-found');
+            },
+            async (baseUrl) => {
+                const result = await runGate(baseUrl, reportPath);
+
+                assert.equal(result.status, 1, result.stderr || result.stdout);
+                assert.match(result.stdout, /trust OIDC completo/i);
+
+                const report = readJson(reportPath);
+                assert.equal(report.ok, false);
+                assert.equal(report.operator_auth.transport, 'web_broker');
+                assert.equal(report.operator_auth.broker_trust_configured, false);
             }
         );
     } finally {

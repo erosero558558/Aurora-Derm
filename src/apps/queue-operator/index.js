@@ -530,11 +530,16 @@ function formatOperatorChallengeExpiry(challenge) {
 }
 
 function getOperatorAuthTransport(auth) {
-    return String(auth?.transport || 'local_helper')
+    const raw = String(auth?.transport || '')
         .trim()
-        .toLowerCase() === 'web_broker'
-        ? 'web_broker'
-        : 'local_helper';
+        .toLowerCase();
+    if (raw === 'web_broker') {
+        return 'web_broker';
+    }
+    if (raw === 'local_helper') {
+        return 'local_helper';
+    }
+    return '';
 }
 
 function resolveOperatorAuthCopy(auth) {
@@ -744,36 +749,6 @@ function resolveOperatorAuthCopy(auth) {
                 showRetry: true,
                 showLinkHint: false,
             };
-        case 'identity_unverified':
-            return {
-                tone: 'danger',
-                title: 'Email no verificado',
-                message:
-                    auth?.error ||
-                    'OpenClaw autentico la cuenta, pero no confirmo un email verificado para este turnero.',
-                summary:
-                    'Usa una cuenta con email verificado o corrige la configuracion del broker antes de reintentar.',
-                primaryLabel: 'Reintentar',
-                helperMeta:
-                    'El siguiente intento repetira la validacion fuerte del broker web.',
-                showRetry: true,
-                showLinkHint: false,
-            };
-        case 'broker_claims_invalid':
-            return {
-                tone: 'danger',
-                title: 'Identidad no confiable',
-                message:
-                    auth?.error ||
-                    'No se pudieron validar los claims firmados que OpenClaw devolvio para este acceso.',
-                summary:
-                    'Inicia un intento nuevo o revisa la configuracion OIDC del broker si el error persiste.',
-                primaryLabel: 'Reintentar',
-                helperMeta:
-                    'El siguiente intento pedira otra vez el id_token firmado y su cruce con userinfo.',
-                showRetry: true,
-                showLinkHint: false,
-            };
         case 'operator_auth_not_configured':
             return {
                 tone: 'danger',
@@ -791,6 +766,21 @@ function resolveOperatorAuthCopy(auth) {
                 showRetry: true,
                 showLinkHint: false,
             };
+        case 'transport_misconfigured':
+            return {
+                tone: 'danger',
+                title: 'Runtime de OpenClaw desalineado',
+                message:
+                    auth?.error ||
+                    'El backend respondio sin un transport valido para este login. Bloqueamos el helper local para evitar abrir localhost por error.',
+                summary:
+                    'Actualiza el runtime o corrige la configuracion de auth antes de reintentar.',
+                primaryLabel: 'Revisar runtime',
+                helperMeta:
+                    'Este entorno solo puede continuar cuando el backend publique transport=web_broker o transport=local_helper.',
+                showRetry: true,
+                showLinkHint: false,
+            };
         default:
             return {
                 tone: 'neutral',
@@ -798,15 +788,19 @@ function resolveOperatorAuthCopy(auth) {
                 message:
                     transport === 'web_broker'
                         ? 'Continua con OpenClaw para validar la sesion del turnero desde cualquier computadora.'
-                        : 'Abre OpenClaw para validar la sesion del turnero sin usar una clave local.',
+                        : transport === 'local_helper'
+                          ? 'Abre OpenClaw para validar la sesion del turnero sin usar una clave local.'
+                          : 'El runtime debe publicar un transport valido antes de iniciar sesion con OpenClaw.',
                 summary:
                     'La sesion quedara compartida con el panel administrativo.',
                 primaryLabel: 'Abrir OpenClaw',
                 helperMeta:
                     transport === 'web_broker'
                         ? 'El navegador te redirigira al broker web de OpenClaw en esta misma pestana.'
-                        : 'Si el navegador bloquea la ventana, podras usar el enlace manual.',
-                showRetry: false,
+                        : transport === 'local_helper'
+                          ? 'Si el navegador bloquea la ventana, podras usar el enlace manual.'
+                          : 'No se abrira localhost mientras falte un transport valido.',
+                showRetry: transport === '',
                 showLinkHint: transport === 'local_helper',
             };
     }
@@ -875,7 +869,11 @@ function syncOperatorLoginSurface(auth = getState().auth) {
             transport !== 'local_helper' ||
                 (helperUrl === '' && !copy.showLinkHint)
         );
-        if (transport === 'local_helper' && helperUrl === '' && copy.showLinkHint) {
+        if (
+            transport === 'local_helper' &&
+            helperUrl === '' &&
+            copy.showLinkHint
+        ) {
             helperLinkRow.classList.remove('is-hidden');
         }
     }
@@ -1969,7 +1967,7 @@ async function startOperatorAuthFlow(forceNew = false) {
             createToast(
                 snapshot.helperUrlOpened
                     ? 'OpenClaw listo para confirmar'
-                    : 'Usa el enlace manual de OpenClaw si la ventana no se abrió',
+                    : 'Usa el enlace manual de OpenClaw si la ventana no se abrio',
                 snapshot.helperUrlOpened ? 'info' : 'warning'
             );
             void ensureOperatorAuthPolling();
