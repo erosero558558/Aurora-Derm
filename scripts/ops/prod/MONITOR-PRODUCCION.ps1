@@ -108,6 +108,7 @@ function Resolve-RequireOperatorAuthFlag {
 $checks = @(
     @{ Name = 'home'; Url = "$base/"; MaxLatencyMs = 5000 },  # full HTML page — higher threshold
     @{ Name = 'health-diagnostics'; Url = "$base/api.php?resource=health-diagnostics" },
+    @{ Name = 'admin-auth-status'; Url = "$base/admin-auth.php?action=status" },
     @{ Name = 'reviews'; Url = "$base/api.php?resource=reviews" },
     @{ Name = 'availability'; Url = "$base/api.php?resource=availability" },
     @{ Name = 'booked-slots'; Url = "$base/api.php?resource=booked-slots&date=$todayDate&doctor=indiferente&service=consulta" },
@@ -1365,6 +1366,38 @@ if ($null -ne $servicePrioritiesResult -and $servicePrioritiesResult.StatusCode 
                 categoriesCount = $categoriesCount
                 featuredCount = $featuredCount
             }
+        }
+    }
+}
+
+$adminAuthResult = $results | Where-Object { $_.Name -eq 'admin-auth-status' } | Select-Object -First 1
+if ($null -eq $adminAuthResult) {
+    $failures += '[FAIL] admin-auth-status: endpoint no evaluado'
+} elseif ($adminAuthResult.StatusCode -ne 200) {
+    $failures += "[FAIL] admin-auth-status: status=$($adminAuthResult.StatusCode) error=$($adminAuthResult.Error)"
+} else {
+    $adminAuthPayload = Parse-JsonBody -Body $adminAuthResult.Body -Depth 10
+    if ($null -eq $adminAuthPayload) {
+        $failures += '[FAIL] admin-auth-status: JSON invalido'
+    } else {
+        $adminAuthMode = ''
+        $adminAuthTransport = ''
+        $adminAuthStatus = ''
+        try { $adminAuthMode = [string]$adminAuthPayload.mode } catch {}
+        try { $adminAuthTransport = [string]$adminAuthPayload.transport } catch {}
+        try { $adminAuthStatus = [string]$adminAuthPayload.status } catch {}
+        Write-Host "[INFO] admin-auth-status mode=$adminAuthMode transport=$adminAuthTransport status=$adminAuthStatus"
+
+        if ($adminAuthMode -ne 'openclaw_chatgpt') {
+            $failures += "[FAIL] admin-auth-status mode inesperado ($adminAuthMode)"
+        }
+        if ([string]::IsNullOrWhiteSpace($adminAuthTransport)) {
+            $failures += '[FAIL] admin-auth-status transport ausente'
+        } elseif ($adminAuthTransport -ne 'web_broker') {
+            $failures += "[FAIL] admin-auth-status transport inesperado ($adminAuthTransport)"
+        }
+        if ($adminAuthStatus -eq 'transport_misconfigured') {
+            $failures += '[FAIL] admin-auth-status reporta transport_misconfigured'
         }
     }
 }

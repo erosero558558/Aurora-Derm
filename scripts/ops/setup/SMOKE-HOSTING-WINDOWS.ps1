@@ -7,6 +7,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$commonScriptPath = Join-Path $PSScriptRoot 'Windows.Hosting.Common.ps1'
+if (-not (Test-Path -LiteralPath $commonScriptPath)) {
+    throw "No existe el modulo comun de hosting Windows: $commonScriptPath"
+}
+. $commonScriptPath
 $base = $BaseUrl.TrimEnd('/')
 
 function Write-Info {
@@ -24,25 +29,12 @@ function Invoke-TextFetch {
         [int]$TimeoutSec = 20
     )
 
-    try {
-        $response = Invoke-WebRequest -Uri $Url -Headers $Headers -UseBasicParsing -TimeoutSec $TimeoutSec
-        return [PSCustomObject]@{
-            Ok = ([int]$response.StatusCode -ge 200 -and [int]$response.StatusCode -lt 300)
-            StatusCode = [int]$response.StatusCode
-            Body = [string]$response.Content
-            Error = ''
-        }
-    } catch {
-        $statusCode = 0
-        if ($_.Exception.Response) {
-            try { $statusCode = [int]$_.Exception.Response.StatusCode.value__ } catch {}
-        }
-        return [PSCustomObject]@{
-            Ok = $false
-            StatusCode = $statusCode
-            Body = ''
-            Error = $_.Exception.Message
-        }
+    $response = Invoke-HostingHttpRequest -Url $Url -Headers $Headers -TimeoutSec $TimeoutSec
+    return [PSCustomObject]@{
+        Ok = ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300)
+        StatusCode = [int]$response.StatusCode
+        Body = [string]$response.Body
+        Error = [string]$response.Error
     }
 }
 
@@ -67,9 +59,8 @@ $errors = New-Object 'System.Collections.Generic.List[string]'
 $healthResponse = Invoke-TextFetch -Url "$base/api.php?resource=health-diagnostics" -Headers @{ Accept = 'application/json' }
 $healthPayload = $null
 if ($healthResponse.Ok) {
-    try {
-        $healthPayload = $healthResponse.Body | ConvertFrom-Json -Depth 12
-    } catch {
+    $healthPayload = ConvertFrom-JsonCompat -Text $healthResponse.Body -Depth 12
+    if ($null -eq $healthPayload) {
         $errors.Add('health-diagnostics devolvio JSON invalido.') | Out-Null
     }
 } else {
@@ -84,9 +75,8 @@ Add-SmokeCheck `
 $statusResponse = Invoke-TextFetch -Url "$base/admin-auth.php?action=status" -Headers @{ Accept = 'application/json' }
 $statusPayload = $null
 if ($statusResponse.Ok) {
-    try {
-        $statusPayload = $statusResponse.Body | ConvertFrom-Json -Depth 12
-    } catch {
+    $statusPayload = ConvertFrom-JsonCompat -Text $statusResponse.Body -Depth 12
+    if ($null -eq $statusPayload) {
         $errors.Add('admin-auth.php?action=status devolvio JSON invalido.') | Out-Null
     }
 } else {

@@ -45,14 +45,23 @@ La ruta canonica es mantener un mirror limpio en
 - `php-cgi.exe` en `127.0.0.1:9000` como backend FastCGI.
 - `cloudflared` para exponer el mismo dominio sin depender de NAT/router.
 - `scripts/ops/setup/SUPERVISAR-HOSTING-WINDOWS.ps1` como supervisor dedicado del stack.
-- `scripts/ops/setup/SINCRONIZAR-HOSTING-WINDOWS.ps1` para clonar/resetear `origin/main`,
-  reinyectar `C:\ProgramData\Pielarmonia\hosting\env.php` y reiniciar solo si
-  cambia el `HEAD` o el hash del `env.php`.
+- `scripts/ops/setup/Windows.Hosting.Common.ps1` como capa canonica de
+  compatibilidad Windows PowerShell 5.1 para procesos, puertos, tareas,
+  JSON, hashing y HTTP.
+- `scripts/ops/setup/SINCRONIZAR-HOSTING-WINDOWS.ps1` para consumir
+  `release-target.json`, correr `discover -> preflight -> apply -> restart ->
+  validate -> rollback` y reinyectar
+  `C:\ProgramData\Pielarmonia\hosting\env.php` sin seguir `origin/main`
+  flotante.
 - `scripts/ops/setup/CONFIGURAR-HOSTING-WINDOWS.ps1` para registrar:
   `Pielarmonia Hosting Supervisor` en boot/login, `Pielarmonia Hosting Main Sync`
   cada 1 minuto via Task Scheduler y los launchers cortos del mirror.
 - `scripts/ops/setup/REPARAR-HOSTING-WINDOWS.ps1` como entrypoint unico de
-  recovery para stale lock, restart y smoke local.
+  recovery para `discover -> preflight -> quiesce -> apply -> reinstall ->
+  validate`, con `-PreflightOnly` y sin tumbar trafico si el preflight falla.
+- `scripts/ops/setup/SMOKE-HOSTING-WINDOWS.ps1` como smoke canonico del host:
+  valida `health-diagnostics`, `admin-auth.php?action=status` con
+  `transport=web_broker` y ausencia de referencias activas a `127.0.0.1:4173`.
 
 Secuencia recomendada:
 
@@ -69,6 +78,13 @@ Notas operativas:
 - El deploy Windows ya no sigue `origin/main` a ciegas: el runtime servible se
   pinnea en `C:\ProgramData\Pielarmonia\hosting\release-target.json` y el sync
   solo promueve ese `target_commit`.
+- `main-sync-status.json` y `hosting-supervisor-status.json` son la fuente de
+  verdad operativa: deben exponer `desired/current/previous_commit`,
+  `service_state`, `health_ok`, `auth_contract_ok`, `lock_*`,
+  `rollback_*` y los timestamps de ultimo deploy sano/fallido.
+- El supervisor es el runtime principal; Task Scheduler queda como bootstrap y
+  watchdog. La tarea legacy `Pielarmonia Hosting Stack` ya no es el entrypoint
+  operativo.
 
 Notas:
 
@@ -97,6 +113,12 @@ Recovery canonico:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\ops\setup\REPARAR-HOSTING-WINDOWS.ps1
+```
+
+Preflight canonico sin tocar trafico:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\ops\setup\REPARAR-HOSTING-WINDOWS.ps1 -PreflightOnly
 ```
 
 Promocion manual del HEAD remoto durante una ventana de mantenimiento:

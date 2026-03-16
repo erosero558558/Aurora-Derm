@@ -12,12 +12,19 @@ param(
     [string]$PhpCgiExePath = '',
     [string]$TargetCommit = '',
     [switch]$PromoteCurrentRemoteHead,
+    [switch]$PreflightOnly,
     [switch]$Quiet
 )
 
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
+$commonScriptPath = Join-Path $PSScriptRoot 'Windows.Hosting.Common.ps1'
+if (-not (Test-Path -LiteralPath $commonScriptPath)) {
+    throw "No existe el modulo comun de hosting Windows: $commonScriptPath"
+}
+. $commonScriptPath
+
 $mirrorRepoPathResolved = [System.IO.Path]::GetFullPath($MirrorRepoPath)
 $externalEnvPathResolved = [System.IO.Path]::GetFullPath($ExternalEnvPath)
 $releaseTargetPathResolved = [System.IO.Path]::GetFullPath($ReleaseTargetPath)
@@ -31,6 +38,7 @@ $resolvedOperatorUserProfile = if ([string]::IsNullOrWhiteSpace($OperatorUserPro
 $syncScriptPath = Join-Path $repoRoot 'scripts\ops\setup\SINCRONIZAR-HOSTING-WINDOWS.ps1'
 $configScriptPath = Join-Path $repoRoot 'scripts\ops\setup\CONFIGURAR-HOSTING-WINDOWS.ps1'
 $smokeScriptPath = Join-Path $repoRoot 'scripts\ops\setup\SMOKE-HOSTING-WINDOWS.ps1'
+$supervisorLauncherPath = Join-Path $mirrorRepoPathResolved 'data\runtime\hosting\supervisor.cmd'
 $powershellExe = (Get-Command powershell -ErrorAction Stop).Source
 $gitExe = (Get-Command git -ErrorAction Stop).Source
 $taskNames = @(
@@ -39,172 +47,42 @@ $taskNames = @(
     'Pielarmonia Hosting Stack'
 )
 
-function Ensure-ParentDirectory {
-    param([string]$Path)
-
-    $parent = Split-Path -Parent $Path
-    if (-not [string]::IsNullOrWhiteSpace($parent) -and -not (Test-Path -LiteralPath $parent)) {
-        New-Item -ItemType Directory -Path $parent -Force | Out-Null
-    }
-}
-
 function Write-Info {
     param([string]$Message)
 
     $line = ('[{0}] {1}' -f ([DateTimeOffset]::Now.ToString('o')), $Message)
-    Ensure-ParentDirectory -Path $logPathResolved
+    Ensure-HostingParentDirectory -Path $logPathResolved
     Add-Content -Path $logPathResolved -Value $line -Encoding ASCII
     if (-not $Quiet) {
         Write-Host "[hosting-repair] $Message"
     }
 }
 
-function Write-JsonFile {
-    param(
-        [string]$Path,
-        [hashtable]$Payload
-    )
-
-    Ensure-ParentDirectory -Path $Path
-    $Payload | ConvertTo-Json -Depth 20 | Set-Content -Path $Path -Encoding UTF8
-}
-
-function Invoke-CommandWithOutput {
-    param(
-        [string]$FilePath,
-        [string[]]$Arguments
-    )
-
-    $stdoutPath = [System.IO.Path]::GetTempFileName()
-    $stderrPath = [System.IO.Path]::GetTempFileName()
-    try {
-        $process = Start-Process `
-            -FilePath $FilePath `
-            -ArgumentList $Arguments `
-            -NoNewWindow `
-            -Wait `
-            -PassThru `
-            -RedirectStandardOutput $stdoutPath `
-            -RedirectStandardError $stderrPath
-
-        $chunks = @()
-        foreach ($path in @($stdoutPath, $stderrPath)) {
-            if (Test-Path -LiteralPath $path) {
-                $content = Get-Content -LiteralPath $path -Raw
-                if (-not [string]::IsNullOrWhiteSpace($content)) {
-                    $chunks += $content.Trim()
-                }
-            }
-        }
-
-        return [PSCustomObject]@{
-            ExitCode = $process.ExitCode
-            Output = $chunks -join [Environment]::NewLine
-        }
-    } finally {
-        foreach ($path in @($stdoutPath, $stderrPath)) {
-            if (Test-Path -LiteralPath $path) {
-                Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
-            }
-        }
-    }
-}
-
 function Invoke-Git {
     param([string[]]$Arguments)
 
-    return Invoke-CommandWithOutput -FilePath $gitExe -Arguments $Arguments
+    return Invoke-HostingCommandWithOutput -FilePath $gitExe -Arguments $Arguments
 }
 
-function Add-OptionalNamedArgument {
-    param(
-        [System.Collections.Generic.List[string]]$Arguments,
-        [string]$Name,
-        [string]$Value
-    )
+function Write-Status {
+    param([hashtable]$Payload)
 
-    if ([string]::IsNullOrWhiteSpace($Value)) {
-        return
-    }
-
-    $Arguments.Add($Name) | Out-Null
-    $Arguments.Add($Value) | Out-Null
+    Write-HostingJsonFile -Path $statusPathResolved -Payload $Payload
 }
 
-function Stop-TaskIfPresent {
-    param([string]$TaskName)
+function Get-CurrentCommitSafe {
+    param([string]$RepoPath)
 
-    try {
-        $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
-        if ($null -ne $task) {
-            Stop-ScheduledTask -InputObject $task -ErrorAction SilentlyContinue
-            Write-Info ("Tarea detenida: {0}" -f $TaskName)
-        }
-    } catch {
+    if (-not (Test-Path -LiteralPath (Join-Path $RepoPath '.git'))) {
+        return ''
     }
-}
 
-function Stop-ProcessesByNeedle {
-    param(
-        [string[]]$Needles,
-        [string]$Label
-    )
-
-    $matches = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
-        $commandLine = [string]$_.CommandLine
-        if ([string]::IsNullOrWhiteSpace($commandLine)) {
-            return $false
-        }
-        foreach ($needle in $Needles) {
-            if ([string]::IsNullOrWhiteSpace($needle)) {
-                continue
-            }
-            if ($commandLine.IndexOf($needle, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
-                return $false
-            }
-        }
-        return $true
-    })
-
-    foreach ($match in $matches) {
-        Write-Info ("Stopping {0} pid={1}" -f $Label, $match.ProcessId)
-        Stop-Process -Id $match.ProcessId -Force -ErrorAction SilentlyContinue
+    $result = Invoke-Git -Arguments @('-C', $RepoPath, 'rev-parse', 'HEAD')
+    if ($result.ExitCode -ne 0) {
+        return ''
     }
-}
 
-function Clear-HostingLocks {
-    param([string]$HostingDir)
-
-    $lockPatterns = @(
-        'main-sync-status.json.lock',
-        'main-sync-status.json.lock.json',
-        'hosting-supervisor-status.json.lock',
-        'hosting-supervisor-status.json.lock.json'
-    )
-
-    foreach ($pattern in $lockPatterns) {
-        $candidate = Join-Path $HostingDir $pattern
-        if (Test-Path -LiteralPath $candidate) {
-            Remove-Item -LiteralPath $candidate -Force -ErrorAction SilentlyContinue
-            Write-Info ("Lock eliminado: {0}" -f $candidate)
-        }
-    }
-}
-
-function Write-ReleaseTarget {
-    param(
-        [string]$Path,
-        [string]$Commit,
-        [string]$SourceRunId
-    )
-
-    $payload = [ordered]@{
-        target_commit = $Commit
-        approved_at = [DateTimeOffset]::Now.ToString('o')
-        source_run_id = $SourceRunId
-        approved_by = 'windows_hosting_repair'
-    }
-    Write-JsonFile -Path $Path -Payload $payload
+    return [string]$result.Output.Trim()
 }
 
 function Resolve-RemoteHead {
@@ -228,6 +106,56 @@ function Resolve-RemoteHead {
     }
 
     return [string]$revParse.Output.Trim()
+}
+
+function Get-ServiceStateSafe {
+    param([string]$CurrentTunnelId)
+
+    $phpProcesses = Get-HostingProcessesByNeedle -Needles @('php-cgi.exe', '-b 127.0.0.1:9000')
+    $caddyProcesses = Get-HostingProcessesByNeedle -Needles @('caddy.exe', 'ops\caddy\Caddyfile', 'run')
+    $cloudflaredProcesses = Get-HostingProcessesByNeedle -Needles @('cloudflared.exe', $CurrentTunnelId, '--url http://127.0.0.1')
+
+    if (($phpProcesses.Count -gt 0) -and ($caddyProcesses.Count -gt 0) -and ($cloudflaredProcesses.Count -gt 0)) {
+        return 'running'
+    }
+    if (($phpProcesses.Count + $caddyProcesses.Count + $cloudflaredProcesses.Count) -gt 0) {
+        return 'degraded'
+    }
+    return 'stopped'
+}
+
+function Invoke-LocalAuthContract {
+    $response = Invoke-HostingJsonRequest `
+        -Url 'http://127.0.0.1/admin-auth.php?action=status' `
+        -Headers @{ Accept = 'application/json' } `
+        -TimeoutSec 15
+
+    $payload = $response.Payload
+    $ok =
+        $response.Ok -and
+        ([string]$payload.mode -eq 'openclaw_chatgpt') -and
+        ([string]$payload.transport -eq 'web_broker') -and
+        ([string]$payload.status -ne 'transport_misconfigured')
+
+    return [PSCustomObject]@{
+        Ok = $ok
+        Mode = if ($null -eq $payload) { '' } else { [string]$payload.mode }
+        Transport = if ($null -eq $payload) { '' } else { [string]$payload.transport }
+        Status = if ($null -eq $payload) { '' } else { [string]$payload.status }
+        Error = if ($ok) { '' } elseif (-not [string]::IsNullOrWhiteSpace($response.Error)) { $response.Error } else { 'Contrato OpenClaw invalido.' }
+    }
+}
+
+function Invoke-LocalHealthCheck {
+    $response = Invoke-HostingJsonRequest `
+        -Url 'http://127.0.0.1/api.php?resource=health-diagnostics' `
+        -Headers @{ Accept = 'application/json' } `
+        -TimeoutSec 15
+
+    return [PSCustomObject]@{
+        Ok = ($response.Ok -and $response.Payload.ok -eq $true)
+        Error = if ($response.Ok -or [string]::IsNullOrWhiteSpace($response.Error)) { '' } else { $response.Error }
+    }
 }
 
 function Invoke-LocalSmoke {
@@ -257,42 +185,53 @@ function Invoke-LocalSmoke {
     }
 }
 
-$status = [ordered]@{
-    ok = $false
-    timestamp = [DateTimeOffset]::Now.ToString('o')
-    mirror_repo_path = $mirrorRepoPathResolved
-    release_target_path = $releaseTargetPathResolved
-    promoted_commit = ''
-    repaired = $false
-    error = ''
+function Write-ReleaseTarget {
+    param(
+        [string]$Path,
+        [string]$Commit,
+        [string]$SourceRunId
+    )
+
+    $payload = [ordered]@{
+        target_commit = $Commit
+        approved_at = [DateTimeOffset]::Now.ToString('o')
+        source_run_id = $SourceRunId
+        approved_by = 'windows_hosting_repair'
+    }
+    Write-HostingJsonFile -Path $Path -Payload $payload
 }
 
-try {
-    Ensure-ParentDirectory -Path $statusPathResolved
-    Ensure-ParentDirectory -Path $releaseTargetPathResolved
-    $hostingDir = Split-Path -Parent $releaseTargetPathResolved
+function Stop-TaskIfPresent {
+    param([string]$TaskName)
 
-    foreach ($taskName in $taskNames) {
-        Stop-TaskIfPresent -TaskName $taskName
+    if (Stop-HostingScheduledTaskIfPresent -TaskName $TaskName) {
+        Write-Info ("Tarea detenida: {0}" -f $TaskName)
     }
+}
 
-    Stop-ProcessesByNeedle -Needles @('php-cgi.exe', '-b 127.0.0.1:9000') -Label 'PHP-CGI'
-    Stop-ProcessesByNeedle -Needles @('caddy.exe', 'ops\caddy\Caddyfile', 'run') -Label 'Caddy edge'
-    Stop-ProcessesByNeedle -Needles @('cloudflared.exe', $TunnelId, '--url http://127.0.0.1') -Label 'Cloudflare tunnel'
-    Stop-ProcessesByNeedle -Needles @('openclaw-auth-helper.js') -Label 'OpenClaw auth helper'
-    Stop-ProcessesByNeedle -Needles @('SUPERVISAR-HOSTING-WINDOWS.ps1') -Label 'Hosting supervisor'
-    Clear-HostingLocks -HostingDir $hostingDir
+function Clear-HostingLocks {
+    param([string]$HostingDir)
 
-    if ([string]::IsNullOrWhiteSpace($TargetCommit) -and $PromoteCurrentRemoteHead) {
-        $TargetCommit = Resolve-RemoteHead -RepoPath $mirrorRepoPathResolved -BranchName 'main'
+    $lockPatterns = @(
+        'main-sync-status.json.lock',
+        'main-sync-status.json.lock.json',
+        'hosting-supervisor-status.json.lock',
+        'hosting-supervisor-status.json.lock.json'
+    )
+
+    foreach ($pattern in $lockPatterns) {
+        $candidate = Join-Path $HostingDir $pattern
+        if (Test-Path -LiteralPath $candidate) {
+            Remove-Item -LiteralPath $candidate -Force -ErrorAction SilentlyContinue
+            Write-Info ("Lock eliminado: {0}" -f $candidate)
+        }
     }
-    if (-not [string]::IsNullOrWhiteSpace($TargetCommit)) {
-        Write-ReleaseTarget -Path $releaseTargetPathResolved -Commit $TargetCommit -SourceRunId 'repair_promote_remote'
-        $status.promoted_commit = $TargetCommit
-        Write-Info ("Release target actualizado manualmente: {0}" -f $TargetCommit)
-    }
+}
 
-    $syncArguments = New-Object 'System.Collections.Generic.List[string]'
+function New-SyncArguments {
+    param([switch]$CurrentPreflightOnly)
+
+    $arguments = New-Object 'System.Collections.Generic.List[string]'
     foreach ($token in @(
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
@@ -306,20 +245,27 @@ try {
         '-BootstrapReleaseTargetIfMissing',
         '-Quiet'
     )) {
-        $syncArguments.Add([string]$token) | Out-Null
+        $arguments.Add([string]$token) | Out-Null
     }
-    Add-OptionalNamedArgument -Arguments $syncArguments -Name '-CaddyExePath' -Value $CaddyExePath
-    Add-OptionalNamedArgument -Arguments $syncArguments -Name '-CloudflaredExePath' -Value $CloudflaredExePath
-    Add-OptionalNamedArgument -Arguments $syncArguments -Name '-PhpCgiExePath' -Value $PhpCgiExePath
-    $syncResult = Invoke-CommandWithOutput -FilePath $powershellExe -Arguments $syncArguments
-    if ($syncResult.ExitCode -ne 0) {
-        throw ("SINCRONIZAR-HOSTING-WINDOWS.ps1 no pudo recuperar el servicio. {0}" -f $syncResult.Output.Trim())
+    if ($CurrentPreflightOnly) {
+        $arguments.Add('-PreflightOnly') | Out-Null
     }
-    if (-not [string]::IsNullOrWhiteSpace($syncResult.Output)) {
-        Write-Info $syncResult.Output.Trim()
-    }
+    Add-HostingOptionalNamedArgument -Arguments $arguments -Name '-CaddyExePath' -Value $CaddyExePath
+    Add-HostingOptionalNamedArgument -Arguments $arguments -Name '-CloudflaredExePath' -Value $CloudflaredExePath
+    Add-HostingOptionalNamedArgument -Arguments $arguments -Name '-PhpCgiExePath' -Value $PhpCgiExePath
+    return $arguments
+}
 
-    $configArguments = @(
+function Invoke-SyncScript {
+    param([switch]$CurrentPreflightOnly)
+
+    $arguments = New-SyncArguments -CurrentPreflightOnly:$CurrentPreflightOnly
+    return Invoke-HostingCommandWithOutput -FilePath $powershellExe -Arguments $arguments
+}
+
+function Invoke-ConfigScript {
+    $arguments = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($token in @(
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
         '-File', $configScriptPath,
@@ -329,8 +275,107 @@ try {
         '-PublicDomain', $PublicDomain,
         '-TunnelId', $TunnelId,
         '-OperatorUserProfile', $resolvedOperatorUserProfile
-    )
-    $configResult = Invoke-CommandWithOutput -FilePath $powershellExe -Arguments $configArguments
+    )) {
+        $arguments.Add([string]$token) | Out-Null
+    }
+
+    return Invoke-HostingCommandWithOutput -FilePath $powershellExe -Arguments $arguments
+}
+
+$status = [ordered]@{
+    ok = $false
+    timestamp = [DateTimeOffset]::Now.ToString('o')
+    phase = 'discover'
+    mirror_repo_path = $mirrorRepoPathResolved
+    release_target_path = $releaseTargetPathResolved
+    external_env_path = $externalEnvPathResolved
+    desired_commit = ''
+    current_commit = ''
+    previous_commit = ''
+    service_state = 'unknown'
+    health_ok = $false
+    auth_contract_ok = $false
+    auth_mode = ''
+    auth_transport = ''
+    auth_status = ''
+    promoted_commit = ''
+    preflight_ok = $false
+    repaired = $false
+    rollback_performed = $false
+    rollback_reason = ''
+    last_successful_deploy_at = ''
+    last_failure_reason = ''
+    error = ''
+}
+
+try {
+    Ensure-HostingParentDirectory -Path $statusPathResolved
+    Ensure-HostingParentDirectory -Path $releaseTargetPathResolved
+    $hostingDir = Split-Path -Parent $releaseTargetPathResolved
+
+    $status.current_commit = Get-CurrentCommitSafe -RepoPath $mirrorRepoPathResolved
+    $status.previous_commit = $status.current_commit
+    $status.service_state = Get-ServiceStateSafe -CurrentTunnelId $TunnelId
+    $health = Invoke-LocalHealthCheck
+    $auth = Invoke-LocalAuthContract
+    $status.health_ok = $health.Ok -eq $true
+    $status.auth_contract_ok = $auth.Ok -eq $true
+    $status.auth_mode = [string]$auth.Mode
+    $status.auth_transport = [string]$auth.Transport
+    $status.auth_status = [string]$auth.Status
+
+    if ([string]::IsNullOrWhiteSpace($TargetCommit) -and $PromoteCurrentRemoteHead) {
+        $TargetCommit = Resolve-RemoteHead -RepoPath $mirrorRepoPathResolved -BranchName 'main'
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($TargetCommit)) {
+        Write-ReleaseTarget -Path $releaseTargetPathResolved -Commit $TargetCommit -SourceRunId 'repair_promote_remote'
+        $status.promoted_commit = $TargetCommit
+        Write-Info ("Release target actualizado manualmente: {0}" -f $TargetCommit)
+    }
+
+    $releaseTargetPayload = Read-HostingJsonFileSafe -Path $releaseTargetPathResolved
+    if ($null -ne $releaseTargetPayload) {
+        try { $status.desired_commit = [string]$releaseTargetPayload.target_commit } catch {}
+    }
+
+    $status.phase = 'preflight'
+    $preflightResult = Invoke-SyncScript -CurrentPreflightOnly
+    if ($preflightResult.ExitCode -ne 0) {
+        throw ("Preflight del sync fallido. {0}" -f $preflightResult.Output.Trim())
+    }
+    if (-not [string]::IsNullOrWhiteSpace($preflightResult.Output)) {
+        Write-Info $preflightResult.Output.Trim()
+    }
+    $status.preflight_ok = $true
+
+    if ($PreflightOnly) {
+        $status.ok = $true
+        $status.phase = 'preflight_ready'
+        Write-Status -Payload $status
+        Write-Info 'Preflight de reparacion OK; no se tocaron procesos activos.'
+        exit 0
+    }
+
+    $status.phase = 'quiesce'
+    foreach ($taskName in $taskNames) {
+        Stop-TaskIfPresent -TaskName $taskName
+    }
+    Stop-HostingProcessesByNeedle -Needles @('SUPERVISAR-HOSTING-WINDOWS.ps1') -Label 'Hosting supervisor'
+    Stop-HostingProcessesByNeedle -Needles @('openclaw-auth-helper.js') -Label 'OpenClaw auth helper'
+    Clear-HostingLocks -HostingDir $hostingDir
+
+    $status.phase = 'apply'
+    $syncResult = Invoke-SyncScript
+    if ($syncResult.ExitCode -ne 0) {
+        throw ("SINCRONIZAR-HOSTING-WINDOWS.ps1 no pudo recuperar el servicio. {0}" -f $syncResult.Output.Trim())
+    }
+    if (-not [string]::IsNullOrWhiteSpace($syncResult.Output)) {
+        Write-Info $syncResult.Output.Trim()
+    }
+
+    $status.phase = 'reinstall'
+    $configResult = Invoke-ConfigScript
     if ($configResult.ExitCode -ne 0) {
         throw ("CONFIGURAR-HOSTING-WINDOWS.ps1 no pudo reinstalar el supervisor. {0}" -f $configResult.Output.Trim())
     }
@@ -338,15 +383,53 @@ try {
         Write-Info $configResult.Output.Trim()
     }
 
+    if (Test-Path -LiteralPath $supervisorLauncherPath) {
+        Start-Process -FilePath $supervisorLauncherPath -WindowStyle Hidden | Out-Null
+        Write-Info 'Supervisor lanzado en la sesion actual tras la reparacion.'
+    }
+
+    $status.phase = 'validate'
     Invoke-LocalSmoke -ScriptPath $smokeScriptPath
+
+    $syncStatusPath = Join-Path $hostingDir 'main-sync-status.json'
+    $syncStatus = Read-HostingJsonFileSafe -Path $syncStatusPath
+    if ($null -ne $syncStatus) {
+        try { $status.desired_commit = [string]$syncStatus.desired_commit } catch {}
+        try { $status.current_commit = [string]$syncStatus.current_commit } catch {}
+        try { $status.previous_commit = [string]$syncStatus.previous_commit } catch {}
+        try { $status.last_successful_deploy_at = [string]$syncStatus.last_successful_deploy_at } catch {}
+        try { $status.rollback_performed = ($syncStatus.rollback_performed -eq $true) } catch {}
+        try { $status.rollback_reason = [string]$syncStatus.rollback_reason } catch {}
+        try { $status.service_state = [string]$syncStatus.service_state } catch {}
+        try { $status.health_ok = ($syncStatus.health_ok -eq $true) } catch {}
+        try { $status.auth_contract_ok = ($syncStatus.auth_contract_ok -eq $true) } catch {}
+        try { $status.auth_mode = [string]$syncStatus.auth_mode } catch {}
+        try { $status.auth_transport = [string]$syncStatus.auth_transport } catch {}
+        try { $status.auth_status = [string]$syncStatus.auth_status } catch {}
+        try { $status.last_failure_reason = [string]$syncStatus.last_failure_reason } catch {}
+    } else {
+        $status.current_commit = Get-CurrentCommitSafe -RepoPath $mirrorRepoPathResolved
+        $status.service_state = Get-ServiceStateSafe -CurrentTunnelId $TunnelId
+        $health = Invoke-LocalHealthCheck
+        $auth = Invoke-LocalAuthContract
+        $status.health_ok = $health.Ok -eq $true
+        $status.auth_contract_ok = $auth.Ok -eq $true
+        $status.auth_mode = [string]$auth.Mode
+        $status.auth_transport = [string]$auth.Transport
+        $status.auth_status = [string]$auth.Status
+    }
 
     $status.ok = $true
     $status.repaired = $true
-    Write-JsonFile -Path $statusPathResolved -Payload $status
+    $status.phase = 'completed'
+    $status.error = ''
+    Write-Status -Payload $status
     Write-Info 'Reparacion completada con health/auth/smoke locales en verde.'
 } catch {
     $status.error = $_.Exception.Message
-    Write-JsonFile -Path $statusPathResolved -Payload $status
+    $status.last_failure_reason = $status.error
+    $status.phase = if (($status.phase -eq 'discover') -or ($status.phase -eq 'preflight')) { 'failed_preflight' } else { 'failed' }
+    Write-Status -Payload $status
     Write-Info ("Reparacion fallida: {0}" -f $status.error)
     throw
 }
