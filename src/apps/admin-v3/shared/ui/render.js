@@ -43,22 +43,44 @@ export function formatNumber(value) {
     return Math.round(num).toLocaleString('es-EC');
 }
 
-export function createToast(message, type = 'info') {
+function normalizeToastOptions(options) {
+    if (typeof options === 'number' && Number.isFinite(options)) {
+        return { durationMs: options };
+    }
+
+    return options && typeof options === 'object' ? options : {};
+}
+
+export function createToast(message, type = 'info', options = {}) {
     const container = qs('#toastContainer');
     if (!(container instanceof HTMLElement)) return;
+    const toastOptions = normalizeToastOptions(options);
 
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    if (toastOptions.sticky) {
+        toast.dataset.sticky = 'true';
+    }
     toast.innerHTML = `
         <div class="toast-body">${escapeHtml(message)}</div>
         <button type="button" data-action="close-toast" class="toast-close" aria-label="Cerrar">x</button>
     `;
     container.appendChild(toast);
 
-    window.setTimeout(() => {
-        if (toast.parentElement) toast.remove();
-    }, 4500);
+    const durationMs = toastOptions.sticky
+        ? 0
+        : Number.isFinite(toastOptions.durationMs)
+          ? Math.max(0, Number(toastOptions.durationMs))
+          : 4500;
+
+    if (durationMs > 0) {
+        window.setTimeout(() => {
+            if (toast.parentElement) toast.remove();
+        }, durationMs);
+    }
+
+    return toast;
 }
 
 export function setText(selector, value) {

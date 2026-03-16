@@ -3,11 +3,28 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { GENERATED_SITE_ROOT } = require('../bin/lib/generated-site-root.js');
 
 const repoRoot = path.join(__dirname, '..');
+const generatedSiteRoot = GENERATED_SITE_ROOT;
 
 function read(relativePath) {
     return fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
+}
+
+function resolveRuntimeArtifactPath(relativePath) {
+    const normalizedPath = path.normalize(String(relativePath || ''));
+    const generatedPath = path.join(generatedSiteRoot, normalizedPath);
+    assert.equal(
+        fs.existsSync(generatedPath),
+        true,
+        `falta artefacto generado en .generated/site-root: ${normalizedPath}. Ejecuta npm run build para regenerar el runtime staged`
+    );
+    return generatedPath;
+}
+
+function readRuntimeArtifact(relativePath) {
+    return fs.readFileSync(resolveRuntimeArtifactPath(relativePath), 'utf8');
 }
 
 function readJson(relativePath) {
@@ -141,8 +158,8 @@ function toChunkFilename(specifier) {
 }
 
 function collectReachablePublicChunks() {
-    const entryPath = path.join(repoRoot, 'script.js');
-    const chunksDir = path.join(repoRoot, 'js', 'chunks');
+    const entryPath = resolveRuntimeArtifactPath('script.js');
+    const chunksDir = resolveRuntimeArtifactPath(path.join('js', 'chunks'));
     const reachable = new Set();
     const pendingFiles = [entryPath];
     const visited = new Set();
@@ -332,7 +349,7 @@ test('public runtime checker writes canonical report for script.js and js/chunks
 });
 
 test('script.js references the canonical engine directory and deferred stylesheet support', () => {
-    const scriptBundle = read('script.js');
+    const scriptBundle = readRuntimeArtifact('script.js');
 
     assert.match(
         scriptBundle,
@@ -365,6 +382,16 @@ test('build-public-v6 runner preserves canonical sequence and report output', ()
         runner,
         /stage:site-root/u,
         'runner must stage dist artifacts into .generated/site-root'
+    );
+    assert.match(
+        runner,
+        /chunks:public:prune/u,
+        'runner must prune stale public chunks from the staged runtime graph'
+    );
+    assert.match(
+        runner,
+        /chunks:admin:prune/u,
+        'runner must prune stale admin chunks from the staged runtime graph'
     );
     assert.match(
         runner,
@@ -532,7 +559,7 @@ test('public V6 audits reuse the canonical local helper and avoid hardcoded 8000
 });
 
 test('script.js deja solo chunks publicos alcanzables y un shell activo', () => {
-    const chunksDir = path.join(repoRoot, 'js', 'chunks');
+    const chunksDir = resolveRuntimeArtifactPath(path.join('js', 'chunks'));
     const allChunks = fs
         .readdirSync(chunksDir)
         .filter((entry) => entry.endsWith('.js'))
@@ -554,7 +581,7 @@ test('script.js deja solo chunks publicos alcanzables y un shell activo', () => 
         'script.js debe dejar exactamente un shell chunk activo'
     );
     assert.match(
-        read('script.js'),
+        readRuntimeArtifact('script.js'),
         new RegExp(activeShells[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'),
         'script.js debe apuntar al shell chunk activo'
     );
@@ -840,7 +867,7 @@ test('public V6 root HTML publishes route-specific og:image values and strips le
     ];
 
     routes.forEach(({ html, expectedImage }) => {
-        const pageHtml = read(html);
+        const pageHtml = readRuntimeArtifact(html);
         const ogImage = extractMetaContent(pageHtml, 'og:image');
         assert.equal(
             ogImage,

@@ -162,12 +162,12 @@
             "heading": "Turnero para clinicas con kiosco, TV, recepcion y agenda web",
             "hero": {
                 "eyebrow": "Software para clinicas",
-                "title": "Recepcion mas ordenada, paciente mejor guiado y gerencia con datos utiles.",
-                "deck": "La suite conecta kiosco, pantalla de llamados, panel operativo y agenda web bajo un mismo estado. Se implementa rapido, baja preguntas repetidas y vuelve mas legible la operacion diaria.",
+                "title": "El turnero que conecta llegada, recepcion, sala y gerencia clinica en una sola historia.",
+                "deck": "Aurora Derm funciona hoy como clinica piloto demostrable: kiosco, recepcion, operador, sala y dashboard leen el mismo estado. Por eso la compra se entiende como producto y no como una suma de pantallas sueltas.",
                 "pills": [
+                    "Clinica piloto: Aurora Derm",
                     "1 a 5 sedes",
                     "QR + WhatsApp + SMS",
-                    "Kiosco + TV + web",
                     "Sin hardware propietario"
                 ],
                 "actions": [
@@ -194,41 +194,41 @@
                 ],
                 "metrics": [
                     {
-                        "value": "Recepcion",
-                        "label": "opera desde un solo panel",
-                        "detail": "Llama, reimprime, cierra y ve el estado sin saltar entre ventanas."
+                        "value": "Aurora Derm",
+                        "label": "piloto demostrable hoy",
+                        "detail": "La misma base visible en landing, check-in, sala y dashboard."
                     },
                     {
-                        "value": "Paciente",
-                        "label": "entiende llegada y espera",
-                        "detail": "QR, kiosco y estado del turno cuentan la misma historia."
+                        "value": "Recepcion",
+                        "label": "opera con un criterio unico",
+                        "detail": "Admin y operador leen la misma cola, no dos consolas distintas."
                     },
                     {
                         "value": "Gerencia",
-                        "label": "mide sin pedir otro reporte",
-                        "detail": "Espera, no-show y carga por consultorio en una vista que si ayuda a decidir."
+                        "label": "compra con prueba visible",
+                        "detail": "Espera, no-show y carga salen del mismo flujo que se muestra en sala."
                     }
                 ],
                 "panels": [
                     {
-                        "eyebrow": "Recepcion / Admin",
-                        "title": "Llamar, reimprimir y cerrar sin perderse",
-                        "copy": "Operacion diaria pensada para consultorios reales y personal no tecnico."
+                        "eyebrow": "Llegada",
+                        "title": "QR, kiosco y check-in movil cuentan la misma llegada",
+                        "copy": "El paciente entra orientado antes de tocar el mostrador."
                     },
                     {
-                        "eyebrow": "Paciente",
-                        "title": "Check-in y turno visibles desde QR o WhatsApp",
-                        "copy": "Llega mejor orientado y pregunta menos en mostrador."
+                        "eyebrow": "Recepcion",
+                        "title": "Admin y operador coordinan sobre la misma cola",
+                        "copy": "Recepcion deja de improvisar entre ventanas y estados separados."
                     },
                     {
                         "eyebrow": "Sala",
-                        "title": "Llamados claros con privacidad",
-                        "copy": "Ticket, iniciales y consultorio en una TV que la sala entiende."
+                        "title": "La sala entiende que esta pasando sin perder privacidad",
+                        "copy": "TV y estado del turno muestran el mismo llamado con lenguaje claro."
                     },
                     {
                         "eyebrow": "Gerencia",
-                        "title": "Espera, no-show y carga por consultorio",
-                        "copy": "La operacion diaria termina en indicadores que si sirven para decidir."
+                        "title": "La direccion ve una razon de compra, no solo una mejora visual",
+                        "copy": "La lectura gerencial sale del uso real del piloto y no de un reporte aparte."
                     }
                 ]
             },
@@ -277,84 +277,129 @@
                 ]
             },
             "modules": {
-                "eyebrow": "Operacion diaria",
-                "title": "Empiece por el panel que mas se usa: recepcion y coordinacion de sala.",
-                "deck": "Todo se entiende mejor cuando recepcion gana control inmediato. Kiosco, TV y agenda dejan de sentirse separados y empiezan a apoyar el mismo trabajo.",
+                "eyebrow": "Prueba operativa",
+                "title": "Estas superficies demuestran que el producto ya existe fuera del deck.",
+                "deck": "No son anexos. Son la prueba viva del piloto: llegada, recepcion, consultorio y sala ya se pueden recorrer como un solo producto.",
                 "cards": [
                     {
                         "eyebrow": "Recepcion / Admin",
-                        "title": "Operacion de cola para consultorios reales",
-                        "copy": "Llamar, reimprimir, completar, marcar no-show y mover la sala desde un panel pensado para recepcion activa.",
+                        "lens": "Recepcion",
+                        "meta": "Aurora Derm · etapa 02 de 04",
+                        "title": "Recepcion administra la cola sin cambiar de contexto",
+                        "copy": "Llamar, reimprimir, completar y mover la sala desde la consola que una clinica puede mostrar en vivo.",
                         "bullets": [
                             "Bloqueo por consultorio o estacion",
                             "Atajos numpad y bulk actions",
                             "Vista clara de sincronizacion y estado operativo"
                         ],
+                        "href": "/admin.html#queue",
+                        "ctaLabel": "Abrir recepcion",
                         "featured": true
                     },
                     {
+                        "eyebrow": "Operador",
+                        "lens": "Consultorio",
+                        "meta": "Aurora Derm · etapa 02 de 04",
+                        "title": "El consultorio opera con numpad y siguiente paso visible",
+                        "copy": "Una superficie ligera para llamar, re-llamar y cerrar sin abrir todo el admin.",
+                        "bullets": [
+                            "Enter llama, + re-llama, . completa",
+                            "Readiness visible antes del primer llamado",
+                            "Fallback claro si la red o el runtime fallan"
+                        ],
+                        "href": "/operador-turnos.html",
+                        "ctaLabel": "Abrir operador"
+                    },
+                    {
                         "eyebrow": "Kiosco",
-                        "title": "Check-in guiado en sala",
-                        "copy": "Para pacientes con cita y sin cita, con ayuda rapida, lectura grande y soporte visible si recepcion debe intervenir.",
+                        "lens": "Llegada",
+                        "meta": "Aurora Derm · etapa 01 de 04",
+                        "title": "El kiosco resuelve llegada y deja lista la cola",
+                        "copy": "Pacientes con cita o sin cita entran al mismo recorrido y dejan a recepcion con menos carga manual.",
                         "bullets": [
-                            "Flujo Tengo cita / No tengo cita",
-                            "Modo senior-first con voz guia",
-                            "Impresion termica y respaldo offline"
-                        ]
+                            "Tengo cita / No tengo cita sobre el mismo flujo",
+                            "Ayuda visible y lectura grande",
+                            "Ticket termico y outbox offline"
+                        ],
+                        "href": "/kiosco-turnos.html",
+                        "ctaLabel": "Abrir kiosco piloto"
                     },
                     {
-                        "eyebrow": "TV Sala",
-                        "title": "Pantalla de llamados con privacidad",
-                        "copy": "Muestra ticket, iniciales y consultorio en vivo para que la sala entienda que esta pasando sin exponer datos sensibles.",
+                        "eyebrow": "Sala",
+                        "lens": "Espera",
+                        "meta": "Aurora Derm · etapa 03 de 04",
+                        "title": "La sala muestra el llamado correcto y el siguiente paso",
+                        "copy": "TV de sala y estado del turno leen la misma cola para que el paciente no dependa del mostrador.",
                         "bullets": [
-                            "Campanilla configurable",
-                            "Llamado actual y siguientes turnos",
-                            "Snapshot local para continuidad"
-                        ]
-                    },
-                    {
-                        "eyebrow": "Agenda web",
-                        "title": "Reservas y recordatorios conectados al turnero",
-                        "copy": "La web deja de ser una pagina aparte y pasa a ser la entrada digital del mismo flujo operativo.",
-                        "bullets": [
-                            "Reserva online y check-in movil",
-                            "Recordatorios por WhatsApp o SMS",
-                            "Estado del turno desde el celular"
-                        ]
+                            "Ticket, iniciales y consultorio con privacidad",
+                            "Campanilla y snapshot visibles",
+                            "Jerarquia clara para una sala real"
+                        ],
+                        "href": "/sala-turnos.html",
+                        "ctaLabel": "Abrir sala TV"
                     }
                 ]
             },
             "journeys": {
-                "eyebrow": "Tres lecturas del mismo flujo",
-                "title": "La misma operacion responde preguntas distintas segun quien esta mirando.",
-                "deck": "Asi la conversacion avanza sin enredos: recepcion entiende el uso diario, el paciente nota el orden y gerencia ve si vale la pena invertir.",
+                "eyebrow": "Storyboard comercial",
+                "title": "La historia fija para presentar el producto el 17.",
+                "deck": "Llegada, recepcion, sala y gerencia. Ese orden hace que el producto se entienda rapido y que Aurora Derm funcione como caso piloto, no como marca que se come la suite.",
                 "lanes": [
                     {
-                        "eyebrow": "Recepcion / Admin",
-                        "title": "Coordina llegadas, llamados y cierres desde el mismo estado",
+                        "indexLabel": "01",
+                        "eyebrow": "Llegada",
+                        "buyerLens": "Paciente + recepcion",
+                        "proofLabel": "Kiosco + check-in movil",
+                        "title": "El paciente llega orientado antes de tocar el mostrador",
                         "steps": [
-                            "Recibe pacientes desde kiosco, agenda web o check-in movil sin rehacer el caso.",
-                            "Llama, reimprime, completa y marca no-show con trazabilidad visible.",
-                            "Deja listo el dato que despues alimenta el dashboard de sede."
-                        ]
+                            "Recordatorio, QR o enlace directo desembocan en la misma cola.",
+                            "El kiosco absorbe llegada con cita y sin cita sin inventar dos sistemas.",
+                            "Recepcion recibe un caso listo y no vuelve a empezar de cero."
+                        ],
+                        "href": "/kiosco-turnos.html",
+                        "ctaLabel": "Abrir kiosco piloto"
                     },
                     {
-                        "eyebrow": "Paciente",
-                        "title": "Confirma llegada, sigue su turno y sabe a donde ir",
+                        "indexLabel": "02",
+                        "eyebrow": "Recepcion",
+                        "buyerLens": "Recepcion + medico",
+                        "proofLabel": "Admin + operador",
+                        "title": "Recepcion y consultorio operan sobre el mismo estado",
                         "steps": [
-                            "Recibe recordatorio por WhatsApp o SMS y entra desde su enlace o QR.",
-                            "Si llega a sala, el kiosco reconoce el mismo flujo y evita repetir preguntas.",
-                            "La vista de estado del turno reduce ansiedad mientras espera."
-                        ]
+                            "Admin y operador leen la misma cola y comparten trazabilidad.",
+                            "La estacion activa, el numpad y el fallback quedan visibles en demo.",
+                            "La operacion ya se puede contar como producto serio para clinicas."
+                        ],
+                        "href": "/admin.html#queue",
+                        "ctaLabel": "Abrir recepcion piloto"
                     },
                     {
+                        "indexLabel": "03",
+                        "eyebrow": "Sala",
+                        "buyerLens": "Paciente en espera",
+                        "proofLabel": "Sala TV + estado del turno",
+                        "title": "La sala entiende el llamado y el paciente ve progreso",
+                        "steps": [
+                            "La TV publica el llamado correcto con privacidad visible.",
+                            "El celular del paciente sigue la misma cola sin mensajes cruzados.",
+                            "La espera se siente guiada porque el siguiente paso siempre es legible."
+                        ],
+                        "href": "/sala-turnos.html",
+                        "ctaLabel": "Abrir sala piloto"
+                    },
+                    {
+                        "indexLabel": "04",
                         "eyebrow": "Gerencia",
-                        "title": "Lee espera, no-show y carga sin pedir un reporte aparte",
+                        "buyerLens": "Direccion clinica",
+                        "proofLabel": "Dashboard de sede",
+                        "title": "La direccion ya puede decidir con evidencia y no con intuicion",
                         "steps": [
-                            "El dashboard resume espera media, tickets atendidos y no-show.",
-                            "La sede ve cuellos de botella por horario o consultorio.",
-                            "La conversacion pasa de la intuicion a una mejora medible."
-                        ]
+                            "El dashboard resume espera, no-show y carga sin pedir otro reporte.",
+                            "Aurora Derm aparece como sede piloto demostrable, no como promesa abstracta.",
+                            "La conversacion pasa de gusto visual a presupuesto con sentido."
+                        ],
+                        "href": "/es/software/turnero-clinicas/dashboard/",
+                        "ctaLabel": "Ver dashboard"
                     }
                 ]
             },
@@ -597,8 +642,34 @@
                 ]
             },
             "finalCta": {
-                "title": "Si recepcion lo usa bien, el paciente lo entiende y gerencia puede medirlo, ya hay una base seria para comprar.",
-                "deck": "Empiece por la operacion diaria, pruebe el flujo paciente y deje el dashboard listo para cuando toque hablar de presupuesto con numeros en mano.",
+                "title": "Si la llegada se ordena, recepcion opera mejor y gerencia puede medirlo, ya hay una historia de compra completa.",
+                "deck": "La demo del 17 tiene que leerse asi: producto primero, Aurora Derm como piloto demostrable y un recorrido que se puede abrir de punta a punta sin depender del remoto bloqueado.",
+                "links": [
+                    {
+                        "eyebrow": "Llegada",
+                        "label": "Kiosco piloto",
+                        "href": "/kiosco-turnos.html",
+                        "note": "Etapa 01 · check-in y ticket en sala"
+                    },
+                    {
+                        "eyebrow": "Recepcion",
+                        "label": "Admin recepcion",
+                        "href": "/admin.html#queue",
+                        "note": "Etapa 02 · cola, llamados y trazabilidad"
+                    },
+                    {
+                        "eyebrow": "Consultorio",
+                        "label": "Operador web",
+                        "href": "/operador-turnos.html",
+                        "note": "Etapa 02 · llamada rapida por estacion"
+                    },
+                    {
+                        "eyebrow": "Sala",
+                        "label": "Pantalla de espera",
+                        "href": "/sala-turnos.html",
+                        "note": "Etapa 03 · llamado actual y siguientes turnos"
+                    }
+                ],
                 "actions": [
                     {
                         "label": "Agendar demo",
@@ -729,6 +800,32 @@
             "finalCta": {
                 "title": "Cuando la llegada ya esta resuelta, el paciente necesita orientacion",
                 "deck": "El siguiente paso no es otro formulario. Es visibilidad de turno: saber si ya toca, cuanto falta y a que consultorio ir.",
+                "links": [
+                    {
+                        "eyebrow": "Llegada",
+                        "label": "Kiosco piloto",
+                        "href": "/kiosco-turnos.html",
+                        "note": "El mismo flujo de check-in que alimenta la cola"
+                    },
+                    {
+                        "eyebrow": "Recepcion",
+                        "label": "Admin recepcion",
+                        "href": "/admin.html#queue",
+                        "note": "Recepcion ve la llegada confirmada sin rehacer el caso"
+                    },
+                    {
+                        "eyebrow": "Consultorio",
+                        "label": "Operador web",
+                        "href": "/operador-turnos.html",
+                        "note": "El llamado rapido nace del mismo ticket"
+                    },
+                    {
+                        "eyebrow": "Sala",
+                        "label": "Pantalla de espera",
+                        "href": "/sala-turnos.html",
+                        "note": "La TV publica el mismo turno que el movil ya ve"
+                    }
+                ],
                 "actions": [
                     {
                         "label": "Ver estado del turno",
@@ -859,6 +956,32 @@
             "finalCta": {
                 "title": "Cuando el paciente ya ve progreso, la direccion pide numeros",
                 "deck": "El paso siguiente es convertir esa experiencia en lectura gerencial: espera media, no-show y carga por consultorio.",
+                "links": [
+                    {
+                        "eyebrow": "Llegada",
+                        "label": "Kiosco piloto",
+                        "href": "/kiosco-turnos.html",
+                        "note": "La espera empieza en una llegada bien resuelta"
+                    },
+                    {
+                        "eyebrow": "Recepcion",
+                        "label": "Admin recepcion",
+                        "href": "/admin.html#queue",
+                        "note": "Recepcion y sala leen la misma cola"
+                    },
+                    {
+                        "eyebrow": "Consultorio",
+                        "label": "Operador web",
+                        "href": "/operador-turnos.html",
+                        "note": "Los llamados que sostienen la experiencia salen de aqui"
+                    },
+                    {
+                        "eyebrow": "Sala",
+                        "label": "Pantalla de espera",
+                        "href": "/sala-turnos.html",
+                        "note": "La visibilidad privada se apoya en una TV bien sincronizada"
+                    }
+                ],
                 "actions": [
                     {
                         "label": "Ver dashboard de sede",
@@ -994,6 +1117,32 @@
             "finalCta": {
                 "title": "Ahora la suite ya se entiende como un producto completo",
                 "deck": "Operacion clara, llegada mas fluida, espera visible y lectura gerencial. Esa continuidad ayuda a vender mejor y a sostener la renovacion.",
+                "links": [
+                    {
+                        "eyebrow": "Llegada",
+                        "label": "Kiosco piloto",
+                        "href": "/kiosco-turnos.html",
+                        "note": "La historia empieza donde el paciente aterriza"
+                    },
+                    {
+                        "eyebrow": "Recepcion",
+                        "label": "Admin recepcion",
+                        "href": "/admin.html#queue",
+                        "note": "La prueba operativa de frente queda visible para la compra"
+                    },
+                    {
+                        "eyebrow": "Consultorio",
+                        "label": "Operador web",
+                        "href": "/operador-turnos.html",
+                        "note": "Consultorio y recepcion comparten la misma lectura"
+                    },
+                    {
+                        "eyebrow": "Sala",
+                        "label": "Pantalla de espera",
+                        "href": "/sala-turnos.html",
+                        "note": "La sala confirma que el flujo ya vive en publico"
+                    }
+                ],
                 "actions": [
                     {
                         "label": "Volver a la suite",

@@ -4,16 +4,80 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { existsSync, readFileSync, readdirSync } = require('fs');
-const { execFileSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 const { resolve } = require('path');
 const {
     buildDeployBundleManifest,
 } = require('../bin/lib/deploy-bundle-contract.js');
+const { GENERATED_SITE_ROOT } = require('../bin/lib/generated-site-root.js');
 
 const REPO_ROOT = resolve(__dirname, '..');
+let generatedRuntimePrepared = false;
 
 function readRepoFile(relativePath) {
     return readFileSync(resolve(REPO_ROOT, relativePath), 'utf8');
+}
+
+function isGeneratedRuntimeArtifact(relativePath) {
+    const normalizedPath = String(relativePath || '')
+        .trim()
+        .replace(/\\/g, '/');
+    return (
+        normalizedPath === 'script.js' ||
+        normalizedPath === 'admin.js' ||
+        normalizedPath === 'js/booking-calendar.js' ||
+        normalizedPath === 'js/queue-kiosk.js' ||
+        normalizedPath === 'js/queue-display.js' ||
+        normalizedPath.startsWith('js/chunks/') ||
+        normalizedPath.startsWith('js/admin-chunks/') ||
+        normalizedPath.startsWith('js/engines/')
+    );
+}
+
+function ensureGeneratedRuntimeArtifact(relativePath) {
+    const normalizedPath = String(relativePath || '')
+        .trim()
+        .replace(/\\/g, '/');
+    const generatedPath = resolve(GENERATED_SITE_ROOT, normalizedPath);
+    if (existsSync(generatedPath) || !isGeneratedRuntimeArtifact(normalizedPath)) {
+        return generatedPath;
+    }
+
+    if (!generatedRuntimePrepared) {
+        const result =
+            process.platform === 'win32'
+                ? spawnSync(
+                      'cmd.exe',
+                      ['/d', '/s', '/c', 'npx rollup -c rollup.config.mjs'],
+                      {
+                          cwd: REPO_ROOT,
+                          encoding: 'utf8',
+                      }
+                  )
+                : spawnSync('npx', ['rollup', '-c', 'rollup.config.mjs'], {
+                      cwd: REPO_ROOT,
+                      encoding: 'utf8',
+                  });
+        generatedRuntimePrepared = true;
+        assert.equal(
+            result.status,
+            0,
+            (result.error && result.error.message) ||
+                result.stderr ||
+                result.stdout ||
+                'no se pudo regenerar el runtime JS staged con rollup'
+        );
+    }
+
+    return generatedPath;
+}
+
+function readRuntimeArtifact(relativePath) {
+    const generatedPath = ensureGeneratedRuntimeArtifact(relativePath);
+    if (existsSync(generatedPath)) {
+        return readFileSync(generatedPath, 'utf8');
+    }
+    return readRepoFile(relativePath);
 }
 
 function listTrackedRepoPaths() {
@@ -354,11 +418,9 @@ test('frontera de js en raiz queda explicita y limitada', () => {
         .filter((entry) => entry.endsWith('.js'))
         .sort();
     const expectedRootJs = [
-        'admin.js',
         'agent-orchestrator.js',
         'eslint.config.js',
         'playwright.config.js',
-        'script.js',
         'sw.js',
     ].sort();
 
@@ -369,12 +431,14 @@ test('frontera de js en raiz queda explicita y limitada', () => {
     );
 
     for (const entry of [
-        'script.js',
-        'admin.js',
         'sw.js',
         'agent-orchestrator.js',
         'eslint.config.js',
         'playwright.config.js',
+        '.generated/site-root/script.js',
+        '.generated/site-root/admin.js',
+        '.generated/site-root/js/chunks/**',
+        '.generated/site-root/js/admin-chunks/**',
         'scripts/archive/jules-dispatch.js',
         'scripts/archive/kimi-run.js',
         'js/archive/root-legacy/**',
@@ -1233,7 +1297,7 @@ test('scripts activos de prod delegan a implementaciones canonicas fuera de la r
 test('runtime publico y bundle de deploy consumen docs canonicos, no shims markdown de raiz', () => {
     const chatEngine = readRepoFile('src/apps/chat/engine.js');
     const chatShell = readRepoFile('src/apps/chat/shell.js');
-    const scriptBundle = readRepoFile('script.js');
+    const scriptBundle = readRuntimeArtifact('script.js');
     const deployBundlePaths = buildDeployBundleManifest({
         includeTooling: true,
     }).map((entry) => entry.relativePath);
@@ -1279,7 +1343,7 @@ test('runtime publico y bundle de deploy consumen docs canonicos, no shims markd
     );
 
     for (const chunk of shellChunks) {
-        const raw = readRepoFile(`js/chunks/${chunk}`);
+        const raw = readRuntimeArtifact(`js/chunks/${chunk}`);
         assert.equal(
             raw.includes('docs/LOCAL_SERVER.md'),
             true,

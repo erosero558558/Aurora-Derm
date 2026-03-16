@@ -53,13 +53,25 @@ export function renderClinicalHistorySection() {
                         </button>
                     </header>
                     <div
+                        id="clinicalHistoryQueueFilters"
+                        class="clinical-history-filter-row"
+                    ></div>
+                    <div
                         id="clinicalHistoryQueueList"
                         class="clinical-history-queue-list"
                     ></div>
                 </article>
             </div>
 
-            <div class="clinical-history-workbench">
+            <div
+                id="clinicalHistoryWorkspaceTabs"
+                class="clinical-history-workspace-tabs"
+            ></div>
+
+            <div
+                id="clinicalHistoryWorkbench"
+                class="clinical-history-workbench"
+            >
                 <article class="sony-panel clinical-history-transcript-panel">
                     <header class="section-header">
                         <div>
@@ -103,7 +115,10 @@ export function renderClinicalHistorySection() {
                 </article>
             </div>
 
-            <div class="clinical-history-footer-grid">
+            <div
+                id="clinicalHistoryFooterGrid"
+                class="clinical-history-footer-grid"
+            >
                 <article class="sony-panel soft clinical-history-events-panel">
                     <header class="section-header">
                         <div>
@@ -167,7 +182,10 @@ export function renderClinicalHistorySection() {
                 </article>
             </div>
 
-            <div class="clinical-media-flow-grid">
+            <div
+                id="clinicalMediaFlowGrid"
+                class="clinical-media-flow-grid"
+            >
                 <article class="sony-panel soft clinical-media-flow-queue-panel">
                     <header class="section-header">
                         <div>

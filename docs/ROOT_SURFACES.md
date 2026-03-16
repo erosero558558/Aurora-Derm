@@ -60,21 +60,25 @@ Los `.js` que siguen en raiz deben caer en una de estas categorias:
 
 Lista aprobada actual:
 
-- `script.js`: entry publicado del gateway publico; la copia generada canonica
-  se stagea en `.generated/site-root/`.
-- `admin.js`: bundle admin publicado desde `admin.html`; la copia generada
-  canonica se stagea en `.generated/site-root/`.
 - `sw.js`: service worker con scope de raiz.
 - `agent-orchestrator.js`: CLI canonica de gobernanza y board.
 - `eslint.config.js`: config de ESLint descubierta por el tooling.
 - `playwright.config.js`: config de Playwright descubierta por el tooling.
 
-`script.js` y `admin.js` pueden seguir existiendo en raiz durante la migracion
-por compatibilidad de URLs/layout, pero el contrato generado canonico vive en
-`.generated/site-root/` y `_deploy_bundle/`, nunca en la copia root como
-fuente de autoria primaria. La frontera source-vs-output vive en
-`docs/RUNTIME_ARTIFACT_POLICY.md`, y la salida segura para sacar estas copias
-del indice es `npm run legacy:generated-root:status|check|apply`.
+Los bundles generados del runtime publicado ya no forman parte de la frontera
+activa de JS en raiz. El contrato stageado vive en:
+
+- `.generated/site-root/script.js`
+- `.generated/site-root/admin.js`
+- `.generated/site-root/js/chunks/**`
+- `.generated/site-root/js/admin-chunks/**`
+
+Los shims de raiz existen solo para compatibilidad humana; runtime, tooling y
+deploy consumen docs canonicos y el stage root `.generated/site-root/`, no
+copias root legacy como fuente primaria de autoria. La frontera source-vs-output
+vive en `docs/RUNTIME_ARTIFACT_POLICY.md`, y la salida segura para sacar las
+copias legacy del indice es
+`npm run legacy:generated-root:status|check|apply`.
 
 ## Superficies HTML permitidas en raiz
 

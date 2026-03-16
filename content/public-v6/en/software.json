@@ -1,7 +1,7 @@
 {
     "nav": {
         "brand": {
-            "tag": "Clinic operations software for growing teams"
+            "tag": "Turnero software for growing clinics"
         },
         "ui": {
             "header": {
@@ -21,8 +21,8 @@
         },
         "header": {
             "contactLabel": "Book demo",
-            "contactHref": "https://wa.me/593982453672?text=Hello%2C%20I%20want%20to%20see%20the%20clinic%20flow%20suite",
-            "searchLabel": "Search modules",
+            "contactHref": "https://wa.me/593982453672?text=Hello%2C%20I%20want%20to%20see%20a%20demo%20of%20turnero%20for%20clinics",
+            "searchLabel": "Search turnero surfaces",
             "links": [
                 {
                     "id": "home",
@@ -32,7 +32,7 @@
                 },
                 {
                     "id": "software",
-                    "label": "Software",
+                    "label": "Turnero",
                     "href": "/en/software/clinic-flow-suite/",
                     "kind": "standard"
                 },
@@ -63,10 +63,10 @@
             ],
             "searchEntries": [
                 {
-                    "label": "Clinic flow suite",
+                    "label": "Turnero for clinics",
                     "href": "/en/software/clinic-flow-suite/",
                     "eyebrow": "Core suite",
-                    "deck": "Kiosk, waiting room display, reception console, and web booking on the same operational state."
+                    "deck": "Arrival, reception, waiting room, and management reading from the same queue state."
                 },
                 {
                     "label": "Mobile check-in",
@@ -89,14 +89,14 @@
             ]
         },
         "footer": {
-            "headline": "A simpler waiting-room stack for clinics that need order now",
-            "deck": "The suite connects kiosk, waiting room display, reception, web booking, and mobile follow-up without demanding enterprise overhead.",
+            "headline": "Turnero for clinics that need a product story, not a loose stack",
+            "deck": "Turnero connects kiosk, waiting-room display, reception, mobile check-in, and site metrics without turning the pilot into an enterprise rollout.",
             "columns": [
                 {
                     "title": "Suite",
                     "links": [
                         {
-                            "label": "Clinic flow suite",
+                            "label": "Turnero for clinics",
                             "href": "/en/software/clinic-flow-suite/"
                         },
                         {
@@ -147,8 +147,8 @@
     },
     "pages": {
         "landing": {
-            "title": "Clinic flow suite | kiosk + display + web",
-            "description": "Operations software for small and medium clinics with kiosk, waiting room display, reception console, and web booking connected together.",
+            "title": "Turnero for clinics | kiosk + display + web",
+            "description": "Turnero software for growing clinics with kiosk, waiting-room display, reception, and web booking connected as one operating product.",
             "breadcrumb": [
                 {
                     "label": "Home",
@@ -159,15 +159,15 @@
                     "href": "/en/software/clinic-flow-suite/"
                 }
             ],
-            "heading": "Clinic flow suite with kiosk, waiting room display, reception, and web booking",
+            "heading": "Turnero for clinics with kiosk, waiting-room display, reception, and web booking",
             "hero": {
                 "eyebrow": "Clinic software",
-                "title": "Reception gets order now, patients stay oriented, and management gets numbers to decide.",
-                "deck": "The suite connects kiosk, calling display, operating console, and web booking under one state model. It rolls out fast, cuts repeated questions, and turns daily operations into something a buyer can actually read.",
+                "title": "The turnero that connects arrival, reception, room flow, and clinic management in one product story.",
+                "deck": "Aurora Derm is the pilot clinic we can demonstrate today: kiosk, reception, operator, waiting-room display, and dashboard all read from the same state. That makes the purchase feel like a product, not a collection of disconnected screens.",
                 "pills": [
+                    "Pilot clinic: Aurora Derm",
                     "1 to 5 sites",
                     "QR + WhatsApp + SMS",
-                    "Kiosk + display + web",
                     "No proprietary hardware"
                 ],
                 "actions": [
@@ -194,41 +194,41 @@
                 ],
                 "metrics": [
                     {
-                        "value": "Reception",
-                        "label": "runs from one operating panel",
-                        "detail": "Call, reprint, close, and read state without bouncing between tools."
+                        "value": "Aurora Derm",
+                        "label": "pilot clinic live today",
+                        "detail": "The same state is visible in landing, check-in, waiting room, and dashboard."
                     },
                     {
-                        "value": "Patient",
-                        "label": "understands arrival and waiting",
-                        "detail": "QR, kiosk, and queue status tell the same story."
+                        "value": "Reception",
+                        "label": "operates from one queue logic",
+                        "detail": "Admin and operator read the same queue instead of separate consoles."
                     },
                     {
                         "value": "Management",
-                        "label": "measures without asking for another report",
-                        "detail": "Wait time, no-show, and room load in one readable view."
+                        "label": "buys against visible proof",
+                        "detail": "Wait time, no-show, and room load come from the same flow shown to the buyer."
                     }
                 ],
                 "panels": [
                     {
-                        "eyebrow": "Reception / Admin",
-                        "title": "Call, reprint, and close without getting lost",
-                        "copy": "Daily operations designed for real consult rooms and non-technical teams."
+                        "eyebrow": "Arrival",
+                        "title": "QR, kiosk, and mobile check-in tell the same arrival story",
+                        "copy": "Patients enter oriented before they touch the counter."
                     },
                     {
-                        "eyebrow": "Patient",
-                        "title": "Check-in and queue visibility from QR or WhatsApp",
-                        "copy": "Patients arrive more oriented and ask fewer repeated questions."
+                        "eyebrow": "Reception",
+                        "title": "Admin and operator coordinate over the same queue",
+                        "copy": "Front desk stops improvising between separate windows and separate states."
                     },
                     {
-                        "eyebrow": "Waiting room",
-                        "title": "Clear live calls with privacy built in",
-                        "copy": "Ticket code, initials, and consult room on a display the room can actually follow."
+                        "eyebrow": "Room",
+                        "title": "The room understands what is happening without losing privacy",
+                        "copy": "Display and private queue status show the same live call in language patients can follow."
                     },
                     {
                         "eyebrow": "Management",
-                        "title": "Wait time, no-show, and consult room load",
-                        "copy": "The daily experience ends in indicators that actually help a buyer decide."
+                        "title": "Leadership sees a buying reason, not just a visual refresh",
+                        "copy": "The management readout comes from real pilot usage, not from a separate report."
                     }
                 ]
             },
@@ -277,84 +277,129 @@
                 ]
             },
             "modules": {
-                "eyebrow": "Daily operations",
-                "title": "Start with the panel that gets used the most: reception and room coordination.",
-                "deck": "The sale becomes concrete when reception gains immediate control. Kiosk, display, and web booking stop acting like separate pieces and start supporting the same job.",
+                "eyebrow": "Live proof",
+                "title": "These surfaces prove the product already exists outside the deck.",
+                "deck": "They are not annexes. They are the pilot itself: arrival, reception, operator, and room can already be shown as one product.",
                 "cards": [
                     {
                         "eyebrow": "Reception / Admin",
-                        "title": "Queue operations for real consult rooms",
-                        "copy": "Call, reprint, complete, flag no-show, and move the room from a console built for active front desk teams.",
+                        "lens": "Reception",
+                        "meta": "Aurora Derm · stage 02 of 04",
+                        "title": "Reception runs the queue without changing context",
+                        "copy": "Call, reprint, complete, and coordinate the room from the console a clinic can open live in front of the buyer.",
                         "bullets": [
-                            "Station or consult room lock",
+                            "Lock by room or station",
                             "Numpad shortcuts and bulk actions",
-                            "Clear sync and live-state visibility"
+                            "Clear sync and operating-state visibility"
                         ],
+                        "href": "/admin.html#queue",
+                        "ctaLabel": "Open reception",
                         "featured": true
                     },
                     {
+                        "eyebrow": "Operator",
+                        "lens": "Consult room",
+                        "meta": "Aurora Derm · stage 02 of 04",
+                        "title": "The consult room runs with numpad shortcuts and a visible next step",
+                        "copy": "A lighter surface for calling, re-calling, and closing without opening the full admin.",
+                        "bullets": [
+                            "Enter calls, + recalls, . completes",
+                            "Readiness visible before the first call",
+                            "Clear fallback if network or runtime degrade"
+                        ],
+                        "href": "/operador-turnos.html",
+                        "ctaLabel": "Open operator"
+                    },
+                    {
                         "eyebrow": "Kiosk",
-                        "title": "Guided in-room check-in",
-                        "copy": "For scheduled and walk-in patients, with quick help, large text mode, and visible support when reception needs to step in.",
+                        "lens": "Arrival",
+                        "meta": "Aurora Derm · stage 01 of 04",
+                        "title": "The kiosk resolves arrival and leaves the queue ready",
+                        "copy": "Scheduled and walk-in patients enter the same route and leave reception with less manual load.",
                         "bullets": [
-                            "Scheduled vs walk-in split",
-                            "Senior-first flow with voice guide",
-                            "Thermal printing and offline safety"
-                        ]
+                            "Scheduled / walk-in inside the same flow",
+                            "Visible help and large-text reading",
+                            "Thermal ticket and offline outbox"
+                        ],
+                        "href": "/kiosco-turnos.html",
+                        "ctaLabel": "Open pilot kiosk"
                     },
                     {
-                        "eyebrow": "Waiting room display",
-                        "title": "Privacy-aware live calling",
-                        "copy": "The screen shows ticket, initials, and consult room so the room understands what is happening without exposing sensitive data.",
+                        "eyebrow": "Room",
+                        "lens": "Waiting",
+                        "meta": "Aurora Derm · stage 03 of 04",
+                        "title": "The room shows the right call and the next step",
+                        "copy": "Waiting-room display and private queue status read the same queue so patients do not depend on the front desk.",
                         "bullets": [
-                            "Configurable bell",
-                            "Current call and next tickets",
-                            "Local snapshot for continuity"
-                        ]
-                    },
-                    {
-                        "eyebrow": "Web booking",
-                        "title": "Web booking and reminders connected to the queue",
-                        "copy": "The website stops being a separate brochure and becomes the digital entry point of the same clinic flow.",
-                        "bullets": [
-                            "Online booking and mobile check-in",
-                            "WhatsApp or SMS reminders",
-                            "Phone-based queue status"
-                        ]
+                            "Ticket, initials, and room with privacy",
+                            "Bell and snapshot visible",
+                            "Hierarchy tuned for a real waiting room"
+                        ],
+                        "href": "/sala-turnos.html",
+                        "ctaLabel": "Open room display"
                     }
                 ]
             },
             "journeys": {
-                "eyebrow": "Three readings of the same flow",
-                "title": "The same operating layer answers different questions depending on who is looking.",
-                "deck": "That lowers commercial friction: reception understands daily use, patients feel the order, and management sees the result.",
+                "eyebrow": "Presentation storyboard",
+                "title": "The fixed story for the March 17 product presentation.",
+                "deck": "Arrival, reception, room, and management. That order makes the product easier to understand and keeps Aurora Derm as the pilot clinic, not the brand that absorbs the suite.",
                 "lanes": [
                     {
-                        "eyebrow": "Reception / Admin",
-                        "title": "Coordinate arrivals, calls, and closures from the same state",
+                        "indexLabel": "01",
+                        "eyebrow": "Arrival",
+                        "buyerLens": "Patient + reception",
+                        "proofLabel": "Kiosk + mobile check-in",
+                        "title": "The patient arrives oriented before they touch the counter",
                         "steps": [
-                            "Receives patients from kiosk, web booking, or mobile check-in without rebuilding the case.",
-                            "Calls, reprints, completes, and flags no-show with visible traceability.",
-                            "Leaves the data behind that later feeds the site dashboard."
-                        ]
+                            "Reminder, QR, or direct link all land in the same queue.",
+                            "The kiosk absorbs scheduled and walk-in arrival without inventing two systems.",
+                            "Reception receives a ready case instead of starting from zero."
+                        ],
+                        "href": "/kiosco-turnos.html",
+                        "ctaLabel": "Open pilot kiosk"
                     },
                     {
-                        "eyebrow": "Patient",
-                        "title": "Confirm arrival, follow progress, and know where to go",
+                        "indexLabel": "02",
+                        "eyebrow": "Reception",
+                        "buyerLens": "Reception + clinician",
+                        "proofLabel": "Admin + operator",
+                        "title": "Reception and consult room operate on the same state",
                         "steps": [
-                            "Receives a WhatsApp or SMS reminder and enters from the link or QR.",
-                            "If they still arrive in-room, the kiosk recognizes the same flow and avoids repeated questions.",
-                            "Private queue status lowers anxiety while they wait."
-                        ]
+                            "Admin and operator read the same queue and share the same trace.",
+                            "Active station, numpad, and fallback stay visible in the live demo.",
+                            "Operations can already be presented as a serious product for clinics."
+                        ],
+                        "href": "/admin.html#queue",
+                        "ctaLabel": "Open pilot reception"
                     },
                     {
+                        "indexLabel": "03",
+                        "eyebrow": "Room",
+                        "buyerLens": "Patient in waiting",
+                        "proofLabel": "Room display + queue status",
+                        "title": "The room understands the call and the patient sees progress",
+                        "steps": [
+                            "The display publishes the right call with visible privacy.",
+                            "The patient's phone follows the same queue without crossed messages.",
+                            "Waiting feels guided because the next step stays readable."
+                        ],
+                        "href": "/sala-turnos.html",
+                        "ctaLabel": "Open pilot room"
+                    },
+                    {
+                        "indexLabel": "04",
                         "eyebrow": "Management",
-                        "title": "Read wait time, no-show, and load without asking for another report",
+                        "buyerLens": "Clinical leadership",
+                        "proofLabel": "Site dashboard",
+                        "title": "Leadership can already decide with evidence instead of intuition",
                         "steps": [
-                            "The dashboard summarizes average wait, served tickets, and no-show.",
-                            "The site sees bottlenecks by time window or consult room.",
-                            "The conversation moves from intuition to measurable improvement."
-                        ]
+                            "The dashboard summarizes wait time, no-show, and room load without another report.",
+                            "Aurora Derm appears as a demonstrable pilot site, not an abstract promise.",
+                            "The conversation moves from visual taste to budget with purpose."
+                        ],
+                        "href": "/en/software/clinic-flow-suite/dashboard/",
+                        "ctaLabel": "See dashboard"
                     }
                 ]
             },
@@ -593,12 +638,38 @@
                 ]
             },
             "finalCta": {
-                "title": "If reception adopts it quickly, patients understand it, and management can measure it, the suite already has a buying story.",
-                "deck": "Start with daily operations, prove the patient flow, and close with the site dashboard when the budget conversation shows up.",
+                "title": "If arrival gets clearer, reception operates better, and management can measure it, the product story is already complete.",
+                "deck": "The March 17 presentation should read that way: product first, Aurora Derm as a demonstrable pilot clinic, and a journey that can be opened end to end without depending on the blocked remote.",
+                "links": [
+                    {
+                        "eyebrow": "Arrival",
+                        "label": "Pilot kiosk",
+                        "href": "/kiosco-turnos.html",
+                        "note": "Stage 01 · check-in and printed ticket"
+                    },
+                    {
+                        "eyebrow": "Reception",
+                        "label": "Reception admin",
+                        "href": "/admin.html#queue",
+                        "note": "Stage 02 · queue, calls, and traceability"
+                    },
+                    {
+                        "eyebrow": "Consult room",
+                        "label": "Web operator",
+                        "href": "/operador-turnos.html",
+                        "note": "Stage 02 · fast calling by station"
+                    },
+                    {
+                        "eyebrow": "Room",
+                        "label": "Waiting-room display",
+                        "href": "/sala-turnos.html",
+                        "note": "Stage 03 · live call and next tickets"
+                    }
+                ],
                 "actions": [
                     {
                         "label": "Book demo",
-                        "href": "https://wa.me/593982453672?text=Hello%2C%20I%20want%20to%20book%20a%20demo%20of%20the%20suite",
+                        "href": "https://wa.me/593982453672?text=Hello%2C%20I%20want%20to%20book%20a%20demo%20of%20turnero%20for%20clinics",
                         "variant": "primary"
                     },
                     {
@@ -725,6 +796,32 @@
             "finalCta": {
                 "title": "Once arrival is resolved, patients need orientation",
                 "deck": "The next step is not another form. It is queue visibility: whether the call is close, how long it may take, and where to go.",
+                "links": [
+                    {
+                        "eyebrow": "Arrival",
+                        "label": "Pilot kiosk",
+                        "href": "/kiosco-turnos.html",
+                        "note": "The same check-in flow that feeds the queue"
+                    },
+                    {
+                        "eyebrow": "Reception",
+                        "label": "Reception admin",
+                        "href": "/admin.html#queue",
+                        "note": "Front desk sees the confirmed arrival without rebuilding the case"
+                    },
+                    {
+                        "eyebrow": "Consult room",
+                        "label": "Web operator",
+                        "href": "/operador-turnos.html",
+                        "note": "Fast calling starts from the same ticket"
+                    },
+                    {
+                        "eyebrow": "Room",
+                        "label": "Waiting-room display",
+                        "href": "/sala-turnos.html",
+                        "note": "The room display publishes the same turn the phone already sees"
+                    }
+                ],
                 "actions": [
                     {
                         "label": "See queue status",
@@ -855,6 +952,32 @@
             "finalCta": {
                 "title": "Once patients can see progress, leadership wants numbers",
                 "deck": "The next step is management visibility: average wait, no-show, and consult room load.",
+                "links": [
+                    {
+                        "eyebrow": "Arrival",
+                        "label": "Pilot kiosk",
+                        "href": "/kiosco-turnos.html",
+                        "note": "Arrival and queue start from the same pilot"
+                    },
+                    {
+                        "eyebrow": "Reception",
+                        "label": "Reception admin",
+                        "href": "/admin.html#queue",
+                        "note": "Front desk keeps the same queue the patient is reading"
+                    },
+                    {
+                        "eyebrow": "Consult room",
+                        "label": "Web operator",
+                        "href": "/operador-turnos.html",
+                        "note": "Room calling and traceability stay aligned"
+                    },
+                    {
+                        "eyebrow": "Room",
+                        "label": "Waiting-room display",
+                        "href": "/sala-turnos.html",
+                        "note": "The public call and the private queue status stay in sync"
+                    }
+                ],
                 "actions": [
                     {
                         "label": "See site dashboard",
@@ -990,6 +1113,32 @@
             "finalCta": {
                 "title": "Now the suite reads like a complete product",
                 "deck": "A clear promise, a smoother arrival, visible waiting, and management insight. That continuity is what closes more of the gap.",
+                "links": [
+                    {
+                        "eyebrow": "Arrival",
+                        "label": "Pilot kiosk",
+                        "href": "/kiosco-turnos.html",
+                        "note": "Stage 01 · the first proof of the pilot"
+                    },
+                    {
+                        "eyebrow": "Reception",
+                        "label": "Reception admin",
+                        "href": "/admin.html#queue",
+                        "note": "Stage 02 · front desk and consult room on one queue"
+                    },
+                    {
+                        "eyebrow": "Consult room",
+                        "label": "Web operator",
+                        "href": "/operador-turnos.html",
+                        "note": "Stage 02 · fast actions over the same live state"
+                    },
+                    {
+                        "eyebrow": "Room",
+                        "label": "Waiting-room display",
+                        "href": "/sala-turnos.html",
+                        "note": "Stage 03 · public proof that the queue is alive"
+                    }
+                ],
                 "actions": [
                     {
                         "label": "Back to suite",

@@ -15,7 +15,7 @@ Para probar la web con backend (API + admin) no uses `file://`.
 Desde la carpeta del proyecto:
 
 ```powershell
-php -S 127.0.0.1:8011 -t .
+php -S 127.0.0.1:8011 -t . bin/local-stage-router.php
 ```
 
 Luego abre:
@@ -39,7 +39,7 @@ procesos vivos en local:
 Arranque recomendado:
 
 ```powershell
-php -S 127.0.0.1:8011 -t .
+php -S 127.0.0.1:8011 -t . bin/local-stage-router.php
 npm run openclaw:auth:start
 ```
 
@@ -110,8 +110,9 @@ Notas generales:
 
 - `TEST_BASE_URL` sirve para apuntar tests y pentests a otro host.
 - `TEST_LOCAL_SERVER_PORT` sirve para mover el puerto local del runner Playwright.
-- `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` automaticamente.
-- En el servidor PHP bare (`php -S`), `/index.html` no es la entrada canonica
+- `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` automaticamente con `bin/local-stage-router.php`.
+- El router local sirve el repo authored y resuelve los outputs generados desde `.generated/site-root`.
+- En el servidor PHP local (`php -S ... bin/local-stage-router.php`), `/index.html` no es la entrada canonica
   y puede responder `404`.
 - Las rutas legacy como `/index.html` o `/telemedicina.html` forman parte del
   contrato de redirects en Apache/Nginx (`.htaccess`), no del entrypoint local.

@@ -119,7 +119,7 @@ Las credenciales y claves de API (Stripe, SMTP, Admin Pass) deben estar document
 Se recomienda realizar un simulacro de restauración semestralmente:
 
 1.  Descargar el último backup de producción.
-2.  Levantar un servidor local (`php -S 127.0.0.1:8011 -t .`).
+2.  Levantar un servidor local (`php -S 127.0.0.1:8011 -t . bin/local-stage-router.php`).
 3.  Cargar el backup en el entorno local.
 4.  Verificar que las citas y reseñas se cargan correctamente.
     Validar tambien `http://127.0.0.1:8011/`,

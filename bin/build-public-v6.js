@@ -37,7 +37,10 @@ function parseArgs(argv) {
             continue;
         }
         if (token === '--report') {
-            args.report = path.resolve(ROOT, String(argv[index + 1] || '').trim());
+            args.report = path.resolve(
+                ROOT,
+                String(argv[index + 1] || '').trim()
+            );
             index += 1;
             continue;
         }
@@ -55,11 +58,15 @@ function npmCommand() {
 
 function spawnNpmRun(args) {
     if (process.platform === 'win32') {
-        return spawnSync('cmd.exe', ['/d', '/s', '/c', npmCommand(), 'run', ...args], {
-            cwd: ROOT,
-            encoding: 'utf8',
-            stdio: 'inherit',
-        });
+        return spawnSync(
+            'cmd.exe',
+            ['/d', '/s', '/c', npmCommand(), 'run', ...args],
+            {
+                cwd: ROOT,
+                encoding: 'utf8',
+                stdio: 'inherit',
+            }
+        );
     }
 
     return spawnSync(npmCommand(), ['run', ...args], {
@@ -98,7 +105,11 @@ function runStep(step, args, report) {
 
 function writeReport(reportPath, report) {
     fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(
+        reportPath,
+        `${JSON.stringify(report, null, 2)}\n`,
+        'utf8'
+    );
 }
 
 function printResult(args, report) {
@@ -127,7 +138,11 @@ function main() {
 
     try {
         if (args.validate) {
-            runStep('content:public-v6:validate', ['content:public-v6:validate'], report);
+            runStep(
+                'content:public-v6:validate',
+                ['content:public-v6:validate'],
+                report
+            );
         }
 
         runStep('astro:build', ['astro:build'], report);
@@ -135,6 +150,9 @@ function main() {
         if (args.stage) {
             runStep('stage:site-root', ['stage:site-root'], report);
         }
+
+        runStep('chunks:public:prune', ['chunks:public:prune'], report);
+        runStep('chunks:admin:prune', ['chunks:admin:prune'], report);
 
         if (args.check) {
             runStep(

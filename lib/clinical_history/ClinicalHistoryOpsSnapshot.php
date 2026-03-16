@@ -51,6 +51,8 @@ final class ClinicalHistoryOpsSnapshot
             }
         }
 
+        $openEventStatsBySessionId = self::buildOpenEventStatsBySession($events);
+
         $sessionStatusCounts = self::initializeCounters(self::SESSION_STATUS_KEYS);
         $reviewStatusCounts = self::initializeCounters(self::REVIEW_STATUS_KEYS);
         $reviewQueue = [];
@@ -89,7 +91,12 @@ final class ClinicalHistoryOpsSnapshot
             );
 
             if (self::needsReviewQueue($session, $draft, $pendingAi)) {
-                $reviewQueue[] = self::buildReviewQueueRow($session, $draft, $pendingAi);
+                $reviewQueue[] = self::buildReviewQueueRow(
+                    $session,
+                    $draft,
+                    $pendingAi,
+                    $openEventStatsBySessionId[$sessionId] ?? []
+                );
             }
         }
 
@@ -221,8 +228,12 @@ final class ClinicalHistoryOpsSnapshot
         ];
     }
 
-    private static function buildReviewQueueRow(array $session, array $draft, array $pendingAi): array
-    {
+    private static function buildReviewQueueRow(
+        array $session,
+        array $draft,
+        array $pendingAi,
+        array $eventStats
+    ): array {
         $patient = isset($session['patient']) && is_array($session['patient']) ? $session['patient'] : [];
         $intake = isset($draft['intake']) && is_array($draft['intake']) ? $draft['intake'] : [];
         $lastEnvelope = isset($draft['lastAiEnvelope']) && is_array($draft['lastAiEnvelope']) ? $draft['lastAiEnvelope'] : [];
@@ -245,6 +256,9 @@ final class ClinicalHistoryOpsSnapshot
             'patientEmail' => (string) ($patient['email'] ?? ''),
             'patientPhone' => (string) ($patient['phone'] ?? ''),
             'attachmentCount' => count(is_array($intake['adjuntos'] ?? null) ? $intake['adjuntos'] : []),
+            'openEventCount' => (int) ($eventStats['openEventCount'] ?? 0),
+            'highestOpenSeverity' => (string) ($eventStats['highestOpenSeverity'] ?? ''),
+            'latestOpenEventTitle' => (string) ($eventStats['latestOpenEventTitle'] ?? ''),
             'summary' => (string) (($draft['clinicianDraft']['resumen'] ?? '') ?: ($intake['resumenClinico'] ?? '')),
             'createdAt' => (string) ($draft['createdAt'] ?? $session['createdAt'] ?? ''),
             'updatedAt' => (string) ($draft['updatedAt'] ?? $session['updatedAt'] ?? ''),
@@ -400,16 +414,111 @@ final class ClinicalHistoryOpsSnapshot
 
     private static function reviewPriority(array $row): int
     {
-        if ((string) ($row['pendingAiStatus'] ?? '') !== '') {
+        $severity = (string) ($row['highestOpenSeverity'] ?? '');
+        if ($severity === 'critical') {
+            return -1;
+        }
+        if ($severity === 'warning') {
             return 0;
         }
-        if ((bool) ($row['requiresHumanReview'] ?? false)) {
+        if ((string) ($row['pendingAiStatus'] ?? '') !== '') {
             return 1;
         }
-        if ((string) ($row['reviewStatus'] ?? '') === 'ready_for_review') {
+        if ((int) ($row['openEventCount'] ?? 0) > 0) {
             return 2;
         }
+        if ((bool) ($row['requiresHumanReview'] ?? false)) {
+            return 3;
+        }
+        if ((string) ($row['reviewStatus'] ?? '') === 'ready_for_review') {
+            return 4;
+        }
 
-        return 3;
+        return 5;
+    }
+
+    private static function buildOpenEventStatsBySession(array $events): array
+    {
+        $statsBySessionId = [];
+
+        foreach ($events as $eventRecord) {
+            $event = ClinicalHistoryRepository::defaultEvent($eventRecord);
+            $sessionId = ClinicalHistoryRepository::trimString($event['sessionId'] ?? '');
+            $status = ClinicalHistoryRepository::trimString($event['status'] ?? 'open');
+            if ($sessionId === '' || $status !== 'open') {
+                continue;
+            }
+
+            $severity = ClinicalHistoryRepository::trimString($event['severity'] ?? 'info');
+            if ($severity === '') {
+                $severity = 'info';
+            }
+            $occurredAt = (string) ($event['occurredAt'] ?? $event['createdAt'] ?? '');
+            $title = (string) ($event['title'] ?? '');
+
+            $stats = $statsBySessionId[$sessionId] ?? [
+                'openEventCount' => 0,
+                'highestOpenSeverity' => '',
+                'latestOpenEventTitle' => '',
+                'latestOpenOccurredAt' => '',
+            ];
+
+            $stats['openEventCount'] = (int) ($stats['openEventCount'] ?? 0) + 1;
+            $stats['highestOpenSeverity'] = self::preferHigherSeverity(
+                (string) ($stats['highestOpenSeverity'] ?? ''),
+                $severity
+            );
+
+            if (
+                (string) ($stats['latestOpenOccurredAt'] ?? '') === ''
+                || self::timestampGreater($occurredAt, (string) ($stats['latestOpenOccurredAt'] ?? ''))
+            ) {
+                $stats['latestOpenOccurredAt'] = $occurredAt;
+                $stats['latestOpenEventTitle'] = $title;
+            }
+
+            $statsBySessionId[$sessionId] = $stats;
+        }
+
+        return $statsBySessionId;
+    }
+
+    private static function preferHigherSeverity(string $current, string $candidate): string
+    {
+        if (self::severityRank($candidate) > self::severityRank($current)) {
+            return $candidate;
+        }
+
+        return $current;
+    }
+
+    private static function severityRank(string $severity): int
+    {
+        switch ($severity) {
+            case 'critical':
+                return 3;
+            case 'warning':
+                return 2;
+            case 'info':
+                return 1;
+            default:
+                return 0;
+        }
+    }
+
+    private static function timestampGreater(string $left, string $right): bool
+    {
+        $leftTs = strtotime($left);
+        $rightTs = strtotime($right);
+
+        if ($leftTs === false) {
+            return false;
+        }
+
+        if ($rightTs === false) {
+            return true;
+        }
+
+        return $leftTs > $rightTs;
     }
 }

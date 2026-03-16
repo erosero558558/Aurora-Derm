@@ -33,6 +33,7 @@ const stepItems = Array.isArray(steps.items) ? steps.items : [];
 const advantageCards = Array.isArray(advantages.cards) ? advantages.cards : [];
 const connectionItems = Array.isArray(connections.items) ? connections.items : [];
 const finalActions = Array.isArray(finalCta.actions) ? finalCta.actions : [];
+const finalLinks = Array.isArray(finalCta.links) ? finalCta.links : [];
 const suiteStory =
     page?.suiteStory && typeof page.suiteStory === 'object' ? page.suiteStory : {};
 const suiteStoryCurrent =
@@ -577,6 +578,24 @@ const actionClass = (variant = 'secondary') => [
                             </div>
                             {finalCta.title ? <h2>{finalCta.title}</h2> : null}
                             {finalCta.deck ? <p>{finalCta.deck}</p> : null}
+                            {
+                                finalLinks.length ? (
+                                    <div class="v6-suite-proof-links" data-v6-turnero-proof-links={surfacePageKey}>
+                                        {finalLinks.map((link, index) => (
+                                            <a
+                                                class="v6-suite-proof-link"
+                                                href={link.href}
+                                                data-v6-turnero-presentation-link
+                                                data-v6-turnero-presentation-link-order={String(index + 1).padStart(2, '0')}
+                                            >
+                                                {link.eyebrow ? <span>{link.eyebrow}</span> : null}
+                                                <strong>{link.label}</strong>
+                                                {link.note ? <small>{link.note}</small> : null}
+                                            </a>
+                                        ))}
+                                    </div>
+                                ) : null
+                            }
                         </div>
                         {
                             finalActions.length ? (

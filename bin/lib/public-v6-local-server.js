@@ -111,9 +111,27 @@ function contentTypeFor(filePath) {
     );
 }
 
+function resolvePublicRuntimeRoot(repoRoot, options = {}) {
+    const explicitRuntimeRoot = String(options.runtimeRoot || '').trim();
+    if (explicitRuntimeRoot) {
+        return path.resolve(explicitRuntimeRoot);
+    }
+
+    const stagedRuntimeRoot = path.join(repoRoot, '.generated', 'site-root');
+    if (
+        fs.existsSync(stagedRuntimeRoot) &&
+        fs.statSync(stagedRuntimeRoot).isDirectory()
+    ) {
+        return stagedRuntimeRoot;
+    }
+
+    return repoRoot;
+}
+
 function createPublicRequestHandler(repoRoot, options = {}) {
     const host = options.host || '127.0.0.1';
     const port = Number(options.port || 0);
+    const runtimeRoot = resolvePublicRuntimeRoot(repoRoot, options);
 
     return (request, response) => {
         const requestUrl = new URL(
@@ -134,7 +152,9 @@ function createPublicRequestHandler(repoRoot, options = {}) {
             return;
         }
 
-        const filePath = safeResolveFile(repoRoot, requestUrl.pathname);
+        const filePath =
+            safeResolveFile(runtimeRoot, requestUrl.pathname) ||
+            safeResolveFile(repoRoot, requestUrl.pathname);
         if (!filePath) {
             response.writeHead(404, {
                 'Content-Type': 'text/plain; charset=UTF-8',
@@ -168,8 +188,13 @@ function createPublicRequestHandler(repoRoot, options = {}) {
 async function startLocalPublicServer(repoRoot, options = {}) {
     const host = options.host || '127.0.0.1';
     const port = Number(options.port || 0);
+    const runtimeRoot = resolvePublicRuntimeRoot(repoRoot, options);
     const server = http.createServer(
-        createPublicRequestHandler(repoRoot, { host, port })
+        createPublicRequestHandler(repoRoot, {
+            host,
+            port,
+            runtimeRoot,
+        })
     );
 
     await new Promise((resolve, reject) => {
@@ -188,6 +213,7 @@ async function startLocalPublicServer(repoRoot, options = {}) {
     return {
         server,
         baseUrl: new URL(`http://${host}:${address.port}`),
+        runtimeRoot,
     };
 }
 
@@ -199,6 +225,7 @@ async function stopLocalPublicServer(server) {
 module.exports = {
     createPublicRequestHandler,
     resolveLegacyRedirect,
+    resolvePublicRuntimeRoot,
     startLocalPublicServer,
     stopLocalPublicServer,
 };

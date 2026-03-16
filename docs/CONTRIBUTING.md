@@ -33,7 +33,7 @@ Gracias por tu interés en contribuir a Piel en Armonía. Este documento describ
 
 4.  Iniciar servidor local:
     ```bash
-    php -S 127.0.0.1:8011 -t .
+    php -S 127.0.0.1:8011 -t . bin/local-stage-router.php
     ```
     Ahora puedes acceder a `http://127.0.0.1:8011`.
     Si una suite debe reutilizar otro servidor ya levantado, apunta `TEST_BASE_URL`

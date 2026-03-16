@@ -1101,6 +1101,8 @@ function sanitizeSoftwareMockup(mockup, fallbackTitle = '') {
 
 function sanitizeSoftwareModuleCard(card) {
     const title = normalizeText(card?.title);
+    const href = normalizeHref(card?.href);
+    const ctaLabel = normalizeText(card?.ctaLabel);
     if (!title) {
         return null;
     }
@@ -1109,6 +1111,10 @@ function sanitizeSoftwareModuleCard(card) {
         title,
         copy: normalizeText(card?.copy),
         bullets: sanitizeTextList(card?.bullets),
+        lens: normalizeText(card?.lens),
+        meta: normalizeText(card?.meta),
+        href: href && ctaLabel ? href : '',
+        ctaLabel: href && ctaLabel ? ctaLabel : '',
         featured: Boolean(card?.featured),
     };
 }
@@ -1116,13 +1122,20 @@ function sanitizeSoftwareModuleCard(card) {
 function sanitizeSoftwareJourneyLane(lane) {
     const title = normalizeText(lane?.title);
     const steps = sanitizeTextList(lane?.steps);
+    const href = normalizeHref(lane?.href);
+    const ctaLabel = normalizeText(lane?.ctaLabel);
     if (!title || !steps.length) {
         return null;
     }
     return {
+        indexLabel: normalizeText(lane?.indexLabel),
         eyebrow: normalizeText(lane?.eyebrow),
+        buyerLens: normalizeText(lane?.buyerLens),
+        proofLabel: normalizeText(lane?.proofLabel),
         title,
         steps,
+        href: href && ctaLabel ? href : '',
+        ctaLabel: href && ctaLabel ? ctaLabel : '',
     };
 }
 
@@ -1163,6 +1176,20 @@ function sanitizeSoftwareSurfaceCard(card) {
         href,
         ctaLabel,
         mockup,
+    };
+}
+
+function sanitizeSoftwareLinkItem(item) {
+    const label = normalizeText(item?.label);
+    const href = normalizeHref(item?.href);
+    if (!label || !href) {
+        return null;
+    }
+    return {
+        eyebrow: normalizeText(item?.eyebrow),
+        label,
+        href,
+        note: normalizeText(item?.note),
     };
 }
 
@@ -1590,17 +1617,17 @@ function assertSoftwareLandingContract(
             `${safeLocale}.landing.focus requires at least 3 cards`
         );
     }
-    if (!Array.isArray(page?.modules?.cards) || page.modules.cards.length < 3) {
+    if (!Array.isArray(page?.modules?.cards) || page.modules.cards.length < 4) {
         failSoftwareContract(
-            `${safeLocale}.landing.modules requires at least 3 cards`
+            `${safeLocale}.landing.modules requires at least 4 cards`
         );
     }
     if (
         !Array.isArray(page?.journeys?.lanes) ||
-        page.journeys.lanes.length < 2
+        page.journeys.lanes.length < 4
     ) {
         failSoftwareContract(
-            `${safeLocale}.landing.journeys requires at least 2 lanes`
+            `${safeLocale}.landing.journeys requires 4 storyboard lanes`
         );
     }
     if (!Array.isArray(page?.pricing?.plans) || page.pricing.plans.length < 2) {
@@ -1646,6 +1673,8 @@ function assertSoftwareLandingContract(
     }
 
     if (
+        !Array.isArray(page?.finalCta?.links) ||
+        page.finalCta.links.length < 4 ||
         !Array.isArray(page?.finalCta?.actions) ||
         !page.finalCta.actions.length ||
         !softwareActionLinksTo(
@@ -1754,11 +1783,13 @@ function assertSoftwareSurfaceContract(
         );
     }
     if (
+        !Array.isArray(page?.finalCta?.links) ||
+        page.finalCta.links.length < 4 ||
         !Array.isArray(page?.finalCta?.actions) ||
         !page.finalCta.actions.length
     ) {
         failSoftwareContract(
-            `${safeLocale}.${safePageKey}.finalCta requires actions`
+            `${safeLocale}.${safePageKey}.finalCta requires actions and live proof links`
         );
     }
     if (
@@ -1810,6 +1841,9 @@ function sanitizeSoftwareFinalCta(finalCta) {
     return {
         title: normalizeText(source.title),
         deck: normalizeText(source.deck),
+        links: Array.isArray(source.links)
+            ? source.links.map(sanitizeSoftwareLinkItem).filter(Boolean)
+            : [],
         actions: Array.isArray(source.actions)
             ? source.actions.map(sanitizeSoftwareAction).filter(Boolean)
             : [],

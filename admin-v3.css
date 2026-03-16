@@ -2059,6 +2059,45 @@ body.admin-v3-mode .clinical-history-header-status {
     justify-items: end;
 }
 
+body.admin-v3-mode .clinical-history-workspace-tabs,
+body.admin-v3-mode .clinical-history-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+body.admin-v3-mode .clinical-history-workspace-tab,
+body.admin-v3-mode .clinical-history-filter-chip {
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--admin3-line);
+    background: var(--admin3-surface);
+    color: var(--admin3-muted);
+    transition:
+        border-color var(--admin3-motion-fast) var(--admin3-ease),
+        background var(--admin3-motion-fast) var(--admin3-ease),
+        color var(--admin3-motion-fast) var(--admin3-ease),
+        transform var(--admin3-motion-fast) var(--admin3-ease),
+        box-shadow var(--admin3-motion-fast) var(--admin3-ease);
+}
+
+body.admin-v3-mode .clinical-history-workspace-tab:hover,
+body.admin-v3-mode .clinical-history-filter-chip:hover {
+    color: var(--admin3-ink);
+    border-color: var(--admin3-line-strong);
+    transform: translateY(-1px);
+}
+
+body.admin-v3-mode .clinical-history-workspace-tab.is-active,
+body.admin-v3-mode .clinical-history-filter-chip.is-active {
+    color: var(--admin3-stage);
+    border-color: rgba(23, 66, 209, 0.24);
+    background: rgba(23, 66, 209, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(23, 66, 209, 0.12);
+}
+
 body.admin-v3-mode .clinical-history-status-chip,
 body.admin-v3-mode .clinical-history-mini-chip,
 body.admin-v3-mode .clinical-history-panel-meta {

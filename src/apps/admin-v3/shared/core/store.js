@@ -117,6 +117,8 @@ const initialState = {
     },
     clinicalHistory: {
         selectedSessionId: '',
+        activeWorkspace: 'review',
+        queueFilter: 'all',
         loading: false,
         saving: false,
         error: '',
@@ -131,6 +133,7 @@ const initialState = {
         loading: false,
         generating: false,
         saving: false,
+        linkedCaseMissing: false,
         error: '',
         current: null,
         lastLoadedAt: 0,

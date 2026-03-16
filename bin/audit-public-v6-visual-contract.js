@@ -64,6 +64,38 @@ async function gotoStable(page, url) {
     await page.waitForTimeout(500);
 }
 
+async function waitForShellRuntime(page) {
+    await page.waitForFunction(
+        () => {
+            const header = document.querySelector('[data-v6-header]');
+            return (
+                header?.dataset.v6MegaReady === 'true' &&
+                header?.dataset.v6DrawerReady === 'true' &&
+                header?.dataset.v6SearchReady === 'true'
+            );
+        },
+        { timeout: 15000 }
+    );
+}
+
+async function waitForHomeRuntime(page) {
+    await page.waitForFunction(
+        () => {
+            const header = document.querySelector('[data-v6-header]');
+            const hero = document.querySelector('[data-v6-hero]');
+            const strip = document.querySelector('[data-v6-news-strip]');
+            return (
+                header?.dataset.v6MegaReady === 'true' &&
+                header?.dataset.v6DrawerReady === 'true' &&
+                header?.dataset.v6SearchReady === 'true' &&
+                hero?.dataset.v6HeroReady === 'true' &&
+                strip?.dataset.v6NewsReady === 'true'
+            );
+        },
+        { timeout: 15000 }
+    );
+}
+
 function addCheck(checks, id, desc, pass, meta) {
     const entry = { id, desc, pass: Boolean(pass) };
     if (meta && Object.keys(meta).length) {
@@ -99,6 +131,7 @@ async function run() {
         const desktopPage = await desktop.newPage();
 
         await gotoStable(desktopPage, `${baseURL}/es/`);
+        await waitForHomeRuntime(desktopPage);
         await desktopPage.screenshot({
             path: path.join(screenshotDir, 'home-es-desktop.png'),
             fullPage: false,
@@ -542,6 +575,7 @@ async function run() {
         });
 
         await gotoStable(desktopPage, `${baseURL}/es/servicios/`);
+        await waitForShellRuntime(desktopPage);
         await desktopPage.screenshot({
             path: path.join(screenshotDir, 'hub-es-desktop.png'),
             fullPage: false,
@@ -771,6 +805,7 @@ async function run() {
             desktopPage,
             `${baseURL}/es/servicios/diagnostico-integral/`
         );
+        await waitForShellRuntime(desktopPage);
         await desktopPage.screenshot({
             path: path.join(screenshotDir, 'service-es-desktop.png'),
             fullPage: false,
@@ -845,6 +880,7 @@ async function run() {
         });
 
         await gotoStable(desktopPage, `${baseURL}/es/telemedicina/`);
+        await waitForShellRuntime(desktopPage);
         await desktopPage.screenshot({
             path: path.join(screenshotDir, 'tele-es-desktop.png'),
             fullPage: false,
@@ -946,6 +982,7 @@ async function run() {
         });
 
         await gotoStable(desktopPage, `${baseURL}/es/legal/terminos/`);
+        await waitForShellRuntime(desktopPage);
         await desktopPage.screenshot({
             path: path.join(screenshotDir, 'legal-es-desktop.png'),
             fullPage: false,
@@ -1032,6 +1069,7 @@ async function run() {
         const mobilePage = await mobile.newPage();
 
         await gotoStable(mobilePage, `${baseURL}/es/`);
+        await waitForHomeRuntime(mobilePage);
         await mobilePage.screenshot({
             path: path.join(screenshotDir, 'home-es-mobile.png'),
             fullPage: false,
@@ -1047,6 +1085,7 @@ async function run() {
             return grid ? getComputedStyle(grid).gridTemplateColumns : '';
         });
         await gotoStable(mobilePage, `${baseURL}/es/servicios/`);
+        await waitForShellRuntime(mobilePage);
         await mobilePage.screenshot({
             path: path.join(screenshotDir, 'hub-es-mobile.png'),
             fullPage: false,
@@ -1064,6 +1103,7 @@ async function run() {
             mobilePage,
             `${baseURL}/es/servicios/diagnostico-integral/`
         );
+        await waitForShellRuntime(mobilePage);
         await mobilePage.screenshot({
             path: path.join(screenshotDir, 'service-es-mobile.png'),
             fullPage: false,
@@ -1087,12 +1127,14 @@ async function run() {
         });
 
         await gotoStable(mobilePage, `${baseURL}/es/telemedicina/`);
+        await waitForShellRuntime(mobilePage);
         const teleMobileRailPosition = await mobilePage.evaluate(() => {
             const rail = document.querySelector('[data-v6-internal-rail]');
             return rail ? getComputedStyle(rail).position : '';
         });
 
         await gotoStable(mobilePage, `${baseURL}/es/legal/terminos/`);
+        await waitForShellRuntime(mobilePage);
         await mobilePage.screenshot({
             path: path.join(screenshotDir, 'legal-es-mobile.png'),
             fullPage: false,

@@ -49,6 +49,7 @@ const pricingPlans = Array.isArray(pricing.plans) ? pricing.plans : [];
 const securityCards = Array.isArray(security.cards) ? security.cards : [];
 const faqItems = Array.isArray(faq.items) ? faq.items : [];
 const finalActions = Array.isArray(finalCta.actions) ? finalCta.actions : [];
+const finalLinks = Array.isArray(finalCta.links) ? finalCta.links : [];
 const suiteStory =
     page?.suiteStory && typeof page.suiteStory === 'object' ? page.suiteStory : {};
 const suiteStoryCurrent =
@@ -91,8 +92,8 @@ const supportModuleCards = leadModuleCard
     : [];
 
 const sectionDefs = [
-    hasModules ? { id: 'v6-suite-modules', label: modules.title } : null,
     hasJourneys ? { id: 'v6-suite-journeys', label: journeys.title } : null,
+    hasModules ? { id: 'v6-suite-modules', label: modules.title } : null,
     hasSurfaces ? { id: 'v6-suite-surfaces', label: surfaces.title } : null,
     hasNativeApps ? { id: 'v6-suite-native-apps', label: nativeApps.title } : null,
     hasIntegrations
@@ -386,17 +387,84 @@ const actionClass = (variant = 'secondary') => [
 }
 
 {
-    hasModules ? (
+    hasJourneys ? (
         <section
-            id="v6-suite-modules"
-            class="v6-suite-section is-operations"
-            data-v6-suite-landing-section="operations"
+            id="v6-suite-journeys"
+            class="v6-suite-section is-muted is-storyboard"
+            data-v6-suite-landing-section="storyboard"
             data-v6-suite-landing-section-order="01"
         >
             <div class="v6-suite-shell">
                 <header class="v6-suite-section__head">
                     <div class="v6-suite-landing-tag" data-v6-suite-landing-tag>
                         <span>01</span>
+                    </div>
+                    {journeys.eyebrow ? <p>{journeys.eyebrow}</p> : null}
+                    <h2>{journeys.title}</h2>
+                    {journeys.deck ? <span>{journeys.deck}</span> : null}
+                </header>
+
+                <div class="v6-suite-grid v6-suite-grid--four v6-suite-storyboard">
+                    {journeyLanes.map((lane, index) => (
+                        <article
+                            class:list={[
+                                'v6-suite-lane',
+                                'v6-suite-storyboard-lane',
+                                index === 0 && 'is-priority',
+                            ]}
+                            data-v6-suite-journey-lane
+                            data-v6-suite-storyboard-lane
+                            data-v6-suite-journey-order={formatOrder(index + 1)}
+                        >
+                            <div class="v6-suite-lane__tag">
+                                {lane.indexLabel || formatOrder(index + 1)}
+                            </div>
+                            {lane.eyebrow ? <p>{lane.eyebrow}</p> : null}
+                            {lane.buyerLens ? (
+                                <span class="v6-suite-storyboard-lane__lens">
+                                    {lane.buyerLens}
+                                </span>
+                            ) : null}
+                            <h3>{lane.title}</h3>
+                            {lane.proofLabel ? (
+                                <span class="v6-suite-storyboard-lane__proof">
+                                    {lane.proofLabel}
+                                </span>
+                            ) : null}
+                            <ol>
+                                {lane.steps.map((step, stepIndex) => (
+                                    <li>
+                                        <span>{formatOrder(stepIndex + 1)}</span>
+                                        <p>{step}</p>
+                                    </li>
+                                ))}
+                            </ol>
+                            {lane.href && lane.ctaLabel ? (
+                                <a class="v6-suite-inline-link" href={lane.href}>
+                                    {lane.ctaLabel}
+                                    <span aria-hidden="true">></span>
+                                </a>
+                            ) : null}
+                        </article>
+                    ))}
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
+    hasModules ? (
+        <section
+            id="v6-suite-modules"
+            class="v6-suite-section is-operations is-live-proof"
+            data-v6-suite-landing-section="live-proof"
+            data-v6-suite-landing-section-order="02"
+        >
+            <div class="v6-suite-shell">
+                <header class="v6-suite-section__head">
+                    <div class="v6-suite-landing-tag" data-v6-suite-landing-tag>
+                        <span>02</span>
                     </div>
                     {modules.eyebrow ? <p>{modules.eyebrow}</p> : null}
                     <h2>{modules.title}</h2>
@@ -413,8 +481,18 @@ const actionClass = (variant = 'secondary') => [
                                 data-v6-suite-module-card-order="01"
                             >
                                 {leadModuleCard.eyebrow ? <p>{leadModuleCard.eyebrow}</p> : null}
+                                {leadModuleCard.lens ? (
+                                    <span class="v6-suite-module-card__lens">
+                                        {leadModuleCard.lens}
+                                    </span>
+                                ) : null}
                                 <h3>{leadModuleCard.title}</h3>
                                 {leadModuleCard.copy ? <span>{leadModuleCard.copy}</span> : null}
+                                {leadModuleCard.meta ? (
+                                    <strong class="v6-suite-module-card__meta">
+                                        {leadModuleCard.meta}
+                                    </strong>
+                                ) : null}
                                 {Array.isArray(leadModuleCard.bullets) &&
                                 leadModuleCard.bullets.length ? (
                                     <ul>
@@ -422,6 +500,16 @@ const actionClass = (variant = 'secondary') => [
                                             <li>{bullet}</li>
                                         ))}
                                     </ul>
+                                ) : null}
+                                {leadModuleCard.href && leadModuleCard.ctaLabel ? (
+                                    <a
+                                        class="v6-suite-inline-link"
+                                        href={leadModuleCard.href}
+                                        data-v6-turnero-proof-link
+                                    >
+                                        {leadModuleCard.ctaLabel}
+                                        <span aria-hidden="true">></span>
+                                    </a>
                                 ) : null}
                             </article>
                         ) : null
@@ -436,12 +524,32 @@ const actionClass = (variant = 'secondary') => [
                                 data-v6-suite-module-card-order={formatOrder(index + 2)}
                             >
                                 {card.eyebrow ? <p>{card.eyebrow}</p> : null}
+                                {card.lens ? (
+                                    <span class="v6-suite-module-card__lens">
+                                        {card.lens}
+                                    </span>
+                                ) : null}
                                 <h3>{card.title}</h3>
                                 {card.copy ? <span>{card.copy}</span> : null}
+                                {card.meta ? (
+                                    <strong class="v6-suite-module-card__meta">
+                                        {card.meta}
+                                    </strong>
+                                ) : null}
                                 {Array.isArray(card.bullets) && card.bullets.length ? (
                                     <ul>
                                         {card.bullets.map((bullet) => <li>{bullet}</li>)}
                                     </ul>
+                                ) : null}
+                                {card.href && card.ctaLabel ? (
+                                    <a
+                                        class="v6-suite-inline-link"
+                                        href={card.href}
+                                        data-v6-turnero-proof-link
+                                    >
+                                        {card.ctaLabel}
+                                        <span aria-hidden="true">></span>
+                                    </a>
                                 ) : null}
                             </article>
                         ))}
@@ -453,55 +561,11 @@ const actionClass = (variant = 'secondary') => [
 }
 
 {
-    hasJourneys ? (
-        <section
-            id="v6-suite-journeys"
-            class="v6-suite-section is-muted"
-            data-v6-suite-landing-section="audiences"
-            data-v6-suite-landing-section-order="02"
-        >
-            <div class="v6-suite-shell">
-                <header class="v6-suite-section__head">
-                    <div class="v6-suite-landing-tag" data-v6-suite-landing-tag>
-                        <span>02</span>
-                    </div>
-                    {journeys.eyebrow ? <p>{journeys.eyebrow}</p> : null}
-                    <h2>{journeys.title}</h2>
-                    {journeys.deck ? <span>{journeys.deck}</span> : null}
-                </header>
-
-                <div class="v6-suite-grid v6-suite-grid--three">
-                    {journeyLanes.map((lane, index) => (
-                        <article
-                            class:list={['v6-suite-lane', index === 0 && 'is-priority']}
-                            data-v6-suite-journey-lane
-                            data-v6-suite-journey-order={formatOrder(index + 1)}
-                        >
-                            <div class="v6-suite-lane__tag">{formatOrder(index + 1)}</div>
-                            {lane.eyebrow ? <p>{lane.eyebrow}</p> : null}
-                            <h3>{lane.title}</h3>
-                            <ol>
-                                {lane.steps.map((step, stepIndex) => (
-                                    <li>
-                                        <span>{formatOrder(stepIndex + 1)}</span>
-                                        <p>{step}</p>
-                                    </li>
-                                ))}
-                            </ol>
-                        </article>
-                    ))}
-                </div>
-            </div>
-        </section>
-    ) : null
-}
-
-{
     hasSurfaces ? (
         <section
             id="v6-suite-surfaces"
             class="v6-suite-section"
-            data-v6-suite-landing-section="surfaces"
+            data-v6-suite-landing-section="public-proof"
             data-v6-suite-landing-section-order="03"
         >
             <div class="v6-suite-shell">
@@ -720,6 +784,24 @@ const actionClass = (variant = 'secondary') => [
                 <div>
                     {finalCta.title ? <h2>{finalCta.title}</h2> : null}
                     {finalCta.deck ? <p>{finalCta.deck}</p> : null}
+                    {
+                        finalLinks.length ? (
+                            <div class="v6-suite-proof-links" data-v6-turnero-proof-links="landing">
+                                {finalLinks.map((link, index) => (
+                                    <a
+                                        class="v6-suite-proof-link"
+                                        href={link.href}
+                                        data-v6-turnero-presentation-link
+                                        data-v6-turnero-presentation-link-order={formatOrder(index + 1)}
+                                    >
+                                        {link.eyebrow ? <span>{link.eyebrow}</span> : null}
+                                        <strong>{link.label}</strong>
+                                        {link.note ? <small>{link.note}</small> : null}
+                                    </a>
+                                ))}
+                            </div>
+                        ) : null
+                    }
                 </div>
                 {
                     finalActions.length ? (

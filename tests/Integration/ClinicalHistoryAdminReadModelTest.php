@@ -164,6 +164,33 @@ final class ClinicalHistoryAdminReadModelTest extends TestCase
             'occurredAt' => '2026-03-11T10:16:00-05:00',
             'acknowledgedAt' => '',
             'resolvedAt' => '',
+        ], [
+            'id' => 904,
+            'eventId' => 'che-admin-002',
+            'sessionId' => 'chs-admin-001',
+            'caseId' => 'case-admin-001',
+            'appointmentId' => 451,
+            'type' => 'clinical_alert',
+            'severity' => 'critical',
+            'status' => 'open',
+            'title' => 'Alerta clinica abierta',
+            'message' => 'Persisten hallazgos que requieren triage prioritario.',
+            'requiresAction' => true,
+            'jobId' => 'job-admin-002',
+            'dedupeKey' => 'clinical_history|clinical_alert|chs-admin-001|job-admin-002',
+            'patient' => [
+                'name' => 'Paciente Clinico',
+                'email' => 'clinico@example.com',
+                'phone' => '0990001111',
+            ],
+            'metadata' => [
+                'reason' => 'critical_follow_up_required',
+            ],
+            'createdAt' => '2026-03-11T10:18:00-05:00',
+            'updatedAt' => '2026-03-11T10:18:00-05:00',
+            'occurredAt' => '2026-03-11T10:18:00-05:00',
+            'acknowledgedAt' => '',
+            'resolvedAt' => '',
         ]];
         \write_store($store, false);
 
@@ -182,16 +209,37 @@ final class ClinicalHistoryAdminReadModelTest extends TestCase
 
         $meta = $payload['data']['clinicalHistoryMeta'];
         self::assertSame(1, (int) ($meta['summary']['drafts']['reviewQueueCount'] ?? -1));
-        self::assertSame(1, (int) ($meta['summary']['events']['openCount'] ?? -1));
-        self::assertSame(1, (int) ($meta['summary']['events']['unreadCount'] ?? -1));
-        self::assertSame('degraded', (string) ($meta['summary']['diagnostics']['status'] ?? ''));
+        self::assertSame(2, (int) ($meta['summary']['events']['openCount'] ?? -1));
+        self::assertSame(2, (int) ($meta['summary']['events']['unreadCount'] ?? -1));
+        self::assertSame('critical', (string) ($meta['summary']['diagnostics']['status'] ?? ''));
         self::assertCount(1, $meta['reviewQueue'] ?? []);
         self::assertSame('Paciente Clinico', (string) ($meta['reviewQueue'][0]['patientName'] ?? ''));
         self::assertSame(['dose_ambiguous', 'low_confidence'], $meta['reviewQueue'][0]['reviewReasons'] ?? []);
-        self::assertCount(1, $meta['events'] ?? []);
-        self::assertSame('draft_reconciled', (string) ($meta['events'][0]['type'] ?? ''));
-        self::assertSame('warning', (string) ($meta['events'][0]['severity'] ?? ''));
-        self::assertSame('open', (string) ($meta['events'][0]['status'] ?? ''));
+        self::assertSame(2, (int) ($meta['reviewQueue'][0]['openEventCount'] ?? -1));
+        self::assertSame('critical', (string) ($meta['reviewQueue'][0]['highestOpenSeverity'] ?? ''));
+        self::assertSame('Alerta clinica abierta', (string) ($meta['reviewQueue'][0]['latestOpenEventTitle'] ?? ''));
+        self::assertCount(2, $meta['events'] ?? []);
+        self::assertSame(
+            ['clinical_alert', 'draft_reconciled'],
+            array_values(array_map(
+                static fn (array $event): string => (string) ($event['type'] ?? ''),
+                $meta['events'] ?? []
+            ))
+        );
+        self::assertSame(
+            ['critical', 'warning'],
+            array_values(array_map(
+                static fn (array $event): string => (string) ($event['severity'] ?? ''),
+                $meta['events'] ?? []
+            ))
+        );
+        self::assertSame(
+            ['open', 'open'],
+            array_values(array_map(
+                static fn (array $event): string => (string) ($event['status'] ?? ''),
+                $meta['events'] ?? []
+            ))
+        );
     }
 
     private function removeDirectory(string $dir): void
