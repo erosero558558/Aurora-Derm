@@ -3,9 +3,10 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync, readdirSync } = require('fs');
+const { existsSync, readFileSync, readdirSync } = require('fs');
 const { resolve } = require('path');
 const { spawnSync } = require('child_process');
+const { GENERATED_SITE_ROOT } = require('../bin/lib/generated-site-root.js');
 
 const WRAPPER_PATH = resolve(__dirname, '..', 'GATE-ADMIN-ROLLOUT.ps1');
 const SCRIPT_PATH = resolve(
@@ -32,18 +33,20 @@ const ADMIN_PREBOOT_PATH = resolve(
     'js',
     'admin-preboot-shortcuts.js'
 );
-const ADMIN_BUNDLE_PATH = resolve(__dirname, '..', 'admin.js');
-const ADMIN_CHUNKS_DIR = resolve(__dirname, '..', 'js', 'admin-chunks');
+const ADMIN_BUNDLE_PATH = resolveGeneratedRuntimePath('admin.js');
+const ADMIN_CHUNKS_DIR = resolveGeneratedRuntimePath('js', 'admin-chunks');
 const CLEAN_ADMIN_CHUNKS_PATH = resolve(
     __dirname,
     '..',
     'bin',
     'clean-admin-chunks.js'
 );
+const REPO_ROOT = resolve(__dirname, '..');
 const PACKAGE_JSON_PATH = resolve(__dirname, '..', 'package.json');
 const PLAYWRIGHT_CONFIG_PATH = resolve(__dirname, '..', 'playwright.config.js');
 const SW_PATH = resolve(__dirname, '..', 'sw.js');
 const MERGE_CONFLICT_MARKER_PATTERN = /^(<{7,}.*|={7,}|>{7,}.*)$/m;
+let generatedRuntimePrepared = false;
 
 function loadScript() {
     return readFileSync(SCRIPT_PATH, 'utf8');
@@ -55,6 +58,76 @@ function loadWrapper() {
 
 function loadFile(path) {
     return readFileSync(path, 'utf8');
+}
+
+function resolveGeneratedRuntimePath(...segments) {
+    return resolve(GENERATED_SITE_ROOT, ...segments);
+}
+
+function ensureGeneratedRuntimePaths(paths, label) {
+    const requiredPaths = Array.isArray(paths) ? paths : [paths];
+    const missingPaths = requiredPaths.filter(
+        (pathValue) => !existsSync(pathValue)
+    );
+    if (missingPaths.length === 0) {
+        return;
+    }
+
+    if (!generatedRuntimePrepared) {
+        const result =
+            process.platform === 'win32'
+                ? spawnSync(
+                      'cmd.exe',
+                      ['/d', '/s', '/c', 'npx rollup -c rollup.config.mjs'],
+                      {
+                          cwd: REPO_ROOT,
+                          encoding: 'utf8',
+                      }
+                  )
+                : spawnSync('npx', ['rollup', '-c', 'rollup.config.mjs'], {
+                      cwd: REPO_ROOT,
+                      encoding: 'utf8',
+                  });
+        generatedRuntimePrepared = true;
+        assert.equal(
+            result.status,
+            0,
+            (result.error && result.error.message) ||
+                result.stderr ||
+                result.stdout ||
+                'no se pudo regenerar el runtime JS staged con rollup'
+        );
+    }
+
+    const stillMissingPaths = requiredPaths.filter(
+        (pathValue) => !existsSync(pathValue)
+    );
+    assert.equal(
+        stillMissingPaths.length,
+        0,
+        `faltan assets runtime stageados (${label || 'runtime staged'}): ${stillMissingPaths
+            .map((pathValue) =>
+                pathValue
+                    .replace(`${GENERATED_SITE_ROOT}\\`, '')
+                    .replace(`${GENERATED_SITE_ROOT}/`, '')
+                    .replace(/\\/g, '/')
+            )
+            .join(', ')}`
+    );
+}
+
+function assertGeneratedRuntimePathExists(pathValue, label) {
+    const relativePath = pathValue
+        .replace(`${GENERATED_SITE_ROOT}\\`, '')
+        .replace(`${GENERATED_SITE_ROOT}/`, '')
+        .replace(/\\/g, '/');
+    ensureGeneratedRuntimePaths(pathValue, label || relativePath);
+    assert.equal(
+        existsSync(pathValue),
+        true,
+        `falta runtime staged ${label || relativePath} en .generated/site-root. Ejecuta npm run build para regenerar el runtime canonico`
+    );
+    return pathValue;
 }
 
 function escapeRegExp(value) {
@@ -576,11 +649,15 @@ test('admin rollout gate persiste resultados suite por suite', () => {
 });
 
 test('admin runtime no deja chunks huerfanos respecto a admin.js canonico', () => {
+    ensureGeneratedRuntimePaths(
+        [ADMIN_BUNDLE_PATH, ADMIN_CHUNKS_DIR],
+        'admin runtime canonico'
+    );
     const result = spawnSync(
         process.execPath,
         [CLEAN_ADMIN_CHUNKS_PATH, '--dry-run', '--strict'],
         {
-            cwd: resolve(__dirname, '..'),
+            cwd: REPO_ROOT,
             encoding: 'utf8',
         }
     );
@@ -594,10 +671,12 @@ test('admin runtime no deja chunks huerfanos respecto a admin.js canonico', () =
 });
 
 test('admin.js apunta al unico chunk index canonico del runtime', () => {
-    const adminBundle = loadFile(ADMIN_BUNDLE_PATH);
-    const indexChunks = readdirSync(ADMIN_CHUNKS_DIR).filter((file) =>
-        /^index-[A-Za-z0-9_-]+\.js$/.test(file)
+    const adminBundle = loadFile(
+        assertGeneratedRuntimePathExists(ADMIN_BUNDLE_PATH, 'admin.js')
     );
+    const indexChunks = readdirSync(
+        assertGeneratedRuntimePathExists(ADMIN_CHUNKS_DIR, 'js/admin-chunks/')
+    ).filter((file) => /^index-[A-Za-z0-9_-]+\.js$/.test(file));
 
     assert.equal(
         indexChunks.length,
@@ -612,7 +691,9 @@ test('admin.js apunta al unico chunk index canonico del runtime', () => {
 });
 
 test('bundle admin canonico no contiene marcadores de merge en assets activos', () => {
-    const adminBundle = loadFile(ADMIN_BUNDLE_PATH);
+    const adminBundle = loadFile(
+        assertGeneratedRuntimePathExists(ADMIN_BUNDLE_PATH, 'admin.js')
+    );
     const referencedChunks = parseAdminChunkImports(adminBundle);
 
     assert.doesNotMatch(
@@ -627,7 +708,12 @@ test('bundle admin canonico no contiene marcadores de merge en assets activos', 
     );
 
     for (const chunk of referencedChunks) {
-        const chunkContent = loadFile(resolve(ADMIN_CHUNKS_DIR, chunk));
+        const chunkContent = loadFile(
+            assertGeneratedRuntimePathExists(
+                resolve(ADMIN_CHUNKS_DIR, chunk),
+                `js/admin-chunks/${chunk}`
+            )
+        );
         assert.doesNotMatch(
             chunkContent,
             MERGE_CONFLICT_MARKER_PATTERN,

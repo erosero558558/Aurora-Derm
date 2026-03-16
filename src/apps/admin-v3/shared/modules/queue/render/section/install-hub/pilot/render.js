@@ -191,9 +191,11 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                                                 item.label
                                                             )}</strong>
                                                             <span class="queue-ops-pilot__issues-item-badge">${escapeHtml(
-                                                                item.state === 'alert'
+                                                                item.state ===
+                                                                    'alert'
                                                                     ? 'Bloquea'
-                                                                    : item.state === 'ready'
+                                                                    : item.state ===
+                                                                        'ready'
                                                                       ? 'Listo'
                                                                       : 'Pendiente'
                                                             )}</span>
@@ -269,7 +271,10 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                                 )}"
                                                 class="queue-ops-pilot__canon-item"
                                                 data-state="${escapeHtml(
-                                                    item.state || (item.ready ? 'ready' : 'warning')
+                                                    item.state ||
+                                                        (item.ready
+                                                            ? 'ready'
+                                                            : 'warning')
                                                 )}"
                                                 role="listitem"
                                             >
@@ -343,7 +348,8 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                                     <span class="queue-ops-pilot__smoke-item-badge">${escapeHtml(
                                                         step.ready
                                                             ? 'Listo'
-                                                            : step.state === 'alert'
+                                                            : step.state ===
+                                                                'alert'
                                                               ? 'Bloquea'
                                                               : 'Pendiente'
                                                     )}</span>
@@ -362,7 +368,8 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                                                 rel="noopener"
                                                             >
                                                                 ${escapeHtml(
-                                                                    step.actionLabel || 'Abrir'
+                                                                    step.actionLabel ||
+                                                                        'Abrir'
                                                                 )}
                                                             </a>
                                                         `

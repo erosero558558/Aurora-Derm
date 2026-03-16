@@ -40,7 +40,10 @@ $commonHttpPath = Join-Path $repoRoot 'bin/powershell/Common.Http.ps1'
 $openClawAuthDiagnosticScriptPath = Join-Path $repoRoot 'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1'
 . $commonHttpPath
 
+$generatedSiteRoot = Join-Path $repoRoot '.generated/site-root'
 $localIndexCandidatePaths = @(
+    (Join-Path $generatedSiteRoot 'es/index.html'),
+    (Join-Path $generatedSiteRoot 'en/index.html'),
     (Join-Path $repoRoot 'index.html'),
     (Join-Path $repoRoot 'es/index.html'),
     (Join-Path $repoRoot 'en/index.html')
@@ -52,9 +55,10 @@ foreach ($candidatePath in $localIndexCandidatePaths) {
         break
     }
 }
-$localScriptPath = Join-Path $repoRoot 'script.js'
+$localScriptPath = Join-Path $generatedSiteRoot 'script.js'
 $localI18nEnginePath = Join-Path $repoRoot 'i18n-engine.js'
 $localRescheduleGatewayPath = Join-Path $repoRoot 'reschedule-gateway-engine.js'
+$generatedEnginesRoot = Join-Path $generatedSiteRoot 'js/engines'
 $smokeScriptPath = Join-Path $PSScriptRoot 'SMOKE-PRODUCCION.ps1'
 $turneroClinicProfileScriptPath = Join-Path $repoRoot 'bin/turnero-clinic-profile.js'
 $primaryScriptRefPattern = '<script[^>]+src="([^"]*(?:script\.js|public-v6-shell\.js)[^"]*)"'
@@ -815,14 +819,14 @@ if ($SkipAssetHashChecks) {
     if ($localStyleRef -ne '') {
         $checks += [PSCustomObject]@{
             Name = 'styles.css'
-            LocalPath = 'styles.css'
+            LocalPath = (Join-Path $repoRoot 'styles.css')
             RemoteUrl = (Get-Url -Base $base -Ref $localStyleRef)
         }
     }
     if ($remoteScriptRef -ne '') {
         $checks += [PSCustomObject]@{
             Name = 'script.js'
-            LocalPath = 'script.js'
+            LocalPath = $localScriptPath
             RemoteUrl = (Get-Url -Base $base -Ref $remoteScriptRef)
         }
     } else {
@@ -832,73 +836,73 @@ if ($SkipAssetHashChecks) {
     $checks += @(
         [PSCustomObject]@{
             Name = 'chat-widget-engine.js'
-            LocalPath = 'js/engines/chat-widget-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'chat-widget-engine.js')
             LocalCandidates = @()
             RemoteUrl = $chatWidgetEngineRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'chat-engine.js'
-            LocalPath = 'js/engines/chat-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'chat-engine.js')
             LocalCandidates = @()
             RemoteUrl = $chatEngineRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'chat-ui-engine.js'
-            LocalPath = 'js/engines/chat-ui-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'chat-ui-engine.js')
             LocalCandidates = @()
             RemoteUrl = $chatUiEngineRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'styles-deferred.css'
-            LocalPath = 'styles-deferred.css'
+            LocalPath = (Join-Path $repoRoot 'styles-deferred.css')
             LocalCandidates = @()
             RemoteUrl = $deferredStylesRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'booking-engine.js'
-            LocalPath = 'js/engines/booking-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'booking-engine.js')
             LocalCandidates = @()
             RemoteUrl = $bookingEngineRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'ui-effects.js'
-            LocalPath = 'js/engines/ui-effects.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'ui-effects.js')
             LocalCandidates = @()
             RemoteUrl = $uiEffectsRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'gallery-interactions.js'
-            LocalPath = 'js/engines/gallery-interactions.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'gallery-interactions.js')
             LocalCandidates = @()
             RemoteUrl = $galleryInteractionsRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'booking-ui.js'
-            LocalPath = 'js/engines/booking-ui.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'booking-ui.js')
             LocalCandidates = @()
             RemoteUrl = $bookingUiRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'chat-booking-engine.js'
-            LocalPath = 'js/engines/chat-booking-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'chat-booking-engine.js')
             LocalCandidates = @()
             RemoteUrl = $chatBookingEngineRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'success-modal-engine.js'
-            LocalPath = 'js/engines/success-modal-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'success-modal-engine.js')
             LocalCandidates = @()
             RemoteUrl = $successModalEngineRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'engagement-forms-engine.js'
-            LocalPath = 'js/engines/engagement-forms-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'engagement-forms-engine.js')
             LocalCandidates = @()
             RemoteUrl = $engagementFormsEngineRemoteUrl
         },
         [PSCustomObject]@{
             Name = 'modal-ux-engine.js'
-            LocalPath = 'js/engines/modal-ux-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'modal-ux-engine.js')
             LocalCandidates = @()
             RemoteUrl = $modalUxEngineRemoteUrl
         }
@@ -906,7 +910,7 @@ if ($SkipAssetHashChecks) {
     if ($hasTranslationsEnAsset) {
         $checks += [PSCustomObject]@{
             Name = 'translations-en.js'
-            LocalPath = 'translations-en.js'
+            LocalPath = (Join-Path $generatedSiteRoot 'translations-en.js')
             LocalCandidates = @('js/translations-en.js')
             RemoteUrl = $translationsEnRemoteUrl
         }
@@ -914,7 +918,7 @@ if ($SkipAssetHashChecks) {
     if (($rescheduleEngineRemoteUrl -ne '') -or (Test-Path 'js/engines/reschedule-engine.js')) {
         $checks += [PSCustomObject]@{
             Name = 'reschedule-engine.js'
-            LocalPath = 'js/engines/reschedule-engine.js'
+            LocalPath = (Join-Path $generatedEnginesRoot 'reschedule-engine.js')
             LocalCandidates = @()
             RemoteUrl = $rescheduleEngineRemoteUrl
         }
