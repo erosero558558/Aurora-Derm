@@ -331,6 +331,29 @@ function Clear-HostingLocks {
     }
 }
 
+function Stop-ControlPlaneOwnerByLock {
+    param(
+        [string]$LockPath,
+        [string]$Label
+    )
+
+    if ([string]::IsNullOrWhiteSpace($LockPath)) {
+        return
+    }
+
+    $snapshot = Get-HostingDirectoryLockSnapshot -LockDirectoryPath $LockPath -TtlSeconds 600 -GraceSeconds 5
+    if (($snapshot.owner_pid -le 0) -or ($snapshot.owner_pid -eq $PID)) {
+        return
+    }
+    if (-not (Test-HostingProcessExists -ProcessId $snapshot.owner_pid)) {
+        return
+    }
+
+    Write-Info ("Deteniendo {0} owner pid={1}" -f $Label, [int]$snapshot.owner_pid)
+    Stop-HostingProcessTree -ProcessId ([int]$snapshot.owner_pid) -KillTree
+    Start-Sleep -Milliseconds 500
+}
+
 function Remove-InvalidHostingStatusFile {
     param([string]$Path)
 
@@ -412,7 +435,12 @@ function Disable-ControlPlane {
         }
     }
 
-    Stop-HostingProcessesByNeedle -Needles @('SUPERVISAR-HOSTING-WINDOWS.ps1') -Label 'Hosting supervisor'
+    Stop-ControlPlaneOwnerByLock `
+        -LockPath (Join-Path $HostingDir 'hosting-supervisor-status.json.lock') `
+        -Label 'Hosting supervisor'
+    Stop-ControlPlaneOwnerByLock `
+        -LockPath (Join-Path $HostingDir 'main-sync-status.json.lock') `
+        -Label 'Hosting main sync'
     Clear-HostingLocks -HostingDir $HostingDir
 }
 
