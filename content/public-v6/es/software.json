@@ -25,12 +25,6 @@
             "searchLabel": "Buscar modulos",
             "links": [
                 {
-                    "id": "home",
-                    "label": "Inicio",
-                    "href": "/es/",
-                    "kind": "standard"
-                },
-                {
                     "id": "software",
                     "label": "Software",
                     "href": "/es/software/turnero-clinicas/",
@@ -52,6 +46,12 @@
                     "id": "dashboard",
                     "label": "Dashboard",
                     "href": "/es/software/turnero-clinicas/dashboard/",
+                    "kind": "standard"
+                },
+                {
+                    "id": "home",
+                    "label": "Inicio",
+                    "href": "/es/",
                     "kind": "standard"
                 },
                 {

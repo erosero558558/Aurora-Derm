@@ -555,6 +555,50 @@
     gap: 14px;
 }
 
+.v6-suite-proof__spine {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.76fr) minmax(0, 1.24fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.v6-suite-proof__spine-head {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    padding: 22px;
+    border: 1px solid rgba(22, 31, 41, 0.08);
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at top right, rgba(214, 151, 68, 0.18) 0%, transparent 34%),
+        linear-gradient(180deg, #18212c 0%, #243241 100%);
+    box-shadow: 0 22px 42px rgba(15, 25, 37, 0.12);
+}
+
+.v6-suite-proof__spine-head .v6-suite-eyebrow,
+.v6-suite-proof__spine-head p {
+    color: rgba(231, 183, 122, 0.96);
+    margin: 0;
+}
+
+.v6-suite-proof__spine-head h3,
+.v6-suite-proof__spine-head span {
+    margin: 0;
+}
+
+.v6-suite-proof__spine-head h3 {
+    color: #f3f7fd;
+    font-size: clamp(24px, 2vw, 32px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.v6-suite-proof__spine-head span {
+    color: rgba(223, 231, 241, 0.82);
+    font-size: 15px;
+    line-height: 1.55;
+}
+
 .v6-suite-proof__card {
     min-height: 160px;
     padding: 16px;
@@ -750,7 +794,8 @@
 
 .v6-suite-focus__grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(300px, 0.82fr);
+    grid-auto-rows: minmax(0, 1fr);
     gap: 18px;
 }
 
@@ -766,10 +811,56 @@
     box-shadow: 0 18px 34px rgba(14, 24, 36, 0.05);
 }
 
+.v6-suite-focus-card__tag {
+    display: inline-flex;
+    width: fit-content;
+}
+
+.v6-suite-focus-card__tag span {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(27, 37, 49, 0.1);
+    background: rgba(247, 248, 251, 0.9);
+    color: #223040;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+
 .v6-suite-focus-card.is-highlight {
     background: linear-gradient(180deg, #17212c 0%, #223040 100%);
     border-color: rgba(23, 33, 44, 0.92);
     box-shadow: 0 24px 44px rgba(16, 28, 40, 0.14);
+}
+
+.v6-suite-focus-card[data-v6-suite-focus-card-order='01'] {
+    grid-column: 1 / span 2;
+    grid-row: 1 / span 2;
+    padding: 28px 30px;
+}
+
+.v6-suite-focus-card[data-v6-suite-focus-card-order='02'] {
+    grid-column: 3;
+    grid-row: 1;
+    background:
+        radial-gradient(circle at top right, rgba(214, 151, 68, 0.16) 0%, transparent 36%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 240, 231, 0.96) 100%);
+    border-color: rgba(155, 107, 47, 0.14);
+}
+
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] {
+    grid-column: 3;
+    grid-row: 2;
+    background:
+        radial-gradient(circle at top right, rgba(103, 143, 185, 0.18) 0%, transparent 38%),
+        linear-gradient(180deg, #1a2633 0%, #253646 100%);
+    border-color: rgba(29, 48, 65, 0.92);
+    box-shadow: 0 24px 42px rgba(16, 28, 40, 0.14);
 }
 
 .v6-suite-focus-card p,
@@ -797,6 +888,10 @@
     color: #516075;
     font-size: 15px;
     line-height: 1.52;
+}
+
+.v6-suite-focus-card .v6-suite-inline-link {
+    margin-top: auto;
 }
 
 .v6-suite-focus-card ul {
@@ -835,6 +930,26 @@
 .v6-suite-focus-card.is-highlight p,
 .v6-suite-focus-card.is-highlight li::before {
     color: #e7b77a;
+}
+
+.v6-suite-focus-card.is-highlight .v6-suite-focus-card__tag span,
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] .v6-suite-focus-card__tag span {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    color: #edf3fb;
+}
+
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] p,
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] h3,
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] span,
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] li,
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] .v6-suite-inline-link {
+    color: #eef4fc;
+}
+
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] p,
+.v6-suite-focus-card[data-v6-suite-focus-card-order='03'] li::before {
+    color: #9bc4e8;
 }
 
 .v6-suite-surface-page .v6-suite-progress-band.is-surface {
@@ -1892,6 +2007,10 @@
     gap: 12px;
 }
 
+.v6-suite-proof-links.is-proof-band {
+    margin-top: 0;
+}
+
 .v6-suite-proof-link {
     min-height: 112px;
     padding: 14px 16px;
@@ -1929,6 +2048,26 @@
     color: rgba(221, 229, 239, 0.74);
     font-size: 13px;
     line-height: 1.45;
+}
+
+.v6-suite-proof-links.is-proof-band .v6-suite-proof-link {
+    min-height: 100%;
+    border-color: rgba(27, 37, 49, 0.08);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 247, 252, 0.96) 100%);
+    box-shadow: 0 16px 30px rgba(14, 24, 36, 0.05);
+}
+
+.v6-suite-proof-links.is-proof-band .v6-suite-proof-link span {
+    color: #8a5b25;
+}
+
+.v6-suite-proof-links.is-proof-band .v6-suite-proof-link strong {
+    color: #1f2a38;
+}
+
+.v6-suite-proof-links.is-proof-band .v6-suite-proof-link small {
+    color: #536276;
 }
 
 .v6-suite-final.is-commercial .v6-suite-final__shell > div {
@@ -2661,10 +2800,49 @@
     color: rgba(225, 233, 243, 0.74);
 }
 
+@media (max-width: 1180px) {
+    .v6-suite-proof__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .v6-suite-proof__spine,
+    .v6-suite-focus__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .v6-suite-focus-card[data-v6-suite-focus-card-order='01'] {
+        grid-column: 1 / -1;
+        grid-row: auto;
+    }
+
+    .v6-suite-focus-card[data-v6-suite-focus-card-order='02'],
+    .v6-suite-focus-card[data-v6-suite-focus-card-order='03'] {
+        grid-column: auto;
+        grid-row: auto;
+    }
+}
+
 @media (max-width: 900px) {
     .v6-suite-rail-shell {
         position: static;
         top: auto;
+    }
+
+    .v6-suite-proof__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .v6-suite-proof__spine,
+    .v6-suite-focus__grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .v6-suite-focus-card[data-v6-suite-focus-card-order='01'],
+    .v6-suite-focus-card[data-v6-suite-focus-card-order='02'],
+    .v6-suite-focus-card[data-v6-suite-focus-card-order='03'] {
+        grid-column: auto;
+        grid-row: auto;
+        padding: 22px;
     }
 
     .v6-suite-surface-shell {

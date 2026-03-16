@@ -25,12 +25,6 @@
             "searchLabel": "Search turnero surfaces",
             "links": [
                 {
-                    "id": "home",
-                    "label": "Home",
-                    "href": "/en/",
-                    "kind": "standard"
-                },
-                {
                     "id": "software",
                     "label": "Turnero",
                     "href": "/en/software/clinic-flow-suite/",
@@ -52,6 +46,12 @@
                     "id": "dashboard",
                     "label": "Dashboard",
                     "href": "/en/software/clinic-flow-suite/dashboard/",
+                    "kind": "standard"
+                },
+                {
+                    "id": "home",
+                    "label": "Home",
+                    "href": "/en/",
                     "kind": "standard"
                 },
                 {

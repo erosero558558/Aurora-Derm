@@ -50,6 +50,7 @@ const securityCards = Array.isArray(security.cards) ? security.cards : [];
 const faqItems = Array.isArray(faq.items) ? faq.items : [];
 const finalActions = Array.isArray(finalCta.actions) ? finalCta.actions : [];
 const finalLinks = Array.isArray(finalCta.links) ? finalCta.links : [];
+const hasLandingProofLinks = finalLinks.length > 0;
 const suiteStory =
     page?.suiteStory && typeof page.suiteStory === 'object' ? page.suiteStory : {};
 const suiteStoryCurrent =
@@ -247,6 +248,46 @@ const actionClass = (variant = 'secondary') => [
                             </article>
                         ))}
                     </div>
+                    {
+                        hasLandingProofLinks ? (
+                            <div class="v6-suite-proof__spine">
+                                <div class="v6-suite-proof__spine-head">
+                                    <p class="v6-suite-eyebrow">
+                                        {locale === 'es'
+                                            ? 'Abrir piloto real'
+                                            : 'Open the live pilot'}
+                                    </p>
+                                    <h3>
+                                        {locale === 'es'
+                                            ? 'Las cuatro superficies que convierten el deck en producto.'
+                                            : 'The four surfaces that turn the deck into a real product.'}
+                                    </h3>
+                                    <span>
+                                        {locale === 'es'
+                                            ? 'Llegada, recepcion, consultorio y sala enlazadas como una sola prueba de compra.'
+                                            : 'Arrival, reception, consult room, and room display linked as one buying proof.'}
+                                    </span>
+                                </div>
+                                <div
+                                    class="v6-suite-proof-links is-proof-band"
+                                    data-v6-turnero-proof-links="landing"
+                                >
+                                    {finalLinks.map((link, index) => (
+                                        <a
+                                            class="v6-suite-proof-link"
+                                            href={link.href}
+                                            data-v6-turnero-presentation-link
+                                            data-v6-turnero-presentation-link-order={formatOrder(index + 1)}
+                                        >
+                                            {link.eyebrow ? <span>{link.eyebrow}</span> : null}
+                                            <strong>{link.label}</strong>
+                                            {link.note ? <small>{link.note}</small> : null}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null
+                    }
                 </div>
             </div>
         </section>
@@ -277,95 +318,6 @@ const actionClass = (variant = 'secondary') => [
                             {item.deck ? <span>{item.deck}</span> : null}
                         </a>
                     ))}
-                </div>
-            </div>
-        </section>
-    ) : null
-}
-
-{
-    hasSuiteStory ? (
-        <section class="v6-suite-progress-band" data-v6-suite-progress="landing">
-            <div class="v6-suite-shell">
-                <div
-                    class:list={[
-                        'v6-suite-progress',
-                        suiteStoryNext && 'has-next',
-                    ]}
-                >
-                    <article
-                        class="v6-suite-progress__current"
-                        data-v6-suite-progress-current
-                        data-v6-suite-page-key="landing"
-                    >
-                        {suiteStoryLabels.progress ? (
-                            <p class="v6-suite-progress__eyebrow">{suiteStoryLabels.progress}</p>
-                        ) : null}
-                        <div class="v6-suite-progress__stage">
-                            <strong>{String(suiteStory.currentIndex || 1).padStart(2, '0')}</strong>
-                            <span>/ {String(suiteStory.total || 0).padStart(2, '0')}</span>
-                        </div>
-                        <h2>{suiteStoryCurrent.label}</h2>
-                        {suiteStoryCurrent.deck ? <span>{suiteStoryCurrent.deck}</span> : null}
-                    </article>
-
-                    {
-                        suiteStoryNext ? (
-                            <a
-                                class="v6-suite-progress__nav is-next"
-                                href={suiteStoryNext.href}
-                                data-v6-suite-progress-nav="next"
-                            >
-                                {suiteStoryLabels.next ? <p>{suiteStoryLabels.next}</p> : null}
-                                <strong>{suiteStoryNext.label}</strong>
-                                {suiteStoryNext.deck ? <span>{suiteStoryNext.deck}</span> : null}
-                            </a>
-                        ) : null
-                    }
-                </div>
-            </div>
-        </section>
-    ) : null
-}
-
-{
-    hasFocus ? (
-        <section class="v6-suite-focus-band" data-v6-suite-focus="landing">
-            <div class="v6-suite-shell">
-                <div class="v6-suite-focus">
-                    <header class="v6-suite-section__head v6-suite-focus__head">
-                        {focus.eyebrow ? <p>{focus.eyebrow}</p> : null}
-                        {focus.title ? <h2>{focus.title}</h2> : null}
-                        {focus.deck ? <span>{focus.deck}</span> : null}
-                    </header>
-
-                    <div class="v6-suite-focus__grid">
-                        {focusCards.map((card, index) => (
-                            <article
-                                class:list={[
-                                    'v6-suite-focus-card',
-                                    card.highlight && 'is-highlight',
-                                ]}
-                                data-v6-suite-focus-card
-                                data-v6-suite-focus-card-order={formatOrder(index + 1)}
-                            >
-                                {card.eyebrow ? <p>{card.eyebrow}</p> : null}
-                                <h3>{card.title}</h3>
-                                {card.copy ? <span>{card.copy}</span> : null}
-                                {Array.isArray(card.items) && card.items.length ? (
-                                    <ul>
-                                        {card.items.map((item) => <li>{item}</li>)}
-                                    </ul>
-                                ) : null}
-                                {card.href && card.ctaLabel ? (
-                                    <a class="v6-suite-inline-link" href={card.href}>
-                                        {card.ctaLabel}
-                                        <span aria-hidden="true">></span>
-                                    </a>
-                                ) : null}
-                            </article>
-                        ))}
-                    </div>
                 </div>
             </div>
         </section>
@@ -613,6 +565,53 @@ const actionClass = (variant = 'secondary') => [
 }
 
 {
+    hasFocus ? (
+        <section class="v6-suite-focus-band" data-v6-suite-focus="landing">
+            <div class="v6-suite-shell">
+                <div class="v6-suite-focus">
+                    <header class="v6-suite-section__head v6-suite-focus__head">
+                        {focus.eyebrow ? <p>{focus.eyebrow}</p> : null}
+                        {focus.title ? <h2>{focus.title}</h2> : null}
+                        {focus.deck ? <span>{focus.deck}</span> : null}
+                    </header>
+
+                    <div class="v6-suite-focus__grid">
+                        {focusCards.map((card, index) => (
+                            <article
+                                class:list={[
+                                    'v6-suite-focus-card',
+                                    card.highlight && 'is-highlight',
+                                ]}
+                                data-v6-suite-focus-card
+                                data-v6-suite-focus-card-order={formatOrder(index + 1)}
+                            >
+                                <div class="v6-suite-focus-card__tag" aria-hidden="true">
+                                    <span>{formatOrder(index + 1)}</span>
+                                </div>
+                                {card.eyebrow ? <p>{card.eyebrow}</p> : null}
+                                <h3>{card.title}</h3>
+                                {card.copy ? <span>{card.copy}</span> : null}
+                                {Array.isArray(card.items) && card.items.length ? (
+                                    <ul>
+                                        {card.items.map((item) => <li>{item}</li>)}
+                                    </ul>
+                                ) : null}
+                                {card.href && card.ctaLabel ? (
+                                    <a class="v6-suite-inline-link" href={card.href}>
+                                        {card.ctaLabel}
+                                        <span aria-hidden="true">></span>
+                                    </a>
+                                ) : null}
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </section>
+    ) : null
+}
+
+{
     hasNativeApps ? (
         <section
             id="v6-suite-native-apps"
@@ -784,24 +783,6 @@ const actionClass = (variant = 'secondary') => [
                 <div>
                     {finalCta.title ? <h2>{finalCta.title}</h2> : null}
                     {finalCta.deck ? <p>{finalCta.deck}</p> : null}
-                    {
-                        finalLinks.length ? (
-                            <div class="v6-suite-proof-links" data-v6-turnero-proof-links="landing">
-                                {finalLinks.map((link, index) => (
-                                    <a
-                                        class="v6-suite-proof-link"
-                                        href={link.href}
-                                        data-v6-turnero-presentation-link
-                                        data-v6-turnero-presentation-link-order={formatOrder(index + 1)}
-                                    >
-                                        {link.eyebrow ? <span>{link.eyebrow}</span> : null}
-                                        <strong>{link.label}</strong>
-                                        {link.note ? <small>{link.note}</small> : null}
-                                    </a>
-                                ))}
-                            </div>
-                        ) : null
-                    }
                 </div>
                 {
                     finalActions.length ? (
