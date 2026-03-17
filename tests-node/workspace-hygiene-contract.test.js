@@ -2569,7 +2569,7 @@ test('artefactos locales efimeros salen del repo activo y tienen limpieza canoni
     assert.equal(
         readme.includes('overall_state'),
         true,
-        'README.md debe documentar el contrato V3 del doctor'
+        'README.md debe documentar el contrato V5 del doctor'
     );
     assert.equal(
         readme.includes('issues[]'),
@@ -2592,9 +2592,89 @@ test('artefactos locales efimeros salen del repo activo y tienen limpieza canoni
         'README.md debe documentar el bloqueo por deindexado legacy pendiente'
     );
     assert.equal(
+        readme.includes('scope_context'),
+        true,
+        'README.md debe documentar el contexto de scope del doctor'
+    );
+    assert.equal(
+        readme.includes('strategy_context'),
+        true,
+        'README.md debe documentar el contexto de estrategia del doctor'
+    );
+    assert.equal(
+        readme.includes('lane_context'),
+        true,
+        'README.md debe documentar el contexto de lane del doctor'
+    );
+    assert.equal(
+        readme.includes('scope_counts'),
+        true,
+        'README.md debe documentar el conteo por disposicion de scope'
+    );
+    assert.equal(
+        readme.includes('candidate_tasks[]'),
+        true,
+        'README.md debe documentar las tareas candidatas del doctor'
+    );
+    assert.equal(
+        readme.includes('split_plan[]'),
+        true,
+        'README.md debe documentar el split plan del doctor'
+    );
+    assert.equal(
+        readme.includes('attention'),
+        true,
+        'README.md debe documentar el estado attention del doctor'
+    );
+    assert.equal(
+        readme.includes('in_scope'),
+        true,
+        'README.md debe documentar authored in_scope'
+    );
+    assert.equal(
+        readme.includes('out_of_scope'),
+        true,
+        'README.md debe documentar authored out_of_scope'
+    );
+    assert.equal(
+        readme.includes('unknown_scope'),
+        true,
+        'README.md debe documentar authored unknown_scope'
+    );
+    assert.equal(
+        readme.includes('mixed_lane'),
+        true,
+        'README.md debe documentar authored mixed_lane'
+    );
+    assert.equal(
+        readme.includes('blocked_scope'),
+        true,
+        'README.md debe documentar authored blocked_scope'
+    );
+    assert.equal(
+        readme.includes('outside_strategy'),
+        true,
+        'README.md debe documentar authored outside_strategy'
+    );
+    assert.equal(
+        readme.includes('--task-id'),
+        true,
+        'README.md debe documentar el flag --task-id'
+    );
+    assert.equal(
+        readme.includes('--scope-pattern'),
+        true,
+        'README.md debe documentar el flag --scope-pattern'
+    );
+    assert.equal(
+        readme.includes('--show-candidates'),
+        true,
+        'README.md debe documentar el flag --show-candidates'
+    );
+    assert.equal(
         operationsIndex.includes('overall_state'),
         true,
-        'OPERATIONS_INDEX debe documentar el contrato V3 del doctor'
+        'OPERATIONS_INDEX debe documentar el contrato V5 del doctor'
     );
     assert.equal(
         operationsIndex.includes('issues[]'),
@@ -2615,6 +2695,71 @@ test('artefactos locales efimeros salen del repo activo y tienen limpieza canoni
         operationsIndex.includes('legacy_generated_root_deindexed'),
         true,
         'OPERATIONS_INDEX debe documentar el bloqueo por deindexado legacy pendiente'
+    );
+    assert.equal(
+        operationsIndex.includes('scope_context'),
+        true,
+        'OPERATIONS_INDEX debe documentar el contexto de scope del doctor'
+    );
+    assert.equal(
+        operationsIndex.includes('strategy_context'),
+        true,
+        'OPERATIONS_INDEX debe documentar el contexto de estrategia del doctor'
+    );
+    assert.equal(
+        operationsIndex.includes('lane_context'),
+        true,
+        'OPERATIONS_INDEX debe documentar el contexto de lane del doctor'
+    );
+    assert.equal(
+        operationsIndex.includes('scope_counts'),
+        true,
+        'OPERATIONS_INDEX debe documentar el conteo por disposicion de scope'
+    );
+    assert.equal(
+        operationsIndex.includes('candidate_tasks[]'),
+        true,
+        'OPERATIONS_INDEX debe documentar candidate_tasks[]'
+    );
+    assert.equal(
+        operationsIndex.includes('split_plan[]'),
+        true,
+        'OPERATIONS_INDEX debe documentar split_plan[]'
+    );
+    assert.equal(
+        operationsIndex.includes('attention'),
+        true,
+        'OPERATIONS_INDEX debe documentar el estado attention del doctor'
+    );
+    assert.equal(
+        operationsIndex.includes('mixed_lane'),
+        true,
+        'OPERATIONS_INDEX debe documentar mixed_lane'
+    );
+    assert.equal(
+        operationsIndex.includes('blocked_scope'),
+        true,
+        'OPERATIONS_INDEX debe documentar blocked_scope'
+    );
+    assert.equal(
+        operationsIndex.includes('outside_strategy'),
+        true,
+        'OPERATIONS_INDEX debe documentar outside_strategy'
+    );
+    assert.equal(
+        operationsIndex.includes('--task-id'),
+        true,
+        'OPERATIONS_INDEX debe documentar el flag --task-id'
+    );
+    assert.equal(
+        operationsIndex.includes('--scope-pattern'),
+        true,
+        'OPERATIONS_INDEX debe documentar el flag --scope-pattern'
+    );
+    assert.equal(
+        operationsIndex.includes('--show-candidates'),
+        true,
+        'OPERATIONS_INDEX debe documentar el flag --show-candidates'
     );
     assert.equal(
         runbooks.includes('npm run clean:local:artifacts'),

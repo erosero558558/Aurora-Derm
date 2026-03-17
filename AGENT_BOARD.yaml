@@ -10676,13 +10676,13 @@ tasks:
     owner: deck
     executor: codex
     status: done
-    status_since_at: "2026-03-17T00:50:13.308Z"
+    status_since_at: "2026-03-17T01:16:08.213Z"
     risk: medium
     scope: frontend-public
     codex_instance: codex_frontend
     domain_lane: frontend_content
-    lane_lock: strict
-    cross_domain: false
+    lane_lock: handoff_allowed
+    cross_domain: true
     provider_mode: 
     runtime_surface: 
     runtime_transport: 
@@ -10701,7 +10701,7 @@ tasks:
     heartbeat_at: ""
     lease_expires_at: ""
     lease_reason: ""
-    lease_cleared_at: "2026-03-17T00:50:13.308Z"
+    lease_cleared_at: "2026-03-17T01:16:08.213Z"
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
@@ -10723,49 +10723,7 @@ tasks:
     decision_ref: ""
     rework_parent: ""
     rework_reason: ""
-    depends_on: []
+    depends_on: ["CDX-001"]
     prompt: "Public trust conversion release for Aurora Derm"
-    created_at: 2026-03-17
-    updated_at: 2026-03-17
-
-  - id: AG-258
-    title: "Restore checks.publicSync host telemetry for public_main_sync"
-    owner: deck
-    executor: codex
-    status: backlog
-    status_since_at: "2026-03-17T00:49:52.971Z"
-    risk: high
-    scope: deploy
-    codex_instance: codex_backend_ops
-    domain_lane: backend_ops
-    lane_lock: strict
-    cross_domain: false
-    provider_mode: 
-    runtime_surface: 
-    runtime_transport: 
-    runtime_last_transport: 
-    files: ["docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1"]
-    source_signal: manual
-    source_ref: ""
-    priority_score: 0
-    sla_due_at: ""
-    last_attempt_at: ""
-    attempts: 0
-    blocked_reason: ""
-    lease_id: ""
-    lease_owner: ""
-    lease_created_at: ""
-    heartbeat_at: ""
-    lease_expires_at: ""
-    lease_reason: ""
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
-    runtime_impact: low
-    critical_zone: false
-    acceptance: "Restore checks.publicSync host telemetry for public_main_sync"
-    acceptance_ref: ""
-    evidence_ref: ""
-    depends_on: []
-    prompt: "Restore checks.publicSync host telemetry for public_main_sync"
     created_at: 2026-03-17
     updated_at: 2026-03-17

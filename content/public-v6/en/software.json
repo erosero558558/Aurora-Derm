@@ -155,13 +155,13 @@
                     "href": "/en/"
                 },
                 {
-                    "label": "Software",
+                    "label": "Turnero",
                     "href": "/en/software/clinic-flow-suite/"
                 }
             ],
             "heading": "Turnero for clinics with kiosk, waiting-room display, reception, and web booking",
             "hero": {
-                "eyebrow": "Clinic software",
+                "eyebrow": "Turnero for clinics",
                 "title": "The turnero that connects arrival, reception, room flow, and clinic management in one product story.",
                 "deck": "Aurora Derm is the pilot clinic we can demonstrate today: kiosk, reception, operator, waiting-room display, and dashboard all read from the same state. That makes the purchase feel like a product, not a collection of disconnected screens.",
                 "pills": [

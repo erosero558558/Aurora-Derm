@@ -1,16 +1,16 @@
 {
     "nav": {
         "brand": {
-            "tag": "Software claro para clinicas pequenas y medianas"
+            "tag": "Turnero para clinicas pequenas y medianas"
         },
         "ui": {
             "header": {
                 "search": {
-                    "dialogAria": "Buscador del software para clinicas",
-                    "eyebrow": "Operacion de sala",
+                    "dialogAria": "Buscador Turnero para clinicas",
+                    "eyebrow": "Suite Turnero",
                     "inputLabel": "Escriba un modulo o flujo",
                     "placeholder": "kiosco, WhatsApp, dashboard, sala, QR...",
-                    "hint": "Busque por modulo, canal o necesidad operativa. Le mostramos demos y vistas utiles sin vueltas raras.",
+                    "hint": "Busque por superficie, rol o necesidad operativa. Le mostramos producto real y demo sin vueltas raras.",
                     "resultsAria": "Resultados del software",
                     "emptyTitle": "No encontramos ese modulo",
                     "emptyBody": "Pruebe con kiosco, agenda web, dashboard o estado del turno.",
@@ -22,11 +22,11 @@
         "header": {
             "contactLabel": "Agendar demo",
             "contactHref": "https://wa.me/593982453672?text=Hola%2C%20quiero%20ver%20una%20demo%20del%20turnero%20para%20clinicas",
-            "searchLabel": "Buscar modulos",
+            "searchLabel": "Buscar superficies Turnero",
             "links": [
                 {
                     "id": "software",
-                    "label": "Software",
+                    "label": "Turnero",
                     "href": "/es/software/turnero-clinicas/",
                     "kind": "standard"
                 },
@@ -89,8 +89,8 @@
             ]
         },
         "footer": {
-            "headline": "Operacion de sala mas clara para clinicas que necesitan orden hoy",
-            "deck": "La suite conecta kiosco, TV de sala, recepcion, agenda web y seguimiento movil sin pedir hardware raro ni procesos corporativos pesados.",
+            "headline": "Turnero para clinicas que necesitan una historia de producto, no modulos sueltos",
+            "deck": "Turnero conecta kiosco, TV de sala, recepcion, check-in movil y metricas de sede sin convertir el piloto en un despliegue corporativo pesado.",
             "columns": [
                 {
                     "title": "Suite",
@@ -155,13 +155,13 @@
                     "href": "/es/"
                 },
                 {
-                    "label": "Software",
+                    "label": "Turnero",
                     "href": "/es/software/turnero-clinicas/"
                 }
             ],
             "heading": "Turnero para clinicas con kiosco, TV, recepcion y agenda web",
             "hero": {
-                "eyebrow": "Software para clinicas",
+                "eyebrow": "Turnero para clinicas",
                 "title": "El turnero que conecta llegada, recepcion, sala y gerencia clinica en una sola historia.",
                 "deck": "Aurora Derm funciona hoy como clinica piloto demostrable: kiosco, recepcion, operador, sala y dashboard leen el mismo estado. Por eso la compra se entiende como producto y no como una suma de pantallas sueltas.",
                 "pills": [

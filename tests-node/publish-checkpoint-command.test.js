@@ -219,8 +219,12 @@ test('publish checkpoint falla si hay cambios fuera de scope', async () => {
         await assert.rejects(
             () => handlePublishCommand(ctx),
             (error) => {
-                assert.equal(error.error_code, 'publish_dirty_outside_scope');
-                assert.match(error.message, /readme\.md/i);
+                assert.equal(
+                    error.error_code,
+                    'publish_workspace_hygiene_blocked'
+                );
+                assert.match(error.message, /authored\[out_of_scope\]/i);
+                assert.match(error.message, /cdx-900/i);
                 return true;
             }
         );
@@ -232,7 +236,11 @@ test('publish checkpoint falla si hay cambios fuera de scope', async () => {
 test('publish checkpoint ignora stage root y bundle y delega la verificacion live al deploy', async () => {
     const root = createRepoFixture();
     try {
-        writeFileSync(join(root, 'docs', 'in-scope.md'), '# updated scope\n', 'utf8');
+        writeFileSync(
+            join(root, 'docs', 'in-scope.md'),
+            '# updated scope\n',
+            'utf8'
+        );
         writeFileSync(join(root, 'jules_tasks.md'), '# queue dirty\n', 'utf8');
         mkdirSync(join(root, '.generated', 'site-root', 'es'), {
             recursive: true,
@@ -289,9 +297,12 @@ test('publish checkpoint ignora stage root y bundle y delega la verificacion liv
         assert.match(eventsRaw, /"live_ok":true/);
         assert.match(eventsRaw, /"sync_transport":"sync-main-safe"/);
         assert.equal(
-            runGit(root, ['show', '--stat', '--format=%s', 'HEAD']).stdout.includes(
-                'chore(codex-publish): checkpoint CDX-900'
-            ),
+            runGit(root, [
+                'show',
+                '--stat',
+                '--format=%s',
+                'HEAD',
+            ]).stdout.includes('chore(codex-publish): checkpoint CDX-900'),
             true
         );
     } finally {
@@ -466,7 +477,11 @@ test('publish checkpoint menciona authored y deindexado legacy cuando ambos bloq
     const root = createRepoFixture();
     try {
         runGit(root, ['rm', '--cached', '-f', '--', 'script.js']);
-        writeFileSync(join(root, 'README.md'), '# dirty outside scope\n', 'utf8');
+        writeFileSync(
+            join(root, 'README.md'),
+            '# dirty outside scope\n',
+            'utf8'
+        );
         const ctx = buildPublishContext(root);
 
         await assert.rejects(

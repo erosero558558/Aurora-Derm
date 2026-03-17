@@ -1254,10 +1254,9 @@ function frontendPublicReleaseSupportPatterns(): array
 
 function isFrontendPublicReleaseSupportTask(array $task): bool
 {
-    $status = trim((string) ($task['status'] ?? ''));
     return normalizeOptionalToken((string) ($task['strategy_role'] ?? '')) === 'exception'
         && trim((string) ($task['strategy_reason'] ?? '')) === 'validated_release_promotion'
-        && in_array($status, ['review', 'done'], true)
+        && trim((string) ($task['status'] ?? '')) === 'review'
         && normalizeOptionalToken((string) ($task['work_type'] ?? '')) === 'evidence'
         && normalizeOptionalToken((string) ($task['integration_slice'] ?? '')) === 'governance_evidence'
         && normalizeOptionalToken((string) ($task['scope'] ?? '')) === 'frontend-public'

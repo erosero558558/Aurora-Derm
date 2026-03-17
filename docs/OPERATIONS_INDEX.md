@@ -58,9 +58,13 @@ Comandos:
 Notas:
 
 - Limpia solo artefactos locales efimeros: `cookies.txt`, `.lighthouseci/`, `lhci_reports/`, `_deploy_bundle/`, `playwright-report/`, `test-results/`, `php_server.log`, `.php-cs-fixer.cache`, `.phpunit.cache/`, `coverage.xml`, `.tmp-calendar-write-report.json`, `.codex-public-paths.txt`, `build_analysis.txt`, `conflict_branches.txt`, `stats.html`, `styles.min.css`, `styles.optimized.css`, `styles-critical.min.css` y `styles-deferred.min.css`.
-- `workspace:hygiene:doctor` es la vista canonica V3: recorre todos los worktrees, ordena por severidad usando `overall_state`, agrega `issues[]` por categoria y expone `remediation_plan[]` por fases.
+- `workspace:hygiene:doctor` es la vista canonica V5: recorre todos los worktrees, ordena por severidad usando `overall_state`, agrega `scope_context`, `strategy_context`, `lane_context`, `scope_counts`, `issues[]`, `candidate_tasks[]`, `split_plan[]` y expone `remediation_plan[]` por fases.
+- `attention` significa que hay warnings reales pero no blockers globales del doctor; el caso tipico es `authored/in_scope` o `authored/unknown_scope` dentro de una sola lane/subfrente.
+- `authored/in_scope` no bloquea publish ni sync; `authored/out_of_scope` bloquea publish/sync/CI; `authored/unknown_scope` pide aclarar contexto y sigue bloqueando `sync-main-safe`.
+- `mixed_lane`, `blocked_scope` y `outside_strategy` ya no quedan escondidos como `unknown_scope`: el doctor los expone como issues separados y puede devolver `split_plan[]` cuando el worktree mezcla lanes o subfrentes.
 - `workspace:hygiene:status` y `workspace:hygiene:fix` son aliases de compatibilidad del doctor.
 - `workspace:hygiene:doctor --json` entrega el schema compacto para tooling; usa `--include-entries` solo cuando necesites los `dirty_entries[]` completos para debugging.
+- `workspace:hygiene:doctor -- --task-id <ID>` fija la tarea de referencia; `--scope-pattern <glob>` repite patrones manuales y `--show-candidates` muestra candidatos historicos/activos en la vista humana.
 - `workspace:hygiene:fix` limpia solo ruido efimero/staged como `.generated/site-root/` y `_deploy_bundle/`; no borra source authored.
 - `legacy_generated_root` recomienda `npm run legacy:generated-root:apply`.
 - `legacy_generated_root_deindexed` significa deindexado staged pendiente de commit o stash; sigue bloqueando publish/sync.

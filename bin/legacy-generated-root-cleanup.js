@@ -103,8 +103,7 @@ function ensureGitOk(result, label) {
             `${label} failed: ${
                 result && result.error && result.error.message
                     ? String(result.error.message).trim()
-                    : result &&
-                        (result.stderr || result.stdout)
+                    : result && (result.stderr || result.stdout)
                       ? String(result.stderr || result.stdout).trim()
                       : 'unknown error'
             }`
@@ -114,7 +113,9 @@ function ensureGitOk(result, label) {
 
 function readDirtyLegacyGeneratedRootEntries(repoRoot) {
     const trackedPaths = listTrackedLegacyGeneratedRootPaths(repoRoot);
-    return readDirtyEntries(repoRoot, { trackedLegacyPaths: trackedPaths }).filter(
+    return readDirtyEntries(repoRoot, {
+        trackedLegacyPaths: trackedPaths,
+    }).filter(
         (entry) =>
             entry.category === LEGACY_GENERATED_ROOT_CATEGORY ||
             entry.category === LEGACY_GENERATED_ROOT_DEINDEXED_CATEGORY
@@ -153,14 +154,14 @@ function summarizeTrackedLegacyPaths(trackedPaths = []) {
                         trackedPath.startsWith(`${target}/`)
                 );
             }
-        )
-            .sort(),
+        ).sort(),
         filesPresent: LEGACY_GENERATED_ROOT_FILES.filter((relativePath) =>
-                trackedPaths.includes(normalizeRelativePath(relativePath))
-            )
-            .sort(),
+            trackedPaths.includes(normalizeRelativePath(relativePath))
+        ).sort(),
         topLevelRoots: Array.from(
-            new Set(trackedPaths.map((trackedPath) => trackedPath.split('/')[0]))
+            new Set(
+                trackedPaths.map((trackedPath) => trackedPath.split('/')[0])
+            )
         ).sort(),
     };
 }
@@ -175,7 +176,9 @@ function buildLegacyIssues(trackedPaths = [], dirtyEntries = []) {
         );
     }
 
-    const deindexedEntries = (Array.isArray(dirtyEntries) ? dirtyEntries : []).filter(
+    const deindexedEntries = (
+        Array.isArray(dirtyEntries) ? dirtyEntries : []
+    ).filter(
         (entry) => entry.category === LEGACY_GENERATED_ROOT_DEINDEXED_CATEGORY
     );
     if (deindexedEntries.length > 0) {
@@ -197,7 +200,7 @@ function collectStatus(repoRoot) {
         issues: buildLegacyIssues(trackedPaths, dirtyEntries),
     });
     return {
-        version: 3,
+        version: 5,
         repoRoot,
         contractPaths: LEGACY_GENERATED_ROOT_CONTRACT_PATHS,
         trackedPaths,
@@ -207,6 +210,14 @@ function collectStatus(repoRoot) {
         overall_state: legacyDiagnosis.overall_state,
         dirty_total: legacyDiagnosis.dirty_total,
         issue_counts: legacyDiagnosis.issue_counts,
+        scope_counts: legacyDiagnosis.scope_counts,
+        strategy_counts: legacyDiagnosis.strategy_counts,
+        lane_counts: legacyDiagnosis.lane_counts,
+        scope_context: legacyDiagnosis.scope_context,
+        strategy_context: legacyDiagnosis.strategy_context,
+        lane_context: legacyDiagnosis.lane_context,
+        candidate_tasks: legacyDiagnosis.candidate_tasks,
+        split_plan: legacyDiagnosis.split_plan,
         issues: legacyDiagnosis.issues,
         remediation_plan: legacyDiagnosis.remediation_plan,
         next_command: legacyDiagnosis.next_command,
@@ -232,7 +243,14 @@ function applyCleanup(repoRoot, options = {}) {
         trackedPaths,
         options.chunkSize || DEFAULT_CHUNK_SIZE
     )) {
-        const args = ['rm', '--cached', '-f', '--ignore-unmatch', '--', ...chunk];
+        const args = [
+            'rm',
+            '--cached',
+            '-f',
+            '--ignore-unmatch',
+            '--',
+            ...chunk,
+        ];
         const result = runGit(repoRoot, args, true);
         ensureGitOk(result, 'git rm --cached legacy generated root');
         commands.push(`git ${args.join(' ')}`);
@@ -276,6 +294,7 @@ function renderStatus(payload) {
         `tracked=${trackedSummary.total}`,
         `dirty=${dirtySummary.total}${dirtyCategories ? ` ${dirtyCategories}` : ''}`,
         `overall_state=${payload.overall_state || 'clean'}`,
+        `scope=${payload.scope_context?.resolution || 'none'}`,
         issues ? `issues=${issues}` : 'issues=(none)',
         `directories=${trackedSummary.directoriesPresent.join(', ') || '(none)'}`,
         `files=${trackedSummary.filesPresent.join(', ') || '(none)'}`,
