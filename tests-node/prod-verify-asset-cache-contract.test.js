@@ -43,11 +43,17 @@ test('prod verify usa refs remotas para cache-header de estilos publicados', () 
 test('prod verify agrega assets GitHub de deploy para incidentes de transporte y conectividad', () => {
     for (const snippet of [
         '$githubDeployAlerts = Get-GitHubProductionAlertSummary',
+        '-CanonicalDeployMethod $CanonicalDeployMethod',
+        '-ForceTransportDeploy:$ForceTransportDeploy',
         "Asset = 'github-deploy-alerts-open'",
         "Asset = 'github-deploy-transport-blocked'",
         "Asset = 'github-deploy-connectivity-blocked'",
         "Asset = 'github-deploy-repair-git-sync-blocked'",
         "Asset = 'github-deploy-self-hosted-runner-blocked'",
+        'if ($githubDeployAlertsHasTransportBlock) {',
+        'if ($githubDeployAlertsHasConnectivityBlock) {',
+        '[WARN] github.deployAlerts transport advisory only (rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel)',
+        '[WARN] github.deployAlerts deploy connectivity advisory only (rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel)',
     ]) {
         assert.equal(
             raw.includes(snippet),

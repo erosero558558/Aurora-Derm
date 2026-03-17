@@ -23,6 +23,11 @@ test('lista perfiles turnero catalogados para despliegues separados', () => {
     assert.ok(items.some((entry) => entry.id === 'piel-armonia-quito'));
     assert.ok(items.some((entry) => entry.id === 'clinica-norte-demo'));
     assert.equal(
+        items.find((entry) => entry.id === 'piel-armonia-quito')?.profile
+            ?.branding?.name,
+        'Aurora Derm'
+    );
+    assert.equal(
         items.every((entry) => entry.ok),
         true
     );

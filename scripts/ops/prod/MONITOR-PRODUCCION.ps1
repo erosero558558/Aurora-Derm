@@ -17,7 +17,9 @@ param(
     [string]$GitHubRepo = 'erosero558558/Aurora-Derm',
     [string]$GitHubApiBase = 'https://api.github.com',
     [int]$GitHubAlertsTimeoutSec = 15,
-    [int]$GitHubAlertsIssueLimit = 30,
+    [int]$GitHubAlertsIssueLimit = 100,
+    [string]$CanonicalDeployMethod = 'git-sync',
+    [switch]$ForceTransportDeploy,
     [bool]$RequireTelemedicineConfigured = $true,
     [int]$MaxTelemedicineReviewQueue = 12,
     [int]$MaxTelemedicineStagedUploads = 1,
@@ -981,7 +983,9 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 -ApiBase $GitHubApiBase `
                 -TimeoutSec $GitHubAlertsTimeoutSec `
                 -IssueLimit $GitHubAlertsIssueLimit `
-                -UserAgent 'PielArmoniaMonitor/1.0'
+                -UserAgent 'PielArmoniaMonitor/1.0' `
+                -CanonicalDeployMethod $CanonicalDeployMethod `
+                -ForceTransportDeploy:$ForceTransportDeploy
             $githubDeployAlertsFetchOk = $false
             $githubDeployAlertsError = ''
             $githubDeployAlertsRelevantCount = 0
@@ -990,13 +994,23 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
             $githubDeployAlertsRepairGitSyncCount = 0
             $githubDeployAlertsSelfHostedRunnerCount = 0
             $githubDeployAlertsSelfHostedDeployCount = 0
+            $githubDeployAlertsRawRelevantCount = 0
+            $githubDeployAlertsRawTransportCount = 0
+            $githubDeployAlertsRawConnectivityCount = 0
+            $githubDeployAlertsAdvisoryRelevantCount = 0
+            $githubDeployAlertsAdvisoryTransportCount = 0
+            $githubDeployAlertsAdvisoryConnectivityCount = 0
             $githubDeployAlertsHasTransportBlock = $false
             $githubDeployAlertsHasConnectivityBlock = $false
             $githubDeployAlertsHasRepairGitSyncBlock = $false
             $githubDeployAlertsHasSelfHostedRunnerBlock = $false
             $githubDeployAlertsHasSelfHostedDeployBlock = $false
+            $githubDeployAlertsHasTransportAdvisory = $false
+            $githubDeployAlertsHasConnectivityAdvisory = $false
             $githubDeployAlertsIssueNumbersLabel = 'none'
             $githubDeployAlertsIssueRefsLabel = 'none'
+            $githubDeployAlertsRawIssueNumbersLabel = 'none'
+            $githubDeployAlertsRawIssueRefsLabel = 'none'
 
             try { $githubDeployAlertsFetchOk = [bool]$githubDeployAlertsSummary.fetchOk } catch { $githubDeployAlertsFetchOk = $false }
             try { $githubDeployAlertsError = [string]$githubDeployAlertsSummary.error } catch { $githubDeployAlertsError = '' }
@@ -1007,16 +1021,26 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
             try { $githubDeployAlertsSelfHostedRunnerCount = [int]$githubDeployAlertsSummary.selfHostedRunnerCount } catch { $githubDeployAlertsSelfHostedRunnerCount = 0 }
             try { $githubDeployAlertsSelfHostedDeployCount = [int]$githubDeployAlertsSummary.selfHostedDeployCount } catch { $githubDeployAlertsSelfHostedDeployCount = 0 }
             try { $githubDeployAlertsTurneroPilotCount = [int]$githubDeployAlertsSummary.turneroPilotCount } catch { $githubDeployAlertsTurneroPilotCount = 0 }
+            try { $githubDeployAlertsRawRelevantCount = [int]$githubDeployAlertsSummary.rawRelevantCount } catch { $githubDeployAlertsRawRelevantCount = 0 }
+            try { $githubDeployAlertsRawTransportCount = [int]$githubDeployAlertsSummary.rawTransportCount } catch { $githubDeployAlertsRawTransportCount = 0 }
+            try { $githubDeployAlertsRawConnectivityCount = [int]$githubDeployAlertsSummary.rawConnectivityCount } catch { $githubDeployAlertsRawConnectivityCount = 0 }
+            try { $githubDeployAlertsAdvisoryRelevantCount = [int]$githubDeployAlertsSummary.advisoryRelevantCount } catch { $githubDeployAlertsAdvisoryRelevantCount = 0 }
+            try { $githubDeployAlertsAdvisoryTransportCount = [int]$githubDeployAlertsSummary.advisoryTransportCount } catch { $githubDeployAlertsAdvisoryTransportCount = 0 }
+            try { $githubDeployAlertsAdvisoryConnectivityCount = [int]$githubDeployAlertsSummary.advisoryConnectivityCount } catch { $githubDeployAlertsAdvisoryConnectivityCount = 0 }
             try { $githubDeployAlertsHasTransportBlock = [bool]$githubDeployAlertsSummary.hasTransportBlock } catch { $githubDeployAlertsHasTransportBlock = $false }
             try { $githubDeployAlertsHasConnectivityBlock = [bool]$githubDeployAlertsSummary.hasConnectivityBlock } catch { $githubDeployAlertsHasConnectivityBlock = $false }
             try { $githubDeployAlertsHasRepairGitSyncBlock = [bool]$githubDeployAlertsSummary.hasRepairGitSyncBlock } catch { $githubDeployAlertsHasRepairGitSyncBlock = $false }
             try { $githubDeployAlertsHasSelfHostedRunnerBlock = [bool]$githubDeployAlertsSummary.hasSelfHostedRunnerBlock } catch { $githubDeployAlertsHasSelfHostedRunnerBlock = $false }
             try { $githubDeployAlertsHasSelfHostedDeployBlock = [bool]$githubDeployAlertsSummary.hasSelfHostedDeployBlock } catch { $githubDeployAlertsHasSelfHostedDeployBlock = $false }
             try { $githubDeployAlertsHasTurneroPilotBlock = [bool]$githubDeployAlertsSummary.hasTurneroPilotBlock } catch { $githubDeployAlertsHasTurneroPilotBlock = $false }
+            try { $githubDeployAlertsHasTransportAdvisory = [bool]$githubDeployAlertsSummary.hasTransportAdvisory } catch { $githubDeployAlertsHasTransportAdvisory = $false }
+            try { $githubDeployAlertsHasConnectivityAdvisory = [bool]$githubDeployAlertsSummary.hasConnectivityAdvisory } catch { $githubDeployAlertsHasConnectivityAdvisory = $false }
             try { $githubDeployAlertsIssueNumbersLabel = [string]$githubDeployAlertsSummary.issueNumbersLabel } catch { $githubDeployAlertsIssueNumbersLabel = 'none' }
             try { $githubDeployAlertsIssueRefsLabel = [string]$githubDeployAlertsSummary.issueRefsLabel } catch { $githubDeployAlertsIssueRefsLabel = 'none' }
+            try { $githubDeployAlertsRawIssueNumbersLabel = [string]$githubDeployAlertsSummary.rawIssueNumbersLabel } catch { $githubDeployAlertsRawIssueNumbersLabel = 'none' }
+            try { $githubDeployAlertsRawIssueRefsLabel = [string]$githubDeployAlertsSummary.rawIssueRefsLabel } catch { $githubDeployAlertsRawIssueRefsLabel = 'none' }
 
-            Write-Host "[INFO] github.deployAlerts fetchOk=$githubDeployAlertsFetchOk repo=$GitHubRepo relevantCount=$githubDeployAlertsRelevantCount transportCount=$githubDeployAlertsTransportCount connectivityCount=$githubDeployAlertsConnectivityCount repairGitSyncCount=$githubDeployAlertsRepairGitSyncCount selfHostedRunnerCount=$githubDeployAlertsSelfHostedRunnerCount selfHostedDeployCount=$githubDeployAlertsSelfHostedDeployCount turneroPilotCount=$githubDeployAlertsTurneroPilotCount turneroPilotRecoveryTargets=$turneroPilotRecoveryTargetsLabel issueNumbers=$githubDeployAlertsIssueNumbersLabel issueRefs=$githubDeployAlertsIssueRefsLabel"
+            Write-Host "[INFO] github.deployAlerts fetchOk=$githubDeployAlertsFetchOk repo=$GitHubRepo canonicalDeployMethod=$CanonicalDeployMethod forceTransportDeploy=$ForceTransportDeploy rawRelevantCount=$githubDeployAlertsRawRelevantCount relevantCount=$githubDeployAlertsRelevantCount advisoryRelevantCount=$githubDeployAlertsAdvisoryRelevantCount rawTransportCount=$githubDeployAlertsRawTransportCount transportCount=$githubDeployAlertsTransportCount advisoryTransportCount=$githubDeployAlertsAdvisoryTransportCount rawConnectivityCount=$githubDeployAlertsRawConnectivityCount connectivityCount=$githubDeployAlertsConnectivityCount advisoryConnectivityCount=$githubDeployAlertsAdvisoryConnectivityCount repairGitSyncCount=$githubDeployAlertsRepairGitSyncCount selfHostedRunnerCount=$githubDeployAlertsSelfHostedRunnerCount selfHostedDeployCount=$githubDeployAlertsSelfHostedDeployCount turneroPilotCount=$githubDeployAlertsTurneroPilotCount turneroPilotRecoveryTargets=$turneroPilotRecoveryTargetsLabel rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel rawIssueRefs=$githubDeployAlertsRawIssueRefsLabel issueNumbers=$githubDeployAlertsIssueNumbersLabel issueRefs=$githubDeployAlertsIssueRefsLabel"
 
             if (-not $githubDeployAlertsFetchOk) {
                 Add-MonitorWarning -Message "[WARN] github.deployAlerts unreachable (repo=$GitHubRepo error=$githubDeployAlertsError)"
@@ -1042,20 +1066,39 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
             if ($githubDeployAlertsHasTurneroPilotBlock) {
                 Add-MonitorFailure -Message "[FAIL] github.deployAlerts turnero pilot blocked (issueNumbers=$githubDeployAlertsIssueNumbersLabel recoveryTargets=$turneroPilotRecoveryTargetsLabel)" -AllowDegraded:$AllowDegradedPublicSync
             }
+            if ($githubDeployAlertsAdvisoryRelevantCount -gt 0) {
+                Add-MonitorWarning -Message "[WARN] github.deployAlerts advisory only under canonicalDeployMethod=$CanonicalDeployMethod forceTransportDeploy=$ForceTransportDeploy (count=$githubDeployAlertsAdvisoryRelevantCount rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel)"
+            }
+            if ($githubDeployAlertsHasTransportAdvisory) {
+                Add-MonitorWarning -Message "[WARN] github.deployAlerts transport advisory only (rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel)"
+            }
+            if ($githubDeployAlertsHasConnectivityAdvisory) {
+                Add-MonitorWarning -Message "[WARN] github.deployAlerts deploy connectivity advisory only (rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel)"
+            }
 
             $script:githubDeployAlertsSnapshot = [ordered]@{
                 available = $true
-                status = if (-not $githubDeployAlertsFetchOk) { 'unreachable' } elseif ($githubDeployAlertsRelevantCount -gt 0) { 'failed' } else { 'ok' }
+                status = if (-not $githubDeployAlertsFetchOk) { 'unreachable' } elseif ($githubDeployAlertsRelevantCount -gt 0) { 'failed' } elseif ($githubDeployAlertsAdvisoryRelevantCount -gt 0) { 'advisory' } else { 'ok' }
                 repo = $GitHubRepo
                 fetchOk = $githubDeployAlertsFetchOk
                 error = $githubDeployAlertsError
+                canonicalDeployMethod = $CanonicalDeployMethod
+                forceTransportDeploy = [bool]$ForceTransportDeploy
+                rawRelevantCount = $githubDeployAlertsRawRelevantCount
                 relevantCount = $githubDeployAlertsRelevantCount
+                advisoryRelevantCount = $githubDeployAlertsAdvisoryRelevantCount
+                rawTransportCount = $githubDeployAlertsRawTransportCount
                 transportCount = $githubDeployAlertsTransportCount
+                advisoryTransportCount = $githubDeployAlertsAdvisoryTransportCount
+                rawConnectivityCount = $githubDeployAlertsRawConnectivityCount
                 connectivityCount = $githubDeployAlertsConnectivityCount
+                advisoryConnectivityCount = $githubDeployAlertsAdvisoryConnectivityCount
                 repairGitSyncCount = $githubDeployAlertsRepairGitSyncCount
                 selfHostedRunnerCount = $githubDeployAlertsSelfHostedRunnerCount
                 selfHostedDeployCount = $githubDeployAlertsSelfHostedDeployCount
                 turneroPilotCount = $githubDeployAlertsTurneroPilotCount
+                rawIssueNumbers = $githubDeployAlertsRawIssueNumbersLabel
+                rawIssueRefs = $githubDeployAlertsRawIssueRefsLabel
                 issueNumbers = $githubDeployAlertsIssueNumbersLabel
                 issueRefs = $githubDeployAlertsIssueRefsLabel
                 recoveryTargets = @($turneroPilotRecoveryTargets)
@@ -1065,6 +1108,8 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 hasSelfHostedRunnerBlock = $githubDeployAlertsHasSelfHostedRunnerBlock
                 hasSelfHostedDeployBlock = $githubDeployAlertsHasSelfHostedDeployBlock
                 hasTurneroPilotBlock = $githubDeployAlertsHasTurneroPilotBlock
+                hasTransportAdvisory = $githubDeployAlertsHasTransportAdvisory
+                hasConnectivityAdvisory = $githubDeployAlertsHasConnectivityAdvisory
             }
 
             $calendarSource = ''

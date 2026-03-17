@@ -28,7 +28,9 @@ param(
     [string]$GitHubRepo = 'erosero558558/Aurora-Derm',
     [string]$GitHubApiBase = 'https://api.github.com',
     [int]$GitHubAlertsTimeoutSec = 15,
-    [int]$GitHubAlertsIssueLimit = 30,
+    [int]$GitHubAlertsIssueLimit = 100,
+    [string]$CanonicalDeployMethod = 'git-sync',
+    [switch]$ForceTransportDeploy,
     [switch]$AllowOpenGitHubDeployAlerts
 )
 
@@ -1625,7 +1627,9 @@ try {
         -ApiBase $GitHubApiBase `
         -TimeoutSec $GitHubAlertsTimeoutSec `
         -IssueLimit $GitHubAlertsIssueLimit `
-        -UserAgent 'PielArmoniaDeployCheck/1.0'
+        -UserAgent 'PielArmoniaDeployCheck/1.0' `
+        -CanonicalDeployMethod $CanonicalDeployMethod `
+        -ForceTransportDeploy:$ForceTransportDeploy
     $githubDeployAlertsFetchOk = $false
     $githubDeployAlertsRelevantCount = 0
     $githubDeployAlertsTransportCount = 0
@@ -1633,8 +1637,16 @@ try {
     $githubDeployAlertsRepairGitSyncCount = 0
     $githubDeployAlertsSelfHostedRunnerCount = 0
     $githubDeployAlertsSelfHostedDeployCount = 0
+    $githubDeployAlertsRawRelevantCount = 0
+    $githubDeployAlertsRawTransportCount = 0
+    $githubDeployAlertsRawConnectivityCount = 0
+    $githubDeployAlertsAdvisoryRelevantCount = 0
+    $githubDeployAlertsAdvisoryTransportCount = 0
+    $githubDeployAlertsAdvisoryConnectivityCount = 0
     $githubDeployAlertsIssueNumbersLabel = 'none'
     $githubDeployAlertsIssueRefsLabel = 'none'
+    $githubDeployAlertsRawIssueNumbersLabel = 'none'
+    $githubDeployAlertsRawIssueRefsLabel = 'none'
     $githubDeployAlertsApiUrl = ''
     $githubDeployAlertsError = ''
     $githubDeployAlertsHasTransportBlock = $false
@@ -1642,6 +1654,8 @@ try {
     $githubDeployAlertsHasRepairGitSyncBlock = $false
     $githubDeployAlertsHasSelfHostedRunnerBlock = $false
     $githubDeployAlertsHasSelfHostedDeployBlock = $false
+    $githubDeployAlertsHasTransportAdvisory = $false
+    $githubDeployAlertsHasConnectivityAdvisory = $false
     try { $githubDeployAlertsFetchOk = [bool]$githubDeployAlerts.fetchOk } catch { $githubDeployAlertsFetchOk = $false }
     try { $githubDeployAlertsRelevantCount = [int]$githubDeployAlerts.relevantCount } catch { $githubDeployAlertsRelevantCount = 0 }
     try { $githubDeployAlertsTransportCount = [int]$githubDeployAlerts.transportCount } catch { $githubDeployAlertsTransportCount = 0 }
@@ -1652,6 +1666,14 @@ try {
     try { $githubDeployAlertsTurneroPilotCount = [int]$githubDeployAlerts.turneroPilotCount } catch { $githubDeployAlertsTurneroPilotCount = 0 }
     try { $githubDeployAlertsIssueNumbersLabel = [string]$githubDeployAlerts.issueNumbersLabel } catch { $githubDeployAlertsIssueNumbersLabel = 'none' }
     try { $githubDeployAlertsIssueRefsLabel = [string]$githubDeployAlerts.issueRefsLabel } catch { $githubDeployAlertsIssueRefsLabel = 'none' }
+    try { $githubDeployAlertsRawRelevantCount = [int]$githubDeployAlerts.rawRelevantCount } catch { $githubDeployAlertsRawRelevantCount = 0 }
+    try { $githubDeployAlertsRawTransportCount = [int]$githubDeployAlerts.rawTransportCount } catch { $githubDeployAlertsRawTransportCount = 0 }
+    try { $githubDeployAlertsRawConnectivityCount = [int]$githubDeployAlerts.rawConnectivityCount } catch { $githubDeployAlertsRawConnectivityCount = 0 }
+    try { $githubDeployAlertsAdvisoryRelevantCount = [int]$githubDeployAlerts.advisoryRelevantCount } catch { $githubDeployAlertsAdvisoryRelevantCount = 0 }
+    try { $githubDeployAlertsAdvisoryTransportCount = [int]$githubDeployAlerts.advisoryTransportCount } catch { $githubDeployAlertsAdvisoryTransportCount = 0 }
+    try { $githubDeployAlertsAdvisoryConnectivityCount = [int]$githubDeployAlerts.advisoryConnectivityCount } catch { $githubDeployAlertsAdvisoryConnectivityCount = 0 }
+    try { $githubDeployAlertsRawIssueNumbersLabel = [string]$githubDeployAlerts.rawIssueNumbersLabel } catch { $githubDeployAlertsRawIssueNumbersLabel = 'none' }
+    try { $githubDeployAlertsRawIssueRefsLabel = [string]$githubDeployAlerts.rawIssueRefsLabel } catch { $githubDeployAlertsRawIssueRefsLabel = 'none' }
     try { $githubDeployAlertsApiUrl = [string]$githubDeployAlerts.apiUrl } catch { $githubDeployAlertsApiUrl = '' }
     try { $githubDeployAlertsError = [string]$githubDeployAlerts.error } catch { $githubDeployAlertsError = '' }
     try { $githubDeployAlertsHasTransportBlock = [bool]$githubDeployAlerts.hasTransportBlock } catch { $githubDeployAlertsHasTransportBlock = $false }
@@ -1660,8 +1682,10 @@ try {
     try { $githubDeployAlertsHasSelfHostedRunnerBlock = [bool]$githubDeployAlerts.hasSelfHostedRunnerBlock } catch { $githubDeployAlertsHasSelfHostedRunnerBlock = $false }
     try { $githubDeployAlertsHasSelfHostedDeployBlock = [bool]$githubDeployAlerts.hasSelfHostedDeployBlock } catch { $githubDeployAlertsHasSelfHostedDeployBlock = $false }
     try { $githubDeployAlertsHasTurneroPilotBlock = [bool]$githubDeployAlerts.hasTurneroPilotBlock } catch { $githubDeployAlertsHasTurneroPilotBlock = $false }
+    try { $githubDeployAlertsHasTransportAdvisory = [bool]$githubDeployAlerts.hasTransportAdvisory } catch { $githubDeployAlertsHasTransportAdvisory = $false }
+    try { $githubDeployAlertsHasConnectivityAdvisory = [bool]$githubDeployAlerts.hasConnectivityAdvisory } catch { $githubDeployAlertsHasConnectivityAdvisory = $false }
 
-    Write-Host "[INFO] github.deployAlerts fetchOk=$githubDeployAlertsFetchOk repo=$GitHubRepo relevantCount=$githubDeployAlertsRelevantCount transportCount=$githubDeployAlertsTransportCount connectivityCount=$githubDeployAlertsConnectivityCount repairGitSyncCount=$githubDeployAlertsRepairGitSyncCount selfHostedRunnerCount=$githubDeployAlertsSelfHostedRunnerCount selfHostedDeployCount=$githubDeployAlertsSelfHostedDeployCount turneroPilotCount=$githubDeployAlertsTurneroPilotCount turneroPilotRecoveryTargets=$turneroPilotRecoveryTargetsLabel issueNumbers=$githubDeployAlertsIssueNumbersLabel issueRefs=$githubDeployAlertsIssueRefsLabel"
+    Write-Host "[INFO] github.deployAlerts fetchOk=$githubDeployAlertsFetchOk repo=$GitHubRepo canonicalDeployMethod=$CanonicalDeployMethod forceTransportDeploy=$ForceTransportDeploy rawRelevantCount=$githubDeployAlertsRawRelevantCount relevantCount=$githubDeployAlertsRelevantCount advisoryRelevantCount=$githubDeployAlertsAdvisoryRelevantCount rawTransportCount=$githubDeployAlertsRawTransportCount transportCount=$githubDeployAlertsTransportCount advisoryTransportCount=$githubDeployAlertsAdvisoryTransportCount rawConnectivityCount=$githubDeployAlertsRawConnectivityCount connectivityCount=$githubDeployAlertsConnectivityCount advisoryConnectivityCount=$githubDeployAlertsAdvisoryConnectivityCount repairGitSyncCount=$githubDeployAlertsRepairGitSyncCount selfHostedRunnerCount=$githubDeployAlertsSelfHostedRunnerCount selfHostedDeployCount=$githubDeployAlertsSelfHostedDeployCount turneroPilotCount=$githubDeployAlertsTurneroPilotCount turneroPilotRecoveryTargets=$turneroPilotRecoveryTargetsLabel rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel rawIssueRefs=$githubDeployAlertsRawIssueRefsLabel issueNumbers=$githubDeployAlertsIssueNumbersLabel issueRefs=$githubDeployAlertsIssueRefsLabel"
     if (-not $githubDeployAlertsFetchOk) {
         Write-Host "[WARN] github.deployAlerts unreachable (repo=$GitHubRepo error=$githubDeployAlertsError)"
     } elseif ($githubDeployAlertsRelevantCount -gt 0) {
@@ -1748,6 +1772,14 @@ try {
                     RemoteUrl = $githubDeployAlertsApiUrl
                 }
             }
+        }
+    } elseif ($githubDeployAlertsAdvisoryRelevantCount -gt 0) {
+        Write-Host "[WARN] github.deployAlerts advisory only under canonicalDeployMethod=$CanonicalDeployMethod forceTransportDeploy=$ForceTransportDeploy (count=$githubDeployAlertsAdvisoryRelevantCount rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel)"
+        if ($githubDeployAlertsHasTransportAdvisory) {
+            Write-Host "[WARN] github.deployAlerts transport advisory only (rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel)"
+        }
+        if ($githubDeployAlertsHasConnectivityAdvisory) {
+            Write-Host "[WARN] github.deployAlerts deploy connectivity advisory only (rawIssueNumbers=$githubDeployAlertsRawIssueNumbersLabel)"
         }
     } else {
         Write-Host '[OK]  github.deployAlerts sin incidentes abiertos'
@@ -2307,6 +2339,8 @@ if ($RunSmoke) {
         -GitHubApiBase $GitHubApiBase `
         -GitHubAlertsTimeoutSec $GitHubAlertsTimeoutSec `
         -GitHubAlertsIssueLimit $GitHubAlertsIssueLimit `
+        -CanonicalDeployMethod $CanonicalDeployMethod `
+        -ForceTransportDeploy:$ForceTransportDeploy `
         -AllowOpenGitHubDeployAlerts:$AllowOpenGitHubDeployAlerts
 }
 

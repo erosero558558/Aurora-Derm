@@ -45,6 +45,8 @@ test('AdminDataController expone turneroClinicProfile y readiness de Turnero V2 
     assert.equal(payload.ok, true);
     assert.equal(profile?.schema, 'turnero-clinic-profile/v1');
     assert.equal(profile?.clinic_id, 'piel-armonia-quito');
+    assert.equal(profile?.branding?.name, 'Aurora Derm');
+    assert.equal(profile?.branding?.short_name, 'Aurora Derm');
     assert.equal(profile?.release?.mode, 'suite_v2');
     assert.equal(profile?.release?.admin_mode_default, 'basic');
     assert.equal(profile?.release?.separate_deploy, true);

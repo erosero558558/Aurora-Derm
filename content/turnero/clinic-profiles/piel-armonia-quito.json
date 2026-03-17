@@ -2,8 +2,8 @@
     "schema": "turnero-clinic-profile/v1",
     "clinic_id": "piel-armonia-quito",
     "branding": {
-        "name": "Piel en Armonia",
-        "short_name": "Piel en Armonia",
+        "name": "Aurora Derm",
+        "short_name": "Aurora Derm",
         "city": "Quito",
         "base_url": "https://pielarmonia.com"
     },
