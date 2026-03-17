@@ -471,6 +471,46 @@ test('sync-main-safe bloquea authored unknown_scope hasta aclarar el contexto', 
     assert.match(message, /task ls --active/);
 });
 
+test('sync-main-safe bloquea mixed_lane con split accionable', () => {
+    const message = buildWorkspaceBlockingMessage({
+        overall_state: 'blocked',
+        issue_counts: { authored: 3 },
+        scope_counts: { unknown_scope: 3 },
+        lane_counts: { mixed_lane: 3 },
+        issues: [
+            {
+                category: 'authored',
+                severity: 'blocking',
+                count: 3,
+                paths_sample: ['bin/doctor-fixture.js'],
+                remaining_count: 2,
+                blocks_publish: true,
+                blocks_sync: true,
+                blocks_ci: true,
+                suggested_command: 'git status --short',
+                summary:
+                    'Hay 3 cambio(s) authored mezclando lanes o subfrentes; separa el corte antes de publicar o sincronizar.',
+                scope_disposition: 'unknown_scope',
+                strategy_disposition: 'outside_strategy',
+                lane_disposition: 'mixed_lane',
+            },
+        ],
+        remediation_plan: [
+            {
+                id: 'split_mixed_lane_worktree',
+                summary:
+                    'Separa el worktree por lane o subfrente antes de sincronizar o publicar.',
+                command: 'git status --short',
+            },
+        ],
+        next_command: 'git status --short',
+    });
+
+    assert.match(message, /mixed_lane/);
+    assert.match(message, /split_mixed_lane_worktree/);
+    assert.match(message, /Primer paso/);
+});
+
 test('sync-main-safe bloquea legacy_generated_root_deindexed antes de stash', () => {
     const calls = [];
     const fakeRunner = (program, args) => {

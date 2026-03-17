@@ -88,6 +88,7 @@ const STRATEGY_DISPOSITION_UNKNOWN = 'unknown_strategy';
 const STRATEGY_DISPOSITION_NONE = 'none';
 const STRATEGY_DISPOSITION_MIXED = 'mixed_subfronts';
 const STRATEGY_DISPOSITION_ORDER = [
+    STRATEGY_DISPOSITION_MIXED,
     STRATEGY_DISPOSITION_BLOCKED_SCOPE,
     STRATEGY_DISPOSITION_OUTSIDE_STRATEGY,
     STRATEGY_DISPOSITION_UNKNOWN,
@@ -953,7 +954,9 @@ function buildStrategyContext(
             primarySubfront?.subfront_id || options.primarySubfrontId || ''
         ).trim(),
         primary_codex_instance: String(
-            primarySubfront?.codex_instance || options.primaryCodexInstance || ''
+            primarySubfront?.codex_instance ||
+                options.primaryCodexInstance ||
+                ''
         ).trim(),
         affected_subfront_ids: Array.from(
             new Set(
@@ -967,8 +970,15 @@ function buildStrategyContext(
         ),
         affected_scopes: Array.from(
             new Set(
-                (Array.isArray(options.affectedScopes) ? options.affectedScopes : [])
-                    .map((value) => String(value || '').trim().toLowerCase())
+                (Array.isArray(options.affectedScopes)
+                    ? options.affectedScopes
+                    : []
+                )
+                    .map((value) =>
+                        String(value || '')
+                            .trim()
+                            .toLowerCase()
+                    )
                     .filter(Boolean)
             )
         ),
@@ -989,7 +999,9 @@ function isSupportDocPath(pathValue) {
 
 function isTestPath(pathValue) {
     const normalized = normalizeRelativePath(pathValue).toLowerCase();
-    return normalized.startsWith('tests/') || normalized.startsWith('tests-node/');
+    return (
+        normalized.startsWith('tests/') || normalized.startsWith('tests-node/')
+    );
 }
 
 function inferStrategyScopeFromPath(pathValue, laneInfo = {}) {
@@ -1190,9 +1202,8 @@ function getStrategyDispositionForScope(strategy, codexInstance, scopeHint) {
         }
     }
 
-    const otherSubfront = (Array.isArray(activeStrategy.subfronts)
-        ? activeStrategy.subfronts
-        : []
+    const otherSubfront = (
+        Array.isArray(activeStrategy.subfronts) ? activeStrategy.subfronts : []
     ).find((subfront) => {
         return (
             subfront.allowed_scopes.includes(safeScope) ||
@@ -1338,11 +1349,15 @@ function buildSplitPlan(
     strategyContext = null,
     candidateTasks = []
 ) {
-    const authoredEntries = (Array.isArray(annotatedEntries) ? annotatedEntries : []).filter(
-        (entry) => entry.category === AUTHORED_CATEGORY
+    const authoredEntries = (
+        Array.isArray(annotatedEntries) ? annotatedEntries : []
+    ).filter((entry) => entry.category === AUTHORED_CATEGORY);
+    const mainEntries = authoredEntries.filter(
+        (entry) => !entry.is_support_doc
     );
-    const mainEntries = authoredEntries.filter((entry) => !entry.is_support_doc);
-    const supportEntries = authoredEntries.filter((entry) => entry.is_support_doc);
+    const supportEntries = authoredEntries.filter(
+        (entry) => entry.is_support_doc
+    );
     const groups = new Map();
 
     for (const entry of mainEntries) {
@@ -1378,7 +1393,9 @@ function buildSplitPlan(
     });
 
     if (supportEntries.length > 0 && sortedGroups.length > 0) {
-        sortedGroups[0].paths.push(...supportEntries.map((entry) => entry.path));
+        sortedGroups[0].paths.push(
+            ...supportEntries.map((entry) => entry.path)
+        );
     }
 
     const requiresSplit =
@@ -1416,7 +1433,10 @@ function buildSplitPlan(
             scope_hint: group.scope_hint,
             count: group.paths.length,
             paths_sample: pathsSample,
-            remaining_count: Math.max(0, group.paths.length - pathsSample.length),
+            remaining_count: Math.max(
+                0,
+                group.paths.length - pathsSample.length
+            ),
             candidate_task_id: String(bestCandidate?.task_id || '').trim(),
             summary: `Separa ${group.paths.length} path(s) para ${labelParts.join(' | ') || 'grupo sin clasificar'} antes de publicar o sincronizar.`,
             suggested_command: 'git status --short',
@@ -1468,16 +1488,27 @@ function annotateAuthoredStrategyAndLane(
                   details: [],
               }
             : inferDomainLaneFromFiles([entry.path]);
-        const lane = String(laneInfo?.lane || '').trim().toLowerCase();
+        const lane = String(laneInfo?.lane || '')
+            .trim()
+            .toLowerCase();
         const codexInstance = lane ? mapLaneToCodexInstance(lane) : '';
         const scopeHint = inferStrategyScopeFromPath(entry.path, laneInfo);
         const taskDisposition =
-            explicitTask && String(entry.task_id || scopeContext?.task_id || '').trim()
-                ? getTaskStrategyDisposition(activeStrategy, explicitTask, scopeContext)
+            explicitTask &&
+            String(entry.task_id || scopeContext?.task_id || '').trim()
+                ? getTaskStrategyDisposition(
+                      activeStrategy,
+                      explicitTask,
+                      scopeContext
+                  )
                 : null;
         const strategyResolution =
             taskDisposition ||
-            getStrategyDispositionForScope(activeStrategy, codexInstance, scopeHint);
+            getStrategyDispositionForScope(
+                activeStrategy,
+                codexInstance,
+                scopeHint
+            );
         return {
             ...entry,
             is_support_doc: supportDoc,
@@ -1522,14 +1553,19 @@ function annotateAuthoredStrategyAndLane(
         laneCounts.unknown += 1;
     }
 
-    const primaryLane = ['backend_ops', 'frontend_content', 'transversal_runtime']
-        .sort((left, right) => laneCounts[right] - laneCounts[left])[0];
+    const primaryLane = [
+        'backend_ops',
+        'frontend_content',
+        'transversal_runtime',
+    ].sort((left, right) => laneCounts[right] - laneCounts[left])[0];
     const activeLaneCount = Array.from(lanes).length;
     let laneResolution = LANE_CONTEXT_UNKNOWN;
-    let laneReason = 'No se pudo inferir un lane estable para los cambios authored.';
+    let laneReason =
+        'No se pudo inferir un lane estable para los cambios authored.';
     if (activeLaneCount === 0 && laneCounts.unknown === 0) {
         laneResolution = LANE_CONTEXT_NONE;
-        laneReason = 'Solo hay soporte documental o no hay authored relevantes.';
+        laneReason =
+            'Solo hay soporte documental o no hay authored relevantes.';
     } else if (activeLaneCount === 1 && laneCounts.unknown === 0) {
         laneResolution = LANE_CONTEXT_SINGLE;
         laneReason = `Todos los cambios authored caen en ${primaryLane}.`;
@@ -1620,7 +1656,8 @@ function annotateAuthoredStrategyAndLane(
         .map((entry) => entry.path);
     const unknownStrategyPaths = finalizedAuthored
         .filter(
-            (entry) => entry.strategy_disposition === STRATEGY_DISPOSITION_UNKNOWN
+            (entry) =>
+                entry.strategy_disposition === STRATEGY_DISPOSITION_UNKNOWN
         )
         .map((entry) => entry.path);
     const affectedSubfrontIds = Array.from(
@@ -1633,53 +1670,54 @@ function annotateAuthoredStrategyAndLane(
     const affectedScopes = Array.from(
         new Set(
             finalizedAuthored
-                .map((entry) => String(entry.scope_hint || '').trim().toLowerCase())
+                .map((entry) =>
+                    String(entry.scope_hint || '')
+                        .trim()
+                        .toLowerCase()
+                )
                 .filter(Boolean)
         )
     );
-    let strategyResolution = STRATEGY_CONTEXT_UNKNOWN;
-    let strategyReason =
-        'No se pudo mapear estos cambios authored contra strategy.active.';
-    if (!activeStrategy) {
-        strategyResolution = STRATEGY_CONTEXT_NONE;
-        strategyReason = 'No hay strategy.active para clasificar el drift actual.';
-    } else if (
-        laneContext.resolution === LANE_CONTEXT_MIXED ||
-        affectedSubfrontIds.length > 1
-    ) {
-        strategyResolution = STRATEGY_CONTEXT_MIXED;
-        strategyReason =
-            'Los cambios authored mezclan lanes o subfrentes distintos dentro de strategy.active.';
-    } else if (
-        authoredDispositions.includes(STRATEGY_DISPOSITION_BLOCKED_SCOPE)
-    ) {
-        strategyResolution = STRATEGY_CONTEXT_BLOCKED_SCOPE;
-        strategyReason =
-            'Hay cambios authored que tocan scopes bloqueados por el subfrente activo.';
-    } else if (
-        authoredDispositions.includes(STRATEGY_DISPOSITION_OUTSIDE_STRATEGY)
-    ) {
-        strategyResolution = STRATEGY_CONTEXT_OUTSIDE_STRATEGY;
-        strategyReason =
-            'Hay cambios authored fuera de los scopes permitidos por strategy.active.';
-    } else if (authoredDispositions.includes(STRATEGY_DISPOSITION_UNKNOWN)) {
-        strategyResolution = STRATEGY_CONTEXT_UNKNOWN;
-        strategyReason =
-            'Hay cambios authored cuyo scope de estrategia no se pudo inferir con confianza.';
-    } else if (
-        authoredDispositions.length > 0 &&
-        authoredDispositions.every(
-            (value) => value === STRATEGY_DISPOSITION_SUPPORT_ONLY
-        )
-    ) {
-        strategyResolution = STRATEGY_CONTEXT_SUPPORT_ONLY;
-        strategyReason =
-            'Los cambios authored actuales son soporte permitido por strategy.active.';
-    } else {
-        strategyResolution = STRATEGY_CONTEXT_ALIGNED;
-        strategyReason =
-            'Los cambios authored actuales quedan alineados a strategy.active.';
-    }
+    const [strategyResolution, strategyReason] = !activeStrategy
+        ? [
+              STRATEGY_CONTEXT_NONE,
+              'No hay strategy.active para clasificar el drift actual.',
+          ]
+        : laneContext.resolution === LANE_CONTEXT_MIXED ||
+            affectedSubfrontIds.length > 1
+          ? [
+                STRATEGY_CONTEXT_MIXED,
+                'Los cambios authored mezclan lanes o subfrentes distintos dentro de strategy.active.',
+            ]
+          : authoredDispositions.includes(STRATEGY_DISPOSITION_BLOCKED_SCOPE)
+            ? [
+                  STRATEGY_CONTEXT_BLOCKED_SCOPE,
+                  'Hay cambios authored que tocan scopes bloqueados por el subfrente activo.',
+              ]
+            : authoredDispositions.includes(
+                    STRATEGY_DISPOSITION_OUTSIDE_STRATEGY
+                )
+              ? [
+                    STRATEGY_CONTEXT_OUTSIDE_STRATEGY,
+                    'Hay cambios authored fuera de los scopes permitidos por strategy.active.',
+                ]
+              : authoredDispositions.includes(STRATEGY_DISPOSITION_UNKNOWN)
+                ? [
+                      STRATEGY_CONTEXT_UNKNOWN,
+                      'Hay cambios authored cuyo scope de estrategia no se pudo inferir con confianza.',
+                  ]
+                : authoredDispositions.length > 0 &&
+                    authoredDispositions.every(
+                        (value) => value === STRATEGY_DISPOSITION_SUPPORT_ONLY
+                    )
+                  ? [
+                        STRATEGY_CONTEXT_SUPPORT_ONLY,
+                        'Los cambios authored actuales son soporte permitido por strategy.active.',
+                    ]
+                  : [
+                        STRATEGY_CONTEXT_ALIGNED,
+                        'Los cambios authored actuales quedan alineados a strategy.active.',
+                    ];
     const strategyContext = buildStrategyContext(strategyResolution, {
         strategy: activeStrategy,
         primarySubfront,
@@ -1702,8 +1740,9 @@ function annotateAuthoredStrategyAndLane(
         board,
         authoredEntries.map((entry) => entry.path),
         {
-            explicitTaskId:
-                String(scopeContext?.task_id || options.scopeTaskId || '').trim(),
+            explicitTaskId: String(
+                scopeContext?.task_id || options.scopeTaskId || ''
+            ).trim(),
         }
     );
     const splitPlan = buildSplitPlan(
@@ -1756,14 +1795,26 @@ function getAuthoredIssueConfig(disposition, options = {}) {
         };
     }
 
+    if (strategyDisposition === STRATEGY_DISPOSITION_MIXED) {
+        return {
+            severity: ISSUE_SEVERITY_BLOCKING,
+            blocksPublish: true,
+            blocksSync: true,
+            blocksCi: true,
+            command: REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.command,
+            summary(count) {
+                return `Hay ${count} cambio(s) authored mezclando subfrentes de strategy.active${taskLabel}.`;
+            },
+        };
+    }
+
     if (strategyDisposition === STRATEGY_DISPOSITION_BLOCKED_SCOPE) {
         return {
             severity: ISSUE_SEVERITY_BLOCKING,
             blocksPublish: true,
             blocksSync: true,
             blocksCi: true,
-            command:
-                REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.command,
+            command: REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.command,
             summary(count) {
                 return `Hay ${count} cambio(s) authored en scopes bloqueados por strategy.active${taskLabel}.`;
             },
@@ -1776,8 +1827,7 @@ function getAuthoredIssueConfig(disposition, options = {}) {
             blocksPublish: true,
             blocksSync: true,
             blocksCi: true,
-            command:
-                REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.command,
+            command: REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.command,
             summary(count) {
                 return `Hay ${count} cambio(s) authored fuera de strategy.active${taskLabel}.`;
             },
@@ -1840,11 +1890,14 @@ function getEntryStrategyDisposition(entry) {
         return STRATEGY_DISPOSITION_NONE;
     }
 
-    const disposition = String(entry?.strategy_disposition || '').trim();
+    const disposition = String(
+        entry?.strategy_disposition || entry?.strategyDisposition || ''
+    ).trim();
     if (
         [
             STRATEGY_DISPOSITION_ALIGNED,
             STRATEGY_DISPOSITION_SUPPORT_ONLY,
+            STRATEGY_DISPOSITION_MIXED,
             STRATEGY_DISPOSITION_BLOCKED_SCOPE,
             STRATEGY_DISPOSITION_OUTSIDE_STRATEGY,
             STRATEGY_DISPOSITION_UNKNOWN,
@@ -1863,7 +1916,9 @@ function getEntryLaneDisposition(entry) {
         return LANE_DISPOSITION_NONE;
     }
 
-    const disposition = String(entry?.lane_disposition || '').trim();
+    const disposition = String(
+        entry?.lane_disposition || entry?.laneDisposition || ''
+    ).trim();
     if (
         [
             LANE_DISPOSITION_MIXED,
@@ -2152,7 +2207,7 @@ function buildSafeFixes(issues = []) {
 
 function buildManualActions(
     issues = [],
-    scopeContext = null,
+    _scopeContext = null,
     strategyContext = null,
     laneContext = null,
     candidateTasks = []
@@ -2232,6 +2287,7 @@ function buildManualActions(
             (issue) =>
                 issue.category === AUTHORED_CATEGORY &&
                 [
+                    STRATEGY_DISPOSITION_MIXED,
                     STRATEGY_DISPOSITION_BLOCKED_SCOPE,
                     STRATEGY_DISPOSITION_OUTSIDE_STRATEGY,
                 ].includes(issue.strategy_disposition)
@@ -2246,8 +2302,7 @@ function buildManualActions(
             id: REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.id,
             description:
                 REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.summary,
-            command:
-                REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.command,
+            command: REMEDIATION_STEP_DEFINITIONS.review_strategy_drift.command,
         });
     }
 
@@ -2304,7 +2359,7 @@ function pushRemediationStep(plan, stepDefinition) {
     plan.push({ ...stepDefinition });
 }
 
-function buildRemediationPlan(issues = [], scopeContext = null, options = {}) {
+function buildRemediationPlan(issues = [], _scopeContext = null, options = {}) {
     const plan = [];
     const candidateTasks = Array.isArray(options.candidateTasks)
         ? options.candidateTasks
@@ -2364,6 +2419,7 @@ function buildRemediationPlan(issues = [], scopeContext = null, options = {}) {
             (issue) =>
                 issue.category === AUTHORED_CATEGORY &&
                 [
+                    STRATEGY_DISPOSITION_MIXED,
                     STRATEGY_DISPOSITION_BLOCKED_SCOPE,
                     STRATEGY_DISPOSITION_OUTSIDE_STRATEGY,
                 ].includes(issue.strategy_disposition)
@@ -2410,6 +2466,7 @@ function buildRemediationPlan(issues = [], scopeContext = null, options = {}) {
             (issue) =>
                 issue.category === AUTHORED_CATEGORY &&
                 [
+                    STRATEGY_DISPOSITION_MIXED,
                     STRATEGY_DISPOSITION_BLOCKED_SCOPE,
                     STRATEGY_DISPOSITION_OUTSIDE_STRATEGY,
                 ].includes(issue.strategy_disposition)
@@ -2519,9 +2576,7 @@ function buildIssueDiagnosis(entries = [], options = {}) {
                   matchedPaths: options.laneContext.matched_paths_sample,
               })
             : buildLaneContext(
-                  hasAuthoredEntries
-                      ? LANE_CONTEXT_UNKNOWN
-                      : LANE_CONTEXT_NONE,
+                  hasAuthoredEntries ? LANE_CONTEXT_UNKNOWN : LANE_CONTEXT_NONE,
                   {
                       matchReason: hasAuthoredEntries
                           ? 'No se pudo determinar el lane de los cambios authored.'

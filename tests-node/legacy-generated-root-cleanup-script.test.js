@@ -18,13 +18,13 @@ const {
     parseArgs,
 } = require('../bin/legacy-generated-root-cleanup.js');
 const {
-    DOCTOR_VERSION,
     DOCTOR_STATE_ATTENTION,
     DOCTOR_STATE_BLOCKED,
     DOCTOR_STATE_FIXABLE,
     collectWorkspaceDoctor,
     fixWorkspace,
 } = require('../bin/lib/workspace-hygiene.js');
+const { parseArgs: parseDoctorArgs } = require('../bin/workspace-hygiene.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const SCRIPT_PATH = path.join(
@@ -112,12 +112,71 @@ function cleanupFixtureRepo(root) {
     fs.rmSync(root, { recursive: true, force: true });
 }
 
-function writeActiveCodexBoard(root, tasks = []) {
+function inferStrategySubfront(codexInstance) {
+    const normalized = String(codexInstance || '').trim();
+    if (normalized === 'codex_backend_ops') {
+        return 'SF-backend-turnero-web-pilot';
+    }
+    if (normalized === 'codex_transversal') {
+        return 'SF-transversal-turnero-web-pilot';
+    }
+    return 'SF-frontend-turnero-web-pilot';
+}
+
+function renderStrategyBlock(withActiveStrategy) {
+    if (!withActiveStrategy) {
+        return [
+            'strategy:',
+            '  active: null',
+            '  next: null',
+            '  updated_at: "2026-03-16"',
+        ];
+    }
+
+    return [
+        'strategy:',
+        '  active:',
+        '    id: STRAT-2026-03-turnero-web-pilot',
+        '    title: "Turnero web por clinica"',
+        '    status: active',
+        '    owner: Ernesto',
+        '    subfronts:',
+        '      - codex_instance: codex_frontend',
+        '        subfront_id: SF-frontend-turnero-web-pilot',
+        '        title: "Frontend turnero web"',
+        '        allowed_scopes: ["frontend-admin", "queue", "turnero"]',
+        '        support_only_scopes: ["docs", "frontend-qa"]',
+        '        blocked_scopes: ["frontend-public", "payments", "calendar"]',
+        '      - codex_instance: codex_backend_ops',
+        '        subfront_id: SF-backend-turnero-web-pilot',
+        '        title: "Backend turnero web"',
+        '        allowed_scopes: ["backend", "readiness", "gates", "deploy", "ops"]',
+        '        support_only_scopes: ["monitoring", "tests"]',
+        '        blocked_scopes: ["frontend-public", "frontend-admin", "payments", "calendar", "auth"]',
+        '      - codex_instance: codex_transversal',
+        '        subfront_id: SF-transversal-turnero-web-pilot',
+        '        title: "Transversal tooling"',
+        '        allowed_scopes: []',
+        '        support_only_scopes: ["openclaw_runtime", "codex-governance", "tooling"]',
+        '        blocked_scopes: ["frontend-public", "frontend-admin", "backend", "deploy", "auth", "queue", "turnero"]',
+        '  next: null',
+        '  updated_at: "2026-03-16"',
+    ];
+}
+
+function writeActiveCodexBoard(root, tasks = [], options = {}) {
+    const withActiveStrategy = Boolean(options.withActiveStrategy);
     const renderedTasks = tasks
         .map((task) => {
             const files = Array.isArray(task.files)
                 ? task.files.map((file) => `"${file}"`).join(', ')
                 : '';
+            const codexInstance = task.codex_instance || 'codex_frontend';
+            const subfrontId =
+                task.subfront_id ||
+                (withActiveStrategy
+                    ? inferStrategySubfront(codexInstance)
+                    : '');
             return [
                 `  - id: ${task.id}`,
                 `    title: "${task.title || task.id}"`,
@@ -126,10 +185,13 @@ function writeActiveCodexBoard(root, tasks = []) {
                 `    status: ${task.status || 'in_progress'}`,
                 `    risk: low`,
                 `    scope: ${task.scope || 'docs'}`,
-                `    codex_instance: ${task.codex_instance || 'codex_frontend'}`,
+                `    codex_instance: ${codexInstance}`,
                 `    domain_lane: ${task.domain_lane || 'frontend_content'}`,
                 `    lane_lock: strict`,
                 `    cross_domain: false`,
+                `    subfront_id: ${subfrontId || '""'}`,
+                `    strategy_id: ${withActiveStrategy ? 'STRAT-2026-03-turnero-web-pilot' : '""'}`,
+                `    strategy_role: ${withActiveStrategy ? task.strategy_role || 'primary' : '""'}`,
                 `    provider_mode: ""`,
                 `    runtime_surface: ""`,
                 `    runtime_transport: ""`,
@@ -163,10 +225,7 @@ function writeActiveCodexBoard(root, tasks = []) {
             '  autonomy: semi_autonomous_guardrails',
             '  kpi: reduce_rework',
             '  revision: 1',
-            'strategy:',
-            '  active: null',
-            '  next: null',
-            '  updated_at: "2026-03-16"',
+            ...renderStrategyBlock(withActiveStrategy),
             'tasks:',
             renderedTasks || '  []',
             '',
@@ -452,7 +511,7 @@ test('workspace hygiene aliases status y fix delegan al doctor', () => {
         const fixPayload = JSON.parse(fixResult.stdout);
 
         assert.equal(statusPayload.command, 'workspace-hygiene doctor');
-        assert.equal(statusPayload.version, DOCTOR_VERSION);
+        assert.equal(statusPayload.version, 5);
         assert.equal(statusPayload.rows[0].overall_state, DOCTOR_STATE_FIXABLE);
         assert.equal(fixPayload.command, 'workspace-hygiene doctor');
         assert.equal(fixPayload.rows[0].overall_state, 'clean');
@@ -639,6 +698,221 @@ test('workspace hygiene doctor deja authored en unknown_scope cuando no encuentr
         assert.equal(
             diagnosis.rows[0].remediation_plan[0].id,
             'clarify_scope_context'
+        );
+    } finally {
+        cleanupFixtureRepo(root);
+    }
+});
+
+test('workspace hygiene doctor parseArgs reconoce task-id, scope-pattern y show-candidates', () => {
+    const options = parseDoctorArgs([
+        'doctor',
+        '--current-only',
+        '--task-id',
+        'CDX-044',
+        '--scope-pattern',
+        'queue-ops.css',
+        '--scope-pattern=README.md',
+        '--show-candidates',
+    ]);
+
+    assert.equal(options.command, 'doctor');
+    assert.equal(options.currentOnly, true);
+    assert.equal(options.taskId, 'CDX-044');
+    assert.deepEqual(options.scopePatterns, ['queue-ops.css', 'README.md']);
+    assert.equal(options.showCandidates, true);
+});
+
+test('workspace hygiene doctor no crea split extra por README.md de soporte si el corte es de una sola lane', () => {
+    const root = createFixtureRepo();
+    try {
+        fs.mkdirSync(path.join(root, 'src', 'apps', 'admin-v3'), {
+            recursive: true,
+        });
+        fs.writeFileSync(
+            path.join(root, 'src', 'apps', 'admin-v3', 'app.js'),
+            'export const adminFixture = 1;\n',
+            'utf8'
+        );
+        runGit(root, ['add', 'src/apps/admin-v3/app.js']);
+        runGit(root, ['commit', '-m', 'track queue fixture']);
+        writeActiveCodexBoard(root, [], { withActiveStrategy: true });
+        runGit(root, ['add', 'AGENT_BOARD.yaml']);
+        runGit(root, ['commit', '-m', 'track strategy fixture']);
+
+        fs.writeFileSync(
+            path.join(root, 'src', 'apps', 'admin-v3', 'app.js'),
+            'export const adminFixture = 2;\n',
+            'utf8'
+        );
+        fs.writeFileSync(
+            path.join(root, 'README.md'),
+            '# support doc dirty\n',
+            'utf8'
+        );
+
+        const diagnosis = collectWorkspaceDoctor(root, {
+            currentOnly: true,
+            scopePatterns: ['src/apps/admin-v3/app.js', 'README.md'],
+        });
+
+        assert.equal(diagnosis.rows[0].overall_state, DOCTOR_STATE_ATTENTION);
+        assert.equal(diagnosis.rows[0].lane_context.resolution, 'single_lane');
+        assert.equal(diagnosis.rows[0].split_plan.length, 0);
+        assert.equal(
+            diagnosis.rows[0].issues.some(
+                (issue) =>
+                    issue.category === 'authored' &&
+                    issue.scope_disposition === 'in_scope'
+            ),
+            true
+        );
+    } finally {
+        cleanupFixtureRepo(root);
+    }
+});
+
+test('workspace hygiene doctor bloquea arbol mixto cross-lane con split_plan accionable', () => {
+    const root = createFixtureRepo();
+    try {
+        fs.mkdirSync(path.join(root, 'bin'), { recursive: true });
+        fs.mkdirSync(
+            path.join(root, 'tools', 'agent-orchestrator', 'commands'),
+            {
+                recursive: true,
+            }
+        );
+        fs.mkdirSync(path.join(root, 'src', 'apps', 'admin-v3'), {
+            recursive: true,
+        });
+        fs.writeFileSync(
+            path.join(root, 'bin', 'doctor-fixture.js'),
+            'module.exports = 1;\n',
+            'utf8'
+        );
+        fs.writeFileSync(
+            path.join(
+                root,
+                'tools',
+                'agent-orchestrator',
+                'commands',
+                'doctor-fixture.js'
+            ),
+            'module.exports = 2;\n',
+            'utf8'
+        );
+        fs.writeFileSync(
+            path.join(root, 'src', 'apps', 'admin-v3', 'app.js'),
+            'export const adminFixture = 1;\n',
+            'utf8'
+        );
+        runGit(root, [
+            'add',
+            'bin/doctor-fixture.js',
+            'tools/agent-orchestrator/commands/doctor-fixture.js',
+            'src/apps/admin-v3/app.js',
+        ]);
+        runGit(root, ['commit', '-m', 'track mixed lane fixtures']);
+        writeActiveCodexBoard(root, [], { withActiveStrategy: true });
+        runGit(root, ['add', 'AGENT_BOARD.yaml']);
+        runGit(root, ['commit', '-m', 'track mixed lane strategy fixture']);
+
+        fs.writeFileSync(
+            path.join(root, 'bin', 'doctor-fixture.js'),
+            'module.exports = 11;\n',
+            'utf8'
+        );
+        fs.writeFileSync(
+            path.join(
+                root,
+                'tools',
+                'agent-orchestrator',
+                'commands',
+                'doctor-fixture.js'
+            ),
+            'module.exports = 22;\n',
+            'utf8'
+        );
+        fs.writeFileSync(
+            path.join(root, 'src', 'apps', 'admin-v3', 'app.js'),
+            'export const adminFixture = 2;\n',
+            'utf8'
+        );
+
+        const diagnosis = collectWorkspaceDoctor(root, { currentOnly: true });
+
+        assert.equal(diagnosis.rows[0].overall_state, DOCTOR_STATE_BLOCKED);
+        assert.equal(diagnosis.rows[0].lane_context.resolution, 'mixed_lane');
+        assert.equal(
+            diagnosis.rows[0].issues.some(
+                (issue) =>
+                    issue.category === 'authored' &&
+                    issue.lane_disposition === 'mixed_lane' &&
+                    issue.blocks_publish === true
+            ),
+            true
+        );
+        assert.equal(diagnosis.rows[0].split_plan.length >= 2, true);
+        assert.equal(
+            diagnosis.rows[0].remediation_plan[0].id,
+            'split_mixed_lane_worktree'
+        );
+    } finally {
+        cleanupFixtureRepo(root);
+    }
+});
+
+test('workspace hygiene doctor sugiere tareas historicas como candidates sin autoclasicar in_scope', () => {
+    const root = createFixtureRepo();
+    try {
+        fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
+        fs.writeFileSync(
+            path.join(root, 'docs', 'historical.md'),
+            '# historical\n',
+            'utf8'
+        );
+        runGit(root, ['add', 'docs/historical.md']);
+        runGit(root, ['commit', '-m', 'track historical doc fixture']);
+        writeActiveCodexBoard(
+            root,
+            [
+                {
+                    id: 'CDX-901',
+                    title: 'Historical docs task',
+                    status: 'done',
+                    files: ['docs/historical.md'],
+                    scope: 'docs',
+                },
+            ],
+            { withActiveStrategy: true }
+        );
+        runGit(root, ['add', 'AGENT_BOARD.yaml']);
+        runGit(root, ['commit', '-m', 'track historical board fixture']);
+        fs.writeFileSync(
+            path.join(root, 'docs', 'historical.md'),
+            '# historical dirty\n',
+            'utf8'
+        );
+
+        const diagnosis = collectWorkspaceDoctor(root, { currentOnly: true });
+
+        assert.equal(diagnosis.rows[0].overall_state, DOCTOR_STATE_ATTENTION);
+        assert.equal(diagnosis.rows[0].scope_context.resolution, 'unknown');
+        assert.equal(
+            diagnosis.rows[0].issues[0].scope_disposition,
+            'unknown_scope'
+        );
+        assert.equal(
+            diagnosis.rows[0].candidate_tasks.some(
+                (candidate) =>
+                    candidate.task_id === 'CDX-901' &&
+                    candidate.source === 'historical'
+            ),
+            true
+        );
+        assert.equal(
+            diagnosis.rows[0].remediation_plan[0].id,
+            'inspect_candidate_tasks'
         );
     } finally {
         cleanupFixtureRepo(root);
