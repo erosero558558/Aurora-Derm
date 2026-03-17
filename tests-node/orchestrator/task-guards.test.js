@@ -95,6 +95,51 @@ function boardWithActiveStrategy() {
     };
 }
 
+function boardWithFrontendPublicBlockedStrategy() {
+    return {
+        strategy: {
+            active: {
+                id: 'STRAT-2026-03-turnero-web-pilot',
+                title: 'Turnero web pilot',
+                objective: 'Fixture para frontend-public bloqueado',
+                owner: 'ernesto',
+                status: 'active',
+                started_at: '2026-03-14',
+                review_due_at: '2026-03-21',
+                exit_criteria: ['uno'],
+                success_signal: 'demo',
+                subfronts: [
+                    {
+                        codex_instance: 'codex_frontend',
+                        subfront_id: 'SF-frontend-turnero-web-pilot',
+                        title: 'Frontend piloto',
+                        allowed_scopes: ['frontend-admin', 'queue', 'turnero'],
+                        support_only_scopes: ['docs', 'frontend-qa'],
+                        blocked_scopes: ['frontend-public'],
+                    },
+                    {
+                        codex_instance: 'codex_backend_ops',
+                        subfront_id: 'SF-backend-turnero-web-pilot',
+                        title: 'Backend piloto',
+                        allowed_scopes: ['backend', 'readiness', 'gates'],
+                        support_only_scopes: ['tests'],
+                        blocked_scopes: ['frontend-public', 'auth'],
+                    },
+                    {
+                        codex_instance: 'codex_transversal',
+                        subfront_id: 'SF-transversal-turnero-web-pilot',
+                        title: 'Transversal piloto',
+                        allowed_scopes: [],
+                        support_only_scopes: ['codex-governance', 'tooling'],
+                        blocked_scopes: ['frontend-public', 'backend'],
+                    },
+                ],
+            },
+        },
+        tasks: [{ id: 'AG-001' }],
+    };
+}
+
 test('task-guards detecta keyword critica en scope', () => {
     assert.equal(
         findCriticalScopeKeyword(
@@ -385,6 +430,95 @@ test('task-guards mantiene bloqueado cualquier exception no release sobre blocke
                 }
             ),
         /scope bloqueado por subfrente/i
+    );
+});
+
+test('task-guards permite archivos de soporte acotados en release-publish frontend-public', () => {
+    const board = boardWithFrontendPublicBlockedStrategy();
+
+    assert.doesNotThrow(() =>
+        validateTaskGovernancePrechecks(
+            board,
+            {
+                id: 'AG-256',
+                status: 'review',
+                scope: 'frontend-public',
+                executor: 'codex',
+                codex_instance: 'codex_frontend',
+                domain_lane: 'frontend_content',
+                lane_lock: 'strict',
+                cross_domain: false,
+                files: [
+                    'content/public-v6/es/home.json',
+                    'src/apps/astro/src/components/public-v6/TrustSignalsV6.astro',
+                    'js/public-v6-shell.js',
+                    'package.json',
+                    'tests-node/public-v6-build-contract.test.js',
+                    'tests/booking.spec.js',
+                    'tests/funnel-tracking.spec.js',
+                    'tests/public-v6-case-stories.spec.js',
+                    'tests/public-v6-news-strip.spec.js',
+                    'verification/public-v6-canonical/artifact-drift.json',
+                ],
+                depends_on: ['AG-001'],
+                strategy_id: 'STRAT-2026-03-turnero-web-pilot',
+                subfront_id: 'SF-frontend-turnero-web-pilot',
+                strategy_role: 'exception',
+                strategy_reason: 'validated_release_promotion',
+                integration_slice: 'governance_evidence',
+                work_type: 'evidence',
+                runtime_impact: 'low',
+                critical_zone: false,
+            },
+            {
+                criticalScopeKeywords: CRITICAL_SCOPE_KEYWORDS,
+                allowedExecutors: ALLOWED_EXECUTORS,
+                activeStatuses: ACTIVE_STATUSES,
+                handoffs: [],
+            }
+        )
+    );
+});
+
+test('task-guards mantiene cerrado el release-publish frontend-public para archivos fuera del permiso acotado', () => {
+    const board = boardWithFrontendPublicBlockedStrategy();
+
+    assert.throws(
+        () =>
+            validateTaskGovernancePrechecks(
+                board,
+                {
+                    id: 'AG-256',
+                    status: 'review',
+                    scope: 'frontend-public',
+                    executor: 'codex',
+                    codex_instance: 'codex_frontend',
+                    domain_lane: 'frontend_content',
+                    lane_lock: 'strict',
+                    cross_domain: false,
+                    files: [
+                        'content/public-v6/es/home.json',
+                        'tests-node/public-v6-build-contract.test.js',
+                        'tests-node/agent-orchestrator-cli.test.js',
+                    ],
+                    depends_on: ['AG-001'],
+                    strategy_id: 'STRAT-2026-03-turnero-web-pilot',
+                    subfront_id: 'SF-frontend-turnero-web-pilot',
+                    strategy_role: 'exception',
+                    strategy_reason: 'validated_release_promotion',
+                    integration_slice: 'governance_evidence',
+                    work_type: 'evidence',
+                    runtime_impact: 'low',
+                    critical_zone: false,
+                },
+                {
+                    criticalScopeKeywords: CRITICAL_SCOPE_KEYWORDS,
+                    allowedExecutors: ALLOWED_EXECUTORS,
+                    activeStatuses: ACTIVE_STATUSES,
+                    handoffs: [],
+                }
+            ),
+        /fuera de lane/i
     );
 });
 

@@ -502,6 +502,7 @@ function applyDualCodexOverrides(task, flags = {}, helpers = {}) {
         isFlagEnabled = () => false,
         inferDomainLaneFromFiles = () => ({ lane: 'backend_ops' }),
         ensureTaskDualCodexDefaults = () => task,
+        skipLaneInference = false,
     } = helpers;
 
     const explicitCodexInstance = readStringFlag(
@@ -567,6 +568,7 @@ function applyDualCodexOverrides(task, flags = {}, helpers = {}) {
     }
 
     if (
+        !skipLaneInference &&
         !explicitDomainLane &&
         Array.isArray(task.files) &&
         task.files.length > 0
@@ -971,10 +973,20 @@ function handleTaskStart(ctx) {
     task.updated_at = currentDate();
 
     const handoffData = parseHandoffs();
+    const preserveFrontendReleaseLane = Boolean(
+        releasePublish &&
+            String(task.scope || '').trim().toLowerCase() ===
+                'frontend-public' &&
+            String(task.domain_lane || '').trim().toLowerCase() ===
+                'frontend_content' &&
+            String(task.codex_instance || '').trim().toLowerCase() ===
+                'codex_frontend'
+    );
     applyDualCodexOverrides(task, flags, {
         isFlagEnabled,
         inferDomainLaneFromFiles,
         ensureTaskDualCodexDefaults,
+        skipLaneInference: preserveFrontendReleaseLane,
     });
     applyStrategyOverrides(task, flags);
     applyFocusOverrides(task, flags);

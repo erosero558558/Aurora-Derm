@@ -905,6 +905,77 @@ tasks:
 `;
 }
 
+function boardForFrontendPublicReleasePublishFixture() {
+    return `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  revision: 0
+  updated_at: ${DATE}
+strategy:
+  active:
+    id: STRAT-2026-03-turnero-web-pilot
+    title: "Turnero web pilot"
+    objective: "Fixture frontend-public release support"
+    owner: ernesto
+    owner_policy: "detected_default_owner"
+    status: active
+    started_at: "2026-03-14"
+    review_due_at: "2026-03-21"
+    exit_criteria: ["uno"]
+    success_signal: "demo"
+    subfronts:
+      - codex_instance: codex_frontend
+        subfront_id: SF-frontend-turnero-web-pilot
+        title: "Frontend piloto"
+        allowed_scopes: ["frontend-admin", "queue", "turnero"]
+        support_only_scopes: ["docs", "frontend-qa"]
+        blocked_scopes: ["frontend-public"]
+        wip_limit: 2
+        default_acceptance_profile: "frontend_delivery_checkpoint"
+        exception_ttl_hours: 8
+      - codex_instance: codex_backend_ops
+        subfront_id: SF-backend-turnero-web-pilot
+        title: "Backend piloto"
+        allowed_scopes: ["backend", "readiness", "gates"]
+        support_only_scopes: ["tests"]
+        blocked_scopes: ["frontend-public", "auth"]
+        wip_limit: 2
+        default_acceptance_profile: "backend_gate_checkpoint"
+        exception_ttl_hours: 6
+      - codex_instance: codex_transversal
+        subfront_id: SF-transversal-turnero-web-pilot
+        title: "Transversal piloto"
+        allowed_scopes: []
+        support_only_scopes: ["codex-governance", "tooling"]
+        blocked_scopes: ["frontend-public", "backend"]
+        wip_limit: 2
+        default_acceptance_profile: "transversal_runtime_checkpoint"
+        exception_ttl_hours: 4
+  next: null
+  updated_at: "2026-03-14"
+tasks:
+  - id: AG-256
+    title: "Public release fixture"
+    owner: ernesto
+    executor: codex
+    status: backlog
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["content/public-v6/es/home.json"]
+    depends_on: []
+    critical_zone: false
+    runtime_impact: low
+    updated_at: ${DATE}
+`;
+}
+
 function basePlanWithStrategyBlock(options = {}) {
     const title = String(options.title || 'Admin operativo');
     const owner = String(options.owner || 'ernesto');
@@ -2611,6 +2682,45 @@ test('task start --release-publish fija el preset de excepcion formal de release
     );
     assert.equal(json.task.focus_id, 'FOCUS-2026-03-admin-operativo-cut-1');
     assert.equal(json.task.focus_step, 'admin_queue_pilot_cut');
+    assert.equal(json.task.integration_slice, 'governance_evidence');
+    assert.equal(json.task.work_type, 'evidence');
+});
+
+test('task start --release-publish acepta soporte acotado para frontend-public sin abrir cross-lane', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForFrontendPublicReleasePublishFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const result = runCli(dir, [
+        'task',
+        'start',
+        'AG-256',
+        '--release-publish',
+        '--files',
+        'content/public-v6/es/home.json,content/public-v6/en/home.json,js/public-v6-shell.js,src/apps/astro/src/components/public-v6/TrustSignalsV6.astro,package.json,tests-node/public-v6-build-contract.test.js,tests-node/public-v6-copy-contract.test.js,tests/booking.spec.js,tests/funnel-tracking.spec.js,tests/public-v6-case-stories.spec.js,tests/public-v6-news-strip.spec.js,verification/public-v6-canonical/artifact-drift.json',
+        '--json',
+    ]);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.ok, true);
+    assert.equal(json.task.id, 'AG-256');
+    assert.equal(json.task.status, 'review');
+    assert.equal(json.task.codex_instance, 'codex_frontend');
+    assert.equal(json.task.domain_lane, 'frontend_content');
+    assert.equal(
+        json.task.subfront_id,
+        'SF-frontend-turnero-web-pilot'
+    );
+    assert.equal(json.task.strategy_role, 'exception');
+    assert.equal(
+        json.task.strategy_reason,
+        'validated_release_promotion'
+    );
     assert.equal(json.task.integration_slice, 'governance_evidence');
     assert.equal(json.task.work_type, 'evidence');
 });

@@ -95,6 +95,18 @@ const DEFAULT_DUAL_CODEX_OWNERSHIP = {
 
 const DEFAULT_TRANSVERSAL_PRIORITY_PATTERNS =
     DEFAULT_DUAL_CODEX_OWNERSHIP.transversal_runtime;
+const FRONTEND_PUBLIC_RELEASE_SUPPORT_PATTERNS = [
+    'tests-node/public-v6-*.test.js',
+    'tests/booking.spec.js',
+    'tests/chat-booking-calendar-errors.spec.js',
+    'tests/checklist-production.spec.js',
+    'tests/deferred-shell-static-fallback.spec.js',
+    'tests/funnel-tracking.spec.js',
+    'tests/public-v6-case-stories.spec.js',
+    'tests/public-v6-news-strip.spec.js',
+    'verification/public-v6-canonical/**',
+    'package.json',
+];
 
 function normalizePathToken(value) {
     return String(value || '')
@@ -465,6 +477,24 @@ function validateTaskDependsOn(board, task, options = {}) {
     }
 }
 
+function isFrontendPublicReleaseSupportTask(task) {
+    if (!task || typeof task !== 'object') return false;
+    return Boolean(
+        domainStrategy.isReleasePromotionExceptionTask(task) &&
+            normalizeOptionalToken(task.scope) === 'frontend-public' &&
+            normalizeOptionalToken(task.codex_instance) === 'codex_frontend' &&
+            normalizeOptionalToken(task.domain_lane) === 'frontend_content'
+    );
+}
+
+function isFrontendPublicReleaseSupportFile(path) {
+    const safePath = normalizePathToken(path);
+    if (!safePath) return false;
+    return FRONTEND_PUBLIC_RELEASE_SUPPORT_PATTERNS.some((pattern) =>
+        pathMatchesPattern(safePath, pattern)
+    );
+}
+
 function isActiveHandoff(handoff, options = {}) {
     const isExpiredFn =
         typeof options.isExpired === 'function'
@@ -523,6 +553,8 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
         : DEFAULT_CRITICAL_SCOPE_KEYWORDS;
     const activeStatuses = options.activeStatuses || DEFAULT_ACTIVE_STATUSES;
     const handoffs = Array.isArray(options.handoffs) ? options.handoffs : [];
+    const allowFrontendReleaseSupport =
+        isFrontendPublicReleaseSupportTask(task);
 
     if (!allowedDomainLanes.has(domainLane)) {
         throw new Error(
@@ -627,6 +659,12 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
     const safeFiles = Array.isArray(task?.files) ? task.files : [];
     const laneViolations = [];
     for (const rawFile of safeFiles) {
+        if (
+            allowFrontendReleaseSupport &&
+            isFrontendPublicReleaseSupportFile(rawFile)
+        ) {
+            continue;
+        }
         const classified = classifyPathLane(rawFile, options);
         if (crossDomain) continue;
         if (
@@ -773,12 +811,15 @@ module.exports = {
     DEFAULT_ALLOWED_PROVIDER_MODES,
     DEFAULT_ALLOWED_RUNTIME_SURFACES,
     DEFAULT_ALLOWED_RUNTIME_TRANSPORTS,
+    FRONTEND_PUBLIC_RELEASE_SUPPORT_PATTERNS,
     findCriticalScopeKeyword,
     classifyPathLane,
     inferDomainLaneFromFiles,
     mapLaneToCodexInstance,
     isOpenClawRuntimeTask,
     inferOpenClawRuntimeSurface,
+    isFrontendPublicReleaseSupportTask,
+    isFrontendPublicReleaseSupportFile,
     ensureTaskDualCodexDefaults,
     validateTaskExecutorScopeGuard,
     validateTaskDependsOn,

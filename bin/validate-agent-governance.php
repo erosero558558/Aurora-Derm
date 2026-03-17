@@ -116,6 +116,11 @@ function parseBooleanLike($value, bool $fallback = false): bool
     return $fallback;
 }
 
+function normalizeOptionalToken(string $value): string
+{
+    return strtolower(trim($value));
+}
+
 /**
  * @return array{version:mixed, policy:array<string,mixed>, strategy:array<string,mixed>, tasks:array<int,array<string,mixed>>}
  */
@@ -1214,6 +1219,51 @@ function classifyFileLaneForDualCodex(string $rawFile): string
 }
 
 /**
+ * @return array<int,string>
+ */
+function frontendPublicReleaseSupportPatterns(): array
+{
+    return [
+        'tests-node/public-v6-*.test.js',
+        'tests/booking.spec.js',
+        'tests/chat-booking-calendar-errors.spec.js',
+        'tests/checklist-production.spec.js',
+        'tests/deferred-shell-static-fallback.spec.js',
+        'tests/funnel-tracking.spec.js',
+        'tests/public-v6-case-stories.spec.js',
+        'tests/public-v6-news-strip.spec.js',
+        'verification/public-v6-canonical/**',
+        'package.json',
+    ];
+}
+
+function isFrontendPublicReleaseSupportTask(array $task): bool
+{
+    return normalizeOptionalToken((string) ($task['strategy_role'] ?? '')) === 'exception'
+        && trim((string) ($task['strategy_reason'] ?? '')) === 'validated_release_promotion'
+        && trim((string) ($task['status'] ?? '')) === 'review'
+        && normalizeOptionalToken((string) ($task['work_type'] ?? '')) === 'evidence'
+        && normalizeOptionalToken((string) ($task['integration_slice'] ?? '')) === 'governance_evidence'
+        && normalizeOptionalToken((string) ($task['scope'] ?? '')) === 'frontend-public'
+        && normalizeOptionalToken((string) ($task['codex_instance'] ?? '')) === 'codex_frontend'
+        && normalizeOptionalToken((string) ($task['domain_lane'] ?? '')) === 'frontend_content';
+}
+
+function isFrontendPublicReleaseSupportFile(string $rawFile): bool
+{
+    $file = normalizePathToken($rawFile);
+    if ($file === '') {
+        return false;
+    }
+    foreach (frontendPublicReleaseSupportPatterns() as $pattern) {
+        if (preg_match(wildcardToRegex($pattern), $file) === 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @return array{any_overlap:bool, overlap_files:array<int,string>, ambiguous_wildcard_overlap:bool}
  */
 function analyzeFileOverlap(array $filesA, array $filesB): array
@@ -1545,7 +1595,11 @@ foreach ($board['tasks'] as $idx => $task) {
     if (!is_array($task['files'] ?? null)) {
         $errors[] = "Task {$id} debe definir files como lista YAML inline.";
     } elseif ($shouldValidateDual && !$crossDomain) {
+        $allowFrontendReleaseSupport = isFrontendPublicReleaseSupportTask($task);
         foreach ($task['files'] as $rawFile) {
+            if ($allowFrontendReleaseSupport && isFrontendPublicReleaseSupportFile((string) $rawFile)) {
+                continue;
+            }
             $fileLane = classifyFileLaneForDualCodex((string) $rawFile);
             if (!$isRuntimeTask && $domainLane === 'backend_ops' && $fileLane === 'transversal_runtime') {
                 continue;

@@ -7,8 +7,8 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 707
-  updated_at: 2026-03-16
+  revision: 708
+  updated_at: 2026-03-17
 
 strategy:
   active:
@@ -16,9 +16,12 @@ strategy:
     title: "Turnero web por clinica"
     objective: "Reabrir queue/turnero como un piloto web por clinica demostrable en admin basic, operador, kiosco y sala, usando clinic-profile como fuente de verdad y bloqueando superficies fuera de canon."
     owner: Ernesto
+    owner_policy: ""
     status: active
     started_at: "2026-03-14"
     review_due_at: "2026-03-28"
+    closed_at: ""
+    close_reason: ""
     exit_criteria: ["Una clinica puede operar el flujo kiosco -> admin/operador -> sala con branding y cola consistentes", "El canon por clinica bloquea acciones reales si perfil, firma o ruta quedan fuera de contrato", "El piloto web cierra con gate y smoke propios sin depender de instaladores nativos"]
     success_signal: "Una clinica puede demostrarse de punta a punta desde kiosco hasta sala con branding, heartbeats y bloqueos de canon correctos, sin depender de apps nativas."
     subfronts:
@@ -28,18 +31,29 @@ strategy:
         allowed_scopes: ["frontend-admin", "queue", "turnero"]
         support_only_scopes: ["docs", "frontend-qa"]
         blocked_scopes: ["frontend-public", "payments", "calendar"]
+        wip_limit: 1
+        default_acceptance_profile: ""
+        exception_ttl_hours: 0
       - codex_instance: codex_backend_ops
         subfront_id: SF-backend-turnero-web-pilot
         title: "Queue state, clinic-profile y gate web pilot"
         allowed_scopes: ["backend", "readiness", "gates", "deploy", "ops"]
         support_only_scopes: ["monitoring", "tests"]
         blocked_scopes: ["frontend-public", "frontend-admin", "payments", "calendar", "auth"]
+        wip_limit: 1
+        default_acceptance_profile: ""
+        exception_ttl_hours: 0
       - codex_instance: codex_transversal
         subfront_id: SF-transversal-turnero-web-pilot
         title: "Runtime OpenClaw solo si desbloquea acceso real del piloto"
         allowed_scopes: []
         support_only_scopes: ["openclaw_runtime", "codex-governance", "tooling"]
         blocked_scopes: ["frontend-public", "frontend-admin", "backend", "deploy", "auth", "queue", "turnero"]
+        wip_limit: 1
+        default_acceptance_profile: ""
+        exception_ttl_hours: 0
+  next: null
+  updated_at: ""
 
 tasks:
   - id: AG-001
@@ -10616,8 +10630,8 @@ tasks:
     title: "Governance release publish exception flow"
     owner: deck
     executor: codex
-    status: review
-    status_since_at: "2026-03-16T19:45:09.976Z"
+    status: done
+    status_since_at: "2026-03-17T00:18:36.747Z"
     risk: medium
     scope: codex-governance
     codex_instance: codex_transversal
@@ -10636,31 +10650,23 @@ tasks:
     last_attempt_at: ""
     attempts: 0
     blocked_reason: ""
-    lease_id: "lease_AG-257_20260316194509976_eb7d2d"
-    lease_owner: "deck"
-    lease_created_at: "2026-03-16T19:45:09.976Z"
-    heartbeat_at: "2026-03-16T19:45:09.976Z"
-    lease_expires_at: "2026-03-16T23:45:09.976Z"
-    lease_reason: "board_write"
-    lease_cleared_at: ""
-    lease_cleared_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: "2026-03-17T00:18:36.747Z"
+    lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
     acceptance: "Governance release publish exception flow"
-    acceptance_ref: ""
-    evidence_ref: ""
+    acceptance_ref: "verification/agent-runs/AG-257.md"
+    evidence_ref: "verification/agent-runs/AG-257.md"
     strategy_id: "STRAT-2026-03-turnero-web-pilot"
     subfront_id: "SF-transversal-turnero-web-pilot"
     strategy_role: "support"
-    focus_id: ""
-    focus_step: ""
-    integration_slice: ""
-    work_type: ""
-    expected_outcome: ""
-    decision_ref: ""
-    rework_parent: ""
-    rework_reason: ""
     depends_on: []
     prompt: "Governance release publish exception flow"
     created_at: 2026-03-16
-    updated_at: 2026-03-16
+    updated_at: 2026-03-17
