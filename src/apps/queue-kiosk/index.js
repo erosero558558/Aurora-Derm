@@ -368,7 +368,7 @@ function applyKioskClinicProfile(profile) {
 
     const headerNote = document.querySelector('.kiosk-header-note');
     if (headerNote instanceof HTMLElement) {
-        headerNote.textContent = `Piloto web por clínica · ${clinicCity || clinicShortName}`;
+        headerNote.textContent = `Turnero V2 por clínica · ${clinicCity || clinicShortName}`;
     }
 }
 

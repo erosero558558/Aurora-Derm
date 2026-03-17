@@ -171,7 +171,7 @@ function buildDomainCopy(
             return {
                 title: 'Experiencia: Despliegue',
                 summary:
-                    'El foco de apertura deja checklist, piloto web y apps del release al frente. Los instaladores nativos quedan fuera del bloqueo del go-live.',
+                    'El foco de apertura deja checklist, Turnero V2 y apps del release al frente. Las superficies nativas y el hardware crítico sí bloquean el go-live.',
                 primaryHref: '#queueOpeningChecklist',
                 primaryLabel: 'Ir a apertura diaria',
             };

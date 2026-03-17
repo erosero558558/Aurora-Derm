@@ -6,7 +6,6 @@ import {
 import { getState, updateState } from '../admin-v3/shared/core/store.js';
 import {
     checkAuthStatus as checkSharedAuthStatus,
-    getReusableOpenClawRedirectUrl as getReusableOpenClawRedirectUrlFromOpenClaw,
     isOperatorAuthMode as isOpenClawOperatorMode,
     loginWith2FA as loginWith2FAFromOpenClaw,
     loginWithPassword as loginWithLegacyPassword,
@@ -53,7 +52,8 @@ function currentReturnTo() {
     }
 
     const path =
-        String(window.location.pathname || '').trim() || '/operador-turnos.html';
+        String(window.location.pathname || '').trim() ||
+        '/operador-turnos.html';
     const search = String(window.location.search || '').trim();
     return `${path}${search}`;
 }
@@ -146,7 +146,10 @@ function normalizeChallenge(challenge) {
 
 function sleep(ms) {
     return new Promise((resolve) => {
-        if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
+        if (
+            typeof window !== 'undefined' &&
+            typeof window.setTimeout === 'function'
+        ) {
             window.setTimeout(resolve, Math.max(0, Number(ms || 0)));
             return;
         }
@@ -162,14 +165,18 @@ function getPersistedOpenClawChallenge(auth) {
     );
 }
 
-function inferOpenClawTransport(payload = {}, currentAuth = getState().auth || {}) {
+function inferOpenClawTransport(
+    payload = {},
+    currentAuth = getState().auth || {}
+) {
     const explicitTransport = normalizeTransport(payload?.transport, '');
     if (explicitTransport) {
         return explicitTransport;
     }
 
     const persistedChallenge = getPersistedOpenClawChallenge(currentAuth);
-    const nextChallenge = normalizeChallenge(payload?.challenge) || persistedChallenge;
+    const nextChallenge =
+        normalizeChallenge(payload?.challenge) || persistedChallenge;
     const redirectUrl = String(
         payload?.redirectUrl ||
             currentAuth?.redirectUrl ||
@@ -359,13 +366,25 @@ function payloadPrefersPin(payload) {
     const mode = normalizeMode(payload.mode);
     const recommendedMode = normalizeMode(payload.recommendedMode, mode);
     const pinMeta = normalizePinMeta(payload.turneroOperatorAccessMeta);
+    const configured =
+        payload.configured === true || pinMeta?.configured === true;
+    const authenticated = payload.authenticated === true;
+    const status = String(payload.status || '')
+        .trim()
+        .toLowerCase();
+    const activeStatus = [
+        'authenticated',
+        'operator_pin_required',
+        'operator_pin_active',
+        'operator_pin_authenticated',
+        'operator_pin_expired',
+    ].includes(status);
 
     return (
-        payload.authenticated === true ||
-        payload.configured === true ||
-        mode === 'operator_pin' ||
-        recommendedMode === 'operator_pin' ||
-        pinMeta !== null
+        authenticated ||
+        configured ||
+        ((mode === 'operator_pin' || recommendedMode === 'operator_pin') &&
+            activeStatus)
     );
 }
 
@@ -395,13 +414,16 @@ function payloadPrefersOpenClaw(payload) {
     const mode = normalizeMode(payload.mode);
     const recommendedMode = normalizeMode(payload.recommendedMode, mode);
     return (
-        mode === 'openclaw_chatgpt' ||
-        recommendedMode === 'openclaw_chatgpt'
+        mode === 'openclaw_chatgpt' || recommendedMode === 'openclaw_chatgpt'
     );
 }
 
 function payloadPrefersLegacy(payload) {
-    if (!payload || typeof payload !== 'object' || payloadPrefersOpenClaw(payload)) {
+    if (
+        !payload ||
+        typeof payload !== 'object' ||
+        payloadPrefersOpenClaw(payload)
+    ) {
         return false;
     }
 
@@ -424,7 +446,10 @@ function payloadPrefersLegacy(payload) {
     );
 }
 
-function normalizeOpenClawStartPayload(payload = {}, fallbackAuth = getState().auth) {
+function normalizeOpenClawStartPayload(
+    payload = {},
+    fallbackAuth = getState().auth
+) {
     const inferredTransport = inferOpenClawTransport(payload, fallbackAuth);
 
     return {
@@ -492,7 +517,26 @@ export function isOperatorAuthMode(auth = getState().auth) {
 }
 
 export function getReusableOpenClawRedirectUrl(auth = getState().auth) {
-    return getReusableOpenClawRedirectUrlFromOpenClaw(auth);
+    if (!isOpenClawOperatorMode(auth)) {
+        return '';
+    }
+
+    const status = String(auth?.status || '')
+        .trim()
+        .toLowerCase();
+    const transport = normalizeTransport(
+        auth?.transport,
+        normalizeTransport(auth?.openClawSnapshot?.transport, '')
+    );
+    const redirectUrl = String(
+        auth?.redirectUrl || auth?.openClawSnapshot?.redirectUrl || ''
+    ).trim();
+
+    if (status !== 'pending' || transport !== 'web_broker' || !redirectUrl) {
+        return '';
+    }
+
+    return redirectUrl;
 }
 
 export async function checkAuthStatus() {
@@ -552,7 +596,10 @@ export async function loginWithPassword(pin) {
 }
 
 export async function loginWith2FA(code) {
-    if (isOpenClawOperatorMode(getState().auth) || getState().auth?.requires2FA) {
+    if (
+        isOpenClawOperatorMode(getState().auth) ||
+        getState().auth?.requires2FA
+    ) {
         return loginWith2FAFromOpenClaw(code);
     }
 
