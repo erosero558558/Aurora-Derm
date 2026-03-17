@@ -1001,6 +1001,10 @@ function findStrategySubfront(?array $strategy, array $task): ?array
 
 function isAllowedStrategyException(array $task, array $criticalScopes): bool
 {
+    if (isReleasePromotionExceptionTask($task)) {
+        return true;
+    }
+
     $scope = strtolower(trim((string) ($task['scope'] ?? '')));
     $runtimeImpact = strtolower(trim((string) ($task['runtime_impact'] ?? '')));
     if ((bool) ($task['critical_zone'] ?? false) || $runtimeImpact === 'high') {
@@ -1042,6 +1046,16 @@ function isAllowedStrategyException(array $task, array $criticalScopes): bool
     return false;
 }
 
+function isReleasePromotionExceptionTask(array $task): bool
+{
+    return normalizeOptionalToken((string) ($task['strategy_role'] ?? '')) === 'exception'
+        && trim((string) ($task['strategy_reason'] ?? '')) === 'validated_release_promotion'
+        && trim((string) ($task['status'] ?? '')) === 'review'
+        && normalizeOptionalToken((string) ($task['work_type'] ?? '')) === 'evidence'
+        && normalizeOptionalToken((string) ($task['integration_slice'] ?? '')) === 'governance_evidence'
+        && normalizeOptionalToken((string) ($task['executor'] ?? '')) === 'codex';
+}
+
 /**
  * @return array<int,string>
  */
@@ -1064,6 +1078,7 @@ function validateTaskStrategyAlignment(array $board, array $task, array $critica
     $strategyRole = strtolower(trim((string) ($task['strategy_role'] ?? '')));
     $strategyReason = trim((string) ($task['strategy_reason'] ?? ''));
     $scope = strtolower(trim((string) ($task['scope'] ?? '')));
+    $isReleasePromotionException = isReleasePromotionExceptionTask($task);
 
     if ($strategyId === '') {
         $errors[] = "Task {$id} activa requiere strategy_id";
@@ -1094,14 +1109,14 @@ function validateTaskStrategyAlignment(array $board, array $task, array $critica
     $allowedScopes = is_array($subfront['allowed_scopes'] ?? null) ? $subfront['allowed_scopes'] : [];
     $supportOnlyScopes = is_array($subfront['support_only_scopes'] ?? null) ? $subfront['support_only_scopes'] : [];
     $blockedScopes = is_array($subfront['blocked_scopes'] ?? null) ? $subfront['blocked_scopes'] : [];
-    if (in_array($scope, $blockedScopes, true)) {
+    if (in_array($scope, $blockedScopes, true) && !$isReleasePromotionException) {
         $errors[] = "Task {$id} usa scope bloqueado por subfront {$subfrontId}";
     }
 
     if ($strategyRole === 'exception') {
         if ($strategyReason === '') {
             $errors[] = "Task {$id} con strategy_role=exception requiere strategy_reason";
-        } elseif (!isAllowedStrategyException($task, $criticalScopes)) {
+        } elseif (!$isReleasePromotionException && !isAllowedStrategyException($task, $criticalScopes)) {
             $errors[] = "Task {$id} exception solo permitido para hotfix critico o soporte directo al frente activo";
         }
         return $errors;

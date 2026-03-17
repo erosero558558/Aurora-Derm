@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 708
+  revision: 711
   updated_at: 2026-03-17
 
 strategy:
@@ -16,7 +16,7 @@ strategy:
     title: "Turnero web por clinica"
     objective: "Reabrir queue/turnero como un piloto web por clinica demostrable en admin basic, operador, kiosco y sala, usando clinic-profile como fuente de verdad y bloqueando superficies fuera de canon."
     owner: Ernesto
-    owner_policy: ""
+    owner_policy: "detected_default_owner"
     status: active
     started_at: "2026-03-14"
     review_due_at: "2026-03-28"
@@ -32,7 +32,7 @@ strategy:
         support_only_scopes: ["docs", "frontend-qa"]
         blocked_scopes: ["frontend-public", "payments", "calendar"]
         wip_limit: 1
-        default_acceptance_profile: ""
+        default_acceptance_profile: "frontend_delivery_checkpoint"
         exception_ttl_hours: 0
       - codex_instance: codex_backend_ops
         subfront_id: SF-backend-turnero-web-pilot
@@ -41,7 +41,7 @@ strategy:
         support_only_scopes: ["monitoring", "tests"]
         blocked_scopes: ["frontend-public", "frontend-admin", "payments", "calendar", "auth"]
         wip_limit: 1
-        default_acceptance_profile: ""
+        default_acceptance_profile: "backend_gate_checkpoint"
         exception_ttl_hours: 0
       - codex_instance: codex_transversal
         subfront_id: SF-transversal-turnero-web-pilot
@@ -50,10 +50,10 @@ strategy:
         support_only_scopes: ["openclaw_runtime", "codex-governance", "tooling"]
         blocked_scopes: ["frontend-public", "frontend-admin", "backend", "deploy", "auth", "queue", "turnero"]
         wip_limit: 1
-        default_acceptance_profile: ""
+        default_acceptance_profile: "transversal_runtime_checkpoint"
         exception_ttl_hours: 0
   next: null
-  updated_at: ""
+  updated_at: 2026-03-17
 
 tasks:
   - id: AG-001
@@ -10669,4 +10669,61 @@ tasks:
     depends_on: []
     prompt: "Governance release publish exception flow"
     created_at: 2026-03-16
+    updated_at: 2026-03-17
+
+  - id: AG-256
+    title: "Aurora Derm public trust conversion release"
+    owner: deck
+    executor: codex
+    status: review
+    status_since_at: "2026-03-17T00:21:07.700Z"
+    risk: medium
+    scope: frontend-public
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["content/public-v6/en/home.json", "content/public-v6/en/hub.json", "content/public-v6/en/navigation.json", "content/public-v6/en/service.json", "content/public-v6/en/software.json", "content/public-v6/en/telemedicine.json", "content/public-v6/es/home.json", "content/public-v6/es/hub.json", "content/public-v6/es/navigation.json", "content/public-v6/es/service.json", "content/public-v6/es/software.json", "content/public-v6/es/telemedicine.json", "js/public-v6-shell.js", "src/apps/astro/src/components/public-v6/CaseStoriesV6.astro", "src/apps/astro/src/components/public-v6/TrustSignalsV6.astro", "src/apps/astro/src/pages/en/index.astro", "src/apps/astro/src/pages/es/index.astro", "src/apps/astro/src/styles/public-v6/home.css", "tests-node/public-v6-build-contract.test.js", "tests-node/public-v6-copy-contract.test.js", "tests/booking.spec.js", "tests/chat-booking-calendar-errors.spec.js", "tests/checklist-production.spec.js", "tests/deferred-shell-static-fallback.spec.js", "tests/funnel-tracking.spec.js", "tests/public-v6-case-stories.spec.js", "tests/public-v6-news-strip.spec.js", "verification/public-v6-canonical/artifact-drift.json"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-256_20260317002107700_130155"
+    lease_owner: "deck"
+    lease_created_at: "2026-03-17T00:21:07.700Z"
+    heartbeat_at: "2026-03-17T00:21:07.700Z"
+    lease_expires_at: "2026-03-17T04:21:07.700Z"
+    lease_reason: "board_write"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "WhatsApp queda como CTA principal, la home gana trust layer visible y el frente publico sale en un solo release formal con soporte QA canonico."
+    acceptance_ref: "verification/agent-runs/AG-256.md"
+    evidence_ref: "verification/agent-runs/AG-256.md"
+    strategy_id: "STRAT-2026-03-turnero-web-pilot"
+    subfront_id: "SF-frontend-turnero-web-pilot"
+    strategy_role: "exception"
+    strategy_reason: "validated_release_promotion"
+    exception_opened_at: "2026-03-17T00:21:07.659Z"
+    exception_expires_at: "2026-03-17T08:21:07.659Z"
+    exception_state: "open"
+    focus_id: ""
+    focus_step: ""
+    integration_slice: "governance_evidence"
+    work_type: "evidence"
+    expected_outcome: ""
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Public trust conversion release for Aurora Derm"
+    created_at: 2026-03-17
     updated_at: 2026-03-17
