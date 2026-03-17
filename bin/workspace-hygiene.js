@@ -114,18 +114,13 @@ function parseArgs(argv) {
 }
 
 function buildPayload(args, cwd) {
-    const doctorOptions = {
+    const diagnosis = collectWorkspaceDoctor(cwd, {
         allWorktrees: args.allWorktrees,
         currentOnly: args.currentOnly,
         applySafe: args.applySafe,
-    };
-    if (args.taskId) {
-        doctorOptions.scopeTaskId = args.taskId;
-    }
-    if (Array.isArray(args.scopePatterns) && args.scopePatterns.length > 0) {
-        doctorOptions.scopePatterns = args.scopePatterns;
-    }
-    const diagnosis = collectWorkspaceDoctor(cwd, doctorOptions);
+        scopeTaskId: args.taskId,
+        scopePatterns: args.scopePatterns,
+    });
     return buildDoctorPayload(diagnosis, {
         command: 'workspace-hygiene doctor',
         includeEntries: args.includeEntries,
@@ -175,8 +170,7 @@ function renderScopeContext(scopeContext = {}) {
 }
 
 function renderStrategyContext(strategyContext = {}) {
-    const resolution =
-        String(strategyContext.resolution || '').trim() || 'none';
+    const resolution = String(strategyContext.resolution || '').trim() || 'none';
     if (resolution === 'none') {
         return 'none';
     }
