@@ -1,6 +1,6 @@
 {
-    "title": "Aurora Derm | Dermatologia cercana y clara en Quito",
-    "description": "Aurora Derm acompana su cuidado dermatologico en Quito con primera consulta clara, tratamientos bien indicados y seguimiento entendible.",
+    "title": "Aurora Derm | Dermatologia clara para empezar en Quito",
+    "description": "Aurora Derm le ayuda a empezar por WhatsApp, consulta dermatologica o teledermatologia en Quito, con explicaciones claras y seguimiento entendible.",
     "hero": {
         "autoplayMs": 7000,
         "labels": {
@@ -16,8 +16,8 @@
             {
                 "id": "s1",
                 "category": "Primera consulta",
-                "title": "Primero entendemos bien que le esta pasando.",
-                "description": "Escuchamos su historia, revisamos piel, cabello y unas, y le dejamos un plan claro desde la primera cita.",
+                "title": "Primero entendemos bien su caso y luego definimos la ruta.",
+                "description": "Escuchamos su historia, revisamos piel, cabello y unas, y le dejamos claro si conviene consulta integral, seguimiento o una ruta mas puntual.",
                 "image": "/images/optimized/v6-clinic-statement-clinical-direction.webp",
                 "srcset": "/images/optimized/v6-clinic-statement-clinical-direction-400.webp 400w, /images/optimized/v6-clinic-statement-clinical-direction-640.webp 640w, /images/optimized/v6-clinic-statement-clinical-direction-800.webp 800w, /images/optimized/v6-clinic-statement-clinical-direction-900.webp 900w, /images/optimized/v6-clinic-statement-clinical-direction-1200.webp 1200w, /images/optimized/v6-clinic-statement-clinical-direction.webp 1400w",
                 "alt": "Direccion clinica dermatologica con lectura estructurada",
@@ -26,8 +26,8 @@
             {
                 "id": "s2",
                 "category": "Tratamientos",
-                "title": "Tratamos solo lo que de verdad le suma.",
-                "description": "Laser, peeling o bioestimulacion se indican segun su piel, su objetivo y el cuidado que luego pueda sostener.",
+                "title": "Tratamos solo lo que de verdad aporta a su piel.",
+                "description": "Laser, peeling o bioestimulacion se indican segun su objetivo, su fototipo y el cuidado que luego usted pueda sostener.",
                 "image": "/images/optimized/v6-clinic-statement-procedure-guidance.webp",
                 "srcset": "/images/optimized/v6-clinic-statement-procedure-guidance-400.webp 400w, /images/optimized/v6-clinic-statement-procedure-guidance-640.webp 640w, /images/optimized/v6-clinic-statement-procedure-guidance-800.webp 800w, /images/optimized/v6-clinic-statement-procedure-guidance-900.webp 900w, /images/optimized/v6-clinic-statement-procedure-guidance-1200.webp 1200w, /images/optimized/v6-clinic-statement-procedure-guidance.webp 1400w",
                 "alt": "Guia dermatologica para procedimientos indicados",
@@ -36,8 +36,8 @@
             {
                 "id": "s3",
                 "category": "Teledermatologia",
-                "title": "Si puede empezar a distancia, se lo decimos.",
-                "description": "La teledermatologia ayuda a avanzar temprano y a definir cuando ya vale la pena verle en consulta.",
+                "title": "Si su caso puede avanzar a distancia, se lo decimos de una.",
+                "description": "La teledermatologia sirve cuando fotos utiles e historia clara ayudan a orientar el caso y a decidir cuando ya conviene verle en Quito.",
                 "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
                 "srcset": "/images/optimized/v6-clinic-telemedicine-intake-400.webp 400w, /images/optimized/v6-clinic-telemedicine-intake-640.webp 640w, /images/optimized/v6-clinic-telemedicine-intake-800.webp 800w, /images/optimized/v6-clinic-telemedicine-intake-900.webp 900w, /images/optimized/v6-clinic-telemedicine-intake-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-intake.webp 1400w",
                 "alt": "Inicio de teledermatologia con contexto clinico e imagenes",
@@ -46,8 +46,8 @@
             {
                 "id": "s4",
                 "category": "Seguimiento",
-                "title": "El seguimiento evita empezar de cero en cada control.",
-                "description": "Comparamos cambios, afinamos indicaciones y dejamos claro que sigue para que usted no salga con dudas.",
+                "title": "El seguimiento evita arrancar de cero en cada control.",
+                "description": "Comparamos cambios, afinamos indicaciones y dejamos claro que sigue para que usted no salga de consulta con dudas sueltas.",
                 "image": "/images/optimized/v6-clinic-home-followup.webp",
                 "srcset": "/images/optimized/v6-clinic-home-followup-400.webp 400w, /images/optimized/v6-clinic-home-followup-640.webp 640w, /images/optimized/v6-clinic-home-followup-800.webp 800w, /images/optimized/v6-clinic-home-followup-900.webp 900w, /images/optimized/v6-clinic-home-followup-1200.webp 1200w, /images/optimized/v6-clinic-home-followup.webp 1400w",
                 "alt": "Seguimiento dermatologico con comparacion de avance y ajustes",
@@ -56,8 +56,8 @@
             {
                 "id": "s5",
                 "category": "Aurora Derm",
-                "title": "Aqui le hablamos claro, sin poses ni enredos.",
-                "description": "Queremos que usted entienda su caso, sus opciones y el ritmo real del tratamiento desde el primer dia.",
+                "title": "Aurora Derm funciona como clinica, no como vitrina.",
+                "description": "Queremos que usted entienda su caso, sus opciones y el ritmo real del tratamiento antes de pedirle una decision grande.",
                 "image": "/images/optimized/v6-clinic-team-roundtable.webp",
                 "srcset": "/images/optimized/v6-clinic-team-roundtable-400.webp 400w, /images/optimized/v6-clinic-team-roundtable-640.webp 640w, /images/optimized/v6-clinic-team-roundtable-800.webp 800w, /images/optimized/v6-clinic-team-roundtable-900.webp 900w, /images/optimized/v6-clinic-team-roundtable-1200.webp 1200w, /images/optimized/v6-clinic-team-roundtable.webp 1400w",
                 "alt": "Equipo dermatologico revisando decisiones de forma conjunta",
@@ -66,19 +66,19 @@
         ]
     },
     "newsStrip": {
-        "label": "Aurora Derm",
-        "headline": "Empiece por primera consulta, tratamientos o teledermatologia; con la reserva online en mantenimiento, esta portada le deja una ruta clara.",
-        "href": "/es/servicios/",
+        "label": "Como empezar hoy",
+        "headline": "Escribanos por WhatsApp y le ayudamos a ubicar si hoy conviene consulta, tratamiento o teledermatologia.",
+        "href": "https://wa.me/593982453672",
         "expandLabel": "Expandir",
         "collapseLabel": "Contraer",
-        "detail": "Puede arrancar por teledermatologia o por la consulta que mejor se parezca a lo que usted vive hoy; mientras la reserva online en mantenimiento sigue activa, estas rutas dejan claro por donde empezar.",
-        "ctaLabel": "Ver especialidades",
+        "detail": "La agenda online sigue en mantenimiento, pero usted no tiene que quedarse esperando. Por WhatsApp revisamos el motivo de consulta, le orientamos a la ruta correcta y le decimos cuando teledermatologia si sirve y cuando ya conviene verle en Quito.",
+        "ctaLabel": "Escribir por WhatsApp",
         "localeAria": "Selector de idioma"
     },
     "editorial": {
-        "eyebrow": "Rutas maestras",
-        "title": "Tres rutas maestras para empezar sin enredos.",
-        "deck": "Si hoy necesita ordenar sintomas, revisar tratamientos o avanzar a distancia, estas son las tres puertas de entrada.",
+        "eyebrow": "Puertas de entrada",
+        "title": "Tres formas claras de empezar.",
+        "deck": "Una consulta presencial, una decision de tratamiento o una orientacion remota, segun lo que usted necesita hoy.",
         "ctaLabel": "Ver servicio",
         "cards": [
             {
@@ -87,7 +87,7 @@
                 "size": "tall",
                 "category": "Primera consulta",
                 "title": "Empiece con una lectura completa",
-                "copy": "Cuando se mezclan sintomas o todo empezo hace poco, esta consulta ordena prioridades, riesgo y siguiente paso.",
+                "copy": "Cuando se mezclan sintomas o todo empezo hace poco, esta consulta ordena prioridades, riesgo y siguiente paso sin hacerle adivinar.",
                 "href": "/es/servicios/diagnostico-integral/",
                 "image": "/images/optimized/v6-clinic-statement-clinical-direction.webp",
                 "alt": "Direccion clinica dermatologica con lectura estructurada",
@@ -116,6 +116,34 @@
                 "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
                 "alt": "Revision dermatologica remota con seguimiento y ajuste",
                 "srcset": "/images/optimized/v6-clinic-telemedicine-review-400.webp 400w, /images/optimized/v6-clinic-telemedicine-review-640.webp 640w, /images/optimized/v6-clinic-telemedicine-review-800.webp 800w, /images/optimized/v6-clinic-telemedicine-review-900.webp 900w, /images/optimized/v6-clinic-telemedicine-review-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-review.webp 1400w"
+            }
+        ]
+    },
+    "trustSignals": {
+        "eyebrow": "Confianza y ruta",
+        "title": "Antes de pedirle una cita, le ayudamos a ubicar el paso correcto.",
+        "deck": "Aurora Derm funciona como una clinica dermatologica real: contacto claro, evaluacion medica y paso a presencial cuando el caso lo pide.",
+        "cards": [
+            {
+                "eyebrow": "WhatsApp primero",
+                "title": "Empiece por una conversacion clara",
+                "copy": "Por WhatsApp nos cuenta que le pasa, revisamos la ruta mas razonable y le decimos si conviene consulta, seguimiento o teledermatologia.",
+                "ctaLabel": "Escribir por WhatsApp",
+                "href": "https://wa.me/593982453672"
+            },
+            {
+                "eyebrow": "Consulta en Quito",
+                "title": "Cuando hace falta verle en directo, se lo decimos",
+                "copy": "Si el caso pide examen fisico, dermatoscopia o procedimiento, la ruta cambia a consulta presencial sin hacerle dar mas vueltas.",
+                "ctaLabel": "Ver primera consulta",
+                "href": "/es/servicios/diagnostico-integral/"
+            },
+            {
+                "eyebrow": "Criterio medico",
+                "title": "Cada paso queda explicado",
+                "copy": "No buscamos empujarle a una cita por empujar. Le explicamos que conviene hacer primero, cuando toca control y cuando ya vale pasar a presencial.",
+                "ctaLabel": "Ver especialidades",
+                "href": "/es/servicios/"
             }
         ]
     },
@@ -188,10 +216,10 @@
         ]
     },
     "bookingStatus": {
-        "eyebrow": "Primer paso",
+        "eyebrow": "Como empezar hoy",
         "title": "Reserva online en mantenimiento",
-        "description": "Si usted necesita un siguiente paso claro hoy, abra primera consulta. Si todavia duda si venir, teledermatologia le ayuda a ordenar el caso.",
-        "ctaLabel": "Abrir primera consulta",
-        "ctaHref": "/es/servicios/diagnostico-integral/"
+        "description": "Si quiere empezar hoy, escribanos por WhatsApp. Desde ahi le indicamos si conviene consulta presencial, teledermatologia o la ficha de servicio que mejor se parece a su caso.",
+        "ctaLabel": "Escribir por WhatsApp",
+        "ctaHref": "https://wa.me/593982453672"
     }
 }

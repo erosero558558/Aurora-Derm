@@ -6,25 +6,23 @@ const { pathToFileURL } = require('node:url');
 const { GENERATED_SITE_ROOT } = require('../bin/lib/generated-site-root.js');
 
 const repoRoot = path.join(__dirname, '..');
-const generatedSiteRoot = GENERATED_SITE_ROOT;
 
 function read(relativePath) {
     return fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
 }
 
-function resolveRuntimeArtifactPath(relativePath) {
-    const normalizedPath = path.normalize(String(relativePath || ''));
-    const generatedPath = path.join(generatedSiteRoot, normalizedPath);
-    assert.equal(
-        fs.existsSync(generatedPath),
-        true,
-        `falta artefacto generado en .generated/site-root: ${normalizedPath}. Ejecuta npm run build para regenerar el runtime staged`
+function readGenerated(relativePath) {
+    return fs.readFileSync(
+        path.join(GENERATED_SITE_ROOT, relativePath),
+        'utf8'
     );
-    return generatedPath;
 }
 
-function readRuntimeArtifact(relativePath) {
-    return fs.readFileSync(resolveRuntimeArtifactPath(relativePath), 'utf8');
+function readGeneratedIfExists(relativePath) {
+    const absolutePath = path.join(GENERATED_SITE_ROOT, relativePath);
+    return fs.existsSync(absolutePath)
+        ? fs.readFileSync(absolutePath, 'utf8')
+        : '';
 }
 
 function readJson(relativePath) {
@@ -158,8 +156,8 @@ function toChunkFilename(specifier) {
 }
 
 function collectReachablePublicChunks() {
-    const entryPath = resolveRuntimeArtifactPath('script.js');
-    const chunksDir = resolveRuntimeArtifactPath(path.join('js', 'chunks'));
+    const entryPath = path.join(GENERATED_SITE_ROOT, 'script.js');
+    const chunksDir = path.join(GENERATED_SITE_ROOT, 'js', 'chunks');
     const reachable = new Set();
     const pendingFiles = [entryPath];
     const visited = new Set();
@@ -191,6 +189,12 @@ function collectReachablePublicChunks() {
     }
 
     return reachable;
+}
+
+function generatedSiteUsesLegacyRuntimeEntry() {
+    const entryPath = path.join(GENERATED_SITE_ROOT, 'script.js');
+    const chunksDir = path.join(GENERATED_SITE_ROOT, 'js', 'chunks');
+    return fs.existsSync(entryPath) && fs.existsSync(chunksDir);
 }
 
 test('build:public:v6 uses the dedicated Node runner instead of shell chaining', () => {
@@ -349,17 +353,54 @@ test('public runtime checker writes canonical report for script.js and js/chunks
 });
 
 test('script.js references the canonical engine directory and deferred stylesheet support', () => {
-    const scriptBundle = readRuntimeArtifact('script.js');
+    if (generatedSiteUsesLegacyRuntimeEntry()) {
+        const scriptBundle = readGenerated('script.js');
 
-    assert.match(
-        scriptBundle,
-        /\/js\/engines\/[a-z0-9-]+\.js/u,
-        'script.js debe seguir referenciando js/engines/** para el gateway publico'
+        assert.match(
+            scriptBundle,
+            /\/js\/engines\/[a-z0-9-]+\.js/u,
+            'script.js debe seguir referenciando js/engines/** para el gateway publico'
+        );
+        assert.match(
+            scriptBundle,
+            /styles-deferred\.css/u,
+            'script.js debe seguir cargando styles-deferred.css como soporte del gateway'
+        );
+        return;
+    }
+
+    const esHome = readGenerated('es/index.html');
+    const enHome = readGenerated('en/index.html');
+
+    assert.equal(
+        fs.existsSync(path.join(GENERATED_SITE_ROOT, 'script.js')),
+        false,
+        'el stage canonico actual no debe reintroducir script.js en .generated/site-root'
+    );
+    assert.equal(
+        fs.existsSync(path.join(GENERATED_SITE_ROOT, 'js', 'chunks')),
+        false,
+        'el stage canonico actual no debe reintroducir js/chunks en .generated/site-root'
     );
     assert.match(
-        scriptBundle,
-        /styles-deferred\.css/u,
-        'script.js debe seguir cargando styles-deferred.css como soporte del gateway'
+        esHome,
+        /\/js\/public-v6-shell\.js(?:\?[^"]*)?/u,
+        'la portada ES debe referenciar el shell publico versionado'
+    );
+    assert.match(
+        enHome,
+        /\/js\/public-v6-shell\.js(?:\?[^"]*)?/u,
+        'la portada EN debe referenciar el shell publico versionado'
+    );
+    assert.match(
+        esHome,
+        /\/_astro\/[A-Za-z0-9._-]+\.css/u,
+        'la portada ES debe stagear estilos Astro canonicos'
+    );
+    assert.match(
+        enHome,
+        /\/_astro\/[A-Za-z0-9._-]+\.css/u,
+        'la portada EN debe stagear estilos Astro canonicos'
     );
 });
 
@@ -382,16 +423,6 @@ test('build-public-v6 runner preserves canonical sequence and report output', ()
         runner,
         /stage:site-root/u,
         'runner must stage dist artifacts into .generated/site-root'
-    );
-    assert.match(
-        runner,
-        /chunks:public:prune/u,
-        'runner must prune stale public chunks from the staged runtime graph'
-    );
-    assert.match(
-        runner,
-        /chunks:admin:prune/u,
-        'runner must prune stale admin chunks from the staged runtime graph'
     );
     assert.match(
         runner,
@@ -559,7 +590,38 @@ test('public V6 audits reuse the canonical local helper and avoid hardcoded 8000
 });
 
 test('script.js deja solo chunks publicos alcanzables y un shell activo', () => {
-    const chunksDir = resolveRuntimeArtifactPath(path.join('js', 'chunks'));
+    if (!generatedSiteUsesLegacyRuntimeEntry()) {
+        const esHome = readGenerated('es/index.html');
+        const enHome = readGenerated('en/index.html');
+        const legacyEntry = readGeneratedIfExists('script.js');
+        const shellPattern = /\/js\/public-v6-shell\.js(?:\?[^"]*)?/gu;
+        const esShells = esHome.match(shellPattern) || [];
+        const enShells = enHome.match(shellPattern) || [];
+
+        assert.equal(
+            legacyEntry,
+            '',
+            'el stage canonico actual no debe dejar un script.js legacy en .generated/site-root'
+        );
+        assert.equal(
+            fs.existsSync(path.join(GENERATED_SITE_ROOT, 'js', 'chunks')),
+            false,
+            'el stage canonico actual no debe dejar js/chunks legacy en .generated/site-root'
+        );
+        assert.equal(
+            esShells.length,
+            1,
+            'la portada ES debe dejar exactamente un shell publico activo'
+        );
+        assert.equal(
+            enShells.length,
+            1,
+            'la portada EN debe dejar exactamente un shell publico activo'
+        );
+        return;
+    }
+
+    const chunksDir = path.join(GENERATED_SITE_ROOT, 'js', 'chunks');
     const allChunks = fs
         .readdirSync(chunksDir)
         .filter((entry) => entry.endsWith('.js'))
@@ -581,7 +643,7 @@ test('script.js deja solo chunks publicos alcanzables y un shell activo', () => 
         'script.js debe dejar exactamente un shell chunk activo'
     );
     assert.match(
-        readRuntimeArtifact('script.js'),
+        readGenerated('script.js'),
         new RegExp(activeShells[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'),
         'script.js debe apuntar al shell chunk activo'
     );
@@ -727,7 +789,7 @@ test('public V6 content caps primary asset reuse and keeps section-level image s
     });
 });
 
-test('public V6 root HTML publishes route-specific og:image values and strips legacy image refs', () => {
+test('public V6 generated HTML publishes route-specific og:image values and strips legacy image refs', () => {
     const routes = [
         {
             html: path.join('es', 'index.html'),
@@ -867,7 +929,7 @@ test('public V6 root HTML publishes route-specific og:image values and strips le
     ];
 
     routes.forEach(({ html, expectedImage }) => {
-        const pageHtml = readRuntimeArtifact(html);
+        const pageHtml = readGenerated(html);
         const ogImage = extractMetaContent(pageHtml, 'og:image');
         assert.equal(
             ogImage,

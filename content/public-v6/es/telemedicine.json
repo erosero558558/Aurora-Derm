@@ -1,6 +1,6 @@
 {
     "title": "Telemedicina | Aurora Derm",
-    "description": "Dermatologia remota con primera orientacion clara, diagnostico cuidadoso, paso responsable a consulta y seguimiento en Quito.",
+    "description": "Teledermatologia para orientar el caso, ordenar fotos e historia, y pasar a consulta en Quito cuando el examen directo hace falta.",
     "breadcrumb": [
         {
             "label": "Inicio",
@@ -17,7 +17,7 @@
         "srcset": "/images/optimized/v6-clinic-telemedicine-intake-400.webp 400w, /images/optimized/v6-clinic-telemedicine-intake-640.webp 640w, /images/optimized/v6-clinic-telemedicine-intake-800.webp 800w, /images/optimized/v6-clinic-telemedicine-intake-900.webp 900w, /images/optimized/v6-clinic-telemedicine-intake-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-intake.webp 1400w",
         "alt": "Inicio de telemedicina con contexto clinico e imagenes"
     },
-    "lead": "La teledermatologia sirve para avanzar temprano cuando una primera orientacion remota aclara si conviene seguir online o pasar a consulta.",
+    "lead": "La teledermatologia sirve cuando fotos utiles, antecedentes claros y una pregunta concreta ayudan al diagnostico y a decidir si hace falta consulta.",
     "ui": {
         "menu": {
             "glance": "Esto aclara primero",
@@ -26,8 +26,8 @@
         },
         "thesis": {
             "eyebrow": "Modelo clinico remoto",
-            "title": "Teledermatologia para empezar bien, cambiar a tiempo y saber que hacer ahora",
-            "body": "Aclara cuando remoto si ayuda, cuando ya no alcanza y que siguiente accion conviene tomar para no dejar el caso a medias."
+            "title": "Teledermatologia para orientar temprano y pasar a consulta cuando ya toca verle",
+            "body": "Aqui le explicamos que conviene enviar, cuando remoto si ayuda, cuando a usted ya le conviene pasar a consulta y como se escala sin dejar el caso a medias."
         },
         "statement": {
             "eyebrow": "Revision remota",
@@ -37,7 +37,7 @@
             "alt": "Revision dermatologica remota con seguimiento y ajuste"
         },
         "internalMessage": {
-            "description": "La orientacion remota sirve cuando hay buena historia, fotos utiles y una pregunta concreta; si aparecen senales de alarma o dudas clinicas relevantes, cambiamos pronto a consulta presencial."
+            "description": "La orientacion remota sirve cuando hay buena historia, fotos utiles y una pregunta concreta; si aparecen senales de alarma o dudas clinicas importantes, cambiamos pronto a consulta presencial."
         },
         "rail": {
             "title": "Secciones",
@@ -57,7 +57,16 @@
     },
     "blocks": [
         {
-            "title": "Cuando si ayuda",
+            "title": "Que conviene enviar",
+            "items": [
+                "Fotos con buena luz, una imagen de contexto y otra de cerca para comparar mejor la zona.",
+                "Tiempo de evolucion, sintomas, tratamientos usados y que cambio en los ultimos dias.",
+                "Antecedentes relevantes como alergias, embarazo, lactancia o medicamentos que ya este usando.",
+                "Una pregunta concreta: si conviene esperar, ajustar, pedir consulta o mover el caso de ruta."
+            ]
+        },
+        {
+            "title": "Cuando si encaja",
             "items": [
                 "Brotes ya conocidos que necesitan ajuste sin esperar una visita completa.",
                 "Dudas entre controles cuando la evolucion puede compararse con fotos y antecedentes claros.",
@@ -66,46 +75,37 @@
             ]
         },
         {
-            "title": "Cuando no basta",
+            "title": "Cuando pasar a consulta presencial",
             "items": [
-                "Imagenes poco claras o sintomas que no pueden describirse con suficiente contexto.",
-                "Lesiones nuevas con cambios rapidos que todavia no han sido evaluadas.",
-                "Dolor intenso, sangrado, secrecion o compromiso funcional.",
-                "Necesidad probable de dermatoscopia, procedimiento o examen fisico directo."
-            ]
-        },
-        {
-            "title": "Paso a consulta presencial y siguiente accion",
-            "items": [
-                "Si la primera lectura remota deja dudas clinicas que no conviene arrastrar.",
-                "Si el plan inicial no responde como se esperaba en el tiempo acordado.",
-                "Si el caso pide dermatoscopia, procedimiento o examen directo en consultorio.",
-                "Si ya ve que el siguiente paso correcto es abrir primera consulta y no seguir esperando."
+                "Imagenes poco claras o sintomas que no pueden explicarse con suficiente contexto.",
+                "Lesiones nuevas con cambios rapidos, sangrado, secrecion, dolor intenso o compromiso funcional.",
+                "Necesidad probable de dermatoscopia, procedimiento o examen fisico directo en consultorio.",
+                "Si la primera lectura remota deja dudas clinicas importantes o el plan inicial no responde como se esperaba."
             ]
         }
     ],
     "initiatives": [
         {
-            "title": "Prepare fotos utiles",
-            "copy": "Luz natural, distancia constante y una foto de contexto ayudan a comparar mejor la lesion en la primera lectura.",
+            "title": "Tome fotos claras",
+            "copy": "Luz natural, distancia parecida y una foto de contexto ayudan a leer mejor la lesion desde la primera revision.",
             "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
             "href": "#v6-tele-glance"
         },
         {
-            "title": "Explique primero que cambio",
-            "copy": "Tiempo, sintomas y tratamiento previo ayudan a decidir si este inicio remoto basta.",
+            "title": "Cuente que cambio",
+            "copy": "Tiempo de evolucion, sintomas y tratamiento previo ayudan a decidir si este inicio remoto basta o si ya toca consulta.",
             "image": "/images/optimized/v6-clinic-home-followup.webp",
             "href": "#v6-tele-block-1"
         },
         {
-            "title": "Revise senales para cambiar",
+            "title": "Revise senales de consulta",
             "copy": "Dolor, sangrado, extension rapida o mala respuesta son senales para pasar de remoto a consulta sin seguir dilatando.",
             "image": "/images/optimized/v6-clinic-clinic-environment.webp",
             "href": "#v6-tele-block-3"
         },
         {
-            "title": "Abra la primera consulta",
-            "copy": "Cuando la decision ya pide examen directo, la accion correcta es abrir primera consulta y no quedarse solo en remoto.",
+            "title": "Escribanos por WhatsApp",
+            "copy": "Si ya ve que necesita ayuda para decidir la siguiente accion, por WhatsApp le ubicamos si conviene seguir remoto o pasar a consulta.",
             "image": "/images/optimized/v6-clinic-team-roundtable.webp",
             "href": "#v6-booking-status"
         }
@@ -113,8 +113,8 @@
     "bookingStatus": {
         "eyebrow": "Siguiente paso",
         "title": "Reserva online en mantenimiento",
-        "description": "Si despues de esta orientacion el caso pide examen directo, el siguiente paso es abrir primera consulta en Quito.",
-        "ctaLabel": "Abrir primera consulta",
-        "ctaHref": "/es/servicios/diagnostico-integral/"
+        "description": "Si esta orientacion ya muestra que hace falta examen directo, escribanos por WhatsApp para ubicar la consulta en Quito. Si remoto aun alcanza, le pedimos fotos e historia mejor ordenadas.",
+        "ctaLabel": "Escribir por WhatsApp",
+        "ctaHref": "https://wa.me/593982453672"
     }
 }

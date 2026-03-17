@@ -1,6 +1,6 @@
 {
     "title": "Especialidades dermatologicas | Aurora Derm",
-    "description": "Aurora Derm organiza sus especialidades dermatologicas en Quito con una primera lectura clara, tratamiento indicado y seguimiento entendible.",
+    "description": "Aurora Derm organiza sus especialidades dermatologicas en Quito con una ruta clara para empezar por WhatsApp, consulta o teledermatologia.",
     "breadcrumb": [
         {
             "label": "Inicio",
@@ -17,8 +17,8 @@
         "srcset": "/images/optimized/v6-clinic-hub-editorial-map-400.webp 400w, /images/optimized/v6-clinic-hub-editorial-map-640.webp 640w, /images/optimized/v6-clinic-hub-editorial-map-800.webp 800w, /images/optimized/v6-clinic-hub-editorial-map-1024.webp 1024w, /images/optimized/v6-clinic-hub-editorial-map-1200.webp 1200w, /images/optimized/v6-clinic-hub-editorial-map-1344.webp 1344w, /images/optimized/v6-clinic-hub-editorial-map.webp 1400w",
         "alt": "Mapa editorial de rutas dermatologicas y decisiones clinicas"
     },
-    "introTitle": "Empiece por la ruta que mejor ordena lo que necesita hoy",
-    "introDeck": "Primero elija como entrar; despues afinamos el cuidado segun lo que usted esta viviendo, el tratamiento, el seguimiento y la necesidad de examen presencial.",
+    "introTitle": "Encuentre la ruta correcta y empiece hoy sin quedarse esperando la agenda web",
+    "introDeck": "Estas especialidades ordenan lo que pasa hoy. Si no tiene claro por donde entrar, escriba por WhatsApp y le orientamos entre consulta, teledermatologia o tratamiento indicado.",
     "ui": {
         "menu": {
             "featured": "Para empezar",
@@ -41,21 +41,21 @@
         {
             "category": "Diagnostico",
             "title": "Diagnostico integral",
-            "copy": "La puerta correcta si necesita una primera lectura completa y un plan entendible desde el inicio.",
+            "copy": "La puerta correcta si necesita una primera lectura completa, una consulta presencial y un plan entendible desde el inicio.",
             "image": "/images/optimized/v6-clinic-diagnostico-integral.webp",
             "href": "/es/servicios/diagnostico-integral/"
         },
         {
             "category": "Tecnologia",
             "title": "Laser dermatologico segun su caso",
-            "copy": "La puerta correcta cuando usted ya quiere revisar en consulta si un laser o procedimiento indicado realmente conviene.",
+            "copy": "La puerta correcta cuando usted ya quiere revisar si un laser o procedimiento indicado realmente conviene y como se integraria a su cuidado.",
             "image": "/images/optimized/v6-clinic-statement-procedure-guidance.webp",
             "href": "/es/servicios/laser-dermatologico/"
         },
         {
             "category": "Teledermatologia",
             "title": "Teledermatologia con paso a consulta bien cuidado",
-            "copy": "La puerta correcta si quiere avanzar hoy y decidir con claridad cuando basta remoto y cuando conviene venir.",
+            "copy": "La puerta correcta si quiere avanzar hoy y decidir con claridad cuando remoto basta y cuando conviene venir a consulta en Quito.",
             "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
             "href": "/es/telemedicina/"
         }
@@ -216,8 +216,8 @@
     "bookingStatus": {
         "eyebrow": "Siguiente paso",
         "title": "Reserva online en mantenimiento",
-        "description": "Si hoy necesita decidir por donde entrar, abra primera consulta. Si todavia no sabe si venir, teledermatologia le orienta primero.",
-        "ctaLabel": "Abrir primera consulta",
-        "ctaHref": "/es/servicios/diagnostico-integral/"
+        "description": "Si ya vio una ruta parecida a su caso, escribanos por WhatsApp y le ayudamos a ubicar si corresponde consulta, teledermatologia o seguimiento.",
+        "ctaLabel": "Escribir por WhatsApp",
+        "ctaHref": "https://wa.me/593982453672"
     }
 }

@@ -277,7 +277,7 @@ test.describe('Checklist de Pruebas en Producción', () => {
 
         await expect(page.locator('[data-v6-header]')).toBeVisible();
         await expect(page.locator('[data-v6-news-strip]')).toContainText(
-            'Dermatologia clara para empezar hoy, aunque la reserva web siga en mantenimiento.'
+            'Escribanos por WhatsApp y le ayudamos a ubicar si hoy conviene consulta, tratamiento o teledermatologia.'
         );
 
         const bookingStatus = page.locator('[data-v6-booking-status]');
@@ -286,13 +286,13 @@ test.describe('Checklist de Pruebas en Producción', () => {
             'Reserva online en mantenimiento'
         );
         await expect(
-            bookingStatus.getByRole('link', { name: 'Abrir primera consulta' })
-        ).toHaveAttribute('href', '/es/servicios/diagnostico-integral/');
+            bookingStatus.getByRole('link', { name: 'Escribir por WhatsApp' })
+        ).toHaveAttribute('href', /wa\.me\/593982453672/);
 
         await expectLegacyPublicShellAbsent(page);
     });
 
-    test('3. Cita Pública - Teledermatologia mantiene el siguiente paso hacia primera consulta', async ({
+    test('3. Cita Pública - Teledermatologia mantiene WhatsApp como siguiente paso', async ({
         page,
     }) => {
         await page.goto('/es/telemedicina/');
@@ -307,12 +307,12 @@ test.describe('Checklist de Pruebas en Producción', () => {
             'Reserva online en mantenimiento'
         );
 
-        const firstVisitLink = telemedicineStatus.getByRole('link', {
-            name: 'Abrir primera consulta',
+        const whatsappLink = telemedicineStatus.getByRole('link', {
+            name: 'Escribir por WhatsApp',
         });
-        await expect(firstVisitLink).toHaveAttribute(
+        await expect(whatsappLink).toHaveAttribute(
             'href',
-            '/es/servicios/diagnostico-integral/'
+            /wa\.me\/593982453672/
         );
     });
 

@@ -48,16 +48,18 @@ test.describe('Reserva online en mantenimiento', () => {
 
         const newsStrip = page.locator('[data-v6-news-strip]');
         await expect(newsStrip).toContainText(
-            'Dermatologia clara para empezar hoy, aunque la reserva web siga en mantenimiento.'
+            'Escribanos por WhatsApp y le ayudamos a ubicar si hoy conviene consulta, tratamiento o teledermatologia.'
         );
 
         await page.locator('[data-v6-news-toggle]').click();
         const newsPanel = page.locator('[data-v6-news-panel]');
         await expect(newsPanel).toBeVisible();
-        await expect(newsPanel).toContainText('teledermatologia');
+        await expect(newsPanel).toContainText(
+            'La agenda online sigue en mantenimiento'
+        );
         await expect(
-            newsPanel.getByRole('link', { name: 'Ver especialidades' })
-        ).toHaveAttribute('href', '/es/servicios/');
+            newsPanel.getByRole('link', { name: 'Escribir por WhatsApp' })
+        ).toHaveAttribute('href', /wa\.me\/593982453672/);
 
         await expectLegacyBookingShellAbsent(page);
 
@@ -66,12 +68,12 @@ test.describe('Reserva online en mantenimiento', () => {
             'Reserva online en mantenimiento'
         );
 
-        const firstVisitCta = bookingStatus.getByRole('link', {
-            name: 'Abrir primera consulta',
+        const whatsappCta = bookingStatus.getByRole('link', {
+            name: 'Escribir por WhatsApp',
         });
-        await expect(firstVisitCta).toHaveAttribute(
+        await expect(whatsappCta).toHaveAttribute(
             'href',
-            '/es/servicios/diagnostico-integral/'
+            /wa\.me\/593982453672/
         );
 
         await page.locator('[data-v6-search-open]').first().click();
@@ -97,7 +99,7 @@ test.describe('Reserva online en mantenimiento', () => {
         );
     });
 
-    test('detalle de servicio muestra fallback a telemedicina en lugar del formulario legacy', async ({
+    test('detalle de servicio muestra fallback a WhatsApp en lugar del formulario legacy', async ({
         page,
     }) => {
         await openPublicRoute(page, '/es/servicios/acne-rosacea/');
@@ -118,20 +120,18 @@ test.describe('Reserva online en mantenimiento', () => {
         await expect(bookingStatus).toContainText(
             'Reserva online en mantenimiento'
         );
-        await expect(bookingStatus).toContainText(
-            'puede empezar por teledermatologia'
-        );
+        await expect(bookingStatus).toContainText('escribanos por WhatsApp');
 
-        const telemedicineLink = bookingStatus.getByRole('link', {
-            name: 'Abrir teledermatologia',
+        const whatsappLink = bookingStatus.getByRole('link', {
+            name: 'Escribir por WhatsApp',
         });
-        await expect(telemedicineLink).toHaveAttribute(
+        await expect(whatsappLink).toHaveAttribute(
             'href',
-            '/es/telemedicina/'
+            /wa\.me\/593982453672/
         );
     });
 
-    test('telemedicina devuelve a servicios cuando la reserva online sigue pausada', async ({
+    test('telemedicina mantiene WhatsApp como siguiente paso cuando la reserva online sigue pausada', async ({
         page,
     }) => {
         await openPublicRoute(page, '/es/telemedicina/');
@@ -153,23 +153,12 @@ test.describe('Reserva online en mantenimiento', () => {
             'Reserva online en mantenimiento'
         );
 
-        const firstVisitLink = bookingStatus.getByRole('link', {
-            name: 'Abrir primera consulta',
+        const whatsappLink = bookingStatus.getByRole('link', {
+            name: 'Escribir por WhatsApp',
         });
-        await expect(firstVisitLink).toHaveAttribute(
+        await expect(whatsappLink).toHaveAttribute(
             'href',
-            '/es/servicios/diagnostico-integral/'
+            /wa\.me\/593982453672/
         );
-
-        await Promise.all([
-            page.waitForURL(/\/es\/servicios\/diagnostico-integral\/$/),
-            firstVisitLink.click(),
-        ]);
-
-        await expect(page).toHaveURL(
-            /\/es\/servicios\/diagnostico-integral\/$/
-        );
-        await expect(page.locator('h1')).toContainText('Diagnostico integral');
-        await expect(page.locator('[data-v6-internal-hero]')).toBeVisible();
     });
 });

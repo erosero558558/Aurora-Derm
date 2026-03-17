@@ -2,11 +2,11 @@
     "locale": "es",
     "brand": {
         "logo": "Aurora Derm",
-        "tag": "Dermatologia clara y cercana en Quito",
+        "tag": "Dermatologia medica clara en Quito",
         "voicePillars": [
+            "criterio medico",
             "explicacion sencilla",
-            "trato cercano",
-            "seguimiento serio"
+            "seguimiento claro"
         ],
         "utility": {
             "label": "Para clinicas",
@@ -28,7 +28,7 @@
                 "eyebrow": "Encuentre por donde empezar",
                 "inputLabel": "Escriba un sintoma, servicio o tratamiento",
                 "placeholder": "Acne, lunares, caida de cabello, laser...",
-                "hint": "Busque por sintoma, servicio o tratamiento. Le mostramos por donde empezar sin tanta vuelta.",
+                "hint": "Busque por sintoma, servicio o tratamiento. Le mostramos por donde empezar y cuando conviene WhatsApp, consulta o teledermatologia.",
                 "resultsAria": "Resultados de busqueda",
                 "emptyTitle": "No vimos una opcion clara",
                 "emptyBody": "Pruebe con acne, lunares, caida de cabello, laser o teledermatologia.",
@@ -50,7 +50,7 @@
     "header": {
         "contactLabel": "WhatsApp",
         "contactHref": "https://wa.me/593982453672",
-        "searchLabel": "Buscar por sintoma, servicio o tratamiento",
+        "searchLabel": "Buscar por donde empezar",
         "menuLabel": "Menu",
         "closeMenuLabel": "Cerrar",
         "switchLabel": "EN",
@@ -164,7 +164,7 @@
                 "label": "Teledermatologia",
                 "href": "/es/telemedicina/",
                 "eyebrow": "Teledermatologia",
-                "deck": "Primera orientacion a distancia para decidir el siguiente paso con calma."
+                "deck": "Orientacion a distancia para decidir con claridad si remoto basta o si ya conviene venir a consulta."
             }
         ]
     },

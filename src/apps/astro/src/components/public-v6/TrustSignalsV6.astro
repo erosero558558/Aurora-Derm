@@ -1,0 +1,50 @@
+---
+const { section = {} } = Astro.props;
+
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+
+const eyebrow = hasText(section?.eyebrow) ? section.eyebrow.trim() : '';
+const title = hasText(section?.title) ? section.title.trim() : '';
+const deck = hasText(section?.deck) ? section.deck.trim() : '';
+const cards = (Array.isArray(section?.cards) ? section.cards : [])
+    .map((card) => ({
+        eyebrow: hasText(card?.eyebrow) ? card.eyebrow.trim() : '',
+        title: hasText(card?.title) ? card.title.trim() : '',
+        copy: hasText(card?.copy) ? card.copy.trim() : '',
+        ctaLabel: hasText(card?.ctaLabel) ? card.ctaLabel.trim() : '',
+        href: hasText(card?.href) ? card.href.trim() : '',
+    }))
+    .filter((card) => card.title && card.copy);
+---
+
+{
+    cards.length ? (
+        <section class="v6-trust-signals" data-v6-trust-signals>
+            <div class="v6-trust-signals__head">
+                {eyebrow ? <p>{eyebrow}</p> : null}
+                {title ? <h2>{title}</h2> : null}
+                {deck ? <p>{deck}</p> : null}
+            </div>
+
+            <div class="v6-trust-signals__grid">
+                {
+                    cards.map((card) => (
+                        <article class="v6-trust-signals__card">
+                            {card.eyebrow ? <p>{card.eyebrow}</p> : null}
+                            <h3>{card.title}</h3>
+                            <p>{card.copy}</p>
+                            {
+                                card.ctaLabel && card.href ? (
+                                    <a href={card.href}>
+                                        <span>{card.ctaLabel}</span>
+                                        <span aria-hidden="true">{'>'}</span>
+                                    </a>
+                                ) : null
+                            }
+                        </article>
+                    ))
+                }
+            </div>
+        </section>
+    ) : null
+}

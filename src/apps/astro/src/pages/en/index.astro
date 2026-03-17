@@ -4,6 +4,8 @@ import PublicShellV6 from '../../layouts/PublicShellV6.astro';
 import HeroShowcaseV6 from '../../components/public-v6/HeroShowcaseV6.astro';
 import NewsStripV6 from '../../components/public-v6/NewsStripV6.astro';
 import EditorialGridV6 from '../../components/public-v6/EditorialGridV6.astro';
+import TrustSignalsV6 from '../../components/public-v6/TrustSignalsV6.astro';
+import CaseStoriesV6 from '../../components/public-v6/CaseStoriesV6.astro';
 import CorporateMatrixV6 from '../../components/public-v6/CorporateMatrixV6.astro';
 import BookingStatusV6 from '../../components/public-v6/BookingStatusV6.astro';
 import { getV6HomeData, getV6NavigationModel } from '../../lib/public-v6.js';
@@ -31,6 +33,8 @@ const navModel = getV6NavigationModel(locale, pathname);
     <HeroShowcaseV6 hero={page.hero} locale={locale} />
     <NewsStripV6 item={page.newsStrip} navModel={navModel} locale={locale} />
     <EditorialGridV6 section={page.editorial} locale={locale} />
+    <TrustSignalsV6 section={page.trustSignals} />
+    <CaseStoriesV6 locale={locale} />
     <BookingStatusV6 status={page.bookingStatus} locale={locale} />
     <CorporateMatrixV6 section={page.corporateMatrix} locale={locale} />
 </PublicShellV6>

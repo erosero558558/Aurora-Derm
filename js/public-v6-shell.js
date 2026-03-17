@@ -1429,6 +1429,7 @@
                 return;
 
             root.dataset.v6CaseStoriesReady = 'loading';
+            root.hidden = true;
             fetch(
                 '/api.php?resource=public-case-stories&locale=' +
                     encodeURIComponent(locale),
@@ -1448,8 +1449,9 @@
                     var items = normalizeList(data.items);
                     if (!items.length) {
                         root.dataset.v6CaseStoriesReady = 'empty';
+                        root.hidden = true;
                         grid.hidden = true;
-                        state.hidden = false;
+                        state.hidden = true;
                         return;
                     }
 
@@ -1460,14 +1462,16 @@
                             );
                         })
                         .join('');
+                    root.hidden = false;
                     state.hidden = true;
                     grid.hidden = false;
                     root.dataset.v6CaseStoriesReady = 'true';
                 })
                 .catch(function () {
                     root.dataset.v6CaseStoriesReady = 'empty';
+                    root.hidden = true;
                     grid.hidden = true;
-                    state.hidden = false;
+                    state.hidden = true;
                 });
         });
     }

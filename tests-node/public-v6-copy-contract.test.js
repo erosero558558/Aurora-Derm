@@ -79,6 +79,8 @@ test('public-v6 copy contract: required ui labels exist in ES and EN', () => {
             'hero.labels.indicatorItemPrefix',
             'newsStrip.expandLabel',
             'editorial.ctaLabel',
+            'trustSignals.eyebrow',
+            'trustSignals.title',
             'corporateMatrix.ctaLabel',
             'bookingStatus.eyebrow',
             'bookingStatus.ctaHref',
@@ -207,7 +209,7 @@ test('public-v6 structure contract: primary navigation stays patient-first in ES
     }
 });
 
-test('public-v6 home contract: editorial exposes 3 master routes and booking points to first visit', () => {
+test('public-v6 home contract: editorial keeps 3 master routes and booking points to WhatsApp', () => {
     const checks = [
         {
             file: 'content/public-v6/es/home.json',
@@ -216,7 +218,7 @@ test('public-v6 home contract: editorial exposes 3 master routes and booking poi
                 '/es/servicios/laser-dermatologico/',
                 '/es/telemedicina/',
             ],
-            bookingHref: '/es/servicios/diagnostico-integral/',
+            bookingHref: 'https://wa.me/593982453672',
         },
         {
             file: 'content/public-v6/en/home.json',
@@ -225,7 +227,7 @@ test('public-v6 home contract: editorial exposes 3 master routes and booking poi
                 '/en/services/laser-dermatologico/',
                 '/en/telemedicine/',
             ],
-            bookingHref: '/en/services/diagnostico-integral/',
+            bookingHref: 'https://wa.me/593982453672',
         },
     ];
 
@@ -247,9 +249,16 @@ test('public-v6 home contract: editorial exposes 3 master routes and booking poi
             `${check.file}: editorial must keep exactly three cards`
         );
         assert.equal(
+            Array.isArray(json?.trustSignals?.cards)
+                ? json.trustSignals.cards.length
+                : 0,
+            3,
+            `${check.file}: trust signals must keep exactly three cards`
+        );
+        assert.equal(
             String(json?.bookingStatus?.ctaHref || ''),
             check.bookingHref,
-            `${check.file}: booking status must point to first visit`
+            `${check.file}: booking status must point to WhatsApp`
         );
     }
 });
@@ -259,12 +268,12 @@ test('public-v6 telemedicine and hub contracts keep aligned route anatomy in ES 
         {
             hubFile: 'content/public-v6/es/hub.json',
             teleFile: 'content/public-v6/es/telemedicine.json',
-            bookingHref: '/es/servicios/diagnostico-integral/',
+            bookingHref: 'https://wa.me/593982453672',
         },
         {
             hubFile: 'content/public-v6/en/hub.json',
             teleFile: 'content/public-v6/en/telemedicine.json',
-            bookingHref: '/en/services/diagnostico-integral/',
+            bookingHref: 'https://wa.me/593982453672',
         },
     ];
 
@@ -313,7 +322,12 @@ test('public-v6 telemedicine and hub contracts keep aligned route anatomy in ES 
         assert.equal(
             String(tele?.bookingStatus?.ctaHref || ''),
             check.bookingHref,
-            `${check.teleFile}: telemedicine booking must point to first visit`
+            `${check.teleFile}: telemedicine booking must point to WhatsApp`
+        );
+        assert.equal(
+            String(hub?.bookingStatus?.ctaHref || ''),
+            check.bookingHref,
+            `${check.hubFile}: hub booking must point to WhatsApp`
         );
     }
 });

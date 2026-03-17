@@ -2,11 +2,11 @@
     "locale": "en",
     "brand": {
         "logo": "Aurora Derm",
-        "tag": "Clear clinical dermatology in Quito",
+        "tag": "Medical dermatology made clear in Quito",
         "voicePillars": [
-            "clinical clarity",
-            "calm warmth",
-            "precise follow-up"
+            "medical judgment",
+            "clear explanations",
+            "visible follow-up"
         ],
         "utility": {
             "label": "For clinics",
@@ -28,7 +28,7 @@
                 "eyebrow": "Find where to begin",
                 "inputLabel": "Type a symptom, service, or treatment",
                 "placeholder": "Acne, moles, laser, teledermatology...",
-                "hint": "You can search first visit, symptoms, treatments, or teledermatology. We will show the clearest place to begin.",
+                "hint": "You can search symptoms, services, or treatments. We will show whether WhatsApp, clinic, or teledermatology is the clearest place to begin.",
                 "resultsAria": "Search results",
                 "emptyTitle": "We did not find a clear match",
                 "emptyBody": "Try first visit, diagnosis, acne, laser, or teledermatology.",
@@ -50,7 +50,7 @@
     "header": {
         "contactLabel": "WhatsApp",
         "contactHref": "https://wa.me/593982453672",
-        "searchLabel": "Search where to begin",
+        "searchLabel": "Search how to begin",
         "menuLabel": "Menu",
         "closeMenuLabel": "Close",
         "switchLabel": "ES",
@@ -164,7 +164,7 @@
                 "label": "Teledermatology",
                 "href": "/en/telemedicine/",
                 "eyebrow": "Teledermatology",
-                "deck": "Remote guidance when it helps you move sooner, with clear direction on what comes next."
+                "deck": "Remote guidance when it helps you move sooner, with a clear read on whether clinic or follow-up should come next."
             },
             {
                 "label": "When to change route",

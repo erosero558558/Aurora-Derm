@@ -64,18 +64,20 @@ test.describe('Public V6 case stories', () => {
         await gotoPublicRoute(page, '/es/');
 
         const section = page.locator('[data-v6-case-stories]').first();
-        await expect(section).toBeVisible();
         await expect
-            .poll(async () => section.getAttribute('data-v6-case-stories-ready'))
+            .poll(async () =>
+                section.getAttribute('data-v6-case-stories-ready')
+            )
             .toBe('true');
+        await expect(section).toBeVisible();
         await expect(section.locator('[data-v6-case-story]')).toHaveCount(1);
         await expect(section).toContainText('Caso acne editorial');
-        await expect(section.locator('.v6-case-stories__compare img')).toHaveCount(
-            2
-        );
+        await expect(
+            section.locator('.v6-case-stories__compare img')
+        ).toHaveCount(2);
     });
 
-    test('keeps neutral empty state when runtime feed is empty', async ({
+    test('keeps case stories hidden and trust signals visible when runtime feed is empty', async ({
         page,
     }) => {
         await page.route(
@@ -98,11 +100,16 @@ test.describe('Public V6 case stories', () => {
         await gotoPublicRoute(page, '/en/');
 
         const section = page.locator('[data-v6-case-stories]').first();
-        await expect(section).toBeVisible();
         await expect
-            .poll(async () => section.getAttribute('data-v6-case-stories-ready'))
+            .poll(async () =>
+                section.getAttribute('data-v6-case-stories-ready')
+            )
             .toBe('empty');
+        await expect(section).toBeHidden();
         await expect(section.locator('[data-v6-case-story]')).toHaveCount(0);
-        await expect(section).toContainText('There are no published stories yet.');
+        await expect(page.locator('[data-v6-trust-signals]')).toBeVisible();
+        await expect(page.locator('[data-v6-trust-signals]')).toContainText(
+            'Start with a clear conversation'
+        );
     });
 });

@@ -24,7 +24,7 @@ test.describe('Deferred shell static fallback', () => {
         await expect(page.locator('[data-v6-header]')).toBeVisible();
         await expect(page.locator('[data-v6-hero]')).toBeVisible();
         await expect(page.locator('[data-v6-news-strip]')).toContainText(
-            'Aunque la agenda web siga en pausa, su primer paso no tiene por que esperar.'
+            'Escribanos por WhatsApp y le ayudamos a ubicar si hoy conviene consulta, tratamiento o teledermatologia.'
         );
 
         const editorial = page.locator('[data-v6-editorial]');
@@ -45,8 +45,8 @@ test.describe('Deferred shell static fallback', () => {
             'Reserva online en mantenimiento'
         );
         await expect(
-            bookingStatus.getByRole('link', { name: 'Abrir telemedicina' })
-        ).toHaveAttribute('href', '/es/telemedicina/');
+            bookingStatus.getByRole('link', { name: 'Escribir por WhatsApp' })
+        ).toHaveAttribute('href', /wa\.me\/593982453672/);
 
         await expectLegacyShellAbsent(page);
     });

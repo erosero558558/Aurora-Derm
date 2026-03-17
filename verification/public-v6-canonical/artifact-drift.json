@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-03-16T19:08:21.372Z",
-  "rebuild": false,
+  "generatedAt": "2026-03-17T00:46:51.994Z",
+  "rebuild": true,
   "distRoot": "src/apps/astro/dist",
   "checks": [
     {

@@ -3,29 +3,31 @@ const { locale = 'es' } = Astro.props;
 const copy =
     locale === 'en'
         ? {
-              eyebrow: 'Case Media Flow',
-              title: 'Editorial case stories prepared from the clinical flow.',
-              deck: 'Published stories are hydrated at runtime after a human review gate. If the feed is empty, the website keeps its shell without forcing a static gallery.',
-              empty: 'There are no published stories yet.',
+              eyebrow: 'Reviewed case stories',
+              title: 'Published stories with clinical context and human review.',
+              deck: 'When approved stories exist, they appear here with a clear explanation of what changed and how the route was guided.',
           }
         : {
-              eyebrow: 'Historias publicadas',
-              title: 'Casos compartidos con contexto clinico claro.',
-              deck: 'Cuando existan historias aprobadas, apareceran aqui con explicacion sencilla y revision humana. Si aun no hay publicaciones, la seccion se mantiene discreta.',
-              empty: 'Por ahora no hay historias publicadas.',
+              eyebrow: 'Historias revisadas',
+              title: 'Casos publicados con contexto clinico y revision humana.',
+              deck: 'Cuando existan historias aprobadas, apareceran aqui con una explicacion sencilla de que cambio y como se guio la ruta.',
           };
 ---
 
-<section class="v6-case-stories" data-v6-case-stories data-v6-locale={locale}>
+<section
+    class="v6-case-stories"
+    data-v6-case-stories
+    data-v6-locale={locale}
+    data-v6-case-stories-ready="idle"
+    hidden
+>
     <div class="v6-case-stories__head">
         <p>{copy.eyebrow}</p>
         <h2>{copy.title}</h2>
         <p>{copy.deck}</p>
     </div>
 
-    <div class="v6-case-stories__state" data-v6-case-stories-state>
-        <p>{copy.empty}</p>
-    </div>
+    <div class="v6-case-stories__state" data-v6-case-stories-state hidden></div>
 
     <div class="v6-case-stories__grid" data-v6-case-stories-grid hidden></div>
 </section>

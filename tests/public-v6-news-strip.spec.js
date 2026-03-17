@@ -43,9 +43,11 @@ test.describe('Public V6 news strip', () => {
         await expect(strip).toHaveAttribute('data-v6-expanded', 'true');
         await expect(panel).toBeVisible();
         await expect(panel).toContainText(
-            'Puede arrancar por teledermatologia o por la consulta'
+            'La agenda online sigue en mantenimiento'
         );
-        await expect(panel.locator('a[href="/es/servicios/"]')).toBeVisible();
+        await expect(
+            panel.locator('a[href="https://wa.me/593982453672"]')
+        ).toBeVisible();
 
         await toggle.click();
         await expect(toggle).toHaveAttribute('aria-expanded', 'false');

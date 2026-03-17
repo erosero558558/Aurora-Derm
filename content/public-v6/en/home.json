@@ -1,6 +1,6 @@
 {
-    "title": "Aurora Derm | Clear clinical dermatology in Quito",
-    "description": "Aurora Derm delivers clear clinical dermatology in Quito, with a precise first read, indicated treatment, and follow-up you can understand.",
+    "title": "Aurora Derm | Clear dermatology to start in Quito",
+    "description": "Aurora Derm helps you start through WhatsApp, in-clinic dermatology, or teledermatology in Quito, with clear explanations and follow-up you can understand.",
     "hero": {
         "autoplayMs": 7000,
         "labels": {
@@ -16,8 +16,8 @@
             {
                 "id": "s1",
                 "category": "First visit",
-                "title": "A strong diagnosis at the start changes the whole course.",
-                "description": "We listen first, examine skin, hair, and nails, then shape a plan you can understand from the first consultation.",
+                "title": "We first understand your case, then define the right route.",
+                "description": "We listen first, examine skin, hair, and nails, then make clear whether comprehensive diagnosis, follow-up, or a narrower route fits best.",
                 "image": "/images/optimized/v6-clinic-statement-clinical-direction.webp",
                 "srcset": "/images/optimized/v6-clinic-statement-clinical-direction-400.webp 400w, /images/optimized/v6-clinic-statement-clinical-direction-640.webp 640w, /images/optimized/v6-clinic-statement-clinical-direction-800.webp 800w, /images/optimized/v6-clinic-statement-clinical-direction-900.webp 900w, /images/optimized/v6-clinic-statement-clinical-direction-1200.webp 1200w, /images/optimized/v6-clinic-statement-clinical-direction.webp 1400w",
                 "alt": "Clinical dermatology direction with a structured read",
@@ -26,8 +26,8 @@
             {
                 "id": "s2",
                 "category": "Treatments",
-                "title": "Technology enters only when it improves the decision and the outcome.",
-                "description": "Laser, peels, and biostimulation are chosen by phototype, clinical objective, and follow-up safety, never by impulse.",
+                "title": "We treat only what truly adds value to your skin.",
+                "description": "Laser, peels, and biostimulation are chosen by phototype, clinical objective, and the follow-up you can realistically sustain.",
                 "image": "/images/optimized/v6-clinic-statement-procedure-guidance.webp",
                 "srcset": "/images/optimized/v6-clinic-statement-procedure-guidance-400.webp 400w, /images/optimized/v6-clinic-statement-procedure-guidance-640.webp 640w, /images/optimized/v6-clinic-statement-procedure-guidance-800.webp 800w, /images/optimized/v6-clinic-statement-procedure-guidance-900.webp 900w, /images/optimized/v6-clinic-statement-procedure-guidance-1200.webp 1200w, /images/optimized/v6-clinic-statement-procedure-guidance.webp 1400w",
                 "alt": "Dermatology guidance for indicated procedures",
@@ -36,8 +36,8 @@
             {
                 "id": "s3",
                 "category": "Teledermatology",
-                "title": "Teledermatology to move early, without deciding blind.",
-                "description": "We resolve first guidance remotely and move into clinic in Quito when the case demands direct examination.",
+                "title": "If your case can move remotely first, we say it plainly.",
+                "description": "Teledermatology helps when clear photos and a useful history can move the case early and show when clinic in Quito becomes necessary.",
                 "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
                 "srcset": "/images/optimized/v6-clinic-telemedicine-intake-400.webp 400w, /images/optimized/v6-clinic-telemedicine-intake-640.webp 640w, /images/optimized/v6-clinic-telemedicine-intake-800.webp 800w, /images/optimized/v6-clinic-telemedicine-intake-900.webp 900w, /images/optimized/v6-clinic-telemedicine-intake-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-intake.webp 1400w",
                 "alt": "Teledermatology intake with clinical context and imaging",
@@ -46,8 +46,8 @@
             {
                 "id": "s4",
                 "category": "Follow-up",
-                "title": "Follow-up turns early improvement into real stability.",
-                "description": "Every review compares progression, adjusts recommendations, and keeps medical decisions traceable over time.",
+                "title": "Follow-up keeps you from restarting from zero every time.",
+                "description": "Each review compares progression, adjusts recommendations, and keeps the next step visible instead of leaving loose ends.",
                 "image": "/images/optimized/v6-clinic-home-followup.webp",
                 "srcset": "/images/optimized/v6-clinic-home-followup-400.webp 400w, /images/optimized/v6-clinic-home-followup-640.webp 640w, /images/optimized/v6-clinic-home-followup-800.webp 800w, /images/optimized/v6-clinic-home-followup-900.webp 900w, /images/optimized/v6-clinic-home-followup-1200.webp 1200w, /images/optimized/v6-clinic-home-followup.webp 1400w",
                 "alt": "Dermatology follow-up with progress comparison and adjustments",
@@ -56,8 +56,8 @@
             {
                 "id": "s5",
                 "category": "Aurora Derm",
-                "title": "A team that explains each decision without fog.",
-                "description": "You receive an up-to-date dermatology read, close guidance, and a plan that stays clear at every stage.",
+                "title": "Aurora Derm works like a clinic, not a showroom.",
+                "description": "You receive a dermatology read, direct guidance, and a plan that stays understandable before we ask you to make a bigger decision.",
                 "image": "/images/optimized/v6-clinic-team-roundtable.webp",
                 "srcset": "/images/optimized/v6-clinic-team-roundtable-400.webp 400w, /images/optimized/v6-clinic-team-roundtable-640.webp 640w, /images/optimized/v6-clinic-team-roundtable-800.webp 800w, /images/optimized/v6-clinic-team-roundtable-900.webp 900w, /images/optimized/v6-clinic-team-roundtable-1200.webp 1200w, /images/optimized/v6-clinic-team-roundtable.webp 1400w",
                 "alt": "Dermatology team reviewing decisions together",
@@ -66,19 +66,19 @@
         ]
     },
     "newsStrip": {
-        "label": "Aurora Derm",
-        "headline": "Start with first visit, treatments, or teledermatology; with online booking under maintenance, this page keeps the route clear.",
-        "href": "/en/services/",
+        "label": "How to start today",
+        "headline": "Message us on WhatsApp and we will help you place whether today calls for clinic, treatment, or teledermatology.",
+        "href": "https://wa.me/593982453672",
         "expandLabel": "Expand",
         "collapseLabel": "Collapse",
-        "detail": "Choose the front door that sounds closest to what is happening now; while online booking under maintenance remains active, these routes keep the next step explicit.",
-        "ctaLabel": "See specialties",
+        "detail": "Online booking is still under maintenance, but you do not need to stay stuck. Through WhatsApp we review the reason for care, point you to the clearest route, and tell you when teledermatology helps and when clinic in Quito matters more.",
+        "ctaLabel": "Message on WhatsApp",
         "localeAria": "Language switch"
     },
     "editorial": {
-        "eyebrow": "Master routes",
-        "title": "Three master routes to begin without guesswork.",
-        "deck": "If you need to sort symptoms, choose treatment, or start remotely, these are the three front doors.",
+        "eyebrow": "Front doors",
+        "title": "Three clear ways to begin.",
+        "deck": "An in-clinic consultation, a treatment decision, or remote guidance, depending on what you need today.",
         "ctaLabel": "Open service",
         "cards": [
             {
@@ -87,7 +87,7 @@
                 "size": "tall",
                 "category": "First visit",
                 "title": "Begin with a complete read",
-                "copy": "When several symptoms overlap or everything just started, this visit sorts priority, risk, and the next step.",
+                "copy": "When symptoms overlap or everything just started, this visit sorts priority, risk, and the next step without making you guess.",
                 "href": "/en/services/diagnostico-integral/",
                 "image": "/images/optimized/v6-clinic-statement-clinical-direction.webp",
                 "alt": "Clinical dermatology direction with a structured read",
@@ -116,6 +116,34 @@
                 "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
                 "alt": "Remote dermatology review with follow-up and adjustment",
                 "srcset": "/images/optimized/v6-clinic-telemedicine-review-400.webp 400w, /images/optimized/v6-clinic-telemedicine-review-640.webp 640w, /images/optimized/v6-clinic-telemedicine-review-800.webp 800w, /images/optimized/v6-clinic-telemedicine-review-900.webp 900w, /images/optimized/v6-clinic-telemedicine-review-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-review.webp 1400w"
+            }
+        ]
+    },
+    "trustSignals": {
+        "eyebrow": "Trust and route",
+        "title": "Before we ask you to book, we help you place the right next step.",
+        "deck": "Aurora Derm works like a real dermatology clinic: clear contact, medical evaluation, and an in-clinic handoff when the case needs it.",
+        "cards": [
+            {
+                "eyebrow": "WhatsApp first",
+                "title": "Start with a clear conversation",
+                "copy": "On WhatsApp you can tell us what is happening, and we help sort whether clinic, follow-up, or teledermatology makes the most sense.",
+                "ctaLabel": "Message on WhatsApp",
+                "href": "https://wa.me/593982453672"
+            },
+            {
+                "eyebrow": "Clinic in Quito",
+                "title": "If direct examination matters, we say so early",
+                "copy": "If the case needs physical examination, dermatoscopy, or a procedure, we move you into clinic instead of sending you in circles.",
+                "ctaLabel": "See first visit",
+                "href": "/en/services/diagnostico-integral/"
+            },
+            {
+                "eyebrow": "Medical judgment",
+                "title": "Each next step is explained",
+                "copy": "We do not push you into an appointment just to push one. We explain what should happen first, when follow-up makes sense, and when clinic is the right move.",
+                "ctaLabel": "See specialties",
+                "href": "/en/services/"
             }
         ]
     },
@@ -188,10 +216,10 @@
         ]
     },
     "bookingStatus": {
-        "eyebrow": "Next step",
+        "eyebrow": "How to start today",
         "title": "Online booking under maintenance",
-        "description": "If you want a clear next step, open first visit. If you are still unsure about coming in, teledermatology helps sort the case.",
-        "ctaLabel": "Open first visit",
-        "ctaHref": "/en/services/diagnostico-integral/"
+        "description": "If you want to move today, message us on WhatsApp. From there we point you to clinic, teledermatology, or the service page that best matches your case.",
+        "ctaLabel": "Message on WhatsApp",
+        "ctaHref": "https://wa.me/593982453672"
     }
 }

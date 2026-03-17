@@ -49,9 +49,9 @@
         "bookingStatus": {
             "eyebrow": "Siguiente paso",
             "title": "Reserva online en mantenimiento",
-            "description": "Si este servicio ya suena a la ruta correcta, el siguiente paso es abrir primera consulta. Si todavia compara opciones, teledermatologia orienta primero.",
-            "ctaLabel": "Abrir primera consulta",
-            "ctaHref": "/es/servicios/diagnostico-integral/"
+            "description": "Si esta ficha se parece a su caso, escribanos por WhatsApp para decidir la ruta correcta. Si por fotos e historia conviene teledermatologia primero, tambien se lo decimos.",
+            "ctaLabel": "Escribir por WhatsApp",
+            "ctaHref": "https://wa.me/593982453672"
         }
     },
     "services": [

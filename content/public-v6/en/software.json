@@ -305,7 +305,7 @@
                         "bullets": [
                             "Enter calls, + recalls, . completes",
                             "Readiness visible before the first call",
-                            "Clear fallback if network or runtime degrade"
+                            "Clear fallback if network or the ops layer degrade"
                         ],
                         "href": "/operador-turnos.html",
                         "ctaLabel": "Open operator"

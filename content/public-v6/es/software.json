@@ -305,7 +305,7 @@
                         "bullets": [
                             "Enter llama, + re-llama, . completa",
                             "Readiness visible antes del primer llamado",
-                            "Fallback claro si la red o el runtime fallan"
+                            "Fallback claro si la red o la capa operativa fallan"
                         ],
                         "href": "/operador-turnos.html",
                         "ctaLabel": "Abrir operador"

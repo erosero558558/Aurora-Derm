@@ -41,37 +41,40 @@ test.describe('Public funnel routing on current public-v6 entry flow', () => {
         });
     });
 
-    test('home keeps route selection, search, and first-visit fallback available while booking stays paused', async ({
+    test('home keeps route selection, search, and WhatsApp fallback available while booking stays paused', async ({
         page,
     }) => {
         await openPublicRoute(page, '/en/');
 
         const newsStrip = page.locator('[data-v6-news-strip]');
-        await expect(newsStrip).toContainText('Three clear ways to begin');
         await expect(newsStrip).toContainText(
-            'teledermatology when you need to move today'
+            'Message us on WhatsApp and we will help you place whether today calls for clinic, treatment, or teledermatology.'
         );
+        await expect(newsStrip).toContainText('teledermatology');
 
         await page.locator('[data-v6-news-toggle]').click();
         await expect(page.locator('[data-v6-news-panel]')).toBeVisible();
         await expect(page.locator('[data-v6-news-panel]')).toContainText(
-            'Start with the route that sounds closest'
+            'Online booking is still under maintenance'
         );
         const specialtiesLink = page
             .locator('[data-v6-news-panel]')
-            .getByRole('link', { name: 'See specialties' });
-        await expect(specialtiesLink).toHaveAttribute('href', '/en/services/');
+            .getByRole('link', { name: 'Message on WhatsApp' });
+        await expect(specialtiesLink).toHaveAttribute(
+            'href',
+            /wa\.me\/593982453672/
+        );
 
         const bookingStatus = page.locator('[data-v6-booking-status]');
         await expect(bookingStatus).toContainText(
             'Online booking under maintenance'
         );
-        const firstVisitLink = bookingStatus.getByRole('link', {
-            name: 'Open first visit',
+        const whatsappLink = bookingStatus.getByRole('link', {
+            name: 'Message on WhatsApp',
         });
-        await expect(firstVisitLink).toHaveAttribute(
+        await expect(whatsappLink).toHaveAttribute(
             'href',
-            '/en/services/diagnostico-integral/'
+            /wa\.me\/593982453672/
         );
 
         await page.locator('[data-v6-search-open]').first().click();
@@ -97,7 +100,7 @@ test.describe('Public funnel routing on current public-v6 entry flow', () => {
         );
     });
 
-    test('service detail exposes the first-visit fallback instead of the legacy booking shell', async ({
+    test('service detail exposes the WhatsApp fallback instead of the legacy booking shell', async ({
         page,
     }) => {
         await openPublicRoute(page, '/en/services/acne-rosacea/');
@@ -117,16 +120,16 @@ test.describe('Public funnel routing on current public-v6 entry flow', () => {
             'Online booking under maintenance'
         );
 
-        const firstVisitLink = bookingStatus.getByRole('link', {
-            name: 'Open first visit',
+        const whatsappLink = bookingStatus.getByRole('link', {
+            name: 'Message on WhatsApp',
         });
-        await expect(firstVisitLink).toHaveAttribute(
+        await expect(whatsappLink).toHaveAttribute(
             'href',
-            '/en/services/diagnostico-integral/'
+            /wa\.me\/593982453672/
         );
     });
 
-    test('telemedicine closes the public funnel into first visit when direct examination is needed', async ({
+    test('telemedicine keeps WhatsApp as the public funnel handoff when direct examination is needed', async ({
         page,
     }) => {
         await openPublicRoute(page, '/en/telemedicine/');
@@ -141,23 +144,12 @@ test.describe('Public funnel routing on current public-v6 entry flow', () => {
             'Online booking under maintenance'
         );
 
-        const firstVisitLink = bookingStatus.getByRole('link', {
-            name: 'Open first visit',
+        const whatsappLink = bookingStatus.getByRole('link', {
+            name: 'Message on WhatsApp',
         });
-        await expect(firstVisitLink).toHaveAttribute(
+        await expect(whatsappLink).toHaveAttribute(
             'href',
-            '/en/services/diagnostico-integral/'
+            /wa\.me\/593982453672/
         );
-
-        await Promise.all([
-            page.waitForURL(/\/en\/services\/diagnostico-integral\/$/),
-            firstVisitLink.click(),
-        ]);
-
-        await expect(page).toHaveURL(/\/en\/services\/diagnostico-integral\/$/);
-        await expect(page.locator('h1')).toContainText(
-            'Comprehensive diagnosis'
-        );
-        await expect(page.locator('[data-v6-booking-status]')).toBeVisible();
     });
 });

@@ -1,6 +1,6 @@
 {
     "title": "Telemedicine | Aurora Derm",
-    "description": "Remote dermatology with clear first guidance, careful diagnosis, a responsible in-clinic handoff, and follow-up in Quito.",
+    "description": "Teledermatology to orient the case, organize photos and history, and move into clinic in Quito when direct examination matters.",
     "breadcrumb": [
         {
             "label": "Home",
@@ -17,7 +17,7 @@
         "srcset": "/images/optimized/v6-clinic-telemedicine-intake-400.webp 400w, /images/optimized/v6-clinic-telemedicine-intake-640.webp 640w, /images/optimized/v6-clinic-telemedicine-intake-800.webp 800w, /images/optimized/v6-clinic-telemedicine-intake-900.webp 900w, /images/optimized/v6-clinic-telemedicine-intake-1200.webp 1200w, /images/optimized/v6-clinic-telemedicine-intake.webp 1400w",
         "alt": "Telemedicine intake with clinical context and imaging"
     },
-    "lead": "Teledermatology works best when early remote guidance clarifies whether to keep moving online or switch into clinic.",
+    "lead": "Teledermatology works when useful photos, clear history, and one concrete question support diagnosis before deciding whether direct examination is needed.",
     "ui": {
         "menu": {
             "glance": "What this clarifies first",
@@ -26,8 +26,8 @@
         },
         "thesis": {
             "eyebrow": "Remote clinical model",
-            "title": "Teledermatology to start well, switch on time, and know next steps",
-            "body": "It clarifies when remote care helps, when it is no longer enough, and which next action keeps the case from staying half-decided."
+            "title": "Teledermatology to orient early and move into clinic when needed",
+            "body": "Here we explain what helps to send, when remote care truly fits, when it no longer does, and how the case moves into clinic without getting stuck halfway."
         },
         "statement": {
             "eyebrow": "Remote review",
@@ -57,7 +57,16 @@
     },
     "blocks": [
         {
-            "title": "When it does help",
+            "title": "What helps to send",
+            "items": [
+                "Photos with good light, one context image, and one closer image of the area in question.",
+                "How long it has been happening, which symptoms changed, and what treatment you already tried.",
+                "Relevant history such as allergies, pregnancy, breastfeeding, or current medication.",
+                "One concrete question: whether it makes sense to wait, adjust, schedule clinic, or change routes."
+            ]
+        },
+        {
+            "title": "When it does fit",
             "items": [
                 "Known flares that need adjustment without waiting for a full clinic visit.",
                 "Questions between reviews when progression can be compared through photos and history.",
@@ -66,46 +75,37 @@
             ]
         },
         {
-            "title": "When it is not enough",
+            "title": "When to move into clinic",
             "items": [
                 "Blurred images or symptoms that still lack enough context.",
-                "New lesions with rapid change that have not been examined before.",
-                "Intense pain, bleeding, drainage, or functional impact.",
-                "Likely need for dermatoscopy, procedure, or direct physical examination."
-            ]
-        },
-        {
-            "title": "Move into clinic and next action",
-            "items": [
-                "When the first remote read still leaves clinical doubt that should not be dragged out.",
-                "When the first plan does not respond as expected in the agreed review window.",
-                "When the case needs dermatoscopy, a procedure, or direct physical examination.",
-                "When the correct next step is already to open first visit instead of waiting longer online."
+                "New lesions with rapid change, bleeding, drainage, intense pain, or functional impact.",
+                "Likely need for dermatoscopy, a procedure, or direct physical examination.",
+                "When the first remote read leaves important clinical doubt or the first plan does not respond as expected."
             ]
         }
     ],
     "initiatives": [
         {
-            "title": "Prepare useful photos",
-            "copy": "Natural light, steady distance, and one context photo make the first read much clearer.",
+            "title": "Take clear photos",
+            "copy": "Natural light, steady distance, and one context photo make the first read much clearer from the start.",
             "image": "/images/optimized/v6-clinic-telemedicine-review.webp",
             "href": "#v6-tele-glance"
         },
         {
-            "title": "Explain what changed first",
-            "copy": "Timing, symptoms, and previous treatment help decide whether this remote start is enough.",
+            "title": "Explain what changed",
+            "copy": "Timing, symptoms, and previous treatment help decide whether this remote start is enough or whether clinic is already the better move.",
             "image": "/images/optimized/v6-clinic-home-followup.webp",
             "href": "#v6-tele-block-1"
         },
         {
-            "title": "Watch for switching signals",
+            "title": "Watch clinic signals",
             "copy": "Pain, bleeding, fast spread, or poor response are signs to move from remote care into clinic without stretching the wait.",
             "image": "/images/optimized/v6-clinic-clinic-environment.webp",
             "href": "#v6-tele-block-3"
         },
         {
-            "title": "Open first visit",
-            "copy": "When the decision already requires direct examination, the correct action is to open first visit instead of staying remote.",
+            "title": "Message us on WhatsApp",
+            "copy": "If you already need help choosing the next action, we can tell you on WhatsApp whether to stay remote or move into clinic.",
             "image": "/images/optimized/v6-clinic-team-roundtable.webp",
             "href": "#v6-booking-status"
         }
@@ -113,8 +113,8 @@
     "bookingStatus": {
         "eyebrow": "Next step",
         "title": "Online booking under maintenance",
-        "description": "If this remote review shows that direct examination matters, the next step is to open first visit in Quito.",
-        "ctaLabel": "Open first visit",
-        "ctaHref": "/en/services/diagnostico-integral/"
+        "description": "If this guidance shows direct examination matters, message us on WhatsApp to place the right clinic visit in Quito. If remote care still fits, we ask for clearer photos.",
+        "ctaLabel": "Message on WhatsApp",
+        "ctaHref": "https://wa.me/593982453672"
     }
 }

@@ -49,9 +49,9 @@
         "bookingStatus": {
             "eyebrow": "Next step",
             "title": "Online booking under maintenance",
-            "description": "If this service already sounds right, the next step is to open first visit. If you are still comparing routes, telemedicine guides first.",
-            "ctaLabel": "Open first visit",
-            "ctaHref": "/en/services/diagnostico-integral/"
+            "description": "If this page sounds like your case, message us on WhatsApp to place the right route. If telemedicine fits first from photos and history, we will say so.",
+            "ctaLabel": "Message on WhatsApp",
+            "ctaHref": "https://wa.me/593982453672"
         }
     },
     "services": [

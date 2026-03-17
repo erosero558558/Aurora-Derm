@@ -1,6 +1,6 @@
 {
     "title": "Dermatology specialties | Aurora Derm",
-    "description": "Aurora Derm organizes its dermatology specialties in Quito with a clear first read, indicated treatment, and follow-up you can understand.",
+    "description": "Aurora Derm organizes its dermatology specialties in Quito with a clearer way to start through WhatsApp, clinic, or teledermatology.",
     "breadcrumb": [
         {
             "label": "Home",
@@ -17,8 +17,8 @@
         "srcset": "/images/optimized/v6-clinic-hub-editorial-map-400.webp 400w, /images/optimized/v6-clinic-hub-editorial-map-640.webp 640w, /images/optimized/v6-clinic-hub-editorial-map-800.webp 800w, /images/optimized/v6-clinic-hub-editorial-map-1024.webp 1024w, /images/optimized/v6-clinic-hub-editorial-map-1200.webp 1200w, /images/optimized/v6-clinic-hub-editorial-map-1344.webp 1344w, /images/optimized/v6-clinic-hub-editorial-map.webp 1400w",
         "alt": "Editorial map of dermatology routes and clinical decisions"
     },
-    "introTitle": "Start with the route that best organizes what you need today",
-    "introDeck": "Choose how to enter first; then we narrow care by symptoms, treatment, follow-up, and whether clinic review matters.",
+    "introTitle": "Find the right route and move today without waiting on the web scheduler",
+    "introDeck": "These specialties sort what is happening today. If you are unsure where to enter, message us on WhatsApp and we will place clinic, teledermatology, or treatment.",
     "ui": {
         "menu": {
             "featured": "Where to start",
@@ -41,21 +41,21 @@
         {
             "category": "Diagnosis",
             "title": "Comprehensive diagnosis",
-            "copy": "The right door when you need a full first read and a plan you can understand from the start.",
+            "copy": "The right door when you need a full first read, an in-clinic consultation, and a plan you can understand from the start.",
             "image": "/images/optimized/v6-clinic-diagnostico-integral.webp",
             "href": "/en/services/diagnostico-integral/"
         },
         {
             "category": "Technology",
             "title": "Dermatology laser for your case",
-            "copy": "The right door when you already know you are looking for technology or a procedure chosen with medical judgment.",
+            "copy": "The right door when you already need to review whether technology or a procedure truly belongs in your care.",
             "image": "/images/optimized/v6-clinic-statement-procedure-guidance.webp",
             "href": "/en/services/laser-dermatologico/"
         },
         {
             "category": "Teledermatology",
             "title": "Teledermatology with a careful clinic handoff",
-            "copy": "The right door when you want to move today and decide clearly when remote care is enough and when clinic matters.",
+            "copy": "The right door when you want to move today and decide clearly when remote care is enough and when clinic in Quito matters more.",
             "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
             "href": "/en/telemedicine/"
         }
@@ -216,8 +216,8 @@
     "bookingStatus": {
         "eyebrow": "Next step",
         "title": "Online booking under maintenance",
-        "description": "If you need to decide where to enter today, open first visit. If you still do not know whether to come in, teledermatology guides first.",
-        "ctaLabel": "Open first visit",
-        "ctaHref": "/en/services/diagnostico-integral/"
+        "description": "If one of these routes already sounds like your case, message us on WhatsApp and we will help place whether clinic, teledermatology, or follow-up fits best.",
+        "ctaLabel": "Message on WhatsApp",
+        "ctaHref": "https://wa.me/593982453672"
     }
 }
