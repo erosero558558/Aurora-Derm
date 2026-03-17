@@ -18,11 +18,7 @@ const FALLBACK_PROFILE = Object.freeze({
         },
     },
     surfaces: {
-        admin: {
-            enabled: true,
-            label: 'Admin web',
-            route: '/admin.html#queue',
-        },
+        admin: { enabled: true, label: 'Admin web', route: '/admin.html#queue' },
         operator: {
             enabled: true,
             label: 'Operador web',
@@ -33,17 +29,13 @@ const FALLBACK_PROFILE = Object.freeze({
             label: 'Kiosco web',
             route: '/kiosco-turnos.html',
         },
-        display: {
-            enabled: true,
-            label: 'Sala web',
-            route: '/sala-turnos.html',
-        },
+        display: { enabled: true, label: 'Sala web', route: '/sala-turnos.html' },
     },
     release: {
-        mode: 'suite_v2',
+        mode: 'web_pilot',
         admin_mode_default: 'basic',
         separate_deploy: true,
-        native_apps_blocking: true,
+        native_apps_blocking: false,
         notes: [],
     },
 });
@@ -195,7 +187,7 @@ export function normalizeTurneroClinicProfile(rawProfile) {
             native_apps_blocking:
                 typeof release.native_apps_blocking === 'boolean'
                     ? release.native_apps_blocking
-                    : true,
+                    : false,
             notes: Array.isArray(release.notes)
                 ? release.notes.map((note) => toString(note)).filter(Boolean)
                 : [],
@@ -204,7 +196,10 @@ export function normalizeTurneroClinicProfile(rawProfile) {
 }
 
 export function getTurneroClinicBrandName(profile) {
-    return toString(profile?.branding?.name, FALLBACK_PROFILE.branding.name);
+    return toString(
+        profile?.branding?.name,
+        FALLBACK_PROFILE.branding.name
+    );
 }
 
 export function getTurneroClinicShortName(profile) {
@@ -254,7 +249,11 @@ export function getTurneroClinicProfileRuntimeMeta(profile) {
     };
 }
 
-export function getTurneroConsultorioLabel(profile, consultorio, options = {}) {
+export function getTurneroConsultorioLabel(
+    profile,
+    consultorio,
+    options = {}
+) {
     const short = Boolean(options.short);
     const key = Number(consultorio || 0) === 2 ? 'c2' : 'c1';
     const fallback = FALLBACK_PROFILE.consultorios[key];
@@ -302,9 +301,7 @@ function resolveCurrentSurfaceRoute(options = {}) {
 export function getTurneroSurfaceContract(profile, surface, options = {}) {
     const normalizedProfile = normalizeTurneroClinicProfile(profile);
     const runtimeMeta = getTurneroClinicProfileRuntimeMeta(profile);
-    const surfaceKey = String(surface || '')
-        .trim()
-        .toLowerCase();
+    const surfaceKey = String(surface || '').trim().toLowerCase();
     const fallbackSurface =
         normalizedProfile.surfaces[surfaceKey] ||
         FALLBACK_PROFILE.surfaces.operator;
@@ -341,7 +338,8 @@ export function getTurneroSurfaceContract(profile, surface, options = {}) {
             routeMatches,
             state: 'alert',
             label: fallbackSurface.label,
-            detail: 'No se pudo cargar clinic-profile.json; la superficie quedó con perfil de respaldo y no puede operar como piloto.',
+            detail:
+                'No se pudo cargar clinic-profile.json; la superficie quedó con perfil de respaldo y no puede operar como piloto.',
             reason: 'profile_missing',
         };
     }
@@ -402,8 +400,9 @@ export function loadTurneroClinicProfile() {
             };
         })
         .catch(() => {
-            const fallbackProfile =
-                normalizeTurneroClinicProfile(FALLBACK_PROFILE);
+            const fallbackProfile = normalizeTurneroClinicProfile(
+                FALLBACK_PROFILE
+            );
             return {
                 ...fallbackProfile,
                 runtime_meta: {

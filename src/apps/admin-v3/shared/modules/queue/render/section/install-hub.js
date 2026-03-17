@@ -207,16 +207,6 @@ function getTurneroClinicProfileCatalogStatus() {
     return status && typeof status === 'object' ? status : null;
 }
 
-function getTurneroOperatorAccessMeta() {
-    const meta = getState().data.turneroOperatorAccessMeta;
-    return meta && typeof meta === 'object' ? meta : null;
-}
-
-function getTurneroV2Readiness() {
-    const readiness = getState().data.turneroV2Readiness;
-    return readiness && typeof readiness === 'object' ? readiness : null;
-}
-
 function getTurneroClinicBrandName() {
     return String(
         getTurneroClinicProfile()?.branding?.name || 'Piel en Armonia'
@@ -361,11 +351,6 @@ function getTurneroPilotHealthStatus() {
         adminModeDefault: String(turneroPilot?.adminModeDefault || '').trim(),
         separateDeploy: turneroPilot?.separateDeploy === true,
         nativeAppsBlocking: turneroPilot?.nativeAppsBlocking === true,
-        operatorPinMode: String(turneroPilot?.operatorPinMode || '').trim(),
-        operatorPinConfigured: turneroPilot?.operatorPinConfigured === true,
-        operatorPinSessionTtlHours: Number(
-            turneroPilot?.operatorPinSessionTtlHours || 0
-        ),
         surfaces,
     };
 }
@@ -2500,8 +2485,6 @@ function buildQueueOpsPilot(manifest, detectedPlatform) {
         getTurneroClinicProfile,
         getTurneroClinicProfileMeta,
         getTurneroClinicProfileCatalogStatus,
-        getTurneroOperatorAccessMeta,
-        getTurneroV2Readiness,
         getTurneroClinicBrandName,
         getTurneroPublicSyncStatus,
         getTurneroPilotHealthStatus,

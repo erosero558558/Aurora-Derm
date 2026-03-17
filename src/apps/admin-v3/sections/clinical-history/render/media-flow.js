@@ -55,37 +55,6 @@ function currentClinicalCaseId(state = getState()) {
     );
 }
 
-export function resolveMediaFlowSelection({
-    clinicalCaseId = '',
-    selectedCaseId = '',
-    queue = [],
-} = {}) {
-    const availableCaseIds = normalizeList(queue)
-        .map((item) => normalizeString(item?.caseId))
-        .filter(Boolean);
-    const linkedCaseId = normalizeString(clinicalCaseId);
-    const persistedCaseId = normalizeString(selectedCaseId);
-
-    if (linkedCaseId) {
-        return {
-            preferredCaseId: linkedCaseId,
-            linkedCaseMissing: !availableCaseIds.includes(linkedCaseId),
-        };
-    }
-
-    if (persistedCaseId && availableCaseIds.includes(persistedCaseId)) {
-        return {
-            preferredCaseId: persistedCaseId,
-            linkedCaseMissing: false,
-        };
-    }
-
-    return {
-        preferredCaseId: normalizeString(availableCaseIds[0]),
-        linkedCaseMissing: false,
-    };
-}
-
 function formatPolicyStatus(status) {
     switch (normalizeString(status)) {
         case 'eligible':
@@ -169,8 +138,7 @@ function buildQueueList(meta, selectedCaseId, loading) {
                         </span>
                         <span class="clinical-history-mini-chip">
                             ${escapeHtml(
-                                normalizeString(item.publicationStatus) ||
-                                    'draft'
+                                normalizeString(item.publicationStatus) || 'draft'
                             )}
                         </span>
                         ${flags}
@@ -181,24 +149,7 @@ function buildQueueList(meta, selectedCaseId, loading) {
         .join('');
 }
 
-function buildConsentStrip(caseData, slice) {
-    if (!caseData && slice?.linkedCaseMissing) {
-        return `
-            <article class="clinical-history-empty-card" data-tone="warning">
-                <strong>Sin media para este caso</strong>
-                <small>
-                    ${escapeHtml(
-                        normalizeString(slice.selectedCaseId)
-                            ? `El caso ${normalizeString(
-                                  slice.selectedCaseId
-                              )} no tiene media clinica privada elegible todavia.`
-                            : 'El caso clinico activo todavia no tiene media privada elegible.'
-                    )}
-                </small>
-            </article>
-        `;
-    }
-
+function buildConsentStrip(caseData) {
     if (!caseData) {
         return `
             <article class="clinical-history-empty-card">
@@ -244,11 +195,7 @@ function buildConsentStrip(caseData, slice) {
     `;
 }
 
-function buildAssetGrid(caseData, slice) {
-    if (!caseData && slice?.linkedCaseMissing) {
-        return '';
-    }
-
+function buildAssetGrid(caseData) {
     if (!caseData) {
         return '';
     }
@@ -327,20 +274,22 @@ function pairSummary(proposal) {
 }
 
 function proposalCopyValue(proposal, locale, key) {
-    const copy =
-        proposal?.copy && typeof proposal.copy === 'object'
-            ? proposal.copy
-            : {};
-    const node =
-        copy[locale] && typeof copy[locale] === 'object' ? copy[locale] : {};
+    const copy = proposal?.copy && typeof proposal.copy === 'object'
+        ? proposal.copy
+        : {};
+    const node = copy[locale] && typeof copy[locale] === 'object'
+        ? copy[locale]
+        : {};
     return normalizeString(node[key]);
 }
 
 function proposalAltValue(proposal, locale, key) {
-    const alt =
-        proposal?.alt && typeof proposal.alt === 'object' ? proposal.alt : {};
-    const node =
-        alt[locale] && typeof alt[locale] === 'object' ? alt[locale] : {};
+    const alt = proposal?.alt && typeof proposal.alt === 'object'
+        ? proposal.alt
+        : {};
+    const node = alt[locale] && typeof alt[locale] === 'object'
+        ? alt[locale]
+        : {};
     return normalizeString(node[key]);
 }
 
@@ -359,7 +308,8 @@ function buildProposalForm(caseData, slice) {
             : {};
     const disabled = slice.saving || slice.generating;
     const proposalStatus = normalizeString(proposal?.status) || 'draft';
-    const publicationStatus = normalizeString(publication.status) || 'draft';
+    const publicationStatus =
+        normalizeString(publication.status) || 'draft';
 
     if (!proposal) {
         return `
@@ -692,7 +642,8 @@ function buildDefaultAgentSuggestions(caseData) {
             label: 'Blocked reason',
             prompt: 'Explica por que este caso esta bloqueado',
             tone: 'warning',
-            description: 'Resume el motivo de policy que impide publicarlo.',
+            description:
+                'Resume el motivo de policy que impide publicarlo.',
         });
     } else {
         suggestions.push({
@@ -772,9 +723,7 @@ function buildAgentConversation(caseData, state = getState()) {
 function buildAgentSuggestions(caseData, state = getState()) {
     const turn = latestMediaAgentTurn(caseData, state);
     const suggestions = normalizeList(turn?.domainResponse?.toolSuggestions);
-    return suggestions.length
-        ? suggestions
-        : buildDefaultAgentSuggestions(caseData);
+    return suggestions.length ? suggestions : buildDefaultAgentSuggestions(caseData);
 }
 
 function buildAgentSuggestionCards(caseData, state = getState()) {
@@ -784,9 +733,7 @@ function buildAgentSuggestionCards(caseData, state = getState()) {
     }
 
     const disabled =
-        getSlice(state).loading ||
-        getSlice(state).saving ||
-        state?.agent?.submitting;
+        getSlice(state).loading || getSlice(state).saving || state?.agent?.submitting;
 
     return suggestions
         .map(
@@ -817,17 +764,6 @@ function buildAgentSuggestionCards(caseData, state = getState()) {
 }
 
 function buildInlineAgentSurface(caseData, slice, state = getState()) {
-    if (!caseData && slice?.linkedCaseMissing) {
-        return `
-            <article class="clinical-history-empty-card" data-tone="warning">
-                <strong>OpenClaw editorial en espera</strong>
-                <small>
-                    Cuando este caso tenga media privada elegible, el hilo editorial compartido se activara aqui sin perder el contexto clinico.
-                </small>
-            </article>
-        `;
-    }
-
     if (!caseData) {
         return `
             <article class="clinical-history-empty-card">
@@ -846,20 +782,14 @@ function buildInlineAgentSurface(caseData, slice, state = getState()) {
         `;
     }
 
-    const relayMode =
-        normalizeString(state?.agent?.health?.relay?.mode) || 'disabled';
-    const sessionStatus =
-        normalizeString(state?.agent?.session?.status) || 'idle';
+    const relayMode = normalizeString(state?.agent?.health?.relay?.mode) || 'disabled';
+    const sessionStatus = normalizeString(state?.agent?.session?.status) || 'idle';
     const turn = latestMediaAgentTurn(caseData, state);
     const domainResponse =
         turn?.domainResponse && typeof turn.domainResponse === 'object'
             ? turn.domainResponse
             : {};
-    const disabled =
-        slice.loading ||
-        slice.saving ||
-        slice.generating ||
-        state?.agent?.submitting;
+    const disabled = slice.loading || slice.saving || slice.generating || state?.agent?.submitting;
     const assistantSummary =
         normalizeString(domainResponse.assistantMessage) ||
         normalizeString(turn?.finalAnswer) ||
@@ -876,11 +806,7 @@ function buildInlineAgentSurface(caseData, slice, state = getState()) {
                 </div>
                 <div class="clinical-history-header-status">
                     <span class="clinical-history-status-chip" data-tone="${escapeHtml(
-                        relayMode === 'online'
-                            ? 'success'
-                            : relayMode === 'degraded'
-                              ? 'warning'
-                              : 'neutral'
+                        relayMode === 'online' ? 'success' : relayMode === 'degraded' ? 'warning' : 'neutral'
                     )}">
                         ${escapeHtml(relayMode || 'disabled')}
                     </span>
@@ -898,12 +824,8 @@ function buildInlineAgentSurface(caseData, slice, state = getState()) {
                     </span>
                     <span class="clinical-history-mini-chip">
                         ${escapeHtml(
-                            normalizeString(
-                                caseData?.proposal?.recommendation
-                            ) ||
-                                normalizeString(
-                                    caseData?.publication?.status
-                                ) ||
+                            normalizeString(caseData?.proposal?.recommendation) ||
+                                normalizeString(caseData?.publication?.status) ||
                                 'draft'
                         )}
                     </span>
@@ -1034,7 +956,6 @@ async function loadCase(caseId, options = {}) {
             selectedCaseId: targetCaseId,
             current: payload,
             lastLoadedAt: Date.now(),
-            linkedCaseMissing: false,
             error: '',
         });
         renderClinicalMediaFlow();
@@ -1042,8 +963,9 @@ async function loadCase(caseId, options = {}) {
     } catch (error) {
         setSlice({
             loading: false,
-            current: null,
-            error: error?.message || 'No se pudo cargar el caso de Media Flow.',
+            error:
+                error?.message ||
+                'No se pudo cargar el caso de Media Flow.',
         });
         renderClinicalMediaFlow();
         return null;
@@ -1070,10 +992,7 @@ async function refreshMetaAndCase(caseId) {
 async function generateProposal() {
     const caseId = normalizeString(getSlice().selectedCaseId);
     if (!caseId) {
-        createToast(
-            'Selecciona un caso antes de generar la propuesta.',
-            'warning'
-        );
+        createToast('Selecciona un caso antes de generar la propuesta.', 'warning');
         return;
     }
 
@@ -1092,11 +1011,13 @@ async function generateProposal() {
         setSlice({
             generating: false,
             error:
-                error?.message || 'No se pudo generar la propuesta editorial.',
+                error?.message ||
+                'No se pudo generar la propuesta editorial.',
         });
         renderClinicalMediaFlow();
         createToast(
-            error?.message || 'No se pudo generar la propuesta editorial.',
+            error?.message ||
+                'No se pudo generar la propuesta editorial.',
             'error'
         );
     }
@@ -1108,15 +1029,10 @@ async function reviewProposal(decision) {
         current?.proposal && typeof current.proposal === 'object'
             ? current.proposal
             : null;
-    const caseId = normalizeString(
-        current?.caseId || getSlice().selectedCaseId
-    );
+    const caseId = normalizeString(current?.caseId || getSlice().selectedCaseId);
 
     if (!proposal || !caseId) {
-        createToast(
-            'Genera o carga una propuesta antes de revisar.',
-            'warning'
-        );
+        createToast('Genera o carga una propuesta antes de revisar.', 'warning');
         return;
     }
 
@@ -1140,7 +1056,8 @@ async function reviewProposal(decision) {
         setSlice({
             saving: false,
             error:
-                error?.message || 'No se pudo guardar la decision editorial.',
+                error?.message ||
+                'No se pudo guardar la decision editorial.',
         });
         renderClinicalMediaFlow();
         createToast(
@@ -1152,9 +1069,7 @@ async function reviewProposal(decision) {
 
 async function updatePublicationState(stateId) {
     const current = getSlice().current;
-    const caseId = normalizeString(
-        current?.caseId || getSlice().selectedCaseId
-    );
+    const caseId = normalizeString(current?.caseId || getSlice().selectedCaseId);
     if (!caseId) {
         return;
     }
@@ -1182,7 +1097,8 @@ async function updatePublicationState(stateId) {
         });
         renderClinicalMediaFlow();
         createToast(
-            error?.message || 'No se pudo actualizar el estado de publicacion.',
+            error?.message ||
+                'No se pudo actualizar el estado de publicacion.',
             'error'
         );
     }
@@ -1192,10 +1108,7 @@ async function submitInlineAgentPrompt(promptOverride = '') {
     const state = getState();
     const current = getSlice(state).current;
     if (!current || typeof current !== 'object') {
-        createToast(
-            'Selecciona un caso antes de hablar con OpenClaw.',
-            'warning'
-        );
+        createToast('Selecciona un caso antes de hablar con OpenClaw.', 'warning');
         return;
     }
 
@@ -1253,30 +1166,10 @@ function ensureSelection() {
     }
 
     const queue = normalizeList(readMeta(state).queue);
-    const selection = resolveMediaFlowSelection({
-        clinicalCaseId: currentClinicalCaseId(state),
-        selectedCaseId: normalizeString(slice.selectedCaseId),
-        queue,
-    });
-    const preferredCaseId = normalizeString(selection.preferredCaseId);
-
-    if (selection.linkedCaseMissing) {
-        if (
-            normalizeString(slice.selectedCaseId) !== preferredCaseId ||
-            slice.linkedCaseMissing !== true ||
-            slice.current
-        ) {
-            setSlice({
-                selectedCaseId: preferredCaseId,
-                current: null,
-                linkedCaseMissing: true,
-                error: '',
-            });
-            renderClinicalMediaFlow();
-        }
-        scheduledSelection = '';
-        return;
-    }
+    const preferredCaseId =
+        currentClinicalCaseId(state) ||
+        normalizeString(slice.selectedCaseId) ||
+        normalizeString(queue[0]?.caseId);
 
     if (!preferredCaseId) {
         scheduledSelection = '';
@@ -1310,10 +1203,7 @@ function ensureSelection() {
 
 function bindEvents() {
     const root = document.getElementById('clinical-history');
-    if (
-        !(root instanceof HTMLElement) ||
-        root.dataset.mediaFlowBound === 'true'
-    ) {
+    if (!(root instanceof HTMLElement) || root.dataset.mediaFlowBound === 'true') {
         return;
     }
 
@@ -1381,13 +1271,7 @@ function bindEvents() {
         event.preventDefault();
         const action = normalizeString(agentAction.dataset.mediaAgentAction);
         if (action === 'open-panel') {
-            const current = getSlice().current;
-            await openAgentPanelExperience({
-                focus: true,
-                contextOverride: current
-                    ? buildMediaFlowAgentContext(current, getState())
-                    : {},
-            });
+            await openAgentPanelExperience({ focus: true });
             return;
         }
         if (action === 'submit') {
@@ -1403,9 +1287,7 @@ export function renderClinicalMediaFlow() {
     const meta = readMeta(state);
     const slice = getSlice(state);
     const current =
-        slice.current && typeof slice.current === 'object'
-            ? slice.current
-            : null;
+        slice.current && typeof slice.current === 'object' ? slice.current : null;
     const queue = normalizeList(meta.queue);
 
     setText(
@@ -1414,7 +1296,9 @@ export function renderClinicalMediaFlow() {
     );
     setText(
         '#clinicalMediaFlowStatusChip',
-        current ? formatPolicyStatus(current?.policy?.status) : 'Sin caso'
+        current
+            ? formatPolicyStatus(current?.policy?.status)
+            : 'Sin caso'
     );
     document
         .getElementById('clinicalMediaFlowStatusChip')
@@ -1424,25 +1308,20 @@ export function renderClinicalMediaFlow() {
         );
     setText(
         '#clinicalMediaFlowStatusMeta',
-        slice.linkedCaseMissing
-            ? `Sin media elegible para ${normalizeString(slice.selectedCaseId)}`
-            : current
-              ? `${normalizeString(current?.publication?.status) || 'draft'} · ${
-                    normalizeString(current?.proposal?.recommendation) ||
-                    'needs_review'
-                }`
-              : slice.error || 'Esperando seleccion'
+        current
+            ? `${normalizeString(current?.publication?.status) || 'draft'} · ${
+                  normalizeString(current?.proposal?.recommendation) ||
+                  'needs_review'
+              }`
+            : slice.error || 'Esperando seleccion'
     );
     setText(
         '#clinicalMediaFlowCaseMeta',
-        slice.linkedCaseMissing
-            ? `El caso ${normalizeString(slice.selectedCaseId)} no tiene media privada elegible en esta fase.`
-            : current
-              ? `${normalizeString(current?.summary?.headline) || current.caseId} · ${
-                    normalizeString(current?.service?.label) ||
-                    'Caso dermatologico'
-                }`
-              : 'OpenClaw prepara comparativas, copy y paquete publico antes de publicar.'
+        current
+            ? `${normalizeString(current?.summary?.headline) || current.caseId} · ${
+                  normalizeString(current?.service?.label) || 'Caso dermatologico'
+              }`
+            : 'OpenClaw prepara comparativas, copy y paquete publico antes de publicar.'
     );
 
     const refreshBtn = document.getElementById('clinicalMediaFlowRefreshBtn');
@@ -1451,31 +1330,20 @@ export function renderClinicalMediaFlow() {
         refreshBtn.disabled = !current || slice.loading || slice.saving;
     }
     if (generateBtn instanceof HTMLButtonElement) {
-        generateBtn.disabled =
-            !slice.selectedCaseId || slice.generating || slice.saving;
+        generateBtn.disabled = !slice.selectedCaseId || slice.generating || slice.saving;
     }
 
     setHtml(
         '#clinicalMediaFlowQueueList',
-        buildQueueList(
-            meta,
-            normalizeString(slice.selectedCaseId),
-            slice.loading
-        )
+        buildQueueList(meta, normalizeString(slice.selectedCaseId), slice.loading)
     );
-    setHtml(
-        '#clinicalMediaFlowConsentStrip',
-        buildConsentStrip(current, slice)
-    );
-    setHtml('#clinicalMediaFlowAssetGrid', buildAssetGrid(current, slice));
+    setHtml('#clinicalMediaFlowConsentStrip', buildConsentStrip(current));
+    setHtml('#clinicalMediaFlowAssetGrid', buildAssetGrid(current));
     setHtml(
         '#clinicalMediaFlowAgentSurface',
         buildInlineAgentSurface(current, slice, state)
     );
-    setHtml(
-        '#clinicalMediaFlowProposalForm',
-        buildProposalForm(current, slice)
-    );
+    setHtml('#clinicalMediaFlowProposalForm', buildProposalForm(current, slice));
     setHtml('#clinicalMediaFlowTimeline', buildTimeline(current));
 
     bindEvents();
