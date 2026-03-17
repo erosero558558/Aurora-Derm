@@ -18,6 +18,7 @@ const {
     parseArgs,
 } = require('../bin/legacy-generated-root-cleanup.js');
 const {
+    DOCTOR_STATE_ATTENTION,
     DOCTOR_STATE_BLOCKED,
     DOCTOR_STATE_FIXABLE,
     collectWorkspaceDoctor,
@@ -25,7 +26,11 @@ const {
 } = require('../bin/lib/workspace-hygiene.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
-const SCRIPT_PATH = path.join(REPO_ROOT, 'bin', 'legacy-generated-root-cleanup.js');
+const SCRIPT_PATH = path.join(
+    REPO_ROOT,
+    'bin',
+    'legacy-generated-root-cleanup.js'
+);
 const WORKSPACE_HYGIENE_SCRIPT = path.join(
     REPO_ROOT,
     'bin',
@@ -46,7 +51,9 @@ function runGit(root, args) {
 }
 
 function createFixtureRepo() {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'legacy-generated-root-'));
+    const root = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'legacy-generated-root-')
+    );
     fs.mkdirSync(path.join(root, 'es'), { recursive: true });
     fs.mkdirSync(path.join(root, 'js', 'chunks'), { recursive: true });
     fs.mkdirSync(path.join(root, 'js', 'engines'), { recursive: true });
@@ -56,9 +63,21 @@ function createFixtureRepo() {
         'utf8'
     );
     fs.writeFileSync(path.join(root, 'README.md'), '# fixture\n', 'utf8');
-    fs.writeFileSync(path.join(root, 'script.js'), 'console.log("root");\n', 'utf8');
-    fs.writeFileSync(path.join(root, 'admin.js'), 'console.log("admin");\n', 'utf8');
-    fs.writeFileSync(path.join(root, 'es', 'index.html'), '<html>es</html>\n', 'utf8');
+    fs.writeFileSync(
+        path.join(root, 'script.js'),
+        'console.log("root");\n',
+        'utf8'
+    );
+    fs.writeFileSync(
+        path.join(root, 'admin.js'),
+        'console.log("admin");\n',
+        'utf8'
+    );
+    fs.writeFileSync(
+        path.join(root, 'es', 'index.html'),
+        '<html>es</html>\n',
+        'utf8'
+    );
     fs.writeFileSync(
         path.join(root, 'js', 'chunks', 'shell-fixture.js'),
         'console.log("chunk");\n',
@@ -90,6 +109,69 @@ function createFixtureRepo() {
 
 function cleanupFixtureRepo(root) {
     fs.rmSync(root, { recursive: true, force: true });
+}
+
+function writeActiveCodexBoard(root, tasks = []) {
+    const renderedTasks = tasks
+        .map((task) => {
+            const files = Array.isArray(task.files)
+                ? task.files.map((file) => `"${file}"`).join(', ')
+                : '';
+            return [
+                `  - id: ${task.id}`,
+                `    title: "${task.title || task.id}"`,
+                `    owner: ernesto`,
+                `    executor: codex`,
+                `    status: ${task.status || 'in_progress'}`,
+                `    risk: low`,
+                `    scope: ${task.scope || 'docs'}`,
+                `    codex_instance: ${task.codex_instance || 'codex_frontend'}`,
+                `    domain_lane: ${task.domain_lane || 'frontend_content'}`,
+                `    lane_lock: strict`,
+                `    cross_domain: false`,
+                `    provider_mode: ""`,
+                `    runtime_surface: ""`,
+                `    runtime_transport: ""`,
+                `    runtime_last_transport: ""`,
+                `    files: [${files}]`,
+                `    source_signal: manual`,
+                `    source_ref: ""`,
+                `    priority_score: 1`,
+                `    sla_due_at: ""`,
+                `    last_attempt_at: ""`,
+                `    attempts: 0`,
+                `    blocked_reason: ""`,
+                `    runtime_impact: low`,
+                `    critical_zone: false`,
+                `    acceptance: ""`,
+                `    acceptance_ref: ""`,
+                `    evidence_ref: ""`,
+                `    depends_on: []`,
+                `    created_at: 2026-03-16`,
+                `    updated_at: 2026-03-16`,
+            ].join('\n');
+        })
+        .join('\n');
+
+    fs.writeFileSync(
+        path.join(root, 'AGENT_BOARD.yaml'),
+        [
+            'version: 1',
+            'policy:',
+            '  canonical: AGENTS.md',
+            '  autonomy: semi_autonomous_guardrails',
+            '  kpi: reduce_rework',
+            '  revision: 1',
+            'strategy:',
+            '  active: null',
+            '  next: null',
+            '  updated_at: "2026-03-16"',
+            'tasks:',
+            renderedTasks || '  []',
+            '',
+        ].join('\n'),
+        'utf8'
+    );
 }
 
 test('legacy generated root cleanup parseArgs reconoce flags principales', () => {
@@ -131,12 +213,18 @@ test('legacy generated root cleanup reporta tracked paths y dirty legacy root', 
             status.trackedPaths.includes('js/engines/ui-bundle.js'),
             true
         );
-        assert.equal(status.trackedSummary.directoriesPresent.includes('es'), true);
+        assert.equal(
+            status.trackedSummary.directoriesPresent.includes('es'),
+            true
+        );
         assert.equal(
             status.trackedSummary.directoriesPresent.includes('js/chunks'),
             true
         );
-        assert.equal(status.trackedSummary.filesPresent.includes('script.js'), true);
+        assert.equal(
+            status.trackedSummary.filesPresent.includes('script.js'),
+            true
+        );
         assert.equal(status.ignoreCoverage.ok, true);
         assert.deepEqual(
             status.dirtyEntries.map((entry) => ({
@@ -153,10 +241,14 @@ test('legacy generated root cleanup reporta tracked paths y dirty legacy root', 
 test('legacy generated root cleanup check falla mientras sigan trackeados', () => {
     const root = createFixtureRepo();
     try {
-        const result = spawnSync(process.execPath, [SCRIPT_PATH, 'check', '--json'], {
-            cwd: root,
-            encoding: 'utf8',
-        });
+        const result = spawnSync(
+            process.execPath,
+            [SCRIPT_PATH, 'check', '--json'],
+            {
+                cwd: root,
+                encoding: 'utf8',
+            }
+        );
         assert.equal(result.status, 1, result.stderr || result.stdout);
         assert.match(result.stdout, /"trackedPaths"/);
     } finally {
@@ -198,7 +290,10 @@ test('legacy generated root cleanup apply saca del indice sin borrar el worktree
         assert.equal(result.ok, true);
         assert.equal(result.removedCount >= 5, true);
         assert.deepEqual(result.trackedPaths, []);
-        assert.equal(result.preservedWorkingTreePaths.includes('script.js'), true);
+        assert.equal(
+            result.preservedWorkingTreePaths.includes('script.js'),
+            true
+        );
         assert.equal(
             result.preservedWorkingTreePaths.includes('es/index.html'),
             true
@@ -206,8 +301,11 @@ test('legacy generated root cleanup apply saca del indice sin borrar el worktree
         assert.equal(fs.existsSync(path.join(root, 'script.js')), true);
         assert.equal(fs.existsSync(path.join(root, 'es', 'index.html')), true);
         assert.equal(
-            runGit(root, ['ls-files', '--', ...LEGACY_GENERATED_ROOT_CONTRACT_PATHS])
-                .stdout.trim(),
+            runGit(root, [
+                'ls-files',
+                '--',
+                ...LEGACY_GENERATED_ROOT_CONTRACT_PATHS,
+            ]).stdout.trim(),
             ''
         );
 
@@ -219,7 +317,11 @@ test('legacy generated root cleanup apply saca del indice sin borrar el worktree
                 encoding: 'utf8',
             }
         );
-        assert.equal(checkResult.status, 0, checkResult.stderr || checkResult.stdout);
+        assert.equal(
+            checkResult.status,
+            0,
+            checkResult.stderr || checkResult.stdout
+        );
         assert.match(checkResult.stdout, /"trackedPaths": \[\]/);
         assert.match(
             checkResult.stdout,
@@ -241,7 +343,11 @@ test('workspace hygiene doctor marca fixable cuando solo hay ruido efimero', () 
         );
         runGit(root, ['add', 'jules_tasks.md']);
         runGit(root, ['commit', '-m', 'track derived queue fixture']);
-        fs.writeFileSync(path.join(root, 'jules_tasks.md'), '# queue dirty\n', 'utf8');
+        fs.writeFileSync(
+            path.join(root, 'jules_tasks.md'),
+            '# queue dirty\n',
+            'utf8'
+        );
 
         const diagnosis = collectWorkspaceDoctor(root, { currentOnly: true });
 
@@ -310,7 +416,11 @@ test('workspace hygiene aliases status y fix delegan al doctor', () => {
         );
         runGit(root, ['add', 'jules_tasks.md']);
         runGit(root, ['commit', '-m', 'track queue alias fixture']);
-        fs.writeFileSync(path.join(root, 'jules_tasks.md'), '# queue dirty\n', 'utf8');
+        fs.writeFileSync(
+            path.join(root, 'jules_tasks.md'),
+            '# queue dirty\n',
+            'utf8'
+        );
 
         const statusResult = spawnSync(
             process.execPath,
@@ -330,14 +440,18 @@ test('workspace hygiene aliases status y fix delegan al doctor', () => {
             }
         );
 
-        assert.equal(statusResult.status, 0, statusResult.stderr || statusResult.stdout);
+        assert.equal(
+            statusResult.status,
+            0,
+            statusResult.stderr || statusResult.stdout
+        );
         assert.equal(fixResult.status, 0, fixResult.stderr || fixResult.stdout);
 
         const statusPayload = JSON.parse(statusResult.stdout);
         const fixPayload = JSON.parse(fixResult.stdout);
 
         assert.equal(statusPayload.command, 'workspace-hygiene doctor');
-        assert.equal(statusPayload.version, 3);
+        assert.equal(statusPayload.version, 4);
         assert.equal(statusPayload.rows[0].overall_state, DOCTOR_STATE_FIXABLE);
         assert.equal(fixPayload.command, 'workspace-hygiene doctor');
         assert.equal(fixPayload.rows[0].overall_state, 'clean');
@@ -401,6 +515,130 @@ test('workspace hygiene doctor omite dirty_entries por defecto y los expone con 
             true
         );
         assert.equal(expandedPayload.rows[0].dirty_entries.length >= 1, true);
+    } finally {
+        cleanupFixtureRepo(root);
+    }
+});
+
+test('workspace hygiene doctor marca attention cuando los authored quedan in_scope', () => {
+    const root = createFixtureRepo();
+    try {
+        fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
+        fs.writeFileSync(
+            path.join(root, 'docs', 'in-scope.md'),
+            '# docs\n',
+            'utf8'
+        );
+        runGit(root, ['add', 'docs/in-scope.md']);
+        runGit(root, ['commit', '-m', 'track in-scope doc fixture']);
+        writeActiveCodexBoard(root, [
+            {
+                id: 'CDX-900',
+                files: ['docs/in-scope.md'],
+                scope: 'docs',
+            },
+        ]);
+        runGit(root, ['add', 'AGENT_BOARD.yaml']);
+        runGit(root, ['commit', '-m', 'track board fixture']);
+        fs.writeFileSync(
+            path.join(root, 'docs', 'in-scope.md'),
+            '# docs dirty\n',
+            'utf8'
+        );
+
+        const diagnosis = collectWorkspaceDoctor(root, { currentOnly: true });
+
+        assert.equal(diagnosis.rows[0].overall_state, DOCTOR_STATE_ATTENTION);
+        assert.equal(diagnosis.rows[0].scope_context.resolution, 'matched');
+        assert.equal(diagnosis.rows[0].scope_context.task_id, 'CDX-900');
+        assert.deepEqual(diagnosis.rows[0].scope_counts, { in_scope: 1 });
+        assert.equal(diagnosis.rows[0].issues[0].scope_disposition, 'in_scope');
+        assert.equal(diagnosis.rows[0].issues[0].blocks_sync, false);
+        assert.equal(
+            diagnosis.rows[0].remediation_plan[0].id,
+            'continue_in_scope_task'
+        );
+    } finally {
+        cleanupFixtureRepo(root);
+    }
+});
+
+test('workspace hygiene doctor bloquea authored fuera del scope activo', () => {
+    const root = createFixtureRepo();
+    try {
+        fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
+        fs.writeFileSync(
+            path.join(root, 'docs', 'in-scope.md'),
+            '# docs\n',
+            'utf8'
+        );
+        runGit(root, ['add', 'docs/in-scope.md']);
+        runGit(root, ['commit', '-m', 'track out-of-scope doc fixture']);
+        writeActiveCodexBoard(root, [
+            {
+                id: 'CDX-900',
+                files: ['docs/in-scope.md'],
+                scope: 'docs',
+            },
+        ]);
+        runGit(root, ['add', 'AGENT_BOARD.yaml']);
+        runGit(root, ['commit', '-m', 'track board out-of-scope fixture']);
+        fs.writeFileSync(
+            path.join(root, 'docs', 'in-scope.md'),
+            '# docs dirty\n',
+            'utf8'
+        );
+        fs.writeFileSync(
+            path.join(root, 'README.md'),
+            '# out of scope dirty\n',
+            'utf8'
+        );
+
+        const diagnosis = collectWorkspaceDoctor(root, { currentOnly: true });
+
+        assert.equal(diagnosis.rows[0].overall_state, DOCTOR_STATE_BLOCKED);
+        assert.equal(diagnosis.rows[0].scope_context.resolution, 'matched');
+        assert.deepEqual(diagnosis.rows[0].scope_counts, {
+            out_of_scope: 1,
+            in_scope: 1,
+        });
+        assert.equal(
+            diagnosis.rows[0].issues.some(
+                (issue) =>
+                    issue.category === 'authored' &&
+                    issue.scope_disposition === 'out_of_scope' &&
+                    issue.blocks_publish === true
+            ),
+            true
+        );
+    } finally {
+        cleanupFixtureRepo(root);
+    }
+});
+
+test('workspace hygiene doctor deja authored en unknown_scope cuando no encuentra tarea activa', () => {
+    const root = createFixtureRepo();
+    try {
+        fs.writeFileSync(
+            path.join(root, 'README.md'),
+            '# unknown scope dirty\n',
+            'utf8'
+        );
+
+        const diagnosis = collectWorkspaceDoctor(root, { currentOnly: true });
+
+        assert.equal(diagnosis.rows[0].overall_state, DOCTOR_STATE_ATTENTION);
+        assert.equal(diagnosis.rows[0].scope_context.resolution, 'unknown');
+        assert.deepEqual(diagnosis.rows[0].scope_counts, { unknown_scope: 1 });
+        assert.equal(
+            diagnosis.rows[0].issues[0].scope_disposition,
+            'unknown_scope'
+        );
+        assert.equal(diagnosis.rows[0].issues[0].blocks_sync, true);
+        assert.equal(
+            diagnosis.rows[0].remediation_plan[0].id,
+            'clarify_scope_context'
+        );
     } finally {
         cleanupFixtureRepo(root);
     }

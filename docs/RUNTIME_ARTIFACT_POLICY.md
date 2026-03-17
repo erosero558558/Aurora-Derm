@@ -124,12 +124,17 @@ Canonical validators:
 ## Canonical Commands
 
 - `npm run workspace:hygiene:doctor`
-  Runs the V3 unified doctor across all worktrees and reports
-  `overall_state`, aggregated `issues[]`, and a phased
-  `remediation_plan[]`.
+  Runs the V5 strategy-aware doctor across all worktrees and reports
+  `overall_state`, `scope_context`, `strategy_context`, `lane_context`,
+  `scope_counts`, aggregated `issues[]`, `candidate_tasks[]`, `split_plan[]`,
+  and a phased `remediation_plan[]`.
 - `npm run workspace:hygiene:doctor -- --include-entries`
   Expands the JSON output with `dirty_entries[]`; use `--include-entries` only
   when debugging needs the full path list.
+- `npm run workspace:hygiene:doctor -- --task-id CDX-044 --show-candidates`
+  Pins the doctor to an explicit task and expands the human output with
+  suggested candidate tasks; use repeated `--scope-pattern <glob>` when a
+  manual scope cut is safer than auto-detection.
 - `npm run check:runtime:artifacts`
   Runs the shared validator for root public runtime outputs plus admin chunks
   and compatibility version pin checks.
@@ -161,6 +166,15 @@ If `workspace:hygiene:doctor` reports `legacy_generated_root`, those paths are
 still tracked migration debt in the repo root. They are not the canonical stage
 or deploy source anymore, and `publish checkpoint` should keep treating them as
 blocking drift until they are deindexed with the legacy cleanup flow above.
+
+If `workspace:hygiene:doctor` reports `attention`, inspect `scope_context`,
+`strategy_context`, `lane_context`, `scope_counts`, and the authored issue
+disposition:
+`in_scope` means expected task WIP, `out_of_scope` means drift that blocks
+publish/sync, `unknown_scope` means the doctor could not map the authored
+changes to a single active Codex task, `mixed_lane` means the worktree needs a
+split, and `blocked_scope` / `outside_strategy` indicate drift against
+`strategy.active`.
 
 If `workspace:hygiene:doctor` reports `legacy_generated_root_deindexed`, the
 deindexado already happened but the staged

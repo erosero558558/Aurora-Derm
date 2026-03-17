@@ -276,12 +276,15 @@ test('sync-main-safe limpia ruido efimero con workspace hygiene antes de sincron
                                 category: 'generated_stage',
                                 severity: 'fixable',
                                 count: 1,
-                                paths_sample: ['.generated/site-root/es/index.html'],
+                                paths_sample: [
+                                    '.generated/site-root/es/index.html',
+                                ],
                                 remaining_count: 0,
                                 blocks_publish: false,
                                 blocks_sync: false,
                                 blocks_ci: false,
-                                suggested_command: 'npm run workspace:hygiene:fix',
+                                suggested_command:
+                                    'npm run workspace:hygiene:fix',
                                 summary:
                                     'Hay 1 output(s) generados bajo `.generated/site-root/` listos para limpieza segura.',
                             },
@@ -393,6 +396,79 @@ test('sync-main-safe buildWorkspaceBlockingMessage explica issues blocking legac
     assert.match(message, /legacy_generated_root_deindexed/);
     assert.match(message, /authored/);
     assert.match(message, /Primer paso/);
+});
+
+test('sync-main-safe no bloquea authored in_scope aunque el doctor quede en attention', () => {
+    const message = buildWorkspaceBlockingMessage({
+        overall_state: 'attention',
+        issue_counts: { authored: 1 },
+        scope_counts: { in_scope: 1 },
+        issues: [
+            {
+                category: 'authored',
+                severity: 'warn',
+                count: 1,
+                paths_sample: ['docs/in-scope.md'],
+                remaining_count: 0,
+                blocks_publish: false,
+                blocks_sync: false,
+                blocks_ci: false,
+                suggested_command: 'git status --short',
+                summary:
+                    'Hay 1 cambio(s) authored alineados al scope activo de CDX-900.',
+                scope_disposition: 'in_scope',
+                task_id: 'CDX-900',
+            },
+        ],
+        remediation_plan: [
+            {
+                id: 'continue_in_scope_task',
+                summary:
+                    'Los cambios authored actuales coinciden con la tarea activa; continua validando o publica por el flujo correcto.',
+                command: 'git status --short',
+            },
+        ],
+        next_command: 'git status --short',
+    });
+
+    assert.equal(message, '');
+});
+
+test('sync-main-safe bloquea authored unknown_scope hasta aclarar el contexto', () => {
+    const message = buildWorkspaceBlockingMessage({
+        overall_state: 'attention',
+        issue_counts: { authored: 2 },
+        scope_counts: { unknown_scope: 2 },
+        issues: [
+            {
+                category: 'authored',
+                severity: 'warn',
+                count: 2,
+                paths_sample: ['README.md'],
+                remaining_count: 1,
+                blocks_publish: false,
+                blocks_sync: true,
+                blocks_ci: false,
+                suggested_command:
+                    'node agent-orchestrator.js task ls --active --json',
+                summary:
+                    'Hay 2 cambio(s) authored con scope sin aclarar. Ninguna tarea Codex activa coincide con los paths authored detectados.',
+                scope_disposition: 'unknown_scope',
+            },
+        ],
+        remediation_plan: [
+            {
+                id: 'clarify_scope_context',
+                summary:
+                    'Aclara que tarea activa debe gobernar estos cambios authored antes de sincronizar o publicar.',
+                command: 'node agent-orchestrator.js task ls --active --json',
+            },
+        ],
+        next_command: 'node agent-orchestrator.js task ls --active --json',
+    });
+
+    assert.match(message, /unknown_scope/);
+    assert.match(message, /task ls --active/);
 });
 
 test('sync-main-safe bloquea legacy_generated_root_deindexed antes de stash', () => {

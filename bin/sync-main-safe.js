@@ -178,13 +178,26 @@ function buildWorkspaceHygieneStep(hygieneResult, options = {}) {
         code: 0,
         stdout: '',
         stderr: '',
-        command: 'node bin/workspace-hygiene.js doctor --current-only --apply-safe',
+        command:
+            'node bin/workspace-hygiene.js doctor --current-only --apply-safe',
         dryRun: Boolean(options.dryRun),
         removed: Array.isArray(hygieneResult?.removed)
             ? hygieneResult.removed
             : [],
         overall_state: String(hygieneResult?.overall_state || ''),
         issue_counts: hygieneResult?.issue_counts || {},
+        scope_counts: hygieneResult?.scope_counts || {},
+        strategy_counts: hygieneResult?.strategy_counts || {},
+        lane_counts: hygieneResult?.lane_counts || {},
+        scope_context: hygieneResult?.scope_context || null,
+        strategy_context: hygieneResult?.strategy_context || null,
+        lane_context: hygieneResult?.lane_context || null,
+        candidate_tasks: Array.isArray(hygieneResult?.candidate_tasks)
+            ? hygieneResult.candidate_tasks
+            : [],
+        split_plan: Array.isArray(hygieneResult?.split_plan)
+            ? hygieneResult.split_plan
+            : [],
         remediation_plan: Array.isArray(hygieneResult?.remediation_plan)
             ? hygieneResult.remediation_plan
             : [],
@@ -425,8 +438,7 @@ function run(argv = process.argv.slice(2), deps = {}) {
         }
 
         const workspaceDoctor =
-            deps.workspaceDoctor ||
-            ((rootPath) => diagnoseWorktree(rootPath));
+            deps.workspaceDoctor || ((rootPath) => diagnoseWorktree(rootPath));
         let currentStatus = statusResult;
         let diagnosis = workspaceDoctor(repoRoot);
         let dirtyEntries = Array.isArray(diagnosis?.dirtyEntries)
@@ -517,9 +529,8 @@ function run(argv = process.argv.slice(2), deps = {}) {
             isDirty = dirtyEntries.length > 0;
         }
 
-        const workspaceBlockingMessage = buildWorkspaceBlockingMessage(
-            diagnosis
-        );
+        const workspaceBlockingMessage =
+            buildWorkspaceBlockingMessage(diagnosis);
         if (workspaceBlockingMessage) {
             throw new Error(workspaceBlockingMessage);
         }
@@ -540,7 +551,8 @@ function run(argv = process.argv.slice(2), deps = {}) {
             result.stash.created = true;
             result.stash.ref = 'stash@{0}';
         } else if (isDirty && !options.autoStash) {
-            const dirtySummary = diagnosis?.summary || summarizeDirtyEntries(dirtyEntries);
+            const dirtySummary =
+                diagnosis?.summary || summarizeDirtyEntries(dirtyEntries);
             const categories = Object.entries(dirtySummary.byCategory || {})
                 .map(([category, count]) => `${category}=${count}`)
                 .join(', ');
