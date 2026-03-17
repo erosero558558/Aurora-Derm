@@ -254,11 +254,14 @@ function Invoke-GitHubIssuesGet {
 
     $safeApiBase = ([string]$ApiBase).TrimEnd('/')
     $safePerPage = [Math]::Min([Math]::Max($PerPage, 1), 100)
-    $query = @(
+    $queryParts = @(
         "state=$([System.Uri]::EscapeDataString($State))"
-        "labels=$([System.Uri]::EscapeDataString($Labels))"
         "per_page=$safePerPage"
-    ) -join '&'
+    )
+    if (-not [string]::IsNullOrWhiteSpace($Labels)) {
+        $queryParts += "labels=$([System.Uri]::EscapeDataString($Labels))"
+    }
+    $query = $queryParts -join '&'
     $url = "$safeApiBase/repos/$Repo/issues?$query"
 
     try {
@@ -322,9 +325,17 @@ function Get-GitHubProductionAlertSummary {
         [string]$Repo,
         [string]$ApiBase = 'https://api.github.com',
         [int]$TimeoutSec = 20,
-        [int]$IssueLimit = 30,
-        [string]$UserAgent = 'PielArmoniaHttp/1.0'
+        [int]$IssueLimit = 100,
+        [string]$UserAgent = 'PielArmoniaHttp/1.0',
+        [string]$CanonicalDeployMethod = 'git-sync',
+        [switch]$ForceTransportDeploy
     )
+
+    $canonicalDeployMethodNormalized = ([string]$CanonicalDeployMethod).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($canonicalDeployMethodNormalized)) {
+        $canonicalDeployMethodNormalized = 'git-sync'
+    }
+    $transportBlockingEnabled = [bool]$ForceTransportDeploy -or $canonicalDeployMethodNormalized -ne 'git-sync'
 
     $summary = [ordered]@{
         enabled = $true
@@ -333,6 +344,9 @@ function Get-GitHubProductionAlertSummary {
         apiUrl = ''
         fetchOk = $false
         error = ''
+        canonicalDeployMethod = $canonicalDeployMethodNormalized
+        forceTransportDeploy = [bool]$ForceTransportDeploy
+        transportBlockingEnabled = [bool]$transportBlockingEnabled
         issueCount = 0
         relevantCount = 0
         issueNumbers = @()
@@ -351,6 +365,25 @@ function Get-GitHubProductionAlertSummary {
         hasSelfHostedRunnerBlock = $false
         hasSelfHostedDeployBlock = $false
         hasTurneroPilotBlock = $false
+        rawIssueCount = 0
+        rawRelevantCount = 0
+        rawIssueNumbers = @()
+        rawIssueUrls = @()
+        rawIssueRefs = @()
+        rawIssues = @()
+        rawTransportCount = 0
+        rawConnectivityCount = 0
+        rawRepairGitSyncCount = 0
+        rawSelfHostedRunnerCount = 0
+        rawSelfHostedDeployCount = 0
+        rawTurneroPilotCount = 0
+        advisoryRelevantCount = 0
+        advisoryTransportCount = 0
+        advisoryConnectivityCount = 0
+        hasTransportAdvisory = $false
+        hasConnectivityAdvisory = $false
+        rawIssueNumbersLabel = 'none'
+        rawIssueRefsLabel = 'none'
         issueNumbersLabel = 'none'
         issueRefsLabel = 'none'
     }
@@ -363,7 +396,7 @@ function Get-GitHubProductionAlertSummary {
     $issuesResult = Invoke-GitHubIssuesGet `
         -Repo $Repo `
         -State 'open' `
-        -Labels 'production-alert' `
+        -Labels '' `
         -PerPage $IssueLimit `
         -TimeoutSec $TimeoutSec `
         -ApiBase $ApiBase `
@@ -377,6 +410,7 @@ function Get-GitHubProductionAlertSummary {
 
     $summary.fetchOk = $true
     $issueRows = New-Object System.Collections.Generic.List[object]
+    $rawIssueRows = New-Object System.Collections.Generic.List[object]
 
     foreach ($issue in @($issuesResult.Json)) {
         if ($null -eq $issue) {
@@ -431,6 +465,7 @@ function Get-GitHubProductionAlertSummary {
             continue
         }
 
+        $hasProductionAlert = $labelValues -contains 'production-alert'
         $issueNumber = 0
         $issueTitle = ''
         $issueUrl = ''
@@ -439,44 +474,101 @@ function Get-GitHubProductionAlertSummary {
         try { $issueUrl = [string]$issue.html_url } catch { $issueUrl = '' }
 
         $categories = New-Object System.Collections.Generic.List[string]
+        $effectiveCategories = New-Object System.Collections.Generic.List[string]
+        $advisoryCategories = New-Object System.Collections.Generic.List[string]
         if ($labelValues -contains 'deploy-hosting' -or $labelValues -contains 'transport-preflight') {
             $categories.Add('transport') | Out-Null
-            $summary.transportCount++
+            $summary.rawTransportCount++
+            if ($hasProductionAlert -and $transportBlockingEnabled) {
+                $effectiveCategories.Add('transport') | Out-Null
+                $summary.transportCount++
+            } else {
+                $advisoryCategories.Add('transport') | Out-Null
+                $summary.advisoryTransportCount++
+            }
         }
         if ($labelValues -contains 'diagnose-host-connectivity' -or $labelValues -contains 'deploy-connectivity') {
             $categories.Add('connectivity') | Out-Null
-            $summary.connectivityCount++
+            $summary.rawConnectivityCount++
+            if ($hasProductionAlert -and $transportBlockingEnabled) {
+                $effectiveCategories.Add('connectivity') | Out-Null
+                $summary.connectivityCount++
+            } else {
+                $advisoryCategories.Add('connectivity') | Out-Null
+                $summary.advisoryConnectivityCount++
+            }
         }
         if ($labelValues -contains 'repair-git-sync') {
             $categories.Add('repair-git-sync') | Out-Null
-            $summary.repairGitSyncCount++
+            $summary.rawRepairGitSyncCount++
+            if ($hasProductionAlert) {
+                $effectiveCategories.Add('repair-git-sync') | Out-Null
+                $summary.repairGitSyncCount++
+            }
         }
         if ($labelValues -contains 'self-hosted-runner') {
             $categories.Add('self-hosted-runner') | Out-Null
-            $summary.selfHostedRunnerCount++
+            $summary.rawSelfHostedRunnerCount++
+            if ($hasProductionAlert) {
+                $effectiveCategories.Add('self-hosted-runner') | Out-Null
+                $summary.selfHostedRunnerCount++
+            }
         }
         if ($labelValues -contains 'self-hosted-route') {
             $categories.Add('self-hosted-deploy') | Out-Null
-            $summary.selfHostedDeployCount++
+            $summary.rawSelfHostedDeployCount++
+            if ($hasProductionAlert) {
+                $effectiveCategories.Add('self-hosted-deploy') | Out-Null
+                $summary.selfHostedDeployCount++
+            }
         }
         if ($labelValues -contains 'turnero-pilot') {
             $categories.Add('turnero-pilot') | Out-Null
-            $summary.turneroPilotCount++
+            $summary.rawTurneroPilotCount++
+            if ($hasProductionAlert) {
+                $effectiveCategories.Add('turnero-pilot') | Out-Null
+                $summary.turneroPilotCount++
+            }
         }
 
         $categoryLabel = 'deploy'
         if ($categories.Count -gt 0) {
             $categoryLabel = (@($categories.ToArray()) -join '+')
         }
+        $effectiveCategoryLabel = if ($effectiveCategories.Count -gt 0) {
+            (@($effectiveCategories.ToArray()) -join '+')
+        } else {
+            'advisory'
+        }
+        $advisoryCategoryLabel = if ($advisoryCategories.Count -gt 0) {
+            (@($advisoryCategories.ToArray()) -join '+')
+        } else {
+            'none'
+        }
 
-        $issueRows.Add([ordered]@{
+        $issueRow = [ordered]@{
             number = $issueNumber
             title = $issueTitle
             url = $issueUrl
             labels = @($labelValues)
+            hasProductionAlert = [bool]$hasProductionAlert
             categories = @($categories.ToArray())
             categoryLabel = $categoryLabel
-        }) | Out-Null
+            effectiveCategories = @($effectiveCategories.ToArray())
+            effectiveCategoryLabel = $effectiveCategoryLabel
+            advisoryCategories = @($advisoryCategories.ToArray())
+            advisoryCategoryLabel = $advisoryCategoryLabel
+            effectiveBlocking = [bool]($effectiveCategories.Count -gt 0)
+            advisoryOnly = [bool](($effectiveCategories.Count -eq 0) -and (($advisoryCategories.Count -gt 0) -or -not $hasProductionAlert))
+        }
+
+        $rawIssueRows.Add($issueRow) | Out-Null
+        if ($effectiveCategories.Count -gt 0) {
+            $issueRows.Add($issueRow) | Out-Null
+        }
+        if ($issueRow.advisoryOnly) {
+            $summary.advisoryRelevantCount++
+        }
     }
 
     $issueNumbers = @($issueRows | ForEach-Object { [int]$_.number })
@@ -490,19 +582,48 @@ function Get-GitHubProductionAlertSummary {
             "#$($_.number) [$($_.categoryLabel)] $refTitle"
         }
     )
+    $rawIssueNumbers = @($rawIssueRows | ForEach-Object { [int]$_.number })
+    $rawIssueUrls = @($rawIssueRows | ForEach-Object { [string]$_.url })
+    $rawIssueRefs = @(
+        $rawIssueRows | ForEach-Object {
+            $refTitle = [string]$_.title
+            if ([string]::IsNullOrWhiteSpace($refTitle)) {
+                $refTitle = 'sin_titulo'
+            }
+            "#$($_.number) [$($_.categoryLabel)] $refTitle"
+        }
+    )
 
-    $summary.issueCount = $issueRows.Count
+    $summary.issueCount = $rawIssueRows.Count
     $summary.relevantCount = $issueRows.Count
     $summary.issueNumbers = @($issueNumbers)
     $summary.issueUrls = @($issueUrls)
     $summary.issueRefs = @($issueRefs)
     $summary.issues = @($issueRows.ToArray())
+    $summary.rawIssueCount = $rawIssueRows.Count
+    $summary.rawRelevantCount = $rawIssueRows.Count
+    $summary.rawIssueNumbers = @($rawIssueNumbers)
+    $summary.rawIssueUrls = @($rawIssueUrls)
+    $summary.rawIssueRefs = @($rawIssueRefs)
+    $summary.rawIssues = @($rawIssueRows.ToArray())
     $summary.hasTransportBlock = [bool]($summary.transportCount -gt 0)
     $summary.hasConnectivityBlock = [bool]($summary.connectivityCount -gt 0)
     $summary.hasRepairGitSyncBlock = [bool]($summary.repairGitSyncCount -gt 0)
     $summary.hasSelfHostedRunnerBlock = [bool]($summary.selfHostedRunnerCount -gt 0)
     $summary.hasSelfHostedDeployBlock = [bool]($summary.selfHostedDeployCount -gt 0)
     $summary.hasTurneroPilotBlock = [bool]($summary.turneroPilotCount -gt 0)
+    $summary.hasTransportAdvisory = [bool]($summary.advisoryTransportCount -gt 0)
+    $summary.hasConnectivityAdvisory = [bool]($summary.advisoryConnectivityCount -gt 0)
+    $summary.rawIssueNumbersLabel = if ($rawIssueNumbers.Count -eq 0) {
+        'none'
+    } else {
+        (@($rawIssueNumbers | ForEach-Object { "#$_" }) -join ', ')
+    }
+    $summary.rawIssueRefsLabel = if ($rawIssueRefs.Count -eq 0) {
+        'none'
+    } else {
+        (@($rawIssueRefs) -join ' | ')
+    }
     $summary.issueNumbersLabel = if ($issueNumbers.Count -eq 0) {
         'none'
     } else {

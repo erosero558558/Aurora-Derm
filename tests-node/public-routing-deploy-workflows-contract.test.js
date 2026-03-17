@@ -380,13 +380,20 @@ test('deploy-hosting aplica politica bloqueante de staging antes de produccion',
     );
 
     for (const snippet of [
+        'DEPLOY_METHOD',
+        'FORCE_TRANSPORT_DEPLOY',
         'REQUIRE_STAGING_CANARY',
         'ALLOW_PROD_WITHOUT_STAGING',
+        'STAGING_CANARY_EFFECTIVE',
         'ENABLE_PUBLIC_CUTOVER_MONITOR',
         'PUBLIC_CUTOVER_WINDOW_HOURS',
         'DISPATCH_PUBLIC_CUTOVER_MONITOR',
+        'if [ "${force_transport}" != "true" ] && [ "${deploy_method}" = "git-sync" ]; then',
+        'STAGING_CANARY_EFFECTIVE=skipped_git_sync',
+        'DEPLOY_METHOD=git-sync sin force_transport_deploy=true; staging efectivo se omite.',
         'Politica bloqueante: require_staging_canary=true y faltan secretos STAGING_FTP_*.',
         'allow_prod_without_staging=true',
+        'staging_canary_effective',
         'needs.deploy-canary.result',
         'PUBLIC_CUTOVER_STARTED_AT',
     ]) {

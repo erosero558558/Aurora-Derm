@@ -53,19 +53,6 @@ function normalizeRecommendedMode(payload, fallback = 'legacy_password') {
     );
 }
 
-function normalizeTransport(value, fallback = '') {
-    const raw = String(value || '')
-        .trim()
-        .toLowerCase();
-    if (raw === 'web_broker') {
-        return 'web_broker';
-    }
-    if (raw === 'local_helper') {
-        return 'local_helper';
-    }
-    return fallback;
-}
-
 const DEFAULT_LEGACY_FALLBACK = Object.freeze({
     enabled: false,
     configured: false,
@@ -153,46 +140,12 @@ function normalizeOperator(operator) {
     };
 }
 
-function buildOpenClawSnapshot(
-    status,
-    challenge,
-    lastError,
-    transport = '',
-    redirectUrl = '',
-    expiresAt = ''
-) {
+function buildOpenClawSnapshot(status, challenge, lastError) {
     return {
         status: String(status || 'anonymous').trim() || 'anonymous',
         challenge: normalizeChallenge(challenge),
-        transport: normalizeTransport(transport, ''),
-        redirectUrl: String(redirectUrl || '').trim(),
-        expiresAt: String(expiresAt || '').trim(),
         lastError: String(lastError || '').trim(),
     };
-}
-
-function currentReturnTo() {
-    if (typeof window === 'undefined' || !window.location) {
-        return '/admin.html';
-    }
-
-    const path = String(window.location.pathname || '').trim() || '/admin.html';
-    const search = String(window.location.search || '').trim();
-    return `${path}${search}`;
-}
-
-function isAttemptExpired(expiresAt) {
-    const normalized = String(expiresAt || '').trim();
-    if (!normalized) {
-        return false;
-    }
-
-    const parsed = Date.parse(normalized);
-    if (Number.isNaN(parsed)) {
-        return false;
-    }
-
-    return parsed <= Date.now();
 }
 
 export function getVisibleOpenClawState(auth = getState().auth) {
@@ -203,20 +156,14 @@ export function getVisibleOpenClawState(auth = getState().auth) {
         return buildOpenClawSnapshot(
             auth.status,
             auth.challenge,
-            auth.lastError,
-            auth.transport,
-            auth.redirectUrl,
-            auth.attemptExpiresAt
+            auth.lastError
         );
     }
 
     return buildOpenClawSnapshot(
         auth?.openClawSnapshot?.status,
         auth?.openClawSnapshot?.challenge,
-        auth?.openClawSnapshot?.lastError,
-        auth?.openClawSnapshot?.transport,
-        auth?.openClawSnapshot?.redirectUrl,
-        auth?.openClawSnapshot?.expiresAt
+        auth?.openClawSnapshot?.lastError
     );
 }
 
@@ -303,71 +250,34 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     const authenticated = payload?.authenticated === true;
     const mode = normalizeAuthMode(payload, fallbackMode);
     const recommendedMode = normalizeRecommendedMode(payload, mode);
-    const currentAuth = getState().auth;
-    const transport =
-        mode === 'openclaw_chatgpt'
-            ? normalizeTransport(payload?.transport, '')
-            : '';
-    const transportMisconfigured =
-        mode === 'openclaw_chatgpt' && !authenticated && transport === '';
-    const csrfToken = String(
-        payload?.csrfToken ||
-            (authenticated ? '' : currentAuth.csrfToken || '')
-    );
+    const csrfToken = authenticated ? String(payload?.csrfToken || '') : '';
     const status = String(
-        transportMisconfigured
-            ? payload?.status || 'transport_misconfigured'
-            : payload?.status || (authenticated ? 'autenticado' : 'anonymous')
+        payload?.status || (authenticated ? 'autenticado' : 'anonymous')
     ).trim();
+    const currentAuth = getState().auth;
     const fallbackPayload = normalizeFallbacks(
         payload?.fallbacks,
         currentAuth.fallbacks
     );
     const nextChallenge = normalizeChallenge(payload?.challenge);
     const challenge =
-        transport !== 'local_helper'
+        nextChallenge ||
+        (authenticated || mode !== 'openclaw_chatgpt'
             ? null
-            : nextChallenge ||
-              (authenticated || mode !== 'openclaw_chatgpt'
-                  ? null
-                  : currentAuth.challenge);
-    const redirectUrl =
-        authenticated || mode !== 'openclaw_chatgpt'
-            ? ''
-            : String(payload?.redirectUrl || '').trim();
-    const attemptExpiresAt =
-        authenticated || mode !== 'openclaw_chatgpt'
-            ? ''
-            : String(payload?.expiresAt || challenge?.expiresAt || '').trim();
+            : currentAuth.challenge);
     const payloadError = authenticated
         ? ''
-        : transportMisconfigured
-          ? String(
-                payload?.error ||
-                    'El runtime devolvio un estado OpenClaw sin transport valido. Actualiza el entorno o vuelve a desplegar antes de iniciar sesion.'
-            ).trim()
-          : String(payload?.error || '').trim();
+        : String(payload?.error || '').trim();
     const openClawSnapshot =
         mode === 'openclaw_chatgpt'
-            ? buildOpenClawSnapshot(
-                  status,
-                  challenge,
-                  payloadError,
-                  transport,
-                  redirectUrl,
-                  attemptExpiresAt
-              )
+            ? buildOpenClawSnapshot(status, challenge, payloadError)
             : buildOpenClawSnapshot(
                   currentAuth.openClawSnapshot?.status,
                   currentAuth.openClawSnapshot?.challenge,
-                  currentAuth.openClawSnapshot?.lastError,
-                  currentAuth.openClawSnapshot?.transport,
-                  currentAuth.openClawSnapshot?.redirectUrl,
-                  currentAuth.openClawSnapshot?.expiresAt
+                  currentAuth.openClawSnapshot?.lastError
               );
     const operator = normalizeOperator(payload?.operator);
     const configured =
-        !transportMisconfigured &&
         payload?.configured !== false &&
         status !== 'legacy_auth_not_configured' &&
         status !== 'operator_auth_not_configured';
@@ -421,16 +331,11 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
             mode,
             recommendedMode,
             loginSurfaceMode,
-            transport,
             status,
             configured,
             challenge,
-            redirectUrl,
-            attemptExpiresAt,
             helperUrlOpened:
-                authenticated ||
-                mode !== 'openclaw_chatgpt' ||
-                transport !== 'local_helper'
+                authenticated || mode !== 'openclaw_chatgpt'
                     ? false
                     : currentAuth.helperUrlOpened === true,
             operator,
@@ -444,11 +349,8 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     return {
         authenticated,
         mode,
-        transport,
         status,
         challenge,
-        redirectUrl,
-        attemptExpiresAt,
     };
 }
 
@@ -457,35 +359,6 @@ export function isOperatorAuthMode(auth = getState().auth) {
         normalizeAuthMode(auth, getState().auth.mode || 'legacy_password') ===
         'openclaw_chatgpt'
     );
-}
-
-export function isOpenClawWebBrokerTransport(auth = getState().auth) {
-    return normalizeTransport(auth?.transport, '') === 'web_broker';
-}
-
-export function getReusableOpenClawRedirectUrl(auth = getState().auth) {
-    if (!isOpenClawWebBrokerTransport(auth)) {
-        return '';
-    }
-
-    if (
-        String(auth?.status || '')
-            .trim()
-            .toLowerCase() !== 'pending'
-    ) {
-        return '';
-    }
-
-    const redirectUrl = String(auth?.redirectUrl || '').trim();
-    if (!redirectUrl) {
-        return '';
-    }
-
-    if (isAttemptExpired(auth?.attemptExpiresAt)) {
-        return '';
-    }
-
-    return redirectUrl;
 }
 
 export function useLegacyFallbackLoginSurface() {
@@ -536,9 +409,6 @@ export function usePrimaryLoginSurface() {
             requires2FA: false,
             status: snapshot.status,
             challenge: snapshot.challenge,
-            transport: snapshot.transport,
-            redirectUrl: snapshot.redirectUrl,
-            attemptExpiresAt: snapshot.expiresAt,
             lastError: snapshot.lastError,
         },
     }));
@@ -562,9 +432,7 @@ export async function checkAuthStatus() {
 export async function startOpenClawLogin() {
     const payload = await authRequest('start', {
         method: 'POST',
-        body: {
-            returnTo: currentReturnTo(),
-        },
+        body: {},
     });
 
     return applyAuthPayload(payload, 'openclaw_chatgpt');
@@ -576,18 +444,11 @@ export async function startOperatorAuth(options = {}) {
 
     const payload = await authRequest('start', {
         method: 'POST',
-        body: {
-            ...(forceNew ? { forceNew: true } : {}),
-            returnTo: currentReturnTo(),
-        },
+        body: forceNew ? { forceNew: true } : {},
     });
     applyAuthPayload(payload, 'openclaw_chatgpt');
 
-    const auth = getState().auth;
-    const helperUrl =
-        normalizeTransport(auth.transport, '') === 'local_helper'
-            ? String(auth.challenge?.helperUrl || '').trim()
-            : '';
+    const helperUrl = String(getState().auth.challenge?.helperUrl || '').trim();
     const helperUrlOpened = openHelper ? openHelperWindow(helperUrl) : false;
 
     updateState((state) => ({
@@ -618,8 +479,7 @@ export async function pollOperatorAuthStatus(options = {}) {
         if (
             snapshot.authenticated ||
             !isOperatorAuthMode(snapshot) ||
-            String(snapshot.status || '') !== 'pending' ||
-            normalizeTransport(snapshot.transport, '') !== 'local_helper'
+            String(snapshot.status || '') !== 'pending'
         ) {
             return snapshot;
         }
@@ -661,12 +521,9 @@ export async function loginWithPassword(password) {
                 mode: 'legacy_password',
                 recommendedMode,
                 loginSurfaceMode: 'legacy_password',
-                transport: '',
                 status: 'two_factor_required',
                 configured: payload?.configured !== false,
                 challenge: null,
-                redirectUrl: '',
-                attemptExpiresAt: '',
                 helperUrlOpened: false,
                 operator: null,
                 fallbacks,
@@ -694,12 +551,9 @@ export async function loginWithPassword(password) {
             mode: 'legacy_password',
             recommendedMode,
             loginSurfaceMode: 'legacy_password',
-            transport: '',
             status: 'authenticated',
             configured: payload?.configured !== false,
             challenge: null,
-            redirectUrl: '',
-            attemptExpiresAt: '',
             helperUrlOpened: false,
             operator: null,
             fallbacks,
@@ -750,12 +604,9 @@ export async function loginWith2FA(code) {
             mode: 'legacy_password',
             recommendedMode,
             loginSurfaceMode: 'legacy_password',
-            transport: '',
             status: 'authenticated',
             configured: payload?.configured !== false,
             challenge: null,
-            redirectUrl: '',
-            attemptExpiresAt: '',
             helperUrlOpened: false,
             operator: null,
             fallbacks,
@@ -815,12 +666,9 @@ export async function logoutSession() {
                 },
                 previousMode
             ),
-            transport: '',
             status: 'anonymous',
             configured: false,
             challenge: null,
-            redirectUrl: '',
-            attemptExpiresAt: '',
             helperUrlOpened: false,
             operator: null,
             capabilities: {

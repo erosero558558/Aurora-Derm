@@ -245,8 +245,8 @@ test('deploy-hosting resuelve y resume el clinic-profile del piloto web antes de
         "status: process.env.TURNERO_PILOT_REMOTE_STATUS || 'unknown'",
         'Turnero pilot deploy blocked (',
         'Turnero pilot remote verify blocked deploy-hosting (',
-        "steps.resolve_postdeploy.outputs.run_fast == 'true' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false'",
-        "steps.resolve_postdeploy.outputs.run_gate == 'true' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false'",
+        "steps.resolve_postdeploy.outputs.run_fast == 'true' && steps.public_sync_deploy.outputs.public_sync_postdeploy_allowed != 'false' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false'",
+        "steps.resolve_postdeploy.outputs.run_gate == 'true' && steps.public_sync_deploy.outputs.public_sync_postdeploy_allowed != 'false' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false'",
     ]) {
         assert.equal(
             raw.includes(snippet),
@@ -302,6 +302,7 @@ test('deploy-hosting gestiona incidente dedicado de transporte runner-host', () 
 
     const requiredStepNames = [
         'Crear/actualizar incidente de transporte deploy-hosting',
+        'Desescalar incidente de transporte deploy-hosting a advisory (git-sync canónico)',
         'Cerrar incidente de transporte deploy-hosting al recuperar',
     ];
     for (const expectedStepName of requiredStepNames) {
@@ -314,25 +315,46 @@ test('deploy-hosting gestiona incidente dedicado de transporte runner-host', () 
 
     const requiredSnippets = [
         "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'runner_tcp_unreachable' }}",
+        "if: ${{ always() && env.FTP_DRY_RUN != 'true' && env.FORCE_TRANSPORT_DEPLOY != 'true' && env.DEPLOY_METHOD == 'git-sync' }}",
         "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'ok' }}",
         "const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';",
+        "'[AVISO OPS] Deploy Hosting transporte GitHub-hosted no canónico (git-sync)'",
         'deploy-hosting-transport-signal:',
+        'deploy-hosting-transport-advisory-signal:',
         "const signal = `reason:${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}|target:${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}|clinic:${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}|fp:${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}|release:${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`;",
+        "const signal = `mode:git_sync_canonical|reason:transport_not_required|clinic:${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}|fp:${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}|release:${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`;",
         "`- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`",
         "`- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`",
         "`- turnero_pilot_clinic_id: ${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}`",
         "`- turnero_pilot_profile_fingerprint: ${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}`",
         "`- turnero_pilot_release_mode: ${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`",
         "`- turnero_pilot_recovery_targets: ${process.env.TURNERO_PILOT_RECOVERY_TARGETS || 'none'}`",
+        "`- connectivity_diagnose_run_status: ${process.env.CONNECTIVITY_DIAGNOSE_RUN_STATUS || 'not_requested'}`",
+        "`- connectivity_diagnose_run_url: ${process.env.CONNECTIVITY_DIAGNOSE_RUN_URL || ''}`",
+        "const baseLabels = ['deploy-hosting', 'transport-preflight', 'severity:warning'];",
+        'Desescalado automaticamente: `DEPLOY_METHOD=git-sync` sin `force_transport_deploy`, por lo que la ruta GitHub-hosted deja de ser blocker de producción.',
+        'Issue deploy-hosting transporte bloqueante desescalado',
+        'Issue deploy-hosting transporte advisory cerrado',
+        'Issue deploy-hosting transporte advisory actualizado',
+        'Issue deploy-hosting transporte advisory ya refleja la misma senal',
+        'Issue deploy-hosting transporte advisory creado',
+        "`- canonical_deploy_method: ${process.env.DEPLOY_METHOD || 'git-sync'}`",
+        "`- force_transport_deploy: ${process.env.FORCE_TRANSPORT_DEPLOY || 'false'}`",
+        '`- transport_preflight_reason: not_required_git_sync`',
         'Issue deploy-hosting transporte ya refleja la misma senal',
         'Issue deploy-hosting transporte creado',
         'Issue deploy-hosting transporte cerrado',
+        "label) => label !== 'production-alert' && label !== 'severity:critical'",
         'TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}',
         'TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}',
         'TURNERO_PILOT_CLINIC_ID: ${{ env.TURNERO_PILOT_CLINIC_ID }}',
         'TURNERO_PILOT_PROFILE_FINGERPRINT: ${{ env.TURNERO_PILOT_PROFILE_FINGERPRINT }}',
         'TURNERO_PILOT_RELEASE_MODE: ${{ env.TURNERO_PILOT_RELEASE_MODE }}',
         'TURNERO_PILOT_RECOVERY_TARGETS: ${{ env.TURNERO_PILOT_RECOVERY_TARGETS }}',
+        'DEPLOY_METHOD: ${{ env.DEPLOY_METHOD }}',
+        'FORCE_TRANSPORT_DEPLOY: ${{ env.FORCE_TRANSPORT_DEPLOY }}',
+        'CONNECTIVITY_DIAGNOSE_RUN_STATUS: ${{ steps.connectivity_diagnose_status.outputs.connectivity_diagnose_run_status }}',
+        'CONNECTIVITY_DIAGNOSE_RUN_URL: ${{ steps.connectivity_diagnose_status.outputs.connectivity_diagnose_run_url }}',
     ];
 
     for (const snippet of requiredSnippets) {
@@ -365,6 +387,8 @@ test('deploy-hosting dispara diagnostico de conectividad cuando falla el preflig
         "CONNECTIVITY_DIAGNOSE_RUN_URL: ''",
         "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'runner_tcp_unreachable' }}",
         "const workflowId = 'diagnose-host-connectivity.yml';",
+        "canonical_deploy_method: String(process.env.DEPLOY_METHOD || 'git-sync')",
+        "force_transport_required: 'true'",
         'const dispatchStartedAtIso = new Date(dispatchStartedAt).toISOString();',
         'workflow_id: workflowId',
         "turnero_clinic_id: String(process.env.TURNERO_PILOT_CLINIC_ID || '')",
@@ -459,6 +483,55 @@ test('deploy-hosting evalua y gestiona incidente dedicado de telemedicina post-c
             raw.includes(snippet),
             true,
             `falta wiring de telemedicina deploy-hosting: ${snippet}`
+        );
+    }
+});
+
+test('deploy-hosting clasifica publicSync antes de cerrar el release y antes del post-deploy', () => {
+    const { raw, parsed } = loadWorkflow();
+    const steps = parsed?.jobs?.['deploy-prod']?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    for (const expectedStepName of [
+        'Evaluar estado publicSync deploy-hosting',
+        'Fail deploy-hosting when publicSync blocks release',
+    ]) {
+        assert.equal(
+            stepNames.includes(expectedStepName),
+            true,
+            `falta step de publicSync en deploy-hosting: ${expectedStepName}`
+        );
+    }
+
+    for (const snippet of [
+        "const expectedJobId = '8d31e299-7e57-4959-80b5-aaa2d73e9674';",
+        "append(outputPath, 'public_sync_status', snapshot.status);",
+        "append(outputPath, 'public_sync_reason', snapshot.reason);",
+        "append(outputPath, 'public_sync_postdeploy_allowed', snapshot.postdeployAllowed);",
+        "append(envPath, 'PUBLIC_SYNC_DEPLOY_STATUS', snapshot.status);",
+        "append(envPath, 'PUBLIC_SYNC_DEPLOY_REASON', snapshot.reason);",
+        "append(envPath, 'PUBLIC_SYNC_POSTDEPLOY_ALLOWED', snapshot.postdeployAllowed);",
+        "status: 'host_stale_health_contract'",
+        "reason: 'health_missing_public_sync'",
+        "status: 'public_sync_runtime_failed'",
+        "reason: reasonParts.join(';') || 'public_sync_runtime_failed'",
+        "status: 'recovered'",
+        "reason: 'ok'",
+        "if: ${{ env.FTP_DRY_RUN != 'true' && steps.resolve_postdeploy.outputs.run_fast == 'true' && steps.public_sync_deploy.outputs.public_sync_postdeploy_allowed != 'false' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false' }}",
+        "if: ${{ env.FTP_DRY_RUN != 'true' && steps.resolve_postdeploy.outputs.run_gate == 'true' && steps.public_sync_deploy.outputs.public_sync_postdeploy_allowed != 'false' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false' }}",
+        'public_sync_deploy_status: \\`${PUBLIC_SYNC_DEPLOY_STATUS}\\`',
+        'public_sync_deploy_reason: \\`${PUBLIC_SYNC_DEPLOY_REASON}\\`',
+        'public_sync_deploy_job_id: \\`${PUBLIC_SYNC_DEPLOY_JOB_ID}\\`',
+        'public_sync_deploy_deployed_commit: \\`${PUBLIC_SYNC_DEPLOYED_COMMIT}\\`',
+        'public_sync_postdeploy_allowed: \\`${{ steps.public_sync_deploy.outputs.public_sync_postdeploy_allowed }}\\`',
+        "if: ${{ always() && env.FTP_DRY_RUN != 'true' && (steps.public_sync_deploy.outputs.public_sync_status == 'host_stale_health_contract' || steps.public_sync_deploy.outputs.public_sync_status == 'public_sync_runtime_failed') }}",
+        'publicSync post-deploy bloquea el release porque el host sigue sirviendo un health stale',
+        'publicSync post-deploy bloquea el release (${PUBLIC_SYNC_DEPLOY_STATUS}: ${PUBLIC_SYNC_DEPLOY_REASON}). Corrija el runtime del host antes de cerrar el deploy.',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de publicSync en deploy-hosting: ${snippet}`
         );
     }
 });
@@ -883,6 +956,47 @@ test('repair-git-sync evalua y gestiona incidente dedicado de telemedicina post-
     }
 });
 
+test('repair-git-sync clasifica publicSync post-repair y lo incorpora al autoheal', () => {
+    const { raw, parsed } = loadWorkflow(REPAIR_WORKFLOW_PATH);
+    const steps = parsed?.jobs?.repair?.steps || [];
+    const stepNames = steps.map((step) => String(step?.name || ''));
+
+    assert.equal(
+        stepNames.includes('Evaluar estado publicSync post-repair'),
+        true,
+        'falta step de publicSync en repair-git-sync'
+    );
+
+    for (const snippet of [
+        "const expectedJobId = '8d31e299-7e57-4959-80b5-aaa2d73e9674';",
+        "append(outputPath, 'public_sync_status', snapshot.status);",
+        "append(outputPath, 'public_sync_reason', snapshot.reason);",
+        "append(envPath, 'PUBLIC_SYNC_REPAIR_STATUS', snapshot.status);",
+        "append(envPath, 'PUBLIC_SYNC_REPAIR_REASON', snapshot.reason);",
+        'PUBLIC_SYNC_REPAIR_STATUS: ${{ steps.public_sync_repair.outputs.public_sync_status }}',
+        'PUBLIC_SYNC_REPAIR_REASON: ${{ steps.public_sync_repair.outputs.public_sync_reason }}',
+        "status: 'host_stale_health_contract'",
+        "reason: 'health_missing_public_sync'",
+        "status: 'public_sync_runtime_failed'",
+        "reason: reasonParts.join(';') || 'public_sync_runtime_failed'",
+        "status: 'recovered'",
+        "reason: 'ok'",
+        'health-public-sync-missing',
+        'public-sync-host-stale',
+        "`public_sync:${publicSyncRepairStatus}:${publicSyncRepairReason || 'n/a'}`",
+        'public_sync_repair_status: \\`${PUBLIC_SYNC_REPAIR_STATUS}\\`',
+        'public_sync_repair_reason: \\`${PUBLIC_SYNC_REPAIR_REASON}\\`',
+        'public_sync_repair_job_id: \\`${PUBLIC_SYNC_REPAIR_JOB_ID}\\`',
+        'public_sync_repair_deployed_commit: \\`${PUBLIC_SYNC_REPAIR_DEPLOYED_COMMIT}\\`',
+    ]) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de publicSync en repair-git-sync: ${snippet}`
+        );
+    }
+});
+
 test('repair-git-sync evalua y gestiona incidente dedicado de turneroPilot post-repair', () => {
     const { raw, parsed } = loadWorkflow(REPAIR_WORKFLOW_PATH);
     const steps = parsed?.jobs?.repair?.steps || [];
@@ -1125,6 +1239,16 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
     );
 
     assert.equal(
+        typeof inputs.canonical_deploy_method === 'object',
+        true,
+        'diagnose-host-connectivity debe exponer input canonical_deploy_method'
+    );
+    assert.equal(
+        typeof inputs.force_transport_required === 'object',
+        true,
+        'diagnose-host-connectivity debe exponer input force_transport_required'
+    );
+    assert.equal(
         typeof inputs.turnero_clinic_id === 'object',
         true,
         'diagnose-host-connectivity debe exponer input turnero_clinic_id'
@@ -1167,15 +1291,17 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
         "const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';",
         'authorization: `Bearer ${token}`',
         "'user-agent': 'diagnose-host-connectivity'",
+        "TURNERO_PILOT_EXPECTED_CLINIC_ID: ${{ github.event.inputs.turnero_clinic_id || '' }}",
+        "TURNERO_PILOT_EXPECTED_PROFILE_FINGERPRINT: ${{ github.event.inputs.turnero_profile_fingerprint || '' }}",
+        "TURNERO_PILOT_EXPECTED_RELEASE_MODE: ${{ github.event.inputs.turnero_release_mode || '' }}",
+        "CANONICAL_DEPLOY_METHOD: ${{ github.event.inputs.canonical_deploy_method || vars.DEPLOY_METHOD || 'git-sync' }}",
+        "FORCE_TRANSPORT_REQUIRED: ${{ github.event.inputs.force_transport_required || 'false' }}",
         "append(outputPath, 'connectivity_status', status);",
         "append(outputPath, 'reachable_any', payload.reachable_any ? 'true' : 'false');",
         "append(outputPath, 'issue_ready', payload.issue_ready ? 'true' : 'false');",
         "append(outputPath, 'open_targets', openTargets.join(','));",
         'TURNERO_PILOT_DIAGNOSE_STATUS: unknown',
         'TURNERO_PILOT_DIAGNOSE_RECOVERY_TARGETS: none',
-        "TURNERO_PILOT_EXPECTED_CLINIC_ID: ${{ github.event.inputs.turnero_clinic_id || '' }}",
-        "TURNERO_PILOT_EXPECTED_PROFILE_FINGERPRINT: ${{ github.event.inputs.turnero_profile_fingerprint || '' }}",
-        "TURNERO_PILOT_EXPECTED_RELEASE_MODE: ${{ github.event.inputs.turnero_release_mode || '' }}",
         'set +e',
         'status_path="turnero-pilot-diagnose.json"',
         'raw_path="turnero-pilot-diagnose.raw.txt"',
@@ -1202,12 +1328,22 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
         "append(outputPath, 'turnero_pilot_recovery_targets', recoveryTargetsText);",
         "if: ${{ always() && steps.connectivity_summary.outputs.issue_ready == 'true' }}",
         "if: ${{ always() && steps.connectivity_summary.outputs.reachable_any == 'true' }}",
-        "const title = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';",
+        "const blockingTitle = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';",
+        "'[AVISO OPS] Diagnose host connectivity sin ruta GitHub-hosted canónica (git-sync)'",
+        "const blockingMode = forceTransportRequired || canonicalDeployMethod !== 'git-sync';",
+        'const title = blockingMode ? blockingTitle : advisoryTitle;',
         'diagnose-host-connectivity-signal:',
-        "const baseLabels = ['production-alert', 'diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning'];",
+        'const baseLabels = blockingMode',
+        "['production-alert', 'diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning']",
+        "['diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning']",
+        '`- canonical_deploy_method: ${canonicalDeployMethod}`',
+        '`- force_transport_required: ${forceTransportRequired}`',
         'Issue diagnose-host-connectivity ya refleja la misma senal',
         'Issue diagnose-host-connectivity creado',
         'Issue diagnose-host-connectivity cerrado',
+        'Issue diagnose-host-connectivity legacy cerrada',
+        'Aviso advisory cerrado automaticamente: la conectividad GitHub-hosted volvio a tratarse como blocker de transporte.',
+        'Desescalado automaticamente: `DEPLOY_METHOD=git-sync` y la conectividad GitHub-hosted deja de bloquear producción.',
         'connectivity_status: \\`${{ steps.connectivity_summary.outputs.connectivity_status }}\\`',
         'configured_host_count: \\`${{ steps.connectivity_summary.outputs.configured_host_count }}\\`',
         'reachable_any: \\`${{ steps.connectivity_summary.outputs.reachable_any }}\\`',
@@ -1228,6 +1364,8 @@ test('diagnose-host-connectivity publica reporte estructurado y gestiona inciden
         "`- turnero_pilot_expected_match: ${process.env.TURNERO_PILOT_DIAGNOSE_EXPECTED_MATCH || 'false'}`",
         "`- turnero_pilot_expected_reason: ${process.env.TURNERO_PILOT_DIAGNOSE_EXPECTED_REASON || 'not_evaluated'}`",
         "`- turnero_pilot_recovery_targets: ${process.env.TURNERO_PILOT_DIAGNOSE_RECOVERY_TARGETS || 'none'}`",
+        'CANONICAL_DEPLOY_METHOD: ${{ env.CANONICAL_DEPLOY_METHOD }}',
+        'FORCE_TRANSPORT_REQUIRED: ${{ env.FORCE_TRANSPORT_REQUIRED }}',
         'artifact_json: connectivity-report.json',
         'artifact_text: connectivity-report.txt',
     ]) {

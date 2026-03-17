@@ -8,6 +8,16 @@ on:
                 required: false
                 default: '21,22,990,2121,2222,65002,21098,22022,22222,10022,7822,443'
                 type: string
+            canonical_deploy_method:
+                description: 'Carril canónico de deploy en producción'
+                required: false
+                default: 'git-sync'
+                type: string
+            force_transport_required:
+                description: 'Tratar la conectividad GitHub-hosted como blocker de transporte'
+                required: false
+                default: 'false'
+                type: string
             turnero_clinic_id:
                 description: 'clinic_id esperado del piloto web'
                 required: false
@@ -35,6 +45,8 @@ jobs:
         timeout-minutes: 15
         env:
             PORTS_INPUT: ${{ github.event.inputs.ports || '21,22,990,2121,2222,65002,21098,22022,22222,10022,7822,443' }}
+            CANONICAL_DEPLOY_METHOD: ${{ github.event.inputs.canonical_deploy_method || vars.DEPLOY_METHOD || 'git-sync' }}
+            FORCE_TRANSPORT_REQUIRED: ${{ github.event.inputs.force_transport_required || 'false' }}
             SSH_HOST_SECRET: ${{ secrets.SSH_HOST }}
             FTP_SERVER_SECRET: ${{ secrets.FTP_SERVER }}
             SSH_HOST_VAR: ${{ vars.SSH_HOST || '' }}
@@ -118,6 +130,8 @@ jobs:
                     echo "## Diagnostico de conectividad"
                     echo "- timestamp_utc: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
                     echo "- ports_input: ${PORTS_INPUT}"
+                    echo "- canonical_deploy_method: ${CANONICAL_DEPLOY_METHOD}"
+                    echo "- force_transport_required: ${FORCE_TRANSPORT_REQUIRED}"
                     echo ""
                     check_ports "secrets.SSH_HOST" "${SSH_HOST_SECRET}"
                     check_ports "secrets.FTP_SERVER" "${FTP_SERVER_SECRET}"
@@ -444,6 +458,8 @@ jobs:
                   TURNERO_PILOT_DIAGNOSE_EXPECTED_MATCH: ${{ steps.turnero_pilot_diagnose.outputs.turnero_pilot_expected_match }}
                   TURNERO_PILOT_DIAGNOSE_EXPECTED_REASON: ${{ steps.turnero_pilot_diagnose.outputs.turnero_pilot_expected_reason }}
                   TURNERO_PILOT_DIAGNOSE_RECOVERY_TARGETS: ${{ steps.turnero_pilot_diagnose.outputs.turnero_pilot_recovery_targets }}
+                  CANONICAL_DEPLOY_METHOD: ${{ env.CANONICAL_DEPLOY_METHOD }}
+                  FORCE_TRANSPORT_REQUIRED: ${{ env.FORCE_TRANSPORT_REQUIRED }}
               run: |
                   set -euo pipefail
                   node <<'NODE'
@@ -457,11 +473,25 @@ jobs:
                         throw new Error(`Invalid GITHUB_REPOSITORY: ${process.env.GITHUB_REPOSITORY || ''}`);
                       }
                       const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';
-                      const title = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';
+                      const blockingTitle = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';
+                      const advisoryTitle =
+                        '[AVISO OPS] Diagnose host connectivity sin ruta GitHub-hosted canónica (git-sync)';
+                      const canonicalDeployMethod = String(
+                        process.env.CANONICAL_DEPLOY_METHOD || 'git-sync'
+                      )
+                        .trim()
+                        .toLowerCase() || 'git-sync';
+                      const forceTransportRequired =
+                        String(process.env.FORCE_TRANSPORT_REQUIRED || 'false').toLowerCase() ===
+                        'true';
+                      const blockingMode = forceTransportRequired || canonicalDeployMethod !== 'git-sync';
+                      const title = blockingMode ? blockingTitle : advisoryTitle;
                       const runUrl = `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${owner}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID || ''}`;
                       const now = new Date().toISOString();
                       const signalMarker = `<!-- diagnose-host-connectivity-signal:${process.env.CONNECTIVITY_SIGNAL || 'unknown'} -->`;
-                      const baseLabels = ['production-alert', 'diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning'];
+                      const baseLabels = blockingMode
+                        ? ['production-alert', 'diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning']
+                        : ['diagnose-host-connectivity', 'deploy-connectivity', 'severity:warning'];
 
                       async function githubRequest(path, options = {}) {
                         const method = options.method || 'GET';
@@ -501,10 +531,14 @@ jobs:
                       };
 
                       const body = [
-                        'El workflow `Diagnose Host Connectivity` no encontro ninguna ruta de deploy abierta desde GitHub-hosted.',
+                        blockingMode
+                          ? 'El workflow `Diagnose Host Connectivity` no encontro ninguna ruta de deploy abierta desde GitHub-hosted.'
+                          : 'El workflow `Diagnose Host Connectivity` no encontro ninguna ruta GitHub-hosted, pero el carril canónico de producción permanece en `git-sync`; se registra como aviso operativo.',
                         '',
                         `- Fecha: ${now}`,
                         `- Run: ${runUrl}`,
+                        `- canonical_deploy_method: ${canonicalDeployMethod}`,
+                        `- force_transport_required: ${forceTransportRequired}`,
                         `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'unknown'}`,
                         `- configured_host_count: ${process.env.CONNECTIVITY_CONFIGURED_HOST_COUNT || '0'}`,
                         `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'none'}`,
@@ -527,6 +561,10 @@ jobs:
                         (await githubRequest(`/repos/${owner}/${repo}/issues?state=open&per_page=100`)) || [];
 
                       const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      const legacyTitle = blockingMode ? advisoryTitle : blockingTitle;
+                      const legacyIssue = openIssues.find(
+                        (issue) => !issue.pull_request && issue.title === legacyTitle
+                      );
                       if (existing) {
                         const existingBody = String(existing.body || '');
                         const labels = mergedLabels(existing.labels);
@@ -581,6 +619,29 @@ jobs:
                         });
                         console.log(`Issue diagnose-host-connectivity creado: #${created.number}`);
                       }
+
+                      if (legacyIssue) {
+                        await githubRequest(`/repos/${owner}/${repo}/issues/${legacyIssue.number}/comments`, {
+                          method: 'POST',
+                          body: {
+                            body: [
+                              blockingMode
+                                ? 'Aviso advisory cerrado automaticamente: la conectividad GitHub-hosted volvio a tratarse como blocker de transporte.'
+                                : 'Desescalado automaticamente: `DEPLOY_METHOD=git-sync` y la conectividad GitHub-hosted deja de bloquear producción.',
+                              '',
+                              `- Fecha: ${now}`,
+                              `- Run: ${runUrl}`,
+                              `- canonical_deploy_method: ${canonicalDeployMethod}`,
+                              `- force_transport_required: ${forceTransportRequired}`
+                            ].join('\n'),
+                          },
+                        });
+                        await githubRequest(`/repos/${owner}/${repo}/issues/${legacyIssue.number}`, {
+                          method: 'PATCH',
+                          body: { state: 'closed' },
+                        });
+                        console.log(`Issue diagnose-host-connectivity legacy cerrada: #${legacyIssue.number}`);
+                      }
                       })().catch((error) => {
                         console.error(error);
                         process.exit(1);
@@ -601,6 +662,8 @@ jobs:
                   TURNERO_PILOT_DIAGNOSE_STATUS: ${{ steps.turnero_pilot_diagnose.outputs.turnero_pilot_status }}
                   TURNERO_PILOT_DIAGNOSE_CLINIC_ID: ${{ steps.turnero_pilot_diagnose.outputs.turnero_pilot_clinic_id }}
                   TURNERO_PILOT_DIAGNOSE_PROFILE_FINGERPRINT: ${{ steps.turnero_pilot_diagnose.outputs.turnero_pilot_profile_fingerprint }}
+                  CANONICAL_DEPLOY_METHOD: ${{ env.CANONICAL_DEPLOY_METHOD }}
+                  FORCE_TRANSPORT_REQUIRED: ${{ env.FORCE_TRANSPORT_REQUIRED }}
               run: |
                   set -euo pipefail
                   node <<'NODE'
@@ -614,7 +677,10 @@ jobs:
                         throw new Error(`Invalid GITHUB_REPOSITORY: ${process.env.GITHUB_REPOSITORY || ''}`);
                       }
                       const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';
-                      const title = '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy';
+                      const titles = [
+                        '[ALERTA PROD] Diagnose host connectivity sin ruta de deploy',
+                        '[AVISO OPS] Diagnose host connectivity sin ruta GitHub-hosted canónica (git-sync)'
+                      ];
                       const runUrl = `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${owner}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID || ''}`;
                       const now = new Date().toISOString();
 
@@ -643,34 +709,45 @@ jobs:
                       const openIssues =
                         (await githubRequest(`/repos/${owner}/${repo}/issues?state=open&per_page=100`)) || [];
 
-                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
-                      if (!existing) {
-                        console.log('No hay incidente de conectividad abierto para cerrar.');
-                        return;
+                      let closedAny = false;
+                      for (const title of titles) {
+                        const existing = openIssues.find(
+                          (issue) => !issue.pull_request && issue.title === title
+                        );
+                        if (!existing) {
+                          continue;
+                        }
+
+                        await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}/comments`, {
+                          method: 'POST',
+                          body: {
+                            body: [
+                              'Recuperado automaticamente por Diagnose Host Connectivity.',
+                              '',
+                              `- Fecha: ${now}`,
+                              `- Run: ${runUrl}`,
+                              `- canonical_deploy_method: ${String(process.env.CANONICAL_DEPLOY_METHOD || 'git-sync')}`,
+                              `- force_transport_required: ${String(process.env.FORCE_TRANSPORT_REQUIRED || 'false')}`,
+                              `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'reachable'}`,
+                              `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'n/a'}`,
+                              `- turnero_pilot_status: ${process.env.TURNERO_PILOT_DIAGNOSE_STATUS || 'unknown'}`,
+                              `- turnero_pilot_clinic_id: ${process.env.TURNERO_PILOT_DIAGNOSE_CLINIC_ID || 'n/a'}`,
+                              `- turnero_pilot_profile_fingerprint: ${process.env.TURNERO_PILOT_DIAGNOSE_PROFILE_FINGERPRINT || 'n/a'}`
+                            ].join('\n'),
+                          },
+                        });
+
+                        await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}`, {
+                          method: 'PATCH',
+                          body: { state: 'closed' },
+                        });
+                        closedAny = true;
+                        console.log(`Issue diagnose-host-connectivity cerrado: #${existing.number}`);
                       }
 
-                      await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}/comments`, {
-                        method: 'POST',
-                        body: {
-                          body: [
-                            'Recuperado automaticamente por Diagnose Host Connectivity.',
-                            '',
-                            `- Fecha: ${now}`,
-                            `- Run: ${runUrl}`,
-                            `- connectivity_status: ${process.env.CONNECTIVITY_STATUS || 'reachable'}`,
-                            `- open_targets: ${process.env.CONNECTIVITY_OPEN_TARGETS || 'n/a'}`,
-                            `- turnero_pilot_status: ${process.env.TURNERO_PILOT_DIAGNOSE_STATUS || 'unknown'}`,
-                            `- turnero_pilot_clinic_id: ${process.env.TURNERO_PILOT_DIAGNOSE_CLINIC_ID || 'n/a'}`,
-                            `- turnero_pilot_profile_fingerprint: ${process.env.TURNERO_PILOT_DIAGNOSE_PROFILE_FINGERPRINT || 'n/a'}`
-                          ].join('\n'),
-                        },
-                      });
-
-                      await githubRequest(`/repos/${owner}/${repo}/issues/${existing.number}`, {
-                        method: 'PATCH',
-                        body: { state: 'closed' },
-                      });
-                      console.log(`Issue diagnose-host-connectivity cerrado: #${existing.number}`);
+                      if (!closedAny) {
+                        console.log('No hay incidente de conectividad abierto para cerrar.');
+                      }
                       })().catch((error) => {
                         console.error(error);
                         process.exit(1);

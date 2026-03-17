@@ -73,6 +73,8 @@ test('CLI reporta status del perfil activo actual', () => {
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.profile.clinic_id, 'piel-armonia-quito');
+    assert.equal(payload.profile.branding.name, 'Aurora Derm');
+    assert.equal(payload.profile.branding.short_name, 'Aurora Derm');
     assert.equal(payload.matchingProfileId, 'piel-armonia-quito');
     assert.equal(payload.catalogReady, true);
     assert.match(String(payload.profileFingerprint || ''), /^[a-f0-9]{8}$/);

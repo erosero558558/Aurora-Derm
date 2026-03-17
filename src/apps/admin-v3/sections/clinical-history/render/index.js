@@ -17,14 +17,6 @@ import { renderAdminChrome } from '../../../ui/frame.js';
 import { renderClinicalMediaFlow } from './media-flow.js';
 
 const CLINICAL_HISTORY_SESSION_QUERY_PARAM = 'clinicalSessionId';
-const CLINICAL_HISTORY_WORKSPACE_QUERY_PARAM = 'clinicalWorkspace';
-const CLINICAL_HISTORY_QUEUE_FILTERS = Object.freeze([
-    'all',
-    'review_required',
-    'pending_ai',
-    'alert',
-    'with_attachments',
-]);
 
 let scheduledAutoSelection = '';
 
@@ -40,27 +32,6 @@ function normalizeStringList(value) {
     return normalizeList(value)
         .map((item) => normalizeString(item))
         .filter(Boolean);
-}
-
-export function normalizeClinicalHistoryWorkspace(value) {
-    const normalized = normalizeString(value).toLowerCase();
-    return normalized === 'media-flow' || normalized === 'media_flow'
-        ? 'media-flow'
-        : 'review';
-}
-
-function normalizeClinicalQueueFilter(value) {
-    const normalized = normalizeString(value).toLowerCase();
-    return CLINICAL_HISTORY_QUEUE_FILTERS.includes(normalized)
-        ? normalized
-        : 'all';
-}
-
-function readWorkspaceQuery() {
-    const raw = normalizeString(
-        getQueryParam(CLINICAL_HISTORY_WORKSPACE_QUERY_PARAM)
-    );
-    return raw ? normalizeClinicalHistoryWorkspace(raw) : '';
 }
 
 function normalizeNumber(value) {
@@ -358,38 +329,6 @@ function normalizeEvent(event) {
     };
 }
 
-function normalizeReviewQueueItem(item) {
-    const source = item && typeof item === 'object' ? item : {};
-    const severity = normalizeString(source.highestOpenSeverity).toLowerCase();
-    return {
-        sessionId: normalizeString(source.sessionId),
-        caseId: normalizeString(source.caseId),
-        appointmentId: normalizeNullableInt(source.appointmentId),
-        surface: normalizeString(source.surface),
-        sessionStatus: normalizeString(source.sessionStatus),
-        reviewStatus: normalizeString(source.reviewStatus),
-        requiresHumanReview: source.requiresHumanReview !== false,
-        confidence: normalizeNumber(source.confidence),
-        reviewReasons: normalizeStringList(source.reviewReasons),
-        missingFields: normalizeStringList(source.missingFields),
-        redFlags: normalizeStringList(source.redFlags),
-        pendingAiStatus: normalizeString(source.pendingAiStatus),
-        pendingAiJobId: normalizeString(source.pendingAiJobId),
-        patientName: normalizeString(source.patientName),
-        patientEmail: normalizeString(source.patientEmail),
-        patientPhone: normalizeString(source.patientPhone),
-        attachmentCount: Math.max(0, normalizeNumber(source.attachmentCount)),
-        openEventCount: Math.max(0, normalizeNumber(source.openEventCount)),
-        highestOpenSeverity: ['critical', 'warning', 'info'].includes(severity)
-            ? severity
-            : '',
-        latestOpenEventTitle: normalizeString(source.latestOpenEventTitle),
-        summary: normalizeString(source.summary),
-        createdAt: normalizeString(source.createdAt),
-        updatedAt: normalizeString(source.updatedAt),
-    };
-}
-
 function normalizeReviewPayload(payload) {
     const review = emptyReview();
     const source = payload && typeof payload === 'object' ? payload : {};
@@ -428,23 +367,9 @@ function normalizeReviewPayload(payload) {
 }
 
 function readClinicalHistoryMeta(state = getState()) {
-    const source =
-        state?.data?.clinicalHistoryMeta &&
+    return state?.data?.clinicalHistoryMeta &&
         typeof state.data.clinicalHistoryMeta === 'object'
-            ? state.data.clinicalHistoryMeta
-            : {};
-    return {
-        ...source,
-        reviewQueue: normalizeList(source.reviewQueue).map(
-            normalizeReviewQueueItem
-        ),
-    };
-}
-
-function readMediaFlowMeta(state = getState()) {
-    return state?.data?.mediaFlowMeta &&
-        typeof state.data.mediaFlowMeta === 'object'
-        ? state.data.mediaFlowMeta
+        ? state.data.clinicalHistoryMeta
         : {};
 }
 
@@ -452,21 +377,6 @@ function getClinicalHistorySlice(state = getState()) {
     return state?.clinicalHistory && typeof state.clinicalHistory === 'object'
         ? state.clinicalHistory
         : {};
-}
-
-function currentActiveWorkspace(state = getState()) {
-    return (
-        readWorkspaceQuery() ||
-        normalizeClinicalHistoryWorkspace(
-            getClinicalHistorySlice(state).activeWorkspace
-        )
-    );
-}
-
-function currentQueueFilter(state = getState()) {
-    return normalizeClinicalQueueFilter(
-        getClinicalHistorySlice(state).queueFilter
-    );
 }
 
 function setClinicalHistoryState(patch) {
@@ -477,29 +387,6 @@ function setClinicalHistoryState(patch) {
             ...patch,
         },
     }));
-}
-
-function setActiveClinicalWorkspace(workspace, options = {}) {
-    const next = normalizeClinicalHistoryWorkspace(workspace);
-    setClinicalHistoryState({
-        activeWorkspace: next,
-    });
-    if (options.syncQuery !== false) {
-        setQueryParam(CLINICAL_HISTORY_WORKSPACE_QUERY_PARAM, next);
-    }
-    if (options.render !== false) {
-        renderClinicalHistorySection();
-    }
-    return next;
-}
-
-function setClinicalQueueFilter(filter, options = {}) {
-    setClinicalHistoryState({
-        queueFilter: normalizeClinicalQueueFilter(filter),
-    });
-    if (options.render !== false) {
-        renderClinicalHistorySection();
-    }
 }
 
 function formatReviewStatus(status) {
@@ -552,18 +439,7 @@ function formatConfidence(confidence) {
     return `${Math.round(safeConfidence * 100)}% confianza`;
 }
 
-function formatTone(
-    status,
-    requiresHumanReview,
-    pendingAiStatus,
-    highestOpenSeverity = ''
-) {
-    if (normalizeString(highestOpenSeverity) === 'critical') {
-        return 'danger';
-    }
-    if (normalizeString(highestOpenSeverity) === 'warning') {
-        return 'warning';
-    }
+function formatTone(status, requiresHumanReview, pendingAiStatus) {
     if (normalizeString(pendingAiStatus) !== '') {
         return 'warning';
     }
@@ -855,147 +731,13 @@ function queueReasons(item) {
     ];
 }
 
-function queueAlertMeta(item) {
-    const openEventCount = Math.max(0, normalizeNumber(item.openEventCount));
-    if (openEventCount <= 0) {
-        return '';
-    }
-    const severity = normalizeString(item.highestOpenSeverity);
-    const label = severity ? formatSeverity(severity) : 'Evento';
-    return `${openEventCount} ${label.toLowerCase()}(s) abierto(s)`;
-}
-
-function reviewQueueMatchesFilter(item, filter) {
-    switch (normalizeClinicalQueueFilter(filter)) {
-        case 'review_required':
-            return (
-                item.requiresHumanReview === true ||
-                [
-                    'review_required',
-                    'pending_review',
-                    'ready_for_review',
-                ].includes(normalizeString(item.reviewStatus))
-            );
-        case 'pending_ai':
-            return normalizeString(item.pendingAiStatus) !== '';
-        case 'alert':
-            return (
-                ['critical', 'warning'].includes(
-                    normalizeString(item.highestOpenSeverity)
-                ) || Math.max(0, normalizeNumber(item.openEventCount)) > 0
-            );
-        case 'with_attachments':
-            return Math.max(0, normalizeNumber(item.attachmentCount)) > 0;
-        default:
-            return true;
-    }
-}
-
-export function filterClinicalReviewQueue(reviewQueue, filter) {
-    const normalizedFilter = normalizeClinicalQueueFilter(filter);
-    return normalizeList(reviewQueue)
-        .map(normalizeReviewQueueItem)
-        .filter((item) => reviewQueueMatchesFilter(item, normalizedFilter));
-}
-
-function queueFilterLabel(filter) {
-    switch (normalizeClinicalQueueFilter(filter)) {
-        case 'review_required':
-            return 'Revision';
-        case 'pending_ai':
-            return 'IA';
-        case 'alert':
-            return 'Alertas';
-        case 'with_attachments':
-            return 'Adjuntos';
-        default:
-            return 'Todos';
-    }
-}
-
-function buildQueueFilterChips(meta, activeFilter) {
-    const reviewQueue = normalizeList(meta.reviewQueue).map(
-        normalizeReviewQueueItem
-    );
-    const filters = [
-        ['all', 'Todos'],
-        ['review_required', 'Revision'],
-        ['pending_ai', 'IA'],
-        ['alert', 'Alertas'],
-        ['with_attachments', 'Adjuntos'],
-    ];
-    return filters
-        .map(([id, label]) => {
-            const count =
-                id === 'all'
-                    ? reviewQueue.length
-                    : filterClinicalReviewQueue(reviewQueue, id).length;
-            return `
-                <button
-                    type="button"
-                    class="clinical-history-filter-chip${
-                        normalizeClinicalQueueFilter(activeFilter) === id
-                            ? ' is-active'
-                            : ''
-                    }"
-                    data-clinical-queue-filter="${escapeHtml(id)}"
-                >
-                    ${escapeHtml(label)} <span>${escapeHtml(String(count))}</span>
-                </button>
-            `;
-        })
-        .join('');
-}
-
-function buildWorkspaceTabs(activeWorkspace, meta, mediaMeta) {
-    const tabs = [
-        [
-            'review',
-            'Revision medica',
-            `${normalizeList(meta.reviewQueue).length} caso(s) clinicos`,
-        ],
-        [
-            'media-flow',
-            'Media Flow',
-            `${normalizeList(mediaMeta.queue).length} caso(s) editoriales`,
-        ],
-    ];
-    return tabs
-        .map(
-            ([workspace, label, metaLabel]) => `
-                <button
-                    type="button"
-                    class="clinical-history-workspace-tab${
-                        activeWorkspace === workspace ? ' is-active' : ''
-                    }"
-                    data-clinical-workspace="${escapeHtml(workspace)}"
-                    aria-pressed="${
-                        activeWorkspace === workspace ? 'true' : 'false'
-                    }"
-                >
-                    <strong>${escapeHtml(label)}</strong>
-                    <small>${escapeHtml(metaLabel)}</small>
-                </button>
-            `
-        )
-        .join('');
-}
-
-function buildQueueList(meta, selectedSessionId, loading, filter) {
-    const reviewQueue = filterClinicalReviewQueue(meta.reviewQueue, filter);
+function buildQueueList(meta, selectedSessionId, loading) {
+    const reviewQueue = normalizeList(meta.reviewQueue);
     if (reviewQueue.length === 0) {
         return `
             <article class="clinical-history-empty-card">
-                <strong>${
-                    normalizeClinicalQueueFilter(filter) === 'all'
-                        ? 'Sin cola activa'
-                        : `Sin casos en ${queueFilterLabel(filter)}`
-                }</strong>
-                <p>${
-                    normalizeClinicalQueueFilter(filter) === 'all'
-                        ? 'No hay historias clinicas esperando revision humana.'
-                        : 'Prueba con otro filtro o vuelve a Todos para revisar el resto de la cola.'
-                }</p>
+                <strong>Sin cola activa</strong>
+                <p>No hay historias clinicas esperando revision humana.</p>
             </article>
         `;
     }
@@ -1015,23 +757,15 @@ function buildQueueList(meta, selectedSessionId, loading, filter) {
             const tone = formatTone(
                 item.reviewStatus || item.sessionStatus,
                 item.requiresHumanReview,
-                item.pendingAiStatus,
-                item.highestOpenSeverity
+                item.pendingAiStatus
             );
             const chips = [
                 status,
                 formatConfidence(item.confidence),
-                queueAlertMeta(item),
                 item.attachmentCount > 0
                     ? `${item.attachmentCount} adjunto(s)`
                     : '',
             ].filter(Boolean);
-            const queueMeta = [
-                item.latestOpenEventTitle,
-                readableTimestamp(item.updatedAt || item.createdAt),
-            ]
-                .filter(Boolean)
-                .join(' • ');
 
             return `
                 <button
@@ -1063,7 +797,9 @@ function buildQueueList(meta, selectedSessionId, loading, filter) {
                             )
                             .join('')}
                     </div>
-                    <small>${escapeHtml(queueMeta || 'Sin timestamp')}</small>
+                    <small>${escapeHtml(
+                        readableTimestamp(item.updatedAt || item.createdAt)
+                    )}</small>
                 </button>
             `;
         })
@@ -1177,28 +913,6 @@ function buildEvents(review) {
             `;
         })
         .join('');
-}
-
-function highestReviewEventSeverity(review) {
-    let highest = '';
-    normalizeList(review.events).forEach((event) => {
-        const severity = normalizeString(event.severity).toLowerCase();
-        if (severity === 'critical') {
-            highest = 'critical';
-            return;
-        }
-        if (severity === 'warning' && highest !== 'critical') {
-            highest = 'warning';
-        }
-        if (
-            severity === 'info' &&
-            highest !== 'critical' &&
-            highest !== 'warning'
-        ) {
-            highest = 'info';
-        }
-    });
-    return highest;
 }
 
 function textareaField(id, label, value, options = {}) {
@@ -1747,8 +1461,7 @@ function renderClinicalHeader(review, meta) {
     const tone = formatTone(
         draft.reviewStatus,
         draft.requiresHumanReview,
-        pendingAiStatus,
-        highestReviewEventSeverity(review)
+        pendingAiStatus
     );
     const statusChip = document.getElementById('clinicalHistoryStatusChip');
     if (statusChip instanceof HTMLElement) {
@@ -1974,28 +1687,14 @@ async function saveClinicalHistoryReview(mode, question) {
         renderDashboard(getState());
         renderClinicalHistorySection();
 
-        const reviewTarget = currentSelectionLabel(nextReview);
-
         if (mode === 'approve') {
-            createToast(
-                `Historia clinica aprobada para ${reviewTarget}.`,
-                'success'
-            );
+            createToast('Historia clinica aprobada.', 'success');
         } else if (mode === 'review-required') {
-            createToast(
-                `Caso marcado para revision humana: ${reviewTarget}.`,
-                'success'
-            );
+            createToast('Caso marcado para revision humana.', 'success');
         } else if (mode === 'follow-up') {
-            createToast(
-                `Pregunta adicional enviada a ${reviewTarget}.`,
-                'success'
-            );
+            createToast('Pregunta adicional enviada al paciente.', 'success');
         } else {
-            createToast(
-                `Borrador clinico guardado para ${reviewTarget}.`,
-                'success'
-            );
+            createToast('Borrador clinico guardado.', 'success');
         }
 
         return nextReview;
@@ -2125,23 +1824,6 @@ function ensureSessionSelection() {
     }, 0);
 }
 
-function syncWorkspaceVisibility(activeWorkspace) {
-    const reviewWorkbench = document.getElementById('clinicalHistoryWorkbench');
-    const reviewFooter = document.getElementById('clinicalHistoryFooterGrid');
-    const mediaGrid = document.getElementById('clinicalMediaFlowGrid');
-    const isMediaFlow = activeWorkspace === 'media-flow';
-
-    if (reviewWorkbench instanceof HTMLElement) {
-        reviewWorkbench.hidden = isMediaFlow;
-    }
-    if (reviewFooter instanceof HTMLElement) {
-        reviewFooter.hidden = isMediaFlow;
-    }
-    if (mediaGrid instanceof HTMLElement) {
-        mediaGrid.hidden = !isMediaFlow;
-    }
-}
-
 function bindClinicalHistoryEvents() {
     const root = document.getElementById('clinical-history');
     if (!(root instanceof HTMLElement) || root.dataset.bound === 'true') {
@@ -2153,34 +1835,10 @@ function bindClinicalHistoryEvents() {
             event.target instanceof Element
                 ? event.target.closest('[data-clinical-review-action]')
                 : null;
-        const workspaceTarget =
-            event.target instanceof Element
-                ? event.target.closest('[data-clinical-workspace]')
-                : null;
-        const filterTarget =
-            event.target instanceof Element
-                ? event.target.closest('[data-clinical-queue-filter]')
-                : null;
         const queueTarget =
             event.target instanceof Element
                 ? event.target.closest('[data-clinical-session-id]')
                 : null;
-
-        if (workspaceTarget instanceof HTMLButtonElement) {
-            event.preventDefault();
-            setActiveClinicalWorkspace(
-                workspaceTarget.dataset.clinicalWorkspace || 'review'
-            );
-            return;
-        }
-
-        if (filterTarget instanceof HTMLButtonElement) {
-            event.preventDefault();
-            setClinicalQueueFilter(
-                filterTarget.dataset.clinicalQueueFilter || 'all'
-            );
-            return;
-        }
 
         if (queueTarget instanceof HTMLButtonElement) {
             event.preventDefault();
@@ -2281,16 +1939,6 @@ function bindClinicalHistoryEvents() {
 
 export async function openClinicalHistorySession(sessionId = '') {
     const explicitSessionId = normalizeString(sessionId);
-    const preferredWorkspace = explicitSessionId
-        ? 'review'
-        : readWorkspaceQuery() ||
-          normalizeClinicalHistoryWorkspace(
-              getClinicalHistorySlice().activeWorkspace
-          );
-    setActiveClinicalWorkspace(preferredWorkspace, {
-        render: false,
-        syncQuery: true,
-    });
     const selected =
         explicitSessionId ||
         normalizeString(getQueryParam(CLINICAL_HISTORY_SESSION_QUERY_PARAM));
@@ -2314,27 +1962,14 @@ export async function refreshClinicalHistoryCurrentSession() {
 export function renderClinicalHistorySection() {
     const state = getState();
     const meta = readClinicalHistoryMeta(state);
-    const mediaMeta = readMediaFlowMeta(state);
     const slice = getClinicalHistorySlice(state);
     const review = currentReviewSource(state);
     const draft = currentDraftSource(state);
-    const activeWorkspace = currentActiveWorkspace(state);
-    const queueFilter = currentQueueFilter(state);
 
     renderClinicalHeader(review, meta);
-    setHtml(
-        '#clinicalHistoryWorkspaceTabs',
-        buildWorkspaceTabs(activeWorkspace, meta, mediaMeta)
-    );
-    setHtml(
-        '#clinicalHistoryQueueFilters',
-        buildQueueFilterChips(meta, queueFilter)
-    );
     setText(
         '#clinicalHistoryQueueMeta',
-        `Mostrando ${filterClinicalReviewQueue(meta.reviewQueue, queueFilter).length} de ${
-            normalizeList(meta.reviewQueue).length
-        } caso(s) en ${queueFilterLabel(queueFilter).toLowerCase()}.`
+        `${normalizeList(meta.reviewQueue).length} caso(s) listos para revision humana.`
     );
     setText(
         '#clinicalHistoryTranscriptMeta',
@@ -2362,8 +1997,7 @@ export function renderClinicalHistorySection() {
         buildQueueList(
             meta,
             normalizeString(slice.selectedSessionId),
-            slice.loading,
-            queueFilter
+            slice.loading
         )
     );
     setHtml(
@@ -2375,7 +2009,6 @@ export function renderClinicalHistorySection() {
 
     syncFollowUpInput();
     syncDraftStatusMeta();
-    syncWorkspaceVisibility(activeWorkspace);
     bindClinicalHistoryEvents();
     renderClinicalMediaFlow();
     ensureSessionSelection();

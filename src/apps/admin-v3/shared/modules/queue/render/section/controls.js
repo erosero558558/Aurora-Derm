@@ -78,22 +78,25 @@ export function syncQueueStationControls(state, activeStationTicket) {
 }
 
 export function syncQueueToggleControls(state) {
+    const syncVisibility = (node, hidden) => {
+        if (!(node instanceof HTMLElement)) {
+            return;
+        }
+        node.hidden = hidden;
+        node.classList.toggle('is-hidden', hidden);
+        node.setAttribute('aria-hidden', String(hidden));
+    };
+
     const practiceBadge = document.getElementById('queuePracticeModeBadge');
-    if (practiceBadge instanceof HTMLElement) {
-        practiceBadge.hidden = !state.queue.practiceMode;
-    }
+    syncVisibility(practiceBadge, !state.queue.practiceMode);
 
     const shortcutPanel = document.getElementById('queueShortcutPanel');
-    if (shortcutPanel instanceof HTMLElement) {
-        shortcutPanel.hidden = !state.queue.helpOpen;
-    }
+    syncVisibility(shortcutPanel, !state.queue.helpOpen);
 
     const clearKeyBtn = document.querySelector(
         '[data-action="queue-clear-call-key"]'
     );
-    if (clearKeyBtn instanceof HTMLElement) {
-        clearKeyBtn.hidden = !state.queue.customCallKey;
-    }
+    syncVisibility(clearKeyBtn, !state.queue.customCallKey);
 
     const oneTapBtn = document.querySelector(
         '[data-action="queue-toggle-one-tap"]'

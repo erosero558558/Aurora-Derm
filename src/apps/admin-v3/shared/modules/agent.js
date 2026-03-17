@@ -139,11 +139,7 @@ function normalizeWorkspace(workspace) {
     const value = String(workspace || '')
         .trim()
         .toLowerCase();
-    return value === 'media-flow' || value === 'media_flow'
-        ? 'media-flow'
-        : value === 'review'
-          ? 'review'
-          : '';
+    return value === 'media-flow' || value === 'media_flow' ? 'media-flow' : '';
 }
 
 function normalizeStringList(value) {
@@ -320,52 +316,9 @@ export function buildAgentContextFromState(state = getState()) {
             Number(item.id || item.ticketId || 0)
         );
     } else if (section === 'clinical-history') {
-        const reviewQueue = Array.isArray(
-            state.data?.clinicalHistoryMeta?.reviewQueue
-        )
-            ? state.data.clinicalHistoryMeta.reviewQueue
-            : [];
-        const mediaQueue = Array.isArray(state.data?.mediaFlowMeta?.queue)
+        const queue = Array.isArray(state.data?.mediaFlowMeta?.queue)
             ? state.data.mediaFlowMeta.queue
             : [];
-        const activeWorkspace =
-            normalizeWorkspace(state.clinicalHistory?.activeWorkspace) ||
-            'review';
-        const currentReview =
-            state.clinicalHistory?.current &&
-            typeof state.clinicalHistory.current === 'object'
-                ? state.clinicalHistory.current
-                : null;
-        const currentDraft =
-            state.clinicalHistory?.draftForm &&
-            typeof state.clinicalHistory.draftForm === 'object'
-                ? state.clinicalHistory.draftForm
-                : null;
-        const selectedSessionId = String(
-            currentReview?.session?.sessionId ||
-                state.clinicalHistory?.selectedSessionId ||
-                currentDraft?.sessionId ||
-                ''
-        ).trim();
-        const selectedReviewRow =
-            reviewQueue.find(
-                (item) =>
-                    String(item?.sessionId || '').trim() === selectedSessionId
-            ) ||
-            reviewQueue[0] ||
-            null;
-        const reviewCaseId = String(
-            currentReview?.session?.caseId ||
-                currentDraft?.caseId ||
-                selectedReviewRow?.caseId ||
-                ''
-        ).trim();
-        const reviewLabel = String(
-            currentReview?.session?.patient?.name ||
-                selectedReviewRow?.patientName ||
-                reviewCaseId ||
-                ''
-        ).trim();
         const currentCase =
             state.caseMediaFlow?.current &&
             typeof state.caseMediaFlow.current === 'object'
@@ -374,8 +327,7 @@ export function buildAgentContextFromState(state = getState()) {
         const caseId = String(
             currentCase?.caseId ||
                 state.caseMediaFlow?.selectedCaseId ||
-                reviewCaseId ||
-                mediaQueue[0]?.caseId ||
+                queue[0]?.caseId ||
                 ''
         ).trim();
         const proposal =
@@ -386,72 +338,34 @@ export function buildAgentContextFromState(state = getState()) {
             proposal?.selectedAssetIds ||
                 currentCase?.mediaAssets?.map?.((asset) => asset?.assetId)
         );
-        if (activeWorkspace === 'media-flow') {
-            context.workspace = caseId ? 'media-flow' : 'review';
-            context.caseId = caseId;
-            context.proposalId = String(proposal?.proposalId || '').trim();
-            context.selectedAssetIds = selectedAssetIds;
-            context.selectedEntity = caseId
-                ? {
-                      type: 'case_media',
-                      id: 0,
-                      ref: caseId,
-                      label:
-                          String(currentCase?.summary?.headline || '').trim() ||
-                          reviewLabel ||
-                          caseId,
-                  }
-                : context.selectedEntity;
-            context.filters = {
-                workspace: context.workspace,
-                publicationStatus: String(
-                    currentCase?.publication?.status || ''
-                ).trim(),
-                policyStatus: String(currentCase?.policy?.status || '').trim(),
-            };
-            context.visibleIds = mediaQueue
-                .map((item) => String(item?.caseId || '').trim())
-                .filter(Boolean);
-        } else {
-            context.workspace = 'review';
-            context.caseId = reviewCaseId || caseId;
-            context.proposalId = '';
-            context.selectedAssetIds = [];
-            context.selectedEntity = selectedSessionId
-                ? {
-                      type: 'clinical_session',
-                      id: 0,
-                      ref: selectedSessionId,
-                      label: reviewLabel || selectedSessionId,
-                  }
-                : context.caseId
-                  ? {
-                        type: 'clinical_case',
-                        id: 0,
-                        ref: context.caseId,
-                        label: reviewLabel || context.caseId,
-                    }
-                  : context.selectedEntity;
-            context.filters = {
-                workspace: 'review',
-                queueFilter: String(
-                    state.clinicalHistory?.queueFilter || 'all'
-                ).trim(),
-                reviewStatus: String(
-                    currentReview?.draft?.reviewStatus ||
-                        selectedReviewRow?.reviewStatus ||
-                        ''
-                ).trim(),
-            };
-            context.visibleIds = reviewQueue
-                .map((item) => String(item?.sessionId || '').trim())
-                .filter(Boolean);
-        }
+        context.workspace = caseId ? 'media-flow' : '';
+        context.caseId = caseId;
+        context.proposalId = String(proposal?.proposalId || '').trim();
+        context.selectedAssetIds = selectedAssetIds;
+        context.selectedEntity = caseId
+            ? {
+                  type: 'case_media',
+                  id: 0,
+                  ref: caseId,
+                  label:
+                      String(currentCase?.summary?.headline || '').trim() ||
+                      caseId,
+              }
+            : context.selectedEntity;
+        context.filters = {
+            workspace: context.workspace,
+            publicationStatus: String(
+                currentCase?.publication?.status || ''
+            ).trim(),
+            policyStatus: String(currentCase?.policy?.status || '').trim(),
+        };
+        context.visibleIds = queue
+            .map((item) => String(item?.caseId || '').trim())
+            .filter(Boolean);
         context.domainContext = {
-            sessionId: selectedSessionId,
-            caseId: context.caseId,
+            caseId,
             proposalId: context.proposalId,
-            selectedAssetIds: context.selectedAssetIds,
+            selectedAssetIds,
         };
     }
 
@@ -494,7 +408,9 @@ function mergeAgentContext(baseContext, override = {}) {
         normalizeWorkspace(
             next.workspace || next.domainContext?.workspace || ''
         ) ||
-        (next.section === 'clinical-history' && next.caseId ? 'review' : '');
+        (next.section === 'clinical-history' && next.caseId
+            ? 'media-flow'
+            : '');
     next.proposalId = String(
         next.proposalId || next.domainContext?.proposalId || ''
     ).trim();
@@ -889,7 +805,7 @@ export async function hydrateAgentSession() {
     }
 }
 
-export async function ensureAgentSession(options = {}) {
+export async function ensureAgentSession() {
     const state = getState();
     if (!canUseAgent(state)) {
         throw new Error('OpenClaw disponible solo para admin/editorial');
@@ -897,11 +813,6 @@ export async function ensureAgentSession(options = {}) {
     if (state.agent?.session?.sessionId) {
         return state.agent.session.sessionId;
     }
-
-    const initialContext = mergeAgentContext(
-        buildAgentContextFromState(state),
-        options?.contextOverride || state.agent?.context || {}
-    );
 
     patchAgent({ starting: true, lastError: '' });
     renderAgentPanel();
@@ -911,7 +822,7 @@ export async function ensureAgentSession(options = {}) {
             method: 'POST',
             body: {
                 riskMode: 'autopilot_partial',
-                context: initialContext,
+                context: buildAgentContextFromState(),
             },
         });
         const snapshot =
@@ -985,9 +896,7 @@ export async function submitAgentPrompt(message, options = {}) {
         throw new Error('OpenClaw disponible solo para admin/editorial');
     }
 
-    const sessionId = await ensureAgentSession({
-        contextOverride: options?.contextOverride || {},
-    });
+    const sessionId = await ensureAgentSession();
     if (!sessionId) {
         throw new Error('No se pudo preparar la sesion del agente');
     }
@@ -1105,26 +1014,15 @@ export async function cancelAgentSession() {
     }
 }
 
-export async function openAgentPanelExperience({
-    focus = false,
-    contextOverride = {},
-} = {}) {
+export async function openAgentPanelExperience({ focus = false } = {}) {
     if (!canUseAgent(getState())) {
         renderAgentPanel();
         return null;
     }
-    const nextContext = mergeAgentContext(
-        buildAgentContextFromState(getState()),
-        contextOverride && typeof contextOverride === 'object'
-            ? contextOverride
-            : {}
-    );
-    patchAgent({ open: true, context: nextContext });
+    patchAgent({ open: true });
     showAgentPanel();
     renderAgentPanel();
     await hydrateAgentSession();
-    patchAgent({ context: nextContext });
-    renderAgentPanel();
 
     if (focus) {
         const input = qs('#adminAgentPrompt');

@@ -20,8 +20,8 @@ function turnero_clinic_profile_defaults(): array
         'schema' => 'turnero-clinic-profile/v1',
         'clinic_id' => 'default-clinic',
         'branding' => [
-            'name' => AppConfig::BRAND_NAME,
-            'short_name' => AppConfig::BRAND_NAME,
+            'name' => 'Aurora Derm',
+            'short_name' => 'Aurora Derm',
             'city' => 'Quito',
             'base_url' => AppConfig::BASE_URL,
         ],
@@ -111,8 +111,8 @@ function turnero_clinic_profile_normalize(array $profile): array
         'schema' => (string) ($profile['schema'] ?? 'turnero-clinic-profile/v1'),
         'clinic_id' => (string) ($profile['clinic_id'] ?? 'default-clinic'),
         'branding' => [
-            'name' => (string) ($branding['name'] ?? AppConfig::BRAND_NAME),
-            'short_name' => (string) ($branding['short_name'] ?? ($branding['name'] ?? AppConfig::BRAND_NAME)),
+            'name' => (string) ($branding['name'] ?? 'Aurora Derm'),
+            'short_name' => (string) ($branding['short_name'] ?? ($branding['name'] ?? 'Aurora Derm')),
             'city' => (string) ($branding['city'] ?? 'Quito'),
             'base_url' => (string) ($branding['base_url'] ?? AppConfig::BASE_URL),
         ],

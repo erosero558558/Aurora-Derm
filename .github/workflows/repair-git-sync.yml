@@ -566,6 +566,129 @@ jobs:
                   }
                   NODE
 
+            - name: Evaluar estado publicSync post-repair
+              if: ${{ always() }}
+              id: public_sync_repair
+              shell: bash
+              env:
+                  HEALTH_FILE: /tmp/health-repair.json
+              run: |
+                  set -euo pipefail
+                  if ! curl -fsS "${TARGET_DOMAIN}/api.php?resource=health" > "${HEALTH_FILE}"; then
+                    echo "No se pudo refrescar health post-repair; se reporta publicSync unknown."
+                  fi
+                  node <<'NODE'
+                  const fs = require('node:fs');
+
+                  const expectedJobId = '8d31e299-7e57-4959-80b5-aaa2d73e9674';
+                  const healthPath = process.env.HEALTH_FILE || '/tmp/health-repair.json';
+                  const outputPath = process.env.GITHUB_OUTPUT;
+                  const envPath = process.env.GITHUB_ENV;
+
+                  function append(path, key, value) {
+                    if (!path) return;
+                    fs.appendFileSync(path, `${key}=${String(value)}\n`);
+                  }
+
+                  function publish(snapshot) {
+                    append(outputPath, 'public_sync_status', snapshot.status);
+                    append(outputPath, 'public_sync_reason', snapshot.reason);
+                    append(outputPath, 'public_sync_job_id', snapshot.jobId);
+                    append(outputPath, 'public_sync_deployed_commit', snapshot.deployedCommit);
+
+                    append(envPath, 'PUBLIC_SYNC_REPAIR_STATUS', snapshot.status);
+                    append(envPath, 'PUBLIC_SYNC_REPAIR_REASON', snapshot.reason);
+                    append(envPath, 'PUBLIC_SYNC_REPAIR_JOB_ID', snapshot.jobId);
+                    append(envPath, 'PUBLIC_SYNC_REPAIR_DEPLOYED_COMMIT', snapshot.deployedCommit);
+                  }
+
+                  const fallback = {
+                    status: 'unknown',
+                    reason: 'health_unavailable',
+                    jobId: '',
+                    deployedCommit: '',
+                  };
+
+                  try {
+                    if (!fs.existsSync(healthPath)) {
+                      publish(fallback);
+                      process.exit(0);
+                    }
+
+                    const raw = fs.readFileSync(healthPath, 'utf8');
+                    const parsed = JSON.parse(raw);
+                    const publicSync = parsed?.checks?.publicSync;
+                    if (!publicSync || typeof publicSync !== 'object') {
+                      publish({
+                        ...fallback,
+                        status: 'host_stale_health_contract',
+                        reason: 'health_missing_public_sync',
+                      });
+                      process.exit(0);
+                    }
+
+                    const configured = publicSync?.configured === true;
+                    const healthy = publicSync?.healthy === true;
+                    const operationallyHealthy =
+                      publicSync?.operationallyHealthy === undefined
+                        ? healthy
+                        : publicSync?.operationallyHealthy === true;
+                    const headDrift =
+                      publicSync?.headDrift === undefined
+                        ? false
+                        : publicSync?.headDrift === true;
+                    const telemetryGap =
+                      publicSync?.telemetryGap === undefined
+                        ? false
+                        : publicSync?.telemetryGap === true;
+                    const jobId = String(publicSync?.jobId || '');
+                    const deployedCommit = String(publicSync?.deployedCommit || '');
+
+                    if (
+                      configured &&
+                      healthy &&
+                      operationallyHealthy &&
+                      jobId === expectedJobId
+                    ) {
+                      publish({
+                        status: 'recovered',
+                        reason: 'ok',
+                        jobId,
+                        deployedCommit,
+                      });
+                      process.exit(0);
+                    }
+
+                    const reasonParts = [];
+                    if (!configured) reasonParts.push('configured_false');
+                    if (jobId !== expectedJobId) {
+                      reasonParts.push(`job_id:${jobId || 'missing'}`);
+                    }
+                    if (!healthy) reasonParts.push('healthy_false');
+                    if (!operationallyHealthy) {
+                      reasonParts.push('operationally_unhealthy');
+                    }
+                    if (headDrift) reasonParts.push('head_drift');
+                    if (telemetryGap) reasonParts.push('telemetry_gap');
+                    const failureReason = String(publicSync?.failureReason || '');
+                    if (failureReason) {
+                      reasonParts.push(`failure_reason:${failureReason}`);
+                    }
+
+                    publish({
+                      status: 'public_sync_runtime_failed',
+                      reason: reasonParts.join(';') || 'public_sync_runtime_failed',
+                      jobId,
+                      deployedCommit,
+                    });
+                  } catch (error) {
+                    publish({
+                      ...fallback,
+                      reason: `health_parse_error:${error && error.name ? error.name : 'unknown'}`,
+                    });
+                  }
+                  NODE
+
             - name: Evaluar fallback de transporte post-repair
               if: ${{ always() }}
               id: transport_fallback
@@ -580,6 +703,8 @@ jobs:
                   AUTO_TRANSPORT_FALLBACK_AUTOMATION: ${{ env.AUTO_TRANSPORT_FALLBACK_AUTOMATION }}
                   DISPATCH_SELF_HOSTED_FALLBACK_INPUT: ${{ env.DISPATCH_SELF_HOSTED_FALLBACK_INPUT }}
                   AUTO_SELF_HOSTED_FALLBACK_AUTOMATION: ${{ env.AUTO_SELF_HOSTED_FALLBACK_AUTOMATION }}
+                  PUBLIC_SYNC_REPAIR_STATUS: ${{ steps.public_sync_repair.outputs.public_sync_status }}
+                  PUBLIC_SYNC_REPAIR_REASON: ${{ steps.public_sync_repair.outputs.public_sync_reason }}
               run: |
                   set -euo pipefail
 
@@ -648,6 +773,12 @@ jobs:
                   const sshRepairOutcome = normalizeOutcome(process.env.SSH_REPAIR_OUTCOME);
                   const verifyOutcome = normalizeOutcome(process.env.VERIFY_OUTCOME);
                   const smokeOutcome = normalizeOutcome(process.env.SMOKE_OUTCOME);
+                  const publicSyncRepairStatus = normalizeOutcome(
+                    process.env.PUBLIC_SYNC_REPAIR_STATUS
+                  );
+                  const publicSyncRepairReason = String(
+                    process.env.PUBLIC_SYNC_REPAIR_REASON || ''
+                  ).trim();
                   const dispatchRequested = normalizeBool(
                     process.env.TRANSPORT_FALLBACK_DISPATCH_REQUESTED
                   );
@@ -666,6 +797,7 @@ jobs:
                   const publicSyncBlocked = failureAssets.some((asset) =>
                     [
                       'health-public-sync-healthy',
+                      'health-public-sync-missing',
                       'health-public-sync-working-tree-dirty',
                       'health-public-sync-telemetry-gap',
                       'health-public-sync-head-drift',
@@ -682,6 +814,9 @@ jobs:
                   }
                   if (publicSyncBlocked) {
                     hostStaleSignals.push('public-sync-blocked');
+                  }
+                  if (publicSyncRepairStatus === 'host_stale_health_contract') {
+                    hostStaleSignals.push('public-sync-host-stale');
                   }
 
                   const sshRepairFailed =
@@ -711,6 +846,15 @@ jobs:
                   }
                   if (smokeSucceeded) {
                     reasonTokens.push('smoke:success');
+                  }
+                  if (
+                    publicSyncRepairStatus &&
+                    publicSyncRepairStatus !== 'recovered' &&
+                    publicSyncRepairStatus !== 'unknown'
+                  ) {
+                    reasonTokens.push(
+                      `public_sync:${publicSyncRepairStatus}:${publicSyncRepairReason || 'n/a'}`
+                    );
                   }
                   for (const signal of hostStaleSignals) {
                     reasonTokens.push(signal);
@@ -2042,6 +2186,10 @@ jobs:
                   echo "- host_public_deploy_target_commit: \`${HOST_PUBLIC_DEPLOY_TARGET_COMMIT}\`";
                     echo "- verify_after_repair_outcome: \`${{ steps.verify_after_repair.outcome }}\`";
                     echo "- smoke_post_repair_outcome: \`${{ steps.smoke_post_repair.outcome }}\`";
+                    echo "- public_sync_repair_status: \`${PUBLIC_SYNC_REPAIR_STATUS}\`";
+                    echo "- public_sync_repair_reason: \`${PUBLIC_SYNC_REPAIR_REASON}\`";
+                    echo "- public_sync_repair_job_id: \`${PUBLIC_SYNC_REPAIR_JOB_ID}\`";
+                    echo "- public_sync_repair_deployed_commit: \`${PUBLIC_SYNC_REPAIR_DEPLOYED_COMMIT}\`";
                     echo "- telemedicine_repair_status: \`${TELEMEDICINE_REPAIR_STATUS}\`";
                     echo "- telemedicine_repair_reason: \`${TELEMEDICINE_REPAIR_REASON}\`";
                     echo "- telemedicine_repair_failures: \`${TELEMEDICINE_REPAIR_FAILURES}\`";

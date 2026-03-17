@@ -156,6 +156,8 @@ jobs:
         timeout-minutes: 20
         env:
             # Staging Configuration
+            DEPLOY_METHOD: ${{ vars.DEPLOY_METHOD || 'git-sync' }}
+            FORCE_TRANSPORT_DEPLOY: ${{ github.event.inputs.force_transport_deploy || 'false' }}
             DEPLOY_PROTOCOL: ${{ github.event.inputs.protocol || vars.STAGING_FTP_PROTOCOL || 'ftps' }}
             FTP_SERVER_PORT: ${{ vars.STAGING_FTP_SERVER_PORT || '21' }}
             FTP_SECURITY: ${{ vars.STAGING_FTP_SECURITY || 'strict' }}
@@ -165,6 +167,7 @@ jobs:
             STAGING_URL: ${{ vars.STAGING_URL || 'https://staging.pielarmonia.com' }}
             REQUIRE_STAGING_CANARY: ${{ github.event.inputs.require_staging_canary || vars.REQUIRE_STAGING_CANARY || 'true' }}
             ALLOW_PROD_WITHOUT_STAGING: ${{ github.event.inputs.allow_prod_without_staging || vars.ALLOW_PROD_WITHOUT_STAGING || 'false' }}
+            STAGING_CANARY_EFFECTIVE: not_evaluated
 
         steps:
             - name: Checkout
@@ -220,27 +223,40 @@ jobs:
               run: |
                   set -euo pipefail
                   if [ "${{ steps.staging_secrets.outputs.missing }}" != "true" ]; then
+                    echo "STAGING_CANARY_EFFECTIVE=enabled" >> "$GITHUB_ENV"
                     echo "Staging canary habilitado. Politica OK."
                     exit 0
                   fi
 
                   if [ "${FTP_DRY_RUN}" = "true" ]; then
+                    echo "STAGING_CANARY_EFFECTIVE=dry_run" >> "$GITHUB_ENV"
                     echo "::notice::dry_run=true permite omitir staging efectivo."
                     exit 0
                   fi
 
+                  deploy_method="$(echo "${DEPLOY_METHOD}" | tr '[:upper:]' '[:lower:]')"
+                  force_transport="$(echo "${FORCE_TRANSPORT_DEPLOY}" | tr '[:upper:]' '[:lower:]')"
                   require_staging="$(echo "${REQUIRE_STAGING_CANARY}" | tr '[:upper:]' '[:lower:]')"
                   allow_without_staging="$(echo "${ALLOW_PROD_WITHOUT_STAGING}" | tr '[:upper:]' '[:lower:]')"
 
+                  if [ "${force_transport}" != "true" ] && [ "${deploy_method}" = "git-sync" ]; then
+                    echo "STAGING_CANARY_EFFECTIVE=skipped_git_sync" >> "$GITHUB_ENV"
+                    echo "::notice::DEPLOY_METHOD=git-sync sin force_transport_deploy=true; staging efectivo se omite."
+                    exit 0
+                  fi
+
                   if [ "${require_staging}" = "true" ] && [ "${allow_without_staging}" != "true" ]; then
+                    echo "STAGING_CANARY_EFFECTIVE=blocked_missing_staging" >> "$GITHUB_ENV"
                     echo "::error::Politica bloqueante: require_staging_canary=true y faltan secretos STAGING_FTP_*."
                     echo "::error::Configura staging o ejecuta override explicito allow_prod_without_staging=true."
                     exit 1
                   fi
 
                   if [ "${allow_without_staging}" = "true" ]; then
+                    echo "STAGING_CANARY_EFFECTIVE=override_without_staging" >> "$GITHUB_ENV"
                     echo "::warning::Override activo: allow_prod_without_staging=true. Se permite continuar sin staging."
                   else
+                    echo "STAGING_CANARY_EFFECTIVE=disabled" >> "$GITHUB_ENV"
                     echo "::notice::require_staging_canary=false. Se permite continuar sin staging."
                   fi
 
@@ -377,7 +393,7 @@ jobs:
               shell: bash
               run: |
                   set -euo pipefail
-                  echo "Canary staging omitido: secretos STAGING_FTP_* no configurados o politica flexible."
+                  echo "Canary staging omitido: secretos STAGING_FTP_* no configurados o politica flexible (effective=${STAGING_CANARY_EFFECTIVE:-unknown})."
 
             - name: Canary summary
               if: ${{ always() }}
@@ -386,10 +402,13 @@ jobs:
                   {
                     echo "## Canary gate";
                     echo "- approval_contract: \`routing_smoke + conversion_smoke + staging_acceptance_gate + artifact:canary-staging-acceptance-evidence\`";
+                    echo "- deploy_method: \`${DEPLOY_METHOD}\`";
+                    echo "- force_transport_deploy: \`${FORCE_TRANSPORT_DEPLOY}\`";
                     echo "- require_staging_canary: \`${REQUIRE_STAGING_CANARY}\`";
                     echo "- allow_prod_without_staging: \`${ALLOW_PROD_WITHOUT_STAGING}\`";
                     echo "- staging_secrets_missing: \`${{ steps.staging_secrets.outputs.missing || 'unknown' }}\`";
                     echo "- staging_canary_enabled: \`${{ steps.staging_secrets.outputs.enabled || 'unknown' }}\`";
+                    echo "- staging_canary_effective: \`${STAGING_CANARY_EFFECTIVE}\`";
                     echo "- dry_run: \`${FTP_DRY_RUN}\`";
                     echo "- Result: \`${{ job.status }}\`";
                   } >> "$GITHUB_STEP_SUMMARY"
@@ -836,6 +855,8 @@ jobs:
                         workflow_id: workflowId,
                         ref,
                         inputs: {
+                          canonical_deploy_method: String(process.env.DEPLOY_METHOD || 'git-sync'),
+                          force_transport_required: 'true',
                           turnero_clinic_id: String(process.env.TURNERO_PILOT_CLINIC_ID || ''),
                           turnero_profile_fingerprint: String(
                             process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || ''
@@ -1060,6 +1081,8 @@ jobs:
                       const owner = context.repo.owner;
                       const repo = context.repo.repo;
                       const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';
+                      const advisoryTitle =
+                        '[AVISO OPS] Deploy Hosting transporte GitHub-hosted no canónico (git-sync)';
                       const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
                       const now = new Date().toISOString();
                       const signal = `reason:${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}|target:${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}|clinic:${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}|fp:${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}|release:${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`;
@@ -1109,6 +1132,9 @@ jobs:
                       });
 
                       const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+                      const advisory = openIssues.find(
+                        (issue) => !issue.pull_request && issue.title === advisoryTitle
+                      );
                       if (existing) {
                         const existingBody = String(existing.body || '');
                         const labels = mergedLabels(existing.labels);
@@ -1124,35 +1150,35 @@ jobs:
                             core.info(`Issue deploy-hosting transporte actualizo labels: #${existing.number}`);
                           }
                           core.info(`Issue deploy-hosting transporte ya refleja la misma senal: #${existing.number}`);
-                          return;
+                        } else {
+                          await github.rest.issues.update({
+                            owner,
+                            repo,
+                            issue_number: existing.number,
+                            body: incidentBody,
+                            labels
+                          });
+                          await github.rest.issues.createComment({
+                            owner,
+                            repo,
+                            issue_number: existing.number,
+                            body: [
+                              'Incidente deploy-hosting transporte actualizado por cambio de senal.',
+                              '',
+                              `- Fecha: ${now}`,
+                              `- Run: ${runUrl}`,
+                              `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`,
+                              `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`,
+                              `- turnero_pilot_clinic_id: ${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}`,
+                              `- turnero_pilot_profile_fingerprint: ${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}`,
+                              `- turnero_pilot_release_mode: ${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`,
+                              `- turnero_pilot_recovery_targets: ${process.env.TURNERO_PILOT_RECOVERY_TARGETS || 'none'}`,
+                              `- connectivity_diagnose_run_status: ${process.env.CONNECTIVITY_DIAGNOSE_RUN_STATUS || 'not_requested'}`,
+                              `- connectivity_diagnose_run_url: ${process.env.CONNECTIVITY_DIAGNOSE_RUN_URL || ''}`
+                            ].join('\n')
+                          });
+                          core.info(`Issue deploy-hosting transporte actualizado: #${existing.number}`);
                         }
-                        await github.rest.issues.update({
-                          owner,
-                          repo,
-                          issue_number: existing.number,
-                          body: incidentBody,
-                          labels
-                        });
-                        await github.rest.issues.createComment({
-                          owner,
-                          repo,
-                          issue_number: existing.number,
-                          body: [
-                            'Incidente deploy-hosting transporte actualizado por cambio de senal.',
-                            '',
-                            `- Fecha: ${now}`,
-                            `- Run: ${runUrl}`,
-                            `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`,
-                            `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`,
-                            `- turnero_pilot_clinic_id: ${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}`,
-                            `- turnero_pilot_profile_fingerprint: ${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}`,
-                            `- turnero_pilot_release_mode: ${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`,
-                            `- turnero_pilot_recovery_targets: ${process.env.TURNERO_PILOT_RECOVERY_TARGETS || 'none'}`,
-                            `- connectivity_diagnose_run_status: ${process.env.CONNECTIVITY_DIAGNOSE_RUN_STATUS || 'not_requested'}`,
-                            `- connectivity_diagnose_run_url: ${process.env.CONNECTIVITY_DIAGNOSE_RUN_URL || ''}`
-                          ].join('\n')
-                        });
-                        core.info(`Issue deploy-hosting transporte actualizado: #${existing.number}`);
                       } else {
                         const created = await github.rest.issues.create({
                           owner,
@@ -1162,6 +1188,29 @@ jobs:
                           labels: baseLabels
                         });
                         core.info(`Issue deploy-hosting transporte creado: #${created.data.number}`);
+                      }
+
+                      if (advisory) {
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: advisory.number,
+                          body: [
+                            'Elevado automaticamente a production-alert porque el deploy efectivo volvio a requerir transporte directo.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'unknown'}`,
+                            `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`
+                          ].join('\n')
+                        });
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: advisory.number,
+                          state: 'closed'
+                        });
+                        core.info(`Issue deploy-hosting transporte advisory cerrado: #${advisory.number}`);
                       }
               env:
                   TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}
@@ -1173,6 +1222,139 @@ jobs:
                   CONNECTIVITY_DIAGNOSE_RUN_STATUS: ${{ steps.connectivity_diagnose_status.outputs.connectivity_diagnose_run_status }}
                   CONNECTIVITY_DIAGNOSE_RUN_URL: ${{ steps.connectivity_diagnose_status.outputs.connectivity_diagnose_run_url }}
 
+            - name: Desescalar incidente de transporte deploy-hosting a advisory (git-sync canónico)
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' && env.FORCE_TRANSPORT_DEPLOY != 'true' && env.DEPLOY_METHOD == 'git-sync' }}
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const blockingTitle = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';
+                      const advisoryTitle =
+                        '[AVISO OPS] Deploy Hosting transporte GitHub-hosted no canónico (git-sync)';
+                      const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+                      const now = new Date().toISOString();
+                      const signal = `mode:git_sync_canonical|reason:transport_not_required|clinic:${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}|fp:${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}|release:${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`;
+                      const signalMarker = `<!-- deploy-hosting-transport-advisory-signal:${signal} -->`;
+                      const baseLabels = ['deploy-hosting', 'transport-preflight', 'severity:warning'];
+
+                      const normalizeLabels = (labels) =>
+                        (labels || [])
+                          .map((item) => (typeof item === 'string' ? item : item?.name))
+                          .filter(Boolean);
+                      const mergedLabels = (labels) => {
+                        const existing = normalizeLabels(labels).filter(
+                          (label) => label !== 'production-alert' && label !== 'severity:critical'
+                        );
+                        return Array.from(new Set([...existing, ...baseLabels]));
+                      };
+                      const sameLabels = (a, b) => {
+                        const norm = (values) => Array.from(new Set(values)).sort();
+                        return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+                      };
+
+                      const incidentBody = [
+                        'El workflow `Deploy Hosting (Canary Pipeline)` confirma que el carril canónico de producción es `git-sync`; la ruta GitHub-hosted queda como señal operativa advisory.',
+                        '',
+                        `- Fecha: ${now}`,
+                        `- Run: ${runUrl}`,
+                        `- Workflow: ${context.workflow}`,
+                        `- Branch: ${context.ref}`,
+                        `- canonical_deploy_method: ${process.env.DEPLOY_METHOD || 'git-sync'}`,
+                        `- force_transport_deploy: ${process.env.FORCE_TRANSPORT_DEPLOY || 'false'}`,
+                        `- transport_preflight_reason: not_required_git_sync`,
+                        `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'not_evaluated'}`,
+                        `- turnero_pilot_clinic_id: ${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}`,
+                        `- turnero_pilot_profile_fingerprint: ${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}`,
+                        `- turnero_pilot_release_mode: ${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`,
+                        `- turnero_pilot_recovery_targets: ${process.env.TURNERO_PILOT_RECOVERY_TARGETS || 'none'}`,
+                        `- prod_url: ${process.env.PROD_URL || 'https://pielarmonia.com'}`,
+                        '',
+                        signalMarker
+                      ].join('\n');
+
+                      const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                        owner,
+                        repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+
+                      const blocking = openIssues.find(
+                        (issue) => !issue.pull_request && issue.title === blockingTitle
+                      );
+                      if (blocking) {
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: blocking.number,
+                          body: [
+                            'Desescalado automaticamente: `DEPLOY_METHOD=git-sync` sin `force_transport_deploy`, por lo que la ruta GitHub-hosted deja de ser blocker de producción.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`
+                          ].join('\n')
+                        });
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: blocking.number,
+                          state: 'closed'
+                        });
+                        core.info(`Issue deploy-hosting transporte bloqueante desescalado: #${blocking.number}`);
+                      }
+
+                      const advisory = openIssues.find(
+                        (issue) => !issue.pull_request && issue.title === advisoryTitle
+                      );
+                      if (advisory) {
+                        const existingBody = String(advisory.body || '');
+                        const labels = mergedLabels(advisory.labels);
+                        const labelsAlreadyApplied = sameLabels(normalizeLabels(advisory.labels), labels);
+                        if (!existingBody.includes(signalMarker) || !labelsAlreadyApplied) {
+                          await github.rest.issues.update({
+                            owner,
+                            repo,
+                            issue_number: advisory.number,
+                            body: incidentBody,
+                            labels
+                          });
+                          await github.rest.issues.createComment({
+                            owner,
+                            repo,
+                            issue_number: advisory.number,
+                            body: [
+                              'Aviso deploy-hosting transporte actualizado bajo carril canónico `git-sync`.',
+                              '',
+                              `- Fecha: ${now}`,
+                              `- Run: ${runUrl}`,
+                              `- canonical_deploy_method: ${process.env.DEPLOY_METHOD || 'git-sync'}`
+                            ].join('\n')
+                          });
+                          core.info(`Issue deploy-hosting transporte advisory actualizado: #${advisory.number}`);
+                        } else {
+                          core.info(`Issue deploy-hosting transporte advisory ya refleja la misma senal: #${advisory.number}`);
+                        }
+                      } else {
+                        const created = await github.rest.issues.create({
+                          owner,
+                          repo,
+                          title: advisoryTitle,
+                          body: incidentBody,
+                          labels: baseLabels
+                        });
+                        core.info(`Issue deploy-hosting transporte advisory creado: #${created.data.number}`);
+                      }
+              env:
+                  DEPLOY_METHOD: ${{ env.DEPLOY_METHOD }}
+                  FORCE_TRANSPORT_DEPLOY: ${{ env.FORCE_TRANSPORT_DEPLOY }}
+                  TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}
+                  TURNERO_PILOT_CLINIC_ID: ${{ env.TURNERO_PILOT_CLINIC_ID }}
+                  TURNERO_PILOT_PROFILE_FINGERPRINT: ${{ env.TURNERO_PILOT_PROFILE_FINGERPRINT }}
+                  TURNERO_PILOT_RELEASE_MODE: ${{ env.TURNERO_PILOT_RELEASE_MODE }}
+                  TURNERO_PILOT_RECOVERY_TARGETS: ${{ env.TURNERO_PILOT_RECOVERY_TARGETS }}
+                  PROD_URL: ${{ env.PROD_URL }}
+
             - name: Cerrar incidente de transporte deploy-hosting al recuperar
               if: ${{ always() && env.FTP_DRY_RUN != 'true' && (env.FORCE_TRANSPORT_DEPLOY == 'true' || env.DEPLOY_METHOD != 'git-sync') && env.TRANSPORT_PREFLIGHT_REASON == 'ok' }}
               uses: actions/github-script@v7
@@ -1180,7 +1362,10 @@ jobs:
                   script: |
                       const owner = context.repo.owner;
                       const repo = context.repo.repo;
-                      const title = '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner';
+                      const titles = [
+                        '[ALERTA PROD] Deploy Hosting transporte bloqueado desde GitHub Runner',
+                        '[AVISO OPS] Deploy Hosting transporte GitHub-hosted no canónico (git-sync)'
+                      ];
                       const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
                       const now = new Date().toISOString();
 
@@ -1191,37 +1376,46 @@ jobs:
                         per_page: 100
                       });
 
-                      const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
-                      if (!existing) {
-                        core.info('No hay incidente deploy-hosting transporte abierto para cerrar.');
-                        return;
+                      let closedAny = false;
+                      for (const title of titles) {
+                        const existing = openIssues.find(
+                          (issue) => !issue.pull_request && issue.title === title
+                        );
+                        if (!existing) {
+                          continue;
+                        }
+
+                        await github.rest.issues.createComment({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          body: [
+                            'Recuperado automaticamente por preflight de transporte en deploy-hosting.',
+                            '',
+                            `- Fecha: ${now}`,
+                            `- Run: ${runUrl}`,
+                            `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'ok'}`,
+                            `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`,
+                            `- turnero_pilot_clinic_id: ${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}`,
+                            `- turnero_pilot_profile_fingerprint: ${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}`,
+                            `- turnero_pilot_release_mode: ${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`,
+                            `- turnero_pilot_recovery_targets: ${process.env.TURNERO_PILOT_RECOVERY_TARGETS || 'none'}`
+                          ].join('\n')
+                        });
+
+                        await github.rest.issues.update({
+                          owner,
+                          repo,
+                          issue_number: existing.number,
+                          state: 'closed'
+                        });
+                        closedAny = true;
+                        core.info(`Issue deploy-hosting transporte cerrado: #${existing.number}`);
                       }
 
-                      await github.rest.issues.createComment({
-                        owner,
-                        repo,
-                        issue_number: existing.number,
-                        body: [
-                          'Recuperado automaticamente por preflight de transporte en deploy-hosting.',
-                          '',
-                          `- Fecha: ${now}`,
-                          `- Run: ${runUrl}`,
-                          `- transport_preflight_reason: ${process.env.TRANSPORT_PREFLIGHT_REASON || 'ok'}`,
-                          `- transport_preflight_target: ${process.env.TRANSPORT_PREFLIGHT_TARGET || 'unknown'}`,
-                          `- turnero_pilot_clinic_id: ${process.env.TURNERO_PILOT_CLINIC_ID || 'unknown'}`,
-                          `- turnero_pilot_profile_fingerprint: ${process.env.TURNERO_PILOT_PROFILE_FINGERPRINT || 'unknown'}`,
-                          `- turnero_pilot_release_mode: ${process.env.TURNERO_PILOT_RELEASE_MODE || 'unknown'}`,
-                          `- turnero_pilot_recovery_targets: ${process.env.TURNERO_PILOT_RECOVERY_TARGETS || 'none'}`
-                        ].join('\n')
-                      });
-
-                      await github.rest.issues.update({
-                        owner,
-                        repo,
-                        issue_number: existing.number,
-                        state: 'closed'
-                      });
-                      core.info(`Issue deploy-hosting transporte cerrado: #${existing.number}`);
+                      if (!closedAny) {
+                        core.info('No hay incidente deploy-hosting transporte abierto para cerrar.');
+                      }
               env:
                   TRANSPORT_PREFLIGHT_REASON: ${{ env.TRANSPORT_PREFLIGHT_REASON }}
                   TRANSPORT_PREFLIGHT_TARGET: ${{ env.TRANSPORT_PREFLIGHT_TARGET }}
@@ -1320,6 +1514,136 @@ jobs:
                   curl -fsS "${PROD_URL}/figo-chat.php" > /tmp/figo.json
                   curl -IfsS "${PROD_URL}/" > /tmp/home_headers.txt
                   echo "Production Verified."
+
+            - name: Evaluar estado publicSync deploy-hosting
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' }}
+              id: public_sync_deploy
+              shell: bash
+              env:
+                  HEALTH_FILE: /tmp/health.json
+              run: |
+                  set -euo pipefail
+                  if [ ! -s "${HEALTH_FILE}" ]; then
+                    if ! curl -fsS "${PROD_URL}/api.php?resource=health" > "${HEALTH_FILE}"; then
+                      echo "No se pudo refrescar health; se reporta publicSync unknown."
+                    fi
+                  fi
+                  node <<'NODE'
+                  const fs = require('node:fs');
+
+                  const expectedJobId = '8d31e299-7e57-4959-80b5-aaa2d73e9674';
+                  const healthPath = process.env.HEALTH_FILE || '/tmp/health.json';
+                  const outputPath = process.env.GITHUB_OUTPUT;
+                  const envPath = process.env.GITHUB_ENV;
+
+                  function append(path, key, value) {
+                    if (!path) return;
+                    fs.appendFileSync(path, `${key}=${String(value)}\n`);
+                  }
+
+                  function publish(snapshot) {
+                    append(outputPath, 'public_sync_status', snapshot.status);
+                    append(outputPath, 'public_sync_reason', snapshot.reason);
+                    append(outputPath, 'public_sync_job_id', snapshot.jobId);
+                    append(outputPath, 'public_sync_deployed_commit', snapshot.deployedCommit);
+                    append(outputPath, 'public_sync_postdeploy_allowed', snapshot.postdeployAllowed);
+
+                    append(envPath, 'PUBLIC_SYNC_DEPLOY_STATUS', snapshot.status);
+                    append(envPath, 'PUBLIC_SYNC_DEPLOY_REASON', snapshot.reason);
+                    append(envPath, 'PUBLIC_SYNC_DEPLOY_JOB_ID', snapshot.jobId);
+                    append(envPath, 'PUBLIC_SYNC_DEPLOYED_COMMIT', snapshot.deployedCommit);
+                    append(envPath, 'PUBLIC_SYNC_POSTDEPLOY_ALLOWED', snapshot.postdeployAllowed);
+                  }
+
+                  const fallback = {
+                    status: 'unknown',
+                    reason: 'health_unavailable',
+                    jobId: '',
+                    deployedCommit: '',
+                    postdeployAllowed: 'false',
+                  };
+
+                  try {
+                    if (!fs.existsSync(healthPath)) {
+                      publish(fallback);
+                      process.exit(0);
+                    }
+
+                    const raw = fs.readFileSync(healthPath, 'utf8');
+                    const parsed = JSON.parse(raw);
+                    const publicSync = parsed?.checks?.publicSync;
+                    if (!publicSync || typeof publicSync !== 'object') {
+                      publish({
+                        ...fallback,
+                        status: 'host_stale_health_contract',
+                        reason: 'health_missing_public_sync',
+                      });
+                      process.exit(0);
+                    }
+
+                    const configured = publicSync?.configured === true;
+                    const healthy = publicSync?.healthy === true;
+                    const operationallyHealthy =
+                      publicSync?.operationallyHealthy === undefined
+                        ? healthy
+                        : publicSync?.operationallyHealthy === true;
+                    const headDrift =
+                      publicSync?.headDrift === undefined
+                        ? false
+                        : publicSync?.headDrift === true;
+                    const telemetryGap =
+                      publicSync?.telemetryGap === undefined
+                        ? false
+                        : publicSync?.telemetryGap === true;
+                    const jobId = String(publicSync?.jobId || '');
+                    const deployedCommit = String(publicSync?.deployedCommit || '');
+
+                    if (
+                      configured &&
+                      healthy &&
+                      operationallyHealthy &&
+                      jobId === expectedJobId
+                    ) {
+                      publish({
+                        status: 'recovered',
+                        reason: 'ok',
+                        jobId,
+                        deployedCommit,
+                        postdeployAllowed: 'true',
+                      });
+                      process.exit(0);
+                    }
+
+                    const reasonParts = [];
+                    if (!configured) reasonParts.push('configured_false');
+                    if (jobId !== expectedJobId) {
+                      reasonParts.push(`job_id:${jobId || 'missing'}`);
+                    }
+                    if (!healthy) reasonParts.push('healthy_false');
+                    if (!operationallyHealthy) {
+                      reasonParts.push('operationally_unhealthy');
+                    }
+                    if (headDrift) reasonParts.push('head_drift');
+                    if (telemetryGap) reasonParts.push('telemetry_gap');
+                    const failureReason = String(publicSync?.failureReason || '');
+                    if (failureReason) {
+                      reasonParts.push(`failure_reason:${failureReason}`);
+                    }
+
+                    publish({
+                      status: 'public_sync_runtime_failed',
+                      reason: reasonParts.join(';') || 'public_sync_runtime_failed',
+                      jobId,
+                      deployedCommit,
+                      postdeployAllowed: 'false',
+                    });
+                  } catch (error) {
+                    publish({
+                      ...fallback,
+                      reason: `health_parse_error:${error && error.name ? error.name : 'unknown'}`,
+                    });
+                  }
+                  NODE
 
             - name: Evaluar estado telemedicina deploy-hosting
               if: ${{ always() && env.FTP_DRY_RUN != 'true' }}
@@ -1724,7 +2048,7 @@ jobs:
                   retention-days: 14
 
             - name: Disparar Post-Deploy Fast Lane
-              if: ${{ env.FTP_DRY_RUN != 'true' && steps.resolve_postdeploy.outputs.run_fast == 'true' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false' }}
+              if: ${{ env.FTP_DRY_RUN != 'true' && steps.resolve_postdeploy.outputs.run_fast == 'true' && steps.public_sync_deploy.outputs.public_sync_postdeploy_allowed != 'false' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false' }}
               uses: actions/github-script@v7
               with:
                   script: |
@@ -1778,7 +2102,7 @@ jobs:
                   PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.public_v4_allow_missing_control }}
 
             - name: Disparar Post-Deploy Gate (Full Regression)
-              if: ${{ env.FTP_DRY_RUN != 'true' && steps.resolve_postdeploy.outputs.run_gate == 'true' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false' }}
+              if: ${{ env.FTP_DRY_RUN != 'true' && steps.resolve_postdeploy.outputs.run_gate == 'true' && steps.public_sync_deploy.outputs.public_sync_postdeploy_allowed != 'false' && env.TURNERO_PILOT_POSTDEPLOY_ALLOWED != 'false' }}
               uses: actions/github-script@v7
               with:
                   script: |
@@ -1875,6 +2199,11 @@ jobs:
                     echo "- public_v4_rollout_max_confirmed_drop_pp (effective): \`${{ steps.resolve_postdeploy.outputs.public_v4_max_confirmed_drop_pp }}\`"
                     echo "- public_v4_rollout_min_confirmed_rate_pct (effective): \`${{ steps.resolve_postdeploy.outputs.public_v4_min_confirmed_rate_pct }}\`"
                     echo "- public_v4_rollout_allow_missing_control (effective): \`${{ steps.resolve_postdeploy.outputs.public_v4_allow_missing_control }}\`"
+                    echo "- public_sync_deploy_status: \`${PUBLIC_SYNC_DEPLOY_STATUS}\`"
+                    echo "- public_sync_deploy_reason: \`${PUBLIC_SYNC_DEPLOY_REASON}\`"
+                    echo "- public_sync_deploy_job_id: \`${PUBLIC_SYNC_DEPLOY_JOB_ID}\`"
+                    echo "- public_sync_deploy_deployed_commit: \`${PUBLIC_SYNC_DEPLOYED_COMMIT}\`"
+                    echo "- public_sync_postdeploy_allowed: \`${{ steps.public_sync_deploy.outputs.public_sync_postdeploy_allowed }}\`"
                     echo "- turnero_pilot_deploy_status: \`${TURNERO_PILOT_DEPLOY_STATUS}\`"
                     echo "- turnero_pilot_deploy_reason: \`${TURNERO_PILOT_DEPLOY_REASON}\`"
                     echo "- turnero_pilot_clinic_id: \`${TURNERO_PILOT_CLINIC_ID}\`"
@@ -1896,6 +2225,18 @@ jobs:
                     echo "- postdeploy_rollout_dispatch_manifest: \`.public-cutover/postdeploy-rollout-dispatch.json\`"
                     echo "- reporte admin rollout deploy-hosting: \`verification/last-admin-ui-rollout-gate-deploy-hosting.json\`"
                   } >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Fail deploy-hosting when publicSync blocks release
+              if: ${{ always() && env.FTP_DRY_RUN != 'true' && (steps.public_sync_deploy.outputs.public_sync_status == 'host_stale_health_contract' || steps.public_sync_deploy.outputs.public_sync_status == 'public_sync_runtime_failed') }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  if [ "${PUBLIC_SYNC_DEPLOY_STATUS}" = "host_stale_health_contract" ]; then
+                    echo "::error::publicSync post-deploy bloquea el release porque el host sigue sirviendo un health stale (${PUBLIC_SYNC_DEPLOY_REASON}). Reintente deploy-hosting o el fallback de transporte antes de cerrar el rollout."
+                  else
+                    echo "::error::publicSync post-deploy bloquea el release (${PUBLIC_SYNC_DEPLOY_STATUS}: ${PUBLIC_SYNC_DEPLOY_REASON}). Corrija el runtime del host antes de cerrar el deploy."
+                  fi
+                  exit 1
 
             - name: Stamp public cutover start
               if: ${{ env.FTP_DRY_RUN != 'true' }}

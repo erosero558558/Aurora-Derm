@@ -40,10 +40,10 @@ const FALLBACK_PROFILE = Object.freeze({
         },
     },
     release: {
-        mode: 'suite_v2',
+        mode: 'web_pilot',
         admin_mode_default: 'basic',
         separate_deploy: true,
-        native_apps_blocking: true,
+        native_apps_blocking: false,
         notes: [],
     },
 });
@@ -195,7 +195,7 @@ export function normalizeTurneroClinicProfile(rawProfile) {
             native_apps_blocking:
                 typeof release.native_apps_blocking === 'boolean'
                     ? release.native_apps_blocking
-                    : true,
+                    : false,
             notes: Array.isArray(release.notes)
                 ? release.notes.map((note) => toString(note)).filter(Boolean)
                 : [],

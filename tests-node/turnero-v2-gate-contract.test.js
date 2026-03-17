@@ -17,6 +17,8 @@ test('package.json expone scripts canonicos para Turnero V2', () => {
     const scripts = loadPackageScripts();
 
     for (const scriptName of [
+        'build:turnero:runtime',
+        'check:turnero:runtime',
         'test:turnero:v2:contracts',
         'test:turnero:v2:php-contract',
         'test:turnero:v2:ui',
@@ -37,10 +39,7 @@ test('package.json expone scripts canonicos para Turnero V2', () => {
 test('gate:turnero promueve Turnero V2 como carril canonico actual', () => {
     const scripts = loadPackageScripts();
 
-    assert.match(
-        String(scripts['gate:turnero'] || ''),
-        /gate:turnero:v2/
-    );
+    assert.match(String(scripts['gate:turnero'] || ''), /gate:turnero:v2/);
     assert.match(
         String(scripts['test:turnero:v2:contracts'] || ''),
         /test:turnero:contracts/
@@ -53,11 +52,23 @@ test('gate:turnero promueve Turnero V2 como carril canonico actual', () => {
         String(scripts['test:turnero:v2:ui'] || ''),
         /test:turnero:ui/
     );
+    assert.match(
+        String(scripts['test:turnero:ui'] || ''),
+        /check:turnero:runtime/
+    );
+    assert.match(
+        String(scripts['test:turnero:ui'] || ''),
+        /build:turnero:runtime/
+    );
 });
 
 test('los contratos y verificaciones V2 cubren PIN operativo y lane nativo', () => {
     const scripts = loadPackageScripts();
 
+    assert.match(
+        String(scripts['test:turnero:contracts'] || ''),
+        /turnero-runtime-artifacts-contract\.test\.js/
+    );
     assert.match(
         String(scripts['test:turnero:contracts'] || ''),
         /turnero-v2-gate-contract\.test\.js/

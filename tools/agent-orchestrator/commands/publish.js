@@ -556,7 +556,7 @@ async function handlePublishCommand(ctx) {
         }
     }
 
-    const addResult = runCommand('git', ['add', '--', ...dirtyFiles], {
+    const addResult = runCommand('git', ['add', '-f', '--', ...dirtyFiles], {
         cwd: rootPath,
         capture: true,
     });

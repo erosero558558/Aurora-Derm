@@ -554,11 +554,9 @@ function renderQueueReview(review) {
         );
     }
 
-    if (review.ticketId > 0 || review.ticketCode) {
-        actionButtons.push(
-            `<button type="button" data-action="appointment-review-open-queue" data-review-ticket-id="${escapeHtml(review.ticketId)}" data-review-ticket-code="${escapeHtml(review.ticketCode)}">${escapeHtml(review.queueActionLabel)}</button>`
-        );
-    }
+    actionButtons.push(
+        `<button type="button" data-action="appointment-review-open-queue" data-review-ticket-id="${escapeHtml(review.ticketId)}" data-review-ticket-code="${escapeHtml(review.ticketCode)}">${escapeHtml(review.queueActionLabel || 'Volver a cola')}</button>`
+    );
 
     actionButtons.push(
         '<button type="button" data-action="appointment-review-clear-context">Cerrar contexto</button>'

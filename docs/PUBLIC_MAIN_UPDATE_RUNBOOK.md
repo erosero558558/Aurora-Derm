@@ -286,6 +286,31 @@ Triage the GitHub-side deploy corroboration in the same pass:
 - `VERIFICAR-DESPLIEGUE.ps1` now also persists `turneroPilot.recoveryTargets`, so the verify snapshot says which hosting/self-hosted pilot incidents can be closed by the same healthy `verify-remote`.
 - `MONITOR-PRODUCCION.ps1` mirrors that context live in the console by printing `turneroPilot recoveryTargets` and appending them to the `github.deployAlerts turnero pilot blocked` failure line.
 
+When `jobs verify public_main_sync --json` reports `health_missing_public_sync`,
+keep the first host-side pass narrow:
+
+1. `curl -s https://pielarmonia.com/api.php?resource=health`
+2. `curl -s https://pielarmonia.com/api.php?resource=health-diagnostics`
+3. `cat /var/lib/pielarmonia/public-sync-status.json`
+4. compare `/root/sync-pielarmonia.sh` against `bin/deploy-public-v3-cron-sync.sh`
+5. run `repair-git-sync` or `deploy-hosting` according to that classification
+
+For the host-side command checklist, use:
+
+```powershell
+pwsh -File scripts/ops/prod/CHECKLIST-HOST-PUBLIC-SYNC.ps1
+```
+
+The npm wrapper remains:
+
+```bash
+npm run checklist:prod:public-sync:host
+```
+
+Do not classify the incident as repo drift until public `health` exposes
+`checks.publicSync.jobId=8d31e299-7e57-4959-80b5-aaa2d73e9674` and
+`storeEncryptionCompliant=true` stays healthy in `health-diagnostics`.
+
 ## Success criteria
 
 - `checks.publicSync.configured=true`

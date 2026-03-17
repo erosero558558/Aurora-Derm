@@ -55,37 +55,6 @@ function currentClinicalCaseId(state = getState()) {
     );
 }
 
-export function resolveMediaFlowSelection({
-    clinicalCaseId = '',
-    selectedCaseId = '',
-    queue = [],
-} = {}) {
-    const availableCaseIds = normalizeList(queue)
-        .map((item) => normalizeString(item?.caseId))
-        .filter(Boolean);
-    const linkedCaseId = normalizeString(clinicalCaseId);
-    const persistedCaseId = normalizeString(selectedCaseId);
-
-    if (linkedCaseId) {
-        return {
-            preferredCaseId: linkedCaseId,
-            linkedCaseMissing: !availableCaseIds.includes(linkedCaseId),
-        };
-    }
-
-    if (persistedCaseId && availableCaseIds.includes(persistedCaseId)) {
-        return {
-            preferredCaseId: persistedCaseId,
-            linkedCaseMissing: false,
-        };
-    }
-
-    return {
-        preferredCaseId: normalizeString(availableCaseIds[0]),
-        linkedCaseMissing: false,
-    };
-}
-
 function formatPolicyStatus(status) {
     switch (normalizeString(status)) {
         case 'eligible':
@@ -181,24 +150,7 @@ function buildQueueList(meta, selectedCaseId, loading) {
         .join('');
 }
 
-function buildConsentStrip(caseData, slice) {
-    if (!caseData && slice?.linkedCaseMissing) {
-        return `
-            <article class="clinical-history-empty-card" data-tone="warning">
-                <strong>Sin media para este caso</strong>
-                <small>
-                    ${escapeHtml(
-                        normalizeString(slice.selectedCaseId)
-                            ? `El caso ${normalizeString(
-                                  slice.selectedCaseId
-                              )} no tiene media clinica privada elegible todavia.`
-                            : 'El caso clinico activo todavia no tiene media privada elegible.'
-                    )}
-                </small>
-            </article>
-        `;
-    }
-
+function buildConsentStrip(caseData) {
     if (!caseData) {
         return `
             <article class="clinical-history-empty-card">
@@ -244,11 +196,7 @@ function buildConsentStrip(caseData, slice) {
     `;
 }
 
-function buildAssetGrid(caseData, slice) {
-    if (!caseData && slice?.linkedCaseMissing) {
-        return '';
-    }
-
+function buildAssetGrid(caseData) {
     if (!caseData) {
         return '';
     }
@@ -817,17 +765,6 @@ function buildAgentSuggestionCards(caseData, state = getState()) {
 }
 
 function buildInlineAgentSurface(caseData, slice, state = getState()) {
-    if (!caseData && slice?.linkedCaseMissing) {
-        return `
-            <article class="clinical-history-empty-card" data-tone="warning">
-                <strong>OpenClaw editorial en espera</strong>
-                <small>
-                    Cuando este caso tenga media privada elegible, el hilo editorial compartido se activara aqui sin perder el contexto clinico.
-                </small>
-            </article>
-        `;
-    }
-
     if (!caseData) {
         return `
             <article class="clinical-history-empty-card">
@@ -1034,7 +971,6 @@ async function loadCase(caseId, options = {}) {
             selectedCaseId: targetCaseId,
             current: payload,
             lastLoadedAt: Date.now(),
-            linkedCaseMissing: false,
             error: '',
         });
         renderClinicalMediaFlow();
@@ -1042,7 +978,6 @@ async function loadCase(caseId, options = {}) {
     } catch (error) {
         setSlice({
             loading: false,
-            current: null,
             error: error?.message || 'No se pudo cargar el caso de Media Flow.',
         });
         renderClinicalMediaFlow();
@@ -1253,30 +1188,10 @@ function ensureSelection() {
     }
 
     const queue = normalizeList(readMeta(state).queue);
-    const selection = resolveMediaFlowSelection({
-        clinicalCaseId: currentClinicalCaseId(state),
-        selectedCaseId: normalizeString(slice.selectedCaseId),
-        queue,
-    });
-    const preferredCaseId = normalizeString(selection.preferredCaseId);
-
-    if (selection.linkedCaseMissing) {
-        if (
-            normalizeString(slice.selectedCaseId) !== preferredCaseId ||
-            slice.linkedCaseMissing !== true ||
-            slice.current
-        ) {
-            setSlice({
-                selectedCaseId: preferredCaseId,
-                current: null,
-                linkedCaseMissing: true,
-                error: '',
-            });
-            renderClinicalMediaFlow();
-        }
-        scheduledSelection = '';
-        return;
-    }
+    const preferredCaseId =
+        currentClinicalCaseId(state) ||
+        normalizeString(slice.selectedCaseId) ||
+        normalizeString(queue[0]?.caseId);
 
     if (!preferredCaseId) {
         scheduledSelection = '';
@@ -1381,13 +1296,7 @@ function bindEvents() {
         event.preventDefault();
         const action = normalizeString(agentAction.dataset.mediaAgentAction);
         if (action === 'open-panel') {
-            const current = getSlice().current;
-            await openAgentPanelExperience({
-                focus: true,
-                contextOverride: current
-                    ? buildMediaFlowAgentContext(current, getState())
-                    : {},
-            });
+            await openAgentPanelExperience({ focus: true });
             return;
         }
         if (action === 'submit') {
@@ -1424,25 +1333,21 @@ export function renderClinicalMediaFlow() {
         );
     setText(
         '#clinicalMediaFlowStatusMeta',
-        slice.linkedCaseMissing
-            ? `Sin media elegible para ${normalizeString(slice.selectedCaseId)}`
-            : current
-              ? `${normalizeString(current?.publication?.status) || 'draft'} · ${
-                    normalizeString(current?.proposal?.recommendation) ||
-                    'needs_review'
-                }`
-              : slice.error || 'Esperando seleccion'
+        current
+            ? `${normalizeString(current?.publication?.status) || 'draft'} · ${
+                  normalizeString(current?.proposal?.recommendation) ||
+                  'needs_review'
+              }`
+            : slice.error || 'Esperando seleccion'
     );
     setText(
         '#clinicalMediaFlowCaseMeta',
-        slice.linkedCaseMissing
-            ? `El caso ${normalizeString(slice.selectedCaseId)} no tiene media privada elegible en esta fase.`
-            : current
-              ? `${normalizeString(current?.summary?.headline) || current.caseId} · ${
-                    normalizeString(current?.service?.label) ||
-                    'Caso dermatologico'
-                }`
-              : 'OpenClaw prepara comparativas, copy y paquete publico antes de publicar.'
+        current
+            ? `${normalizeString(current?.summary?.headline) || current.caseId} · ${
+                  normalizeString(current?.service?.label) ||
+                  'Caso dermatologico'
+              }`
+            : 'OpenClaw prepara comparativas, copy y paquete publico antes de publicar.'
     );
 
     const refreshBtn = document.getElementById('clinicalMediaFlowRefreshBtn');
@@ -1463,11 +1368,8 @@ export function renderClinicalMediaFlow() {
             slice.loading
         )
     );
-    setHtml(
-        '#clinicalMediaFlowConsentStrip',
-        buildConsentStrip(current, slice)
-    );
-    setHtml('#clinicalMediaFlowAssetGrid', buildAssetGrid(current, slice));
+    setHtml('#clinicalMediaFlowConsentStrip', buildConsentStrip(current));
+    setHtml('#clinicalMediaFlowAssetGrid', buildAssetGrid(current));
     setHtml(
         '#clinicalMediaFlowAgentSurface',
         buildInlineAgentSurface(current, slice, state)

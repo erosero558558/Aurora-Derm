@@ -192,6 +192,8 @@ test('deploy-frontend-selfhosted publica las superficies canonicas del turnero y
         'sw.js',
         'manifest.json',
         'favicon.ico',
+        'admin.html',
+        'admin.js',
     ]) {
         assert.equal(
             bundlePaths.some(
@@ -214,9 +216,9 @@ test('deploy-frontend-selfhosted publica las superficies canonicas del turnero y
         "'--output-dir'",
         "'_deploy_bundle'",
         "'--skip-build'",
-        'const stageRoot = path.resolve(process.env.DEPLOY_STAGE_ROOT || \'\');',
+        "const stageRoot = path.resolve(process.env.DEPLOY_STAGE_ROOT || '');",
         'return walkFiles(rootPath);',
-        'path.relative(deployRoot, localFile).replace(/\\\\/g, \'/\')',
+        "path.relative(deployRoot, localFile).replace(/\\\\/g, '/')",
     ]) {
         assert.equal(
             raw.includes(snippet),
@@ -227,8 +229,8 @@ test('deploy-frontend-selfhosted publica las superficies canonicas del turnero y
     for (const legacySnippet of [
         'Build Astro routes',
         'npm run astro:sync',
-        "const candidates = [",
-        "const cwd = process.cwd();",
+        'const candidates = [',
+        'const cwd = process.cwd();',
     ]) {
         assert.equal(
             raw.includes(legacySnippet),

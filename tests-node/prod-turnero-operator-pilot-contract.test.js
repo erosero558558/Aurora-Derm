@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const REPO_ROOT = resolve(__dirname, '..');
 const SMOKE_PATH = resolve(
@@ -48,6 +49,41 @@ function load(filePath) {
     return readFileSync(filePath, 'utf8');
 }
 
+const POWERSHELL_CANDIDATES =
+    process.platform === 'win32'
+        ? ['powershell', 'powershell.exe', 'pwsh']
+        : ['pwsh', 'powershell'];
+
+function resolvePowerShellBinary() {
+    for (const candidate of POWERSHELL_CANDIDATES) {
+        const probe = spawnSync(
+            candidate,
+            ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()'],
+            {
+                cwd: REPO_ROOT,
+                encoding: 'utf8',
+            }
+        );
+        if (!probe.error && probe.status === 0) {
+            return candidate;
+        }
+    }
+
+    return null;
+}
+
+function runPowerShell(binary, script) {
+    const args =
+        process.platform === 'win32'
+            ? ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script]
+            : ['-NoProfile', '-Command', script];
+
+    return spawnSync(binary, args, {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+    });
+}
+
 test('prod smoke soporta gate de superficies turnero y piloto Windows', () => {
     const raw = load(SMOKE_PATH);
     const requiredSnippets = [
@@ -55,10 +91,12 @@ test('prod smoke soporta gate de superficies turnero y piloto Windows', () => {
         '[switch]$RequireTurneroOperatorPilot',
         "$commonHttpPath = Join-Path $repoRoot 'bin/powershell/Common.Http.ps1'",
         '. $commonHttpPath',
+        'function Convert-ResponseContentToText {',
         '$turneroOperatorSurfaceUrl = "$base/operador-turnos.html"',
         '$turneroOperatorPilotFeedUrl = "$base/desktop-updates/pilot/operator/win/latest.yml"',
         '$turneroOperatorPilotInstallerUrl = "$base/app-downloads/pilot/operator/win/TurneroOperadorSetup.exe"',
         'function Invoke-StrictGetCheck {',
+        '$bodyText = Convert-ResponseContentToText -Content $resp.Content',
         "Invoke-StrictGetCheck -Name 'Turnero operador web' -Url $turneroOperatorSurfaceUrl",
         "Invoke-StrictGetCheck -Name 'Turnero kiosco web' -Url $turneroKioskSurfaceUrl",
         "Invoke-StrictGetCheck -Name 'Turnero sala web' -Url $turneroDisplaySurfaceUrl",
@@ -77,6 +115,60 @@ test('prod smoke soporta gate de superficies turnero y piloto Windows', () => {
             `falta snippet turnero/operator pilot en SMOKE-PRODUCCION.ps1: ${snippet}`
         );
     }
+});
+
+test('prod smoke decodifica latest.yml UTF-8 cuando Invoke-WebRequest devuelve byte[]', (t) => {
+    const raw = load(SMOKE_PATH);
+    const helperStart = raw.indexOf('function Convert-ResponseContentToText {');
+    const helperEnd = raw.indexOf('function Get-RefFromIndex {', helperStart);
+
+    assert.notEqual(
+        helperStart,
+        -1,
+        'SMOKE-PRODUCCION.ps1 debe definir Convert-ResponseContentToText'
+    );
+    assert.notEqual(
+        helperEnd,
+        -1,
+        'SMOKE-PRODUCCION.ps1 debe mantener el helper antes de Get-RefFromIndex'
+    );
+
+    const powerShellBinary = resolvePowerShellBinary();
+    if (!powerShellBinary) {
+        t.skip(
+            'PowerShell no disponible para validar la decodificacion del feed'
+        );
+        return;
+    }
+
+    const helperSource = raw.slice(helperStart, helperEnd).trim();
+    const script = [
+        helperSource,
+        "$sample = @'",
+        'version: 0.1.0',
+        'files:',
+        '- url: TurneroOperadorSetup.exe',
+        '  sha512: fake',
+        '  size: 123',
+        'path: TurneroOperadorSetup.exe',
+        'sha512: fake',
+        "releaseDate: '2026-03-16T00:00:00.000Z'",
+        "'@",
+        '$bytes = [System.Text.Encoding]::UTF8.GetBytes($sample)',
+        '$legacy = [string]$bytes',
+        "if ([regex]::IsMatch($legacy, '(?m)^path:\\s*TurneroOperadorSetup\\.exe\\s*$')) { throw 'el cast legacy no debe pasar el regex del feed' }",
+        '$decoded = Convert-ResponseContentToText -Content $bytes',
+        "if (-not [regex]::IsMatch($decoded, '(?m)^path:\\s*TurneroOperadorSetup\\.exe\\s*$')) { throw 'el helper no decodifico el feed canonico' }",
+        'Write-Output $decoded',
+    ].join('\n');
+    const result = runPowerShell(powerShellBinary, script);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.equal(
+        result.stdout.includes('path: TurneroOperadorSetup.exe'),
+        true,
+        'el helper debe restaurar el path canonico desde byte[] UTF-8'
+    );
 });
 
 test('prod verify propaga fallas de superficies turnero y piloto Windows', () => {

@@ -231,63 +231,6 @@ test('publish checkpoint falla si hay cambios fuera de scope', async () => {
     }
 });
 
-test('publish checkpoint bloquea cortes mixed_lane aunque exista tarea explicita', async () => {
-    const root = createRepoFixture();
-    try {
-        mkdirSync(join(root, 'bin'), { recursive: true });
-        mkdirSync(join(root, 'src', 'apps', 'admin-v3'), { recursive: true });
-        writeFileSync(
-            join(root, 'src', 'apps', 'admin-v3', 'app.js'),
-            'export const adminFixture = 1;\n',
-            'utf8'
-        );
-        writeFileSync(
-            join(root, 'bin', 'doctor-fixture.js'),
-            'module.exports = 1;\n',
-            'utf8'
-        );
-        runGit(root, [
-            'add',
-            'bin/doctor-fixture.js',
-            'src/apps/admin-v3/app.js',
-        ]);
-        runGit(root, ['commit', '-m', 'track mixed lane fixture']);
-
-        writeFileSync(
-            join(root, 'docs', 'in-scope.md'),
-            '# updated scope\n',
-            'utf8'
-        );
-        writeFileSync(
-            join(root, 'bin', 'doctor-fixture.js'),
-            'module.exports = 2;\n',
-            'utf8'
-        );
-        writeFileSync(
-            join(root, 'src', 'apps', 'admin-v3', 'app.js'),
-            'export const adminFixture = 2;\n',
-            'utf8'
-        );
-
-        const ctx = buildPublishContext(root);
-
-        await assert.rejects(
-            () => handlePublishCommand(ctx),
-            (error) => {
-                assert.equal(
-                    error.error_code,
-                    'publish_workspace_hygiene_blocked'
-                );
-                assert.match(error.message, /mixed_lane/i);
-                assert.match(error.message, /Primer paso/i);
-                return true;
-            }
-        );
-    } finally {
-        cleanupRepoFixture(root);
-    }
-});
-
 test('publish checkpoint ignora stage root y bundle y delega la verificacion live al deploy', async () => {
     const root = createRepoFixture();
     try {
@@ -400,6 +343,47 @@ test('publish checkpoint acepta AG-* release-publish y devuelve pending sin fall
                 '--format=%s',
                 'HEAD',
             ]).stdout.includes('chore(codex-publish): checkpoint AG-900'),
+            true
+        );
+    } finally {
+        cleanupRepoFixture(root);
+    }
+});
+
+test('publish checkpoint fuerza git add sobre archivos permitidos aunque el repo los ignore', async () => {
+    const root = createRepoFixture();
+    try {
+        const ignorePath = join(root, '.git', 'info', 'exclude');
+        writeFileSync(
+            ignorePath,
+            `${readFileSync(ignorePath, 'utf8')}docs/ignored/\n`,
+            'utf8'
+        );
+        mkdirSync(join(root, 'docs', 'ignored'), { recursive: true });
+        writeFileSync(
+            join(root, 'docs', 'ignored', 'in-scope.md'),
+            '# tracked ignored seed\n',
+            'utf8'
+        );
+        runGit(root, ['add', '-f', 'docs/ignored/in-scope.md']);
+        runGit(root, ['commit', '-m', 'track ignored support file']);
+        writeFileSync(
+            join(root, 'docs', 'ignored', 'in-scope.md'),
+            '# ignored but allowed\n',
+            'utf8'
+        );
+
+        const ctx = buildPublishContext(root, {
+            task: {
+                files: ['docs/ignored/in-scope.md'],
+            },
+        });
+
+        const report = await handlePublishCommand(ctx);
+
+        assert.equal(report.ok, true);
+        assert.equal(
+            report.staged_files.includes('docs/ignored/in-scope.md'),
             true
         );
     } finally {

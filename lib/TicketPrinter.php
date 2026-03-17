@@ -104,7 +104,7 @@ class TicketPrinter
         $consultorio = $ticket['assignedConsultorio'] ?? null;
 
         $lines = [
-            'PIEL EN ARMONIA',
+            'AURORA DERM',
             'Turnero sala de espera',
             str_repeat('-', 32),
             'Turno: ' . ($ticketCode !== '' ? $ticketCode : 'A-000'),
@@ -169,4 +169,3 @@ class TicketPrinter
         return 'Walk-in';
     }
 }
-

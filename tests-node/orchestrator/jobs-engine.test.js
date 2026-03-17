@@ -506,3 +506,43 @@ test('jobs-engine registry_only fallback y summary mantienen contrato estable', 
         snapshot.job_id
     );
 });
+
+test('jobs-engine distingue health publico stale cuando falta checks.publicSync', async () => {
+    const fetchImpl = async () => ({
+        ok: true,
+        async json() {
+            return {
+                ok: true,
+                status: 'ok',
+                timestamp: '2026-03-14T11:05:00Z',
+            };
+        },
+    });
+
+    const snapshot = await jobs.resolveJobSnapshot(
+        {
+            key: 'public_main_sync',
+            job_id: '8d31e299-7e57-4959-80b5-aaa2d73e9674',
+            health_url: 'https://pielarmonia.com/api.php?resource=health',
+            repo_path: '/var/www/figo',
+            branch: 'main',
+            status_path: '/var/lib/pielarmonia/public-sync-status.json',
+            log_path: '/var/log/sync-pielarmonia.log',
+            lock_file: '/tmp/sync-pielarmonia.lock',
+            expected_max_lag_seconds: 120,
+        },
+        {
+            existsSync: () => false,
+            readFileSync: () => '',
+            fetchImpl,
+        }
+    );
+
+    assert.equal(snapshot.verification_source, 'health_url');
+    assert.equal(snapshot.verified, false);
+    assert.equal(snapshot.failure_reason, 'health_missing_public_sync');
+    assert.equal(snapshot.last_error_message, 'health_missing_public_sync');
+    assert.equal(snapshot.state, 'stale');
+    assert.equal(snapshot.repo_path, '/var/www/figo');
+    assert.equal(snapshot.branch, 'main');
+});
