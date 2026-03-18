@@ -13936,6 +13936,16 @@ test.describe('Admin turnero sala', () => {
             .locator('#queueOpsPilotHandoff')
             .evaluate((element) => element.nextElementSibling?.id || '');
         expect(nextHostId).toBe('queueOpsPilotRemoteReleaseHost');
+
+        await expect(
+            page.locator('#queueOpsPilotReleaseEvidenceHost')
+        ).toContainText('Evidencia de salida del piloto');
+        await expect(
+            page.locator('#queueOpsPilotReleaseEvidenceHost')
+        ).toContainText('Copiar resumen');
+        await expect(
+            page.locator('#queueOpsPilotReleaseEvidenceHost')
+        ).toContainText('Descargar JSON');
     });
 
     test('queue bloquea acciones operativas del admin si admin.html#queue queda fuera del canon del piloto', async ({

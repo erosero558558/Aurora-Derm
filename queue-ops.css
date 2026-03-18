@@ -10429,6 +10429,161 @@ body[data-ops-tone='light'] .queue-apps-hub__header p {
     margin-top: 0.35rem;
 }
 
+.queue-ops-pilot__release-evidence-host {
+    margin-top: 0.9rem;
+}
+
+.admin-queue-release-evidence {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1rem;
+    border-radius: 22px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: rgb(255 255 255 / 94%);
+    box-shadow: 0 20px 34px rgb(15 23 32 / 7%);
+}
+
+.admin-queue-release-evidence[data-state='ready'] {
+    border-color: color-mix(in srgb, #16a34a 22%, #ffffff 78%);
+    background:
+        linear-gradient(180deg, rgb(237 252 244 / 92%), rgb(255 255 255 / 96%));
+}
+
+.admin-queue-release-evidence[data-state='warning'] {
+    border-color: color-mix(in srgb, #d19728 22%, #ffffff 78%);
+    background:
+        linear-gradient(180deg, rgb(255 248 235 / 92%), rgb(255 255 255 / 96%));
+}
+
+.admin-queue-release-evidence[data-state='blocked'] {
+    border-color: color-mix(in srgb, #de4437 24%, #ffffff 76%);
+    background:
+        linear-gradient(180deg, rgb(255 240 238 / 92%), rgb(255 255 255 / 96%));
+}
+
+.admin-queue-release-evidence__header {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.admin-queue-release-evidence__eyebrow {
+    margin: 0;
+    color: #0f6bdc;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-queue-release-evidence__header h3,
+.admin-queue-release-evidence__subtitle,
+.admin-queue-release-evidence__body,
+.admin-queue-release-evidence__footnote {
+    margin: 0;
+}
+
+.admin-queue-release-evidence__header h3 {
+    color: #10233f;
+    font-size: 1.08rem;
+}
+
+.admin-queue-release-evidence__subtitle {
+    color: var(--text-muted, #526173);
+    font-size: 0.9rem;
+}
+
+.admin-queue-release-evidence__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.7rem;
+    margin: 0;
+}
+
+.admin-queue-release-evidence__summary div {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.82rem 0.9rem;
+    border-radius: 16px;
+    border: 1px solid rgb(15 23 32 / 8%);
+    background: rgb(255 255 255 / 84%);
+}
+
+.admin-queue-release-evidence__summary dt {
+    color: #0f6bdc;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.admin-queue-release-evidence__summary dd {
+    margin: 0;
+    color: #10233f;
+    font-size: 0.9rem;
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.admin-queue-release-evidence__body {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.admin-queue-release-evidence__ok {
+    margin: 0;
+    color: var(--text-muted, #526173);
+    line-height: 1.45;
+}
+
+.admin-queue-release-evidence__blockers {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding-left: 1rem;
+    color: var(--text-muted, #526173);
+}
+
+.admin-queue-release-evidence__blockers li {
+    line-height: 1.45;
+}
+
+.admin-queue-release-evidence__actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.55rem;
+}
+
+.admin-queue-release-evidence__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0.72rem 0.95rem;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: #fff;
+    color: #10233f;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease;
+}
+
+.admin-queue-release-evidence__button:hover,
+.admin-queue-release-evidence__button:focus-visible {
+    background: rgb(247 250 255 / 96%);
+    border-color: color-mix(in srgb, #0f6bdc 24%, #ffffff 76%);
+    transform: translateY(-1px);
+}
+
+.admin-queue-release-evidence__footnote {
+    color: var(--text-muted, #526173);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
 .queue-ops-pilot__action {
     display: inline-flex;
     align-items: center;
@@ -12754,6 +12909,14 @@ body[data-ops-tone='light'] .queue-apps-hub__header p {
     }
 
     .queue-ops-pilot__handoff-items {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-queue-release-evidence__summary {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-queue-release-evidence__actions {
         grid-template-columns: 1fr;
     }
 

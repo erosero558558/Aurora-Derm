@@ -2,8 +2,20 @@ import {
     bindQueueOpsPilotActions,
     renderQueueOpsPilotActionMarkup,
 } from './actions.js';
-import { mountTurneroRemoteReleaseReadinessCard } from '../../../../../../../../queue-shared/turnero-remote-release-readiness.js';
-import { mountTurneroPublicShellDriftCard } from '../../../../../../../../queue-shared/turnero-public-shell-drift.js';
+import {
+    createTurneroRemoteReleaseReadinessModel,
+    loadTurneroRemoteReleaseHealth,
+    renderTurneroRemoteReleaseReadinessCard,
+} from '../../../../../../../../queue-shared/turnero-remote-release-readiness.js';
+import {
+    createTurneroPublicShellDriftModel,
+    loadTurneroPublicShellHtml,
+    renderTurneroPublicShellDriftCard,
+} from '../../../../../../../../queue-shared/turnero-public-shell-drift.js';
+import {
+    mountTurneroReleaseEvidenceBundleCard,
+    renderTurneroReleaseEvidenceBundleCard,
+} from '../../../../../../../../queue-shared/turnero-release-evidence-bundle.js';
 
 function resolvePublicShellDriftOptions(manifest = {}) {
     const config =
@@ -70,6 +82,301 @@ function renderPilotRolloutStations(pilot, escapeHtml) {
     `;
 }
 
+function normalizeReleaseEvidenceState(value, fallback = 'warning') {
+    const normalized = String(value ?? '')
+        .trim()
+        .toLowerCase();
+
+    if (normalized === 'alert') {
+        return 'blocked';
+    }
+
+    if (
+        normalized === 'ready' ||
+        normalized === 'warning' ||
+        normalized === 'blocked'
+    ) {
+        return normalized;
+    }
+
+    return fallback;
+}
+
+function buildQueueOpsPilotReleaseEvidenceLocalModel(pilot) {
+    const blockers = Array.isArray(pilot.goLiveIssues)
+        ? pilot.goLiveIssues
+              .filter((issue) => issue.state === 'alert')
+              .map((issue, index) => ({
+                  key: String(issue.id || `local_blocker_${index + 1}`),
+                  title: String(issue.label || 'Bloqueo').trim(),
+                  detail: String(issue.detail || '').trim(),
+              }))
+        : [];
+    const state = normalizeReleaseEvidenceState(
+        pilot.readinessState,
+        'warning'
+    );
+
+    return {
+        readySurfaceCount: Number(pilot.confirmedCount || 0),
+        totalSurfaceCount: Number(pilot.totalSteps || 0),
+        openingPackageState: state,
+        openingPackageStatus: state,
+        state,
+        clinicName: String(pilot.clinicName || pilot.brandName || '').trim(),
+        brandName: String(pilot.clinicName || pilot.brandName || '').trim(),
+        clinicId: String(pilot.clinicId || '').trim(),
+        profileFingerprint: String(pilot.profileFingerprint || '').trim(),
+        releaseMode: String(pilot.releaseMode || '').trim(),
+        runtimeSource: String(pilot.runtimeSource || '').trim(),
+        blockers,
+    };
+}
+
+function buildQueueOpsPilotReleaseEvidenceRemoteModel(
+    remoteState,
+    remoteModel
+) {
+    const health = remoteState?.health?.payload || {};
+    const publicSync =
+        health?.checks && typeof health.checks === 'object'
+            ? health.checks.publicSync || {}
+            : {};
+    const diagnosticsPayload =
+        remoteState?.diagnostics?.payload &&
+        typeof remoteState.diagnostics.payload === 'object'
+            ? remoteState.diagnostics.payload
+            : {};
+    const checks =
+        diagnosticsPayload.checks &&
+        typeof diagnosticsPayload.checks === 'object'
+            ? diagnosticsPayload.checks
+            : {};
+    const turneroPilot =
+        checks.turneroPilot && typeof checks.turneroPilot === 'object'
+            ? checks.turneroPilot
+            : {};
+    const itemsById = Object.fromEntries(
+        (Array.isArray(remoteModel.items) ? remoteModel.items : []).map(
+            (item) => [item.id, item]
+        )
+    );
+    const blockers = (Array.isArray(remoteModel.items) ? remoteModel.items : [])
+        .filter((item) => item.state === 'alert')
+        .map((item, index) => ({
+            key: String(item.id || `remote_blocker_${index + 1}`),
+            title: String(item.label || 'Bloqueo').trim(),
+            detail: String(item.detail || '').trim(),
+        }));
+    const releaseStatus = normalizeReleaseEvidenceState(
+        remoteModel.tone,
+        'warning'
+    );
+
+    return {
+        releaseStatus,
+        status: releaseStatus,
+        finalState: releaseStatus,
+        expectedClinicId: String(
+            remoteState?.clinicId || turneroPilot.clinicId || ''
+        ).trim(),
+        expectedProfileFingerprint: String(
+            remoteState?.profileFingerprint ||
+                turneroPilot.profileFingerprint ||
+                ''
+        ).trim(),
+        deployedCommit: String(publicSync.deployedCommit || '').trim(),
+        publicSyncLabel: String(
+            itemsById.public_sync?.detail || itemsById.public_sync?.label || ''
+        ).trim(),
+        diagnosticsLabel: String(
+            itemsById.diagnostics?.detail || itemsById.diagnostics?.label || ''
+        ).trim(),
+        figoLabel: String(
+            itemsById.figo?.detail || itemsById.figo?.label || ''
+        ).trim(),
+        sourceHealthLabel: String(
+            [itemsById.availability?.detail, itemsById.booked_slots?.detail]
+                .filter(Boolean)
+                .join(' · ')
+        ).trim(),
+        blockers,
+    };
+}
+
+async function hydrateQueueOpsPilotReleaseEvidence(
+    root,
+    pilot,
+    manifest,
+    requestId
+) {
+    const remoteReleaseHost = document.getElementById(
+        'queueOpsPilotRemoteReleaseHost'
+    );
+    const publicShellDriftHost = document.getElementById(
+        'queuePublicShellDriftCard'
+    );
+    const releaseEvidenceHost = document.getElementById(
+        'queueOpsPilotReleaseEvidenceHost'
+    );
+
+    if (
+        !(remoteReleaseHost instanceof HTMLElement) ||
+        !(publicShellDriftHost instanceof HTMLElement) ||
+        !(releaseEvidenceHost instanceof HTMLElement)
+    ) {
+        return;
+    }
+
+    const publicShellOptions = resolvePublicShellDriftOptions(manifest);
+    const bundleOptions = {
+        origin: window.location.origin,
+        baseUrl: window.location.origin,
+        nativeWaveLabel: 'ola nativa posterior',
+        fileNamePrefix: 'turnero-release-evidence',
+    };
+
+    remoteReleaseHost.setAttribute('aria-busy', 'true');
+    publicShellDriftHost.setAttribute('aria-busy', 'true');
+    releaseEvidenceHost.setAttribute('aria-busy', 'true');
+
+    let snapshot = null;
+
+    try {
+        const [remoteState, publicShellScan] = await Promise.all([
+            loadTurneroRemoteReleaseHealth({
+                clinicId: pilot.clinicId,
+                profileFingerprint: pilot.profileFingerprint,
+            }),
+            loadTurneroPublicShellHtml(publicShellOptions),
+        ]);
+
+        if (root.dataset.turneroQueueOpsPilotRenderId !== requestId) {
+            return;
+        }
+
+        const remoteReadinessModel =
+            createTurneroRemoteReleaseReadinessModel(remoteState);
+        const publicShellDriftModel = createTurneroPublicShellDriftModel(
+            {
+                pageOk: publicShellScan.ok,
+                pageStatus: publicShellScan.pageStatus,
+                html: publicShellScan.html,
+            },
+            publicShellOptions
+        );
+
+        remoteReleaseHost.innerHTML =
+            renderTurneroRemoteReleaseReadinessCard(remoteReadinessModel);
+        publicShellDriftHost.innerHTML = renderTurneroPublicShellDriftCard(
+            publicShellDriftModel,
+            publicShellOptions
+        );
+
+        snapshot = {
+            localReadinessModel:
+                buildQueueOpsPilotReleaseEvidenceLocalModel(pilot),
+            remoteReleaseModel: buildQueueOpsPilotReleaseEvidenceRemoteModel(
+                remoteState,
+                remoteReadinessModel
+            ),
+            publicShellDriftModel,
+        };
+    } catch (error) {
+        if (root.dataset.turneroQueueOpsPilotRenderId !== requestId) {
+            return;
+        }
+
+        const message =
+            error instanceof Error
+                ? error.message
+                : String(error || 'request_failed');
+        const fallbackRemoteState = {
+            clinicId: pilot.clinicId,
+            profileFingerprint: pilot.profileFingerprint,
+            health: {
+                kind: 'unavailable',
+                ok: false,
+                status: 0,
+                error: message,
+                payload: {},
+            },
+            diagnostics: {
+                kind: 'unavailable',
+                ok: false,
+                status: 0,
+                error: message,
+                payload: {},
+            },
+            availability: {
+                kind: 'unavailable',
+                ok: false,
+                status: 0,
+                error: message,
+                payload: {},
+            },
+            bookedSlots: {
+                kind: 'unavailable',
+                ok: false,
+                status: 0,
+                error: message,
+                payload: {},
+            },
+            loadedAt: new Date().toISOString(),
+        };
+        const remoteReadinessModel =
+            createTurneroRemoteReleaseReadinessModel(fallbackRemoteState);
+        const publicShellDriftModel = createTurneroPublicShellDriftModel(
+            {
+                pageOk: false,
+                pageStatus: 0,
+                html: '',
+            },
+            publicShellOptions
+        );
+
+        remoteReleaseHost.innerHTML =
+            renderTurneroRemoteReleaseReadinessCard(remoteReadinessModel);
+        publicShellDriftHost.innerHTML = renderTurneroPublicShellDriftCard(
+            publicShellDriftModel,
+            publicShellOptions
+        );
+
+        snapshot = {
+            localReadinessModel:
+                buildQueueOpsPilotReleaseEvidenceLocalModel(pilot),
+            remoteReleaseModel: buildQueueOpsPilotReleaseEvidenceRemoteModel(
+                fallbackRemoteState,
+                remoteReadinessModel
+            ),
+            publicShellDriftModel,
+        };
+    } finally {
+        if (root.dataset.turneroQueueOpsPilotRenderId === requestId) {
+            remoteReleaseHost.removeAttribute('aria-busy');
+            publicShellDriftHost.removeAttribute('aria-busy');
+            releaseEvidenceHost.removeAttribute('aria-busy');
+        }
+    }
+
+    if (!snapshot || root.dataset.turneroQueueOpsPilotRenderId !== requestId) {
+        return;
+    }
+
+    try {
+        mountTurneroReleaseEvidenceBundleCard(
+            releaseEvidenceHost,
+            snapshot,
+            bundleOptions
+        );
+    } catch (_error) {
+        releaseEvidenceHost.innerHTML = renderTurneroReleaseEvidenceBundleCard(
+            snapshot,
+            bundleOptions
+        );
+    }
+}
+
 export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
     const { buildQueueOpsPilot, setHtml, escapeHtml } = deps;
     const root = document.getElementById('queueOpsPilot');
@@ -78,6 +385,10 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
     }
 
     const pilot = buildQueueOpsPilot(manifest, detectedPlatform);
+    const renderRequestId = `${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2)}`;
+    root.dataset.turneroQueueOpsPilotRenderId = renderRequestId;
     setHtml(
         '#queueOpsPilot',
         `
@@ -469,6 +780,11 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                             class="queue-ops-pilot__remote-release-host"
                             aria-live="polite"
                         ></div>
+                        <div
+                            id="queueOpsPilotReleaseEvidenceHost"
+                            class="queue-ops-pilot__release-evidence-host"
+                            aria-live="polite"
+                        ></div>
                     </div>
                     <div class="queue-ops-pilot__status">
                         <div class="queue-ops-pilot__progress">
@@ -502,23 +818,12 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
         `
     );
 
-    void mountTurneroRemoteReleaseReadinessCard(
-        '#queueOpsPilotRemoteReleaseHost',
-        {
-            clinicId: pilot.clinicId,
-            profileFingerprint: pilot.profileFingerprint,
-        }
+    void hydrateQueueOpsPilotReleaseEvidence(
+        root,
+        pilot,
+        manifest,
+        renderRequestId
     );
-
-    const publicShellDriftHost = document.getElementById(
-        'queuePublicShellDriftCard'
-    );
-    if (publicShellDriftHost instanceof HTMLElement) {
-        void mountTurneroPublicShellDriftCard(
-            publicShellDriftHost,
-            resolvePublicShellDriftOptions(manifest)
-        );
-    }
 
     bindQueueOpsPilotActions(manifest, detectedPlatform, deps);
 }
