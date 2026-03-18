@@ -418,6 +418,33 @@ function parseBoardContent(content, options = {}) {
         item.runtime_last_transport = String(item.runtime_last_transport || '')
             .trim()
             .toLowerCase();
+        item.model_tier_default = String(item.model_tier_default || '').trim();
+        item.premium_budget = Number.parseInt(
+            String(item.premium_budget || ''),
+            10
+        );
+        if (!Number.isInteger(item.premium_budget) || item.premium_budget < 0) {
+            item.premium_budget = 0;
+        }
+        item.premium_calls_used = Number.parseInt(
+            String(item.premium_calls_used || ''),
+            10
+        );
+        if (
+            !Number.isInteger(item.premium_calls_used) ||
+            item.premium_calls_used < 0
+        ) {
+            item.premium_calls_used = 0;
+        }
+        item.premium_gate_state = String(item.premium_gate_state || '')
+            .trim()
+            .toLowerCase();
+        item.decision_packet_ref = String(
+            item.decision_packet_ref || ''
+        ).trim();
+        item.model_policy_version = String(
+            item.model_policy_version || ''
+        ).trim();
         item.strategy_id = String(item.strategy_id || '').trim();
         item.subfront_id = String(item.subfront_id || '').trim();
         item.strategy_role = String(item.strategy_role || '')

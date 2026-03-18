@@ -74,6 +74,10 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 buildLiveFocusSummary: ctx.buildLiveFocusSummary,
                 verifyOpenClawRuntime: ctx.verifyOpenClawRuntime,
                 buildRuntimeBlockingErrors: ctx.buildRuntimeBlockingErrors,
+                loadModelUsageLedger: ctx.loadModelUsageLedger,
+                buildModelUsageSummary: ctx.buildModelUsageSummary,
+                collectPremiumGateBlockers: ctx.collectPremiumGateBlockers,
+                getGovernancePolicy: ctx.getGovernancePolicy,
             });
         },
 
@@ -99,6 +103,15 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 buildBoardWipLimitDiagnostics:
                     ctx.buildBoardWipLimitDiagnostics,
                 runCodexCheck: () => runner.codexCheck([]),
+                getGovernancePolicy: ctx.getGovernancePolicy,
+                loadModelUsageLedger: ctx.loadModelUsageLedger,
+                appendModelUsageLedgerEntries:
+                    ctx.appendModelUsageLedgerEntries,
+                syncTaskModelRoutingState: ctx.syncTaskModelRoutingState,
+                buildTaskModelUsageSummary: ctx.buildTaskModelUsageSummary,
+                validateDecisionPacketFile: ctx.validateDecisionPacketFile,
+                printJson: ctx.printJson,
+                toTaskJson: ctx.toTaskJson,
             });
         },
     };

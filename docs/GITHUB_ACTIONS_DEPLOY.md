@@ -3,6 +3,11 @@
 Fuente canonica detallada para deploy via GitHub Actions.
 `GITHUB-ACTIONS-DEPLOY.md` en la raiz queda solo como shim compatible.
 
+Runbooks relacionados:
+
+- `docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md`
+- `docs/PUBLIC_V3_CRON_INSTALL.md`
+
 ## 1) Configura secretos del repo
 
 En GitHub:

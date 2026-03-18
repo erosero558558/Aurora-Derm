@@ -5,10 +5,11 @@ Fuente canonica: `AGENTS.md`
 
 ## Objetivo
 
-Operar el sistema en modo `codex-only` con dos lanes humanos activos:
+Operar el sistema en modo `codex-only` con tres lanes Codex activos:
 
 - `codex_backend_ops`
 - `codex_frontend`
+- `codex_transversal`
 
 `ci` queda como validador. `jules`, `kimi` y `claude` quedan retirados para trabajo activo.
 
@@ -26,6 +27,7 @@ Operar el sistema en modo `codex-only` con dos lanes humanos activos:
 ## Operacion diaria
 
 1. Revisar salud:
+    - `node agent-orchestrator.js strategy status --json`
     - `node agent-orchestrator.js status --json --explain-red`
     - `node agent-orchestrator.js board doctor --json`
     - `node agent-orchestrator.js jobs verify public_main_sync --json`

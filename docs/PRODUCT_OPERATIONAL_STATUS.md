@@ -3,7 +3,7 @@
 Fuente canonica para el semaforo operativo del producto.
 `ESTADO_PRODUCTO_OPERATIVO.md` en la raiz queda solo como shim compatible.
 
-Actualizado: 2026-02-25
+Actualizado: 2026-03-17
 
 ## Semaforo Producto
 

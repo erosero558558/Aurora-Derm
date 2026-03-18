@@ -134,6 +134,11 @@ async function handleMetricsCommand(ctx) {
         writeFileSync,
         CONTRIBUTION_HISTORY_PATH,
         DOMAIN_HEALTH_HISTORY_PATH,
+        getGovernancePolicy,
+        loadModelUsageLedger,
+        buildModelUsageSummary,
+        collectPremiumGateBlockers,
+        buildPremiumRoi,
     } = ctx;
     if (String(args[0] || '').trim() === 'baseline') {
         handleMetricsBaselineCommand({
@@ -172,6 +177,10 @@ async function handleMetricsCommand(ctx) {
     if (hasWriteFlag) noWrite = false;
     if (hasDryRunFlag) noWrite = true;
     const board = parseBoard();
+    const governancePolicy =
+        typeof getGovernancePolicy === 'function'
+            ? getGovernancePolicy()
+            : null;
     const handoffData = parseHandoffs();
     const conflictAnalysis = analyzeConflicts(
         board.tasks,
@@ -210,6 +219,32 @@ async function handleMetricsCommand(ctx) {
         conflictAnalysis,
         handoffData.handoffs
     );
+    const modelUsageLedger =
+        typeof loadModelUsageLedger === 'function'
+            ? loadModelUsageLedger()
+            : [];
+    const premiumGateBlockers =
+        typeof collectPremiumGateBlockers === 'function'
+            ? collectPremiumGateBlockers(board.tasks, {
+                  governancePolicy,
+                  ledgerEntries: modelUsageLedger,
+              })
+            : [];
+    const modelUsageSummary =
+        typeof buildModelUsageSummary === 'function'
+            ? buildModelUsageSummary(board.tasks, {
+                  governancePolicy,
+                  ledgerEntries: modelUsageLedger,
+                  blockers: premiumGateBlockers,
+              })
+            : null;
+    const premiumRoi =
+        typeof buildPremiumRoi === 'function'
+            ? buildPremiumRoi(board.tasks, {
+                  governancePolicy,
+                  ledgerEntries: modelUsageLedger,
+              })
+            : null;
 
     let existing = null;
     if (existsSync(METRICS_PATH)) {
@@ -355,6 +390,42 @@ async function handleMetricsCommand(ctx) {
         contribution_history: contributionHistorySummary,
         domain_health: domainHealth,
         domain_health_history: domainHealthHistorySummary,
+        model_usage_summary: modelUsageSummary,
+        premium_subagent_sessions_total:
+            modelUsageSummary?.premium_subagent_sessions_total || 0,
+        premium_root_exceptions_total:
+            modelUsageSummary?.premium_root_exceptions_total || 0,
+        premium_by_execution_mode:
+            modelUsageSummary?.premium_by_execution_mode || {
+                subagent: 0,
+                main_thread_exception: 0,
+            },
+        mini_root_compliance_pct:
+            premiumRoi?.mini_root_compliance_pct ??
+            modelUsageSummary?.mini_root_compliance_pct ??
+            100,
+        premium_budget_remaining: modelUsageSummary
+            ? {
+                  total_active: modelUsageSummary.active_codex_tasks || 0,
+                  premium_budget_total:
+                      modelUsageSummary.premium_budget_total_active || 0,
+                  premium_budget_remaining:
+                      modelUsageSummary.premium_budget_remaining_active || 0,
+                  by_task: Array.isArray(modelUsageSummary.active_rows)
+                      ? modelUsageSummary.active_rows.map((row) => ({
+                            task_id: row.task_id,
+                            codex_instance: row.codex_instance,
+                            premium_budget: row.premium_budget,
+                            premium_calls_used: row.premium_calls_used,
+                            premium_budget_remaining:
+                                row.premium_budget_remaining,
+                            premium_gate_state: row.premium_gate_state,
+                        }))
+                      : [],
+              }
+            : null,
+        premium_gate_blockers: premiumGateBlockers,
+        premium_roi: premiumRoi,
         io: {
             profile: profile || 'default',
             no_write: noWrite,

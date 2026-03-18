@@ -12,3 +12,4 @@ Flujos relacionados:
 
 - `docs/GITHUB_PUSH_WORKFLOW.md`
 - `docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md`
+- `docs/PUBLIC_V3_CRON_INSTALL.md`

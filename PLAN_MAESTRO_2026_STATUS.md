@@ -1,8 +1,8 @@
 ﻿# Plan Maestro 2026 - Estado Operativo
 
-> Nota de gobernanza (2026-02-24): este documento se mantiene como snapshot historico; la fuente unica de control operativo es `PLAN_MAESTRO_OPERATIVO_2026.md`.
+> Nota de gobernanza (2026-03-17): este documento se mantiene como snapshot historico; la fuente unica de control operativo es `PLAN_MAESTRO_OPERATIVO_2026.md`.
 
-Fecha de actualizacion: 2026-02-27 (sesion Codex turnero sala: hardening + QA + runbook)
+Fecha de actualizacion: 2026-03-17 (sesion Codex turnero web pilot: revalidacion public_main_sync)
 Dominio: https://pielarmonia.com
 
 ## Resumen rapido

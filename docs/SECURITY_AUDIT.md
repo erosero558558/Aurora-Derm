@@ -2,6 +2,7 @@
 
 Fuente canonica del baseline de auditoria de seguridad.
 `SECURITY_AUDIT.md` en la raiz queda solo como shim compatible.
+Guia viva relacionada: `docs/SECURITY.md`.
 
 **Fecha:** 19 de Febrero de 2026
 **Auditor:** Jules (AI Software Engineer)

@@ -5,55 +5,65 @@ import {
     normalizePaymentStatus,
 } from './core.js';
 
+const PAYMENT_METHOD_LABELS = Object.freeze({
+    transfer: 'Transferencia',
+    cash: 'Consultorio',
+    card: 'Tarjeta',
+    gateway: 'Pasarela',
+});
+
+const PAYMENT_LABELS = Object.freeze({
+    pending_transfer_review: 'Validar pago',
+    pending_transfer: 'Transferencia',
+    pending_cash: 'Pago en consultorio',
+    pending_gateway: 'Pago en proceso',
+    paid: 'Pagado',
+    failed: 'Fallido',
+});
+
+const STATUS_LABELS = Object.freeze({
+    confirmed: 'Confirmada',
+    pending: 'Pendiente',
+    completed: 'Completada',
+    cancelled: 'Cancelada',
+    no_show: 'No show',
+});
+
+const PAYMENT_TONES = Object.freeze({
+    paid: 'success',
+    failed: 'danger',
+    pending_cash: 'neutral',
+});
+
+const STATUS_TONES = Object.freeze({
+    completed: 'success',
+    cancelled: 'danger',
+    no_show: 'danger',
+    pending: 'warning',
+});
+
+function labelOrHumanized(labels, value, fallback) {
+    return labels[normalize(value)] || humanizeToken(value, fallback);
+}
+
 export function paymentMethodLabel(method) {
-    const labels = {
-        transfer: 'Transferencia',
-        cash: 'Consultorio',
-        card: 'Tarjeta',
-        gateway: 'Pasarela',
-    };
-    return (
-        labels[normalize(method)] || humanizeToken(method, 'Metodo pendiente')
-    );
+    return labelOrHumanized(PAYMENT_METHOD_LABELS, method, 'Metodo pendiente');
 }
 
 export function paymentLabel(status) {
-    const labels = {
-        pending_transfer_review: 'Validar pago',
-        pending_transfer: 'Transferencia',
-        pending_cash: 'Pago en consultorio',
-        pending_gateway: 'Pago en proceso',
-        paid: 'Pagado',
-        failed: 'Fallido',
-    };
-    return labels[normalize(status)] || humanizeToken(status, 'Pendiente');
+    return labelOrHumanized(PAYMENT_LABELS, status, 'Pendiente');
 }
 
 export function statusLabel(status) {
-    const labels = {
-        confirmed: 'Confirmada',
-        pending: 'Pendiente',
-        completed: 'Completada',
-        cancelled: 'Cancelada',
-        no_show: 'No show',
-    };
-    return labels[normalize(status)] || humanizeToken(status, 'Pendiente');
+    return labelOrHumanized(STATUS_LABELS, status, 'Pendiente');
 }
 
 export function paymentTone(status) {
-    const normalized = normalize(status);
-    if (normalized === 'paid') return 'success';
-    if (normalized === 'failed') return 'danger';
-    if (normalized === 'pending_cash') return 'neutral';
-    return 'warning';
+    return PAYMENT_TONES[normalize(status)] || 'warning';
 }
 
 export function statusTone(status) {
-    const normalized = normalize(status);
-    if (normalized === 'completed') return 'success';
-    if (normalized === 'cancelled' || normalized === 'no_show') return 'danger';
-    if (normalized === 'pending') return 'warning';
-    return 'neutral';
+    return STATUS_TONES[normalize(status)] || 'neutral';
 }
 
 export function isTriageAttention(item) {

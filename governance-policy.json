@@ -77,6 +77,59 @@
             "domain_score_priority_yellow_below": 80
         }
     },
+    "codex_model_routing": {
+        "version": "2026-03-17-codex-model-routing-v2",
+        "scope": "codex_only",
+        "default_model_tier": "gpt-5.4-mini",
+        "premium_model_tier": "gpt-5.4",
+        "root_thread_model_tier": "gpt-5.4-mini",
+        "premium_budget_unit": "premium_session",
+        "ledger_path": "verification/codex-model-usage.jsonl",
+        "decision_packets_dir": "verification/codex-decisions",
+        "allowed_gate_states": ["closed", "approved", "consumed", "blocked"],
+        "allowed_execution_modes": ["subagent", "main_thread_exception"],
+        "premium_reasons": [
+            "critical_zone",
+            "cross_lane_high_risk",
+            "mini_failed_unblock",
+            "critical_review"
+        ],
+        "prohibited_premium_uses": [
+            "repo_exploration",
+            "context_summary",
+            "boilerplate",
+            "mechanical_refactor",
+            "status_update",
+            "first_test_pass",
+            "docs_first_draft",
+            "simple_single_lane_fix"
+        ],
+        "decision_packet_fields": [
+            "task_id",
+            "execution_mode",
+            "premium_reason",
+            "problem",
+            "why_mini_or_local_failed",
+            "exact_decision_requested",
+            "acceptable_output",
+            "risk_if_wrong",
+            "action_taken"
+        ],
+        "target_mix": {
+            "zero_premium_pct": 80,
+            "one_premium_pct": 15,
+            "two_premium_pct": 5,
+            "throughput_drop_guardrail_pct": 10
+        },
+        "fallback_order": ["tools/local", "gpt-5.4-mini", "gpt-5.4"],
+        "gate_open_conditions": [
+            "critical_zone",
+            "cross_lane_high_risk",
+            "mini_failed_unblock",
+            "critical_review"
+        ],
+        "notes": "Fase 1 codex-only: hilo principal en GPT-5.4 mini, GPT-5.4 solo en subagentes premium o excepciones importadas auditadas."
+    },
     "enforcement": {
         "branch_profiles": {
             "pull_request": {

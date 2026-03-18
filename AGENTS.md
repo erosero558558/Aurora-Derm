@@ -31,6 +31,54 @@ Metas de operacion:
 - Lead time en tareas no criticas: < 1 dia.
 - Gate rojo por coordinacion: < 10% semanal.
 
+## Codex Model Routing Policy
+
+Fase 1 obligatoria desde `2026-03-17`: `codex-only`.
+No cambia el runtime de IA del producto; cambia como operamos Codex.
+
+Regla canonica:
+
+- Orden obligatorio: `tools/local -> GPT-5.4 mini en hilo principal -> GPT-5.4 solo en subagentes premium`.
+- `GPT-5.4 mini` es el modelo raiz obligatorio para tareas `CDX-*`.
+- `GPT-5.4` se trata como recurso premium y escaso; solo se usa si el gate lo permite, dentro de `subagent`, y queda trazado.
+
+Presupuesto premium por tarea `CDX-*` activa:
+
+- `premium_budget=0` por defecto.
+- `premium_budget=1` si `cross_domain=true` o `risk=high`.
+- `premium_budget=2` si `critical_zone=true`.
+- Unidad de gasto: `1 sesion premium = 1 subagente GPT-5.4 = 1 fila premium en ledger`.
+
+El gate premium solo puede abrirse en estos casos:
+
+- `critical_zone=true`.
+- Decision de arquitectura cross-lane o de alto riesgo.
+- Desbloqueo despues de un intento completo fallido con mini/local.
+- Revision final previa a merge de un cambio critico.
+
+Usos premium prohibidos:
+
+- Exploracion de repo o resumen de contexto.
+- Boilerplate o refactors mecanicos.
+- Status updates.
+- Primera pasada de tests.
+- Primer borrador de docs.
+- Fixes simples de un solo lane.
+
+Trazabilidad obligatoria:
+
+- Cada escalamiento premium requiere `Decision Packet` en `verification/codex-decisions/<task_id>-<n>.md`.
+- Campos obligatorios del packet: `task_id`, `execution_mode`, `premium_reason`, `problem`, `why_mini_or_local_failed`, `exact_decision_requested`, `acceptable_output`, `risk_if_wrong`, `action_taken`.
+- Cada uso premium se registra append-only en `verification/codex-model-usage.jsonl`.
+- Cada entrada premium del ledger debe incluir `execution_mode`, `budget_unit=premium_session`, `premium_session_id` y `root_thread_model_tier`.
+- `codex-check` y `agent:gate` deben fallar si una tarea `CDX-*` activa tiene drift entre board, ledger y decision packets.
+
+Regla de hilo:
+
+- `codex start` para tareas `CDX-*` asume y conserva `gpt-5.4-mini` como hilo principal.
+- El hilo principal premium queda prohibido como flujo normal.
+- La unica excepcion permitida es `main_thread_exception` para un hilo premium ya abierto externamente; no se abre desde `codex start` y debe registrarse igual en el ledger.
+
 ## Estrategia madre
 
 Cuando `AGENT_BOARD.yaml.strategy.active.status=active`, esa estrategia pasa a
@@ -191,7 +239,9 @@ Campos canonicos por tarea:
   `strategy_id`, `subfront_id`, `strategy_role`, `strategy_reason`,
   `exception_opened_at`, `exception_expires_at`, `exception_state`,
   `provider_mode`, `runtime_surface`, `runtime_transport`,
-  `runtime_last_transport`,
+  `runtime_last_transport`, `model_tier_default`, `premium_budget`,
+  `premium_calls_used`, `premium_gate_state`, `decision_packet_ref`,
+  `model_policy_version`,
   `source_signal`, `source_ref`, `priority_score`, `sla_due_at`,
   `last_attempt_at`, `attempts`, `blocked_reason`, `runtime_impact`,
   `critical_zone`, `acceptance`, `acceptance_ref`, `evidence_ref`,
@@ -201,6 +251,9 @@ Regla de obligatoriedad:
 
 - `strategy_id`, `subfront_id` y `strategy_role` son obligatorios para tareas activas cuando existe `strategy.active`.
 - `strategy_reason` y `exception_*` solo son obligatorios cuando `strategy_role=exception`.
+- `model_tier_default`, `premium_budget`, `premium_calls_used`,
+  `premium_gate_state`, `decision_packet_ref` y `model_policy_version`
+  son obligatorios para tareas `CDX-*` activas (`ready|in_progress|review|blocked`).
 
 Valores validos para coordinacion tri-lane:
 
@@ -275,6 +328,7 @@ node agent-orchestrator.js runtime verify openclaw_chatgpt --json
 node agent-orchestrator.js runtime invoke AG-900 --expect-rev 12 --json
 node agent-orchestrator.js codex start CDX-001 --block C1
 node agent-orchestrator.js codex start CDX-001 --block C1 --expect-rev 12
+node agent-orchestrator.js codex premium record CDX-001 --decision-packet-ref verification/codex-decisions/CDX-001-1.md --reason critical_review --execution-mode subagent --premium-session-id sess-001 --expect-rev 12 --json
 node agent-orchestrator.js codex stop CDX-001 --to review
 node agent-orchestrator.js codex stop CDX-001 --to blocked --blocked-reason remote_verify_smoke_gate_pending --expect-rev 12
 node agent-orchestrator.js board doctor

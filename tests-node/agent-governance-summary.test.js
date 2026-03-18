@@ -41,6 +41,13 @@ const CLEAN_LOCAL_ARTIFACTS_SOURCE = join(
     'clean-local-artifacts.js'
 );
 const DATE = '2026-02-24';
+const CODEX_MODEL_ROUTING_FIELDS = `
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 0
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v1"`;
 
 function createFixtureDir() {
     const dir = mkdtempSync(join(tmpdir(), 'agent-governance-summary-'));
@@ -100,6 +107,7 @@ tasks:
     status: in_progress
     risk: medium
     scope: codex-governance
+${CODEX_MODEL_ROUTING_FIELDS}
     files: ["AGENTS.md", "agent-orchestrator.js"]
     acceptance: "Fixture"
     acceptance_ref: "PLAN_MAESTRO_CODEX_2026.md"
@@ -393,6 +401,7 @@ tasks:
     status: in_progress
     risk: medium
     scope: codex-governance
+${CODEX_MODEL_ROUTING_FIELDS}
     files: ["AGENTS.md", "agent-orchestrator.js"]
     acceptance: "Fixture"
     acceptance_ref: "PLAN_MAESTRO_CODEX_2026.md"

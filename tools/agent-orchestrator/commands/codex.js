@@ -55,6 +55,285 @@ function getCodexParallelismPolicy(getGovernancePolicy) {
     };
 }
 
+function normalizeToken(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase();
+}
+
+function flagBoolean(value) {
+    return ['1', 'true', 'yes', 'y', 'si', 's', 'on'].includes(
+        normalizeToken(value)
+    );
+}
+
+function buildCodexUsageError(message, code = 'codex_invalid_usage') {
+    const error = new Error(message);
+    error.code = code;
+    error.error_code = code;
+    return error;
+}
+
+function ensureCodexTask(task, taskId) {
+    if (
+        String(task?.executor || '')
+            .trim()
+            .toLowerCase() !== 'codex'
+    ) {
+        throw buildCodexUsageError(
+            `Task ${taskId} no pertenece a executor codex`
+        );
+    }
+    return task;
+}
+
+async function handleCodexPremiumRecordCommand(ctx) {
+    const {
+        args = [],
+        parseFlags,
+        parseBoard,
+        ensureTask,
+        ACTIVE_STATUSES,
+        parseExpectedBoardRevisionFlag,
+        getGovernancePolicy,
+        loadModelUsageLedger,
+        appendModelUsageLedgerEntries,
+        syncTaskModelRoutingState,
+        buildTaskModelUsageSummary,
+        validateDecisionPacketFile,
+        currentDate,
+        writeBoard,
+        runCodexCheck,
+        printJson,
+        toTaskJson,
+    } = ctx;
+    const { positionals, flags } = parseFlags(args);
+    const action = normalizeToken(positionals[0] || 'record');
+    if (action !== 'record') {
+        throw buildCodexUsageError(
+            'Uso: node agent-orchestrator.js codex premium record <CDX-001> --decision-packet-ref verification/codex-decisions/CDX-001-1.md --reason critical_review --execution-mode subagent --premium-session-id sess-001 [--avoided-rework true] [--notes "..."] [--json]'
+        );
+    }
+
+    const taskId = String(positionals[1] || flags.id || '').trim();
+    if (!taskId) {
+        throw buildCodexUsageError(
+            'codex premium record requiere task_id (CDX-###)'
+        );
+    }
+    if (!/^CDX-\d+$/i.test(taskId)) {
+        throw buildCodexUsageError(`task_id Codex invalido: ${taskId}`);
+    }
+
+    const expectRevision = parseExpectedRevisionFromFlags(
+        flags,
+        parseExpectedBoardRevisionFlag,
+        { required: true, commandLabel: 'codex premium record' }
+    );
+    const board = parseBoard();
+    const task = ensureCodexTask(ensureTask(board, taskId), taskId);
+    const taskStatus = String(task?.status || '').trim();
+    if (!ACTIVE_STATUSES.has(taskStatus)) {
+        throw buildCodexUsageError(
+            `codex premium record requiere tarea CDX activa (actual: ${taskStatus || 'vacio'})`
+        );
+    }
+
+    const policy =
+        typeof getGovernancePolicy === 'function' ? getGovernancePolicy() : {};
+    const routingPolicy =
+        policy?.codex_model_routing &&
+        typeof policy.codex_model_routing === 'object'
+            ? policy.codex_model_routing
+            : policy;
+    const reason = normalizeToken(flags.reason || '');
+    const executionMode = normalizeToken(
+        flags['execution-mode'] || flags.execution_mode || ''
+    );
+    const decisionPacketRef = String(
+        flags['decision-packet-ref'] || flags.decision_packet_ref || ''
+    ).trim();
+    const premiumSessionId = String(
+        flags['premium-session-id'] || flags.premium_session_id || ''
+    ).trim();
+    const notes = String(flags.notes || '').trim();
+    const outcome = normalizeToken(flags.outcome || 'recorded');
+    const avoidedRework = flagBoolean(
+        flags['avoided-rework'] || flags.avoided_rework || false
+    );
+
+    const allowedReasons = new Set(routingPolicy.premium_reasons || []);
+    if (!reason || !allowedReasons.has(reason)) {
+        throw buildCodexUsageError(
+            `codex premium record requiere --reason valido (${Array.from(
+                allowedReasons
+            ).join(', ')})`
+        );
+    }
+    const allowedExecutionModes = new Set(
+        routingPolicy.allowed_execution_modes || []
+    );
+    if (!executionMode || !allowedExecutionModes.has(executionMode)) {
+        throw buildCodexUsageError(
+            `codex premium record requiere --execution-mode valido (${Array.from(
+                allowedExecutionModes
+            ).join(', ')})`
+        );
+    }
+    if (!decisionPacketRef) {
+        throw buildCodexUsageError(
+            'codex premium record requiere --decision-packet-ref'
+        );
+    }
+    if (!premiumSessionId) {
+        throw buildCodexUsageError(
+            'codex premium record requiere --premium-session-id'
+        );
+    }
+
+    const rootThreadModelTierFlag = String(
+        flags['root-thread-model-tier'] || flags.root_thread_model_tier || ''
+    ).trim();
+    const rootThreadModelTier =
+        rootThreadModelTierFlag ||
+        (executionMode === 'subagent'
+            ? String(
+                  routingPolicy.root_thread_model_tier ||
+                      routingPolicy.default_model_tier ||
+                      'gpt-5.4-mini'
+              )
+            : String(routingPolicy.premium_model_tier || 'gpt-5.4'));
+    if (
+        executionMode === 'subagent' &&
+        rootThreadModelTier !==
+            String(
+                routingPolicy.root_thread_model_tier ||
+                    routingPolicy.default_model_tier ||
+                    'gpt-5.4-mini'
+            )
+    ) {
+        throw buildCodexUsageError(
+            `execution_mode=subagent requiere root_thread_model_tier=${String(
+                routingPolicy.root_thread_model_tier ||
+                    routingPolicy.default_model_tier ||
+                    'gpt-5.4-mini'
+            )}`
+        );
+    }
+    if (
+        executionMode === 'main_thread_exception' &&
+        rootThreadModelTier !==
+            String(routingPolicy.premium_model_tier || 'gpt-5.4')
+    ) {
+        throw buildCodexUsageError(
+            `execution_mode=main_thread_exception requiere root_thread_model_tier=${String(
+                routingPolicy.premium_model_tier || 'gpt-5.4'
+            )}`
+        );
+    }
+
+    const packetValidation =
+        typeof validateDecisionPacketFile === 'function'
+            ? validateDecisionPacketFile(decisionPacketRef, {
+                  taskId,
+                  governancePolicy: routingPolicy,
+              })
+            : { ok: true, errors: [], relative_path: decisionPacketRef };
+    if (!packetValidation.ok) {
+        throw buildCodexUsageError(packetValidation.errors[0]);
+    }
+
+    const currentLedger =
+        typeof loadModelUsageLedger === 'function'
+            ? loadModelUsageLedger()
+            : [];
+    const currentSummary =
+        typeof buildTaskModelUsageSummary === 'function'
+            ? buildTaskModelUsageSummary(task, {
+                  governancePolicy: routingPolicy,
+                  ledgerEntries: currentLedger,
+              })
+            : null;
+    if (
+        currentSummary &&
+        Number(currentSummary.premium_calls_used || 0) >=
+            Number(currentSummary.premium_budget || 0)
+    ) {
+        throw buildCodexUsageError(
+            `${taskId}: premium budget agotado (${currentSummary.premium_calls_used}/${currentSummary.premium_budget})`,
+            'premium_budget_exhausted'
+        );
+    }
+
+    const entry = {
+        timestamp: new Date().toISOString(),
+        task_id: taskId,
+        codex_instance: String(task.codex_instance || '').trim(),
+        model_tier: String(routingPolicy.premium_model_tier || 'gpt-5.4'),
+        reason,
+        decision_packet_ref:
+            packetValidation.relative_path || decisionPacketRef,
+        execution_mode: executionMode,
+        budget_unit: String(
+            routingPolicy.premium_budget_unit || 'premium_session'
+        ),
+        premium_session_id: premiumSessionId,
+        root_thread_model_tier: rootThreadModelTier,
+        avoided_rework: avoidedRework,
+        outcome,
+        notes,
+    };
+    if (typeof appendModelUsageLedgerEntries !== 'function') {
+        throw buildCodexUsageError(
+            'codex premium record requiere appendModelUsageLedgerEntries'
+        );
+    }
+    appendModelUsageLedgerEntries(entry);
+    const updatedLedger = [...currentLedger, entry];
+    if (typeof syncTaskModelRoutingState === 'function') {
+        syncTaskModelRoutingState(task, {
+            governancePolicy: routingPolicy,
+            ledgerEntries: updatedLedger,
+        });
+    }
+    task.updated_at = currentDate();
+    writeBoard(board, {
+        command: 'codex premium record',
+        actor: task.owner || task.executor || '',
+        expectRevision,
+    });
+
+    const summary =
+        typeof buildTaskModelUsageSummary === 'function'
+            ? buildTaskModelUsageSummary(task, {
+                  governancePolicy: routingPolicy,
+                  ledgerEntries: updatedLedger,
+              })
+            : null;
+    const payload = {
+        version: 1,
+        ok: true,
+        command: 'codex',
+        action: 'premium',
+        subaction: 'record',
+        task: typeof toTaskJson === 'function' ? toTaskJson(task) : null,
+        ledger_entry: entry,
+        model_usage_summary: summary,
+    };
+    if (flags.json || args.includes('--json')) {
+        if (typeof printJson === 'function') {
+            printJson(payload);
+            return payload;
+        }
+        console.log(JSON.stringify(payload, null, 2));
+        return payload;
+    }
+    console.log(
+        `Codex premium record OK: ${taskId} | session=${premiumSessionId} | premium=${summary ? `${summary.premium_calls_used}/${summary.premium_budget}` : 'n/a'}`
+    );
+    return payload;
+}
+
 async function handleCodexCheckCommand(ctx) {
     const {
         args = [],
@@ -68,6 +347,10 @@ async function handleCodexCheckCommand(ctx) {
         buildLiveFocusSummary,
         verifyOpenClawRuntime,
         buildRuntimeBlockingErrors,
+        loadModelUsageLedger,
+        buildModelUsageSummary,
+        collectPremiumGateBlockers,
+        getGovernancePolicy,
     } = ctx;
     const wantsJson = args.includes('--json');
     const board = parseBoard();
@@ -115,6 +398,51 @@ async function handleCodexCheckCommand(ctx) {
             report.error_count =
                 Number(report.error_count || 0) + runtimeErrors.length;
             report.errors = [...(report.errors || []), ...runtimeErrors];
+        }
+    }
+    const governancePolicy =
+        typeof getGovernancePolicy === 'function'
+            ? getGovernancePolicy()
+            : null;
+    const modelUsageLedger =
+        typeof loadModelUsageLedger === 'function'
+            ? loadModelUsageLedger()
+            : [];
+    const premiumGateBlockers =
+        typeof collectPremiumGateBlockers === 'function'
+            ? collectPremiumGateBlockers(board.tasks, {
+                  governancePolicy,
+                  ledgerEntries: modelUsageLedger,
+              })
+            : [];
+    const modelUsageSummary =
+        typeof buildModelUsageSummary === 'function'
+            ? buildModelUsageSummary(board.tasks, {
+                  governancePolicy,
+                  ledgerEntries: modelUsageLedger,
+                  blockers: premiumGateBlockers,
+              })
+            : null;
+    report.model_usage_summary = modelUsageSummary;
+    report.premium_budget_remaining = modelUsageSummary
+        ? {
+              total_active: modelUsageSummary.active_codex_tasks || 0,
+              premium_budget_total:
+                  modelUsageSummary.premium_budget_total_active || 0,
+              premium_budget_remaining:
+                  modelUsageSummary.premium_budget_remaining_active || 0,
+          }
+        : null;
+    report.premium_gate_blockers = premiumGateBlockers;
+    if (premiumGateBlockers.length > 0) {
+        report.ok = false;
+        report.error_count = Number(report.error_count || 0);
+        for (const blocker of premiumGateBlockers) {
+            const blockerErrors = Array.isArray(blocker.blockers)
+                ? blocker.blockers
+                : [];
+            report.error_count += blockerErrors.length;
+            report.errors = [...(report.errors || []), ...blockerErrors];
         }
     }
     const metricsSnapshot =
@@ -180,10 +508,16 @@ async function handleCodexCommand(ctx) {
     const subcommand = args[0];
     const { positionals, flags } = parseFlags(args.slice(1));
     const taskId = String(positionals[0] || flags.id || '').trim();
-    if (!subcommand || !['start', 'stop'].includes(subcommand)) {
+    if (!subcommand || !['start', 'stop', 'premium'].includes(subcommand)) {
         throw new Error(
-            'Uso: node agent-orchestrator.js codex <start|stop> <CDX-001> [--block C1] [--to review|done|blocked]'
+            'Uso: node agent-orchestrator.js codex <start|stop|premium> ...'
         );
+    }
+    if (subcommand === 'premium') {
+        return handleCodexPremiumRecordCommand({
+            ...ctx,
+            args: args.slice(1),
+        });
     }
     if (!taskId) {
         throw new Error('Codex command requiere task_id (CDX-###)');
@@ -193,12 +527,24 @@ async function handleCodexCommand(ctx) {
     }
 
     const board = parseBoard();
-    const task = ensureTask(board, taskId);
-    if (String(task.executor) !== 'codex') {
-        throw new Error(`Task ${taskId} no pertenece a executor codex`);
-    }
+    const task = ensureCodexTask(ensureTask(board, taskId), taskId);
 
     if (subcommand === 'start') {
+        const requestedRootThreadModel = String(
+            flags['root-thread-model-tier'] ||
+                flags.root_thread_model_tier ||
+                flags.model ||
+                flags['model-tier'] ||
+                ''
+        ).trim();
+        if (
+            requestedRootThreadModel &&
+            requestedRootThreadModel !== 'gpt-5.4-mini'
+        ) {
+            throw buildCodexUsageError(
+                'codex start no permite hilo principal premium; use gpt-5.4-mini como raiz y registre GPT-5.4 via codex premium record'
+            );
+        }
         const block = String(flags.block || 'C1').trim();
         const filesOverride = flags.files ? parseCsvList(flags.files) : null;
         const codexParallelism = getCodexParallelismPolicy(getGovernancePolicy);
@@ -265,6 +611,7 @@ async function handleCodexCommand(ctx) {
                 decisionsData,
             });
         }
+        task.model_tier_default = 'gpt-5.4-mini';
         writeBoard(board, {
             command: 'codex start',
             actor: task.owner || task.executor || '',

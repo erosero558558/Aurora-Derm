@@ -331,6 +331,20 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
         runtime_last_transport: String(rawTask.runtime_last_transport || '')
             .trim()
             .toLowerCase(),
+        model_tier_default: String(rawTask.model_tier_default || '').trim(),
+        premium_budget: Number.parseInt(
+            String(rawTask.premium_budget ?? ''),
+            10
+        ),
+        premium_calls_used: Number.parseInt(
+            String(rawTask.premium_calls_used ?? ''),
+            10
+        ),
+        premium_gate_state: String(rawTask.premium_gate_state || '')
+            .trim()
+            .toLowerCase(),
+        decision_packet_ref: String(rawTask.decision_packet_ref || '').trim(),
+        model_policy_version: String(rawTask.model_policy_version || '').trim(),
         strategy_id: String(rawTask.strategy_id || '').trim(),
         subfront_id: String(rawTask.subfront_id || '').trim(),
         strategy_role: String(rawTask.strategy_role || '')
@@ -503,6 +517,15 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
     if (!Number.isFinite(task.attempts) || task.attempts < 0) {
         task.attempts = 0;
     }
+    if (!Number.isFinite(task.premium_budget) || task.premium_budget < 0) {
+        task.premium_budget = 0;
+    }
+    if (
+        !Number.isFinite(task.premium_calls_used) ||
+        task.premium_calls_used < 0
+    ) {
+        task.premium_calls_used = 0;
+    }
     if (task.files.length === 0) {
         throw new Error('task create --apply requiere task.files no vacio');
     }
@@ -620,6 +643,12 @@ function buildTaskCreatePreviewDiff(existingTask, previewTask, options = {}) {
         'blocked_reason',
         'runtime_impact',
         'critical_zone',
+        'model_tier_default',
+        'premium_budget',
+        'premium_calls_used',
+        'premium_gate_state',
+        'decision_packet_ref',
+        'model_policy_version',
         'acceptance',
         'acceptance_ref',
         'evidence_ref',

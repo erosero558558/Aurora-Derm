@@ -157,3 +157,63 @@ test('policy-config valida codex_parallelism y expone el payload efectivo', () =
         2
     );
 });
+
+test('policy-config acepta codex_model_routing y expone el payload efectivo', () => {
+    const report = validateGovernancePolicy(
+        {
+            version: 1,
+            codex_model_routing: {
+                version: '2026-03-17-codex-model-routing-v2',
+                scope: 'codex_only',
+                default_model_tier: 'gpt-5.4-mini',
+                premium_model_tier: 'gpt-5.4',
+                root_thread_model_tier: 'gpt-5.4-mini',
+                premium_budget_unit: 'premium_session',
+                ledger_path: 'verification/codex-model-usage.jsonl',
+                decision_packets_dir: 'verification/codex-decisions',
+                allowed_gate_states: [
+                    'closed',
+                    'approved',
+                    'consumed',
+                    'blocked',
+                ],
+                allowed_execution_modes: ['subagent', 'main_thread_exception'],
+                premium_reasons: ['critical_zone', 'critical_review'],
+                prohibited_premium_uses: ['repo_exploration', 'status_update'],
+                decision_packet_fields: [
+                    'task_id',
+                    'execution_mode',
+                    'premium_reason',
+                    'problem',
+                    'why_mini_or_local_failed',
+                ],
+                target_mix: {
+                    zero_premium_pct: 80,
+                    one_premium_pct: 15,
+                    two_premium_pct: 5,
+                    throughput_drop_guardrail_pct: 10,
+                },
+                fallback_order: ['tools/local', 'gpt-5.4-mini', 'gpt-5.4'],
+                gate_open_conditions: ['critical_zone', 'cross_lane_high_risk'],
+                notes: 'fixture',
+            },
+        },
+        { defaultPolicy: DEFAULT_POLICY, policyExists: true }
+    );
+
+    assert.equal(report.ok, true);
+    assert.equal(
+        report.warnings.some((warning) =>
+            /root\.codex_model_routing unknown key/i.test(String(warning))
+        ),
+        false
+    );
+    assert.equal(
+        report.effective.codex_model_routing.default_model_tier,
+        'gpt-5.4-mini'
+    );
+    assert.equal(
+        report.effective.codex_model_routing.target_mix.zero_premium_pct,
+        80
+    );
+});

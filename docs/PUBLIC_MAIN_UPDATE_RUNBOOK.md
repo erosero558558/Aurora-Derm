@@ -14,6 +14,7 @@ Routine GitHub uploads should use a dedicated branch and the workflow documented
 - production repo: `/var/www/figo`
 - publish mechanism: `close` for Codex closeout, `publish checkpoint` only for manual exceptions, plus deploy/post-deploy
 - host-side legacy telemetry/fallback: git-sync cron
+- cron install / host wrapper: `docs/PUBLIC_V3_CRON_INSTALL.md`
 - job key: `public_main_sync`
 - job id: `8d31e299-7e57-4959-80b5-aaa2d73e9674`
 - lock: `/tmp/sync-pielarmonia.lock`

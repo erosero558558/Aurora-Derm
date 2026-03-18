@@ -39,6 +39,9 @@ function buildStatusReport(input = {}) {
         codex_instances: input.codex_instances || null,
         provider_modes: input.provider_modes || null,
         runtime_surfaces: input.runtime_surfaces || null,
+        model_usage_summary: input.model_usage_summary || null,
+        premium_budget_remaining: input.premium_budget_remaining || null,
+        premium_gate_blockers: input.premium_gate_blockers || [],
         legacy_terminal_executor_tasks: {
             total: legacyTerminalExecutorTasks.length,
             by_executor: legacyTerminalExecutorTasks.reduce((acc, task) => {
@@ -101,6 +104,14 @@ function renderStatusText(data, options = {}) {
             `Jobs: tracked=${data.jobs.tracked ?? 0}, healthy=${data.jobs.healthy ?? 0}, failing=${data.jobs.failing ?? 0}`
         );
     }
+    if (data?.model_usage_summary) {
+        lines.push(
+            `Model routing: default=${data.model_usage_summary.default_model_tier || 'n/a'}, premium=${data.model_usage_summary.premium_model_tier || 'n/a'}, active_budget_remaining=${data.model_usage_summary.premium_budget_remaining_active ?? 0}, premium_calls=${data.model_usage_summary.premium_calls_total ?? 0}`
+        );
+        lines.push(
+            `Premium mix: zero=${data.model_usage_summary.tasks_zero_premium_pct ?? 0}%, one=${data.model_usage_summary.tasks_one_premium_pct ?? 0}%, two_plus=${data.model_usage_summary.tasks_two_premium_pct ?? 0}%`
+        );
+    }
     if (data?.evidence_summary) {
         lines.push(
             `Evidence terminal: aligned=${data.evidence_summary.aligned_count ?? 0}/${data.evidence_summary.terminal_tasks ?? 0}, missing_expected=${data.evidence_summary.missing_expected_count ?? 0}, debt=${data.evidence_summary.debt_count ?? 0}`
@@ -149,6 +160,15 @@ function renderStatusText(data, options = {}) {
         for (const row of data.runtime_surfaces.rows) {
             lines.push(
                 `- ${row.runtime_surface}: tasks=${row.tasks}, active=${row.active_tasks}, in_progress=${row.in_progress_tasks}, done=${row.done_tasks}`
+            );
+        }
+    }
+    if (Array.isArray(data?.model_usage_summary?.by_lane)) {
+        lines.push('');
+        lines.push('Model routing por lane:');
+        for (const row of data.model_usage_summary.by_lane) {
+            lines.push(
+                `- ${row.codex_instance}: tasks=${row.tasks_total}, active=${row.active_tasks}, closed=${row.closed_tasks}, premium_calls=${row.premium_calls_total}, budget_remaining=${row.premium_budget_remaining}, zero_premium=${row.tasks_zero_premium_pct}%`
             );
         }
     }
@@ -255,6 +275,19 @@ function renderStatusText(data, options = {}) {
             lines.push(
                 `- [${signal}] #${row.rank} ${row.executor}: ${row.weighted_done_points_pct}% (done ponderado, delta ${weightedDoneDelta} vs baseline), ${row.done_tasks_pct}% (tareas done)`
             );
+        }
+    }
+    if (Array.isArray(data?.premium_gate_blockers)) {
+        lines.push('');
+        lines.push('Premium gate blockers:');
+        if (data.premium_gate_blockers.length === 0) {
+            lines.push('- none');
+        } else {
+            for (const row of data.premium_gate_blockers) {
+                lines.push(
+                    `- ${row.task_id}: ${Array.isArray(row.blockers) ? row.blockers.join(' | ') : 'unknown blocker'}`
+                );
+            }
         }
     }
 

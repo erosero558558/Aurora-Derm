@@ -31,6 +31,7 @@ Claude debe seguir el arbol oficial definido en `AGENTS.md`. Resumen:
 Zona critica -> codex_backend_ops lidera con plan + checklist + gate.
 No critica frontend -> codex_frontend.
 No critica backend/docs -> codex_backend_ops.
+Runtime/OpenClaw y gobernanza transversal -> codex_transversal.
 Solape de archivos -> bloquear y replanificar.
 Cambio runtime -> tests + smoke + gate.
 ```

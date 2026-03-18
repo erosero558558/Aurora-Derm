@@ -94,6 +94,12 @@ tasks:
     work_type: fix
     expected_outcome: "Cerrar drift de readiness"
     decision_ref: "DEC-001"
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 1
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v2"
     rework_parent: "CDX-001"
     rework_reason: "hotfix readiness"
     files: ["lib/calendar/A.php", "lib/calendar/B.php"]
@@ -160,6 +166,15 @@ tasks:
     assert.equal(board.tasks[0].integration_slice, 'backend_readiness');
     assert.equal(board.tasks[0].work_type, 'fix');
     assert.equal(board.tasks[0].decision_ref, 'DEC-001');
+    assert.equal(board.tasks[0].model_tier_default, 'gpt-5.4-mini');
+    assert.equal(board.tasks[0].premium_budget, 1);
+    assert.equal(board.tasks[0].premium_calls_used, 0);
+    assert.equal(board.tasks[0].premium_gate_state, 'closed');
+    assert.equal(board.tasks[0].decision_packet_ref, '');
+    assert.equal(
+        board.tasks[0].model_policy_version,
+        '2026-03-17-codex-model-routing-v2'
+    );
     assert.equal(board.tasks[0].rework_parent, 'CDX-001');
     assert.equal(board.tasks[0].rework_reason, 'hotfix readiness');
 });

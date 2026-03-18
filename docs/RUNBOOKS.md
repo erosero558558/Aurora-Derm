@@ -6,6 +6,8 @@ despliegue y respuesta a incidentes del sistema Piel en Armonia.
 ## 1. Despliegue (Deployment)
 
 Para detalles tecnicos profundos, ver `docs/DEPLOY_HOSTING_PLAYBOOK.md`.
+Para publicar un `main` ya validado, ver `docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md`.
+Para el cron host-side de `public_main_sync`, ver `docs/PUBLIC_V3_CRON_INSTALL.md`.
 
 ### 1.1 Despliegue Automatico (Recomendado)
 

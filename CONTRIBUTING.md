@@ -1,13 +1,13 @@
-# Contributing to Piel en Armonia
+# Contribuir a Piel en Armonia
 
-This file stays as a compatibility shim for historical references.
+Este archivo se conserva como shim compatible para referencias historicas.
 
-Canonical source:
+Fuente canonica:
 
 - `docs/CONTRIBUTING.md`
 
-Related workflow docs:
+Docs relacionados:
 
 - `docs/LOCAL_SERVER.md`
-- `docs/GITHUB_PUSH_WORKFLOW.md`
+- `docs/OPERATIONS_INDEX.md`
 - `AGENTS.md`

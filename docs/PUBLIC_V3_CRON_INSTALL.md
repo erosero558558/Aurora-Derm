@@ -1,6 +1,7 @@
 # Public Deploy Cron Install
 
 Nota: el wrapper `deploy-public-v3-cron-sync.sh` conserva un nombre histórico. El cron publica el set actual de artefactos V6.
+Complementa `docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md`, que describe la promoción viva de `main` y la verificacion post-publish.
 
 ## Regla principal
 

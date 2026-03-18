@@ -6,6 +6,7 @@ gobernanza operativa de Piel en Armonia.
 ## Foco actual
 
 - Nucleo interno de consultorio: `turnero + acceso OpenClaw + historias clinicas`
+- Nuevo frente canonico: `Flow OS` como orquestacion del journey del paciente por clinica
 - La web publica queda en pausa funcional; solo recibe fixes criticos, seguridad y mantenimiento minimo.
 
 ## Estado canonico
@@ -35,6 +36,8 @@ gobernanza operativa de Piel en Armonia.
 - `docs/TURNERO_NATIVE_SURFACES.md`
 - `docs/ROOT_SURFACES.md`
 - `AGENTS.md`
+- `docs/FLOW_OS_FOUNDATION.md`
+- `docs/FLOW_OS_ORCHESTRATION.md`
 
 ## Setup local rapido
 
@@ -96,13 +99,22 @@ Higiene local:
   `styles-deferred.min.css`.
 - `workspace:hygiene:*` clasifica y limpia tambien ruido efimero de
   `.generated/site-root/` y `_deploy_bundle/` sin tocar source authored.
-- `workspace:hygiene:doctor` es la entrada canonica V3: inspecciona todos los
-  worktrees, devuelve `overall_state`, agrega `issues[]` por categoria y ordena
-  un `remediation_plan[]` estable por fases.
+- `workspace:hygiene:doctor` es la entrada canonica V5: inspecciona todos los
+  worktrees, devuelve `overall_state`, `scope_context`, `strategy_context`,
+  `lane_context`, `scope_counts`, `issues[]`, `candidate_tasks[]` y
+  `split_plan[]`, y ordena un `remediation_plan[]` por fases.
+- El doctor diferencia `authored` en `in_scope`, `out_of_scope` y
+  `unknown_scope`, y ademas anota `mixed_lane`, `blocked_scope` y
+  `outside_strategy`; si solo ve warnings deja el worktree en `attention` en
+  vez de esconder el contexto real.
 - `workspace:hygiene:status` y `workspace:hygiene:fix` quedan como aliases de
   compatibilidad sobre el mismo motor del doctor.
 - `workspace:hygiene:doctor --json` entrega el payload compacto para tooling; si
   necesitas el dump completo de paths usa `--include-entries`.
+- `workspace:hygiene:doctor -- --task-id CDX-044` fuerza el corte contra una
+  tarea explicita; `--scope-pattern <glob>` permite acotar el scope manualmente
+  y `--show-candidates` expande la vista humana con las mejores tareas
+  sugeridas.
 - `legacy:generated-root:*` inspecciona y desindexa solo las copias trackeadas
   legacy de `es/**`, `en/**`, `_astro/**`, `script.js`, `admin.js`,
   `js/chunks/**`, `js/engines/**`, `js/admin-chunks/**`,

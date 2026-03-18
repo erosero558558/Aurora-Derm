@@ -1,6 +1,7 @@
 # Guía de Contribución
 
 Gracias por tu interés en contribuir a Piel en Armonía. Este documento describe el proceso para configurar el entorno de desarrollo y enviar cambios.
+Si necesitas ubicar el flujo correcto antes de abrir una rama, empieza por `docs/OPERATIONS_INDEX.md`.
 
 ## 1. Configuración del Entorno
 

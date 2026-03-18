@@ -6,6 +6,8 @@ Fuentes canonicas:
 
 - `docs/DEPLOYMENT.md`
 - `docs/DEPLOY_HOSTING_PLAYBOOK.md`
+- `docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md`
+- `docs/PUBLIC_V3_CRON_INSTALL.md`
 
 Atajos:
 

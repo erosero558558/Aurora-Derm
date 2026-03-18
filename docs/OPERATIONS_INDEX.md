@@ -33,10 +33,16 @@ Overrides:
 - Deploy y post-deploy: `docs/DEPLOYMENT.md`
 - Deploy hosting detallado: `docs/DEPLOY_HOSTING_PLAYBOOK.md`
 - Deploy por GitHub Actions: `docs/GITHUB_ACTIONS_DEPLOY.md`
+- Public main update runbook: `docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md`
+- Public V3 cron install: `docs/PUBLIC_V3_CRON_INSTALL.md`
 - Checklist operativa de produccion: `docs/PRODUCTION_TEST_CHECKLIST.md`
 - Cutover de agenda Google: `docs/CALENDAR_CUTOVER.md`
+- Turnero web production cut: `docs/TURNERO_WEB_PRODUCTION_CUT.md`
+- Turnero native surfaces: `docs/TURNERO_NATIVE_SURFACES.md`
+- Turnero apps release runbook: `docs/RUNBOOK_TURNERO_APPS_RELEASE.md`
 - Estado operativo: `docs/PRODUCT_OPERATIONAL_STATUS.md`
 - Plan de estabilidad: `docs/STABILITY_14_DAYS_PLAN.md`
+- Seguridad viva: `docs/SECURITY.md`
 - Auditoria de seguridad: `docs/SECURITY_AUDIT.md`
 - Runbooks operativos: `docs/RUNBOOKS.md`
 - Frontera de superficies permitidas en raiz: `docs/ROOT_SURFACES.md`
@@ -159,6 +165,10 @@ Comandos:
 - `npm run gate:prod:turnero:web-pilot`
 - `npm run turnero:clinic-profile:verify-remote -- --base-url https://pielarmonia.com --json`
 
+Runbook canonico:
+
+- `docs/TURNERO_WEB_PRODUCTION_CUT.md`
+
 Notas:
 
 - Este es el carril canonico del piloto web por clínica; valida `clinic-profile`, `verify-remote`, `publicSync` y las superficies `admin/operator/kiosk/display`.
@@ -176,6 +186,11 @@ Comandos:
 - `npm run verify:prod:turnero:operator:pilot`
 - `npm run smoke:prod:turnero:operator:pilot`
 - `npm run gate:turnero`
+
+Runbooks canonicos:
+
+- `docs/TURNERO_NATIVE_SURFACES.md`
+- `docs/RUNBOOK_TURNERO_APPS_RELEASE.md`
 
 Notas:
 

@@ -99,7 +99,7 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
         },
         tasks: [
             {
-                id: 'AG-001',
+                id: 'CDX-001',
                 title: 'Task "uno"',
                 owner: 'ernesto',
                 executor: 'codex',
@@ -119,6 +119,12 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
                 work_type: 'support',
                 expected_outcome: 'Actualizar evidencia del corte',
                 decision_ref: 'DEC-001',
+                model_tier_default: 'gpt-5.4-mini',
+                premium_budget: 1,
+                premium_calls_used: 0,
+                premium_gate_state: 'closed',
+                decision_packet_ref: '',
+                model_policy_version: '2026-03-17-codex-model-routing-v2',
                 files: ['agent-orchestrator.js'],
                 acceptance: 'ok',
                 acceptance_ref: 'verification/agent-runs/AG-001.md',
@@ -143,6 +149,12 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
     assert.match(yaml, /exception_expires_at:\s+"2000-01-01T08:00:00.000Z"/);
     assert.match(yaml, /exception_state:\s+"expired"/);
     assert.match(yaml, /title:\s+"Task \\"uno\\""/);
+    assert.match(yaml, /model_tier_default:\s+"gpt-5\.4-mini"/);
+    assert.match(yaml, /premium_budget:\s+1/);
+    assert.match(
+        yaml,
+        /model_policy_version:\s+"2026-03-17-codex-model-routing-v2"/
+    );
     assert.match(yaml, /files:\s+\["agent-orchestrator\.js"\]/);
 
     const parsed = parsers.parseBoardContent(yaml, {
@@ -181,6 +193,16 @@ test('core-serializers serializeBoard roundtrip basico con currentDate inyectado
     assert.equal(parsed.tasks[0].integration_slice, 'governance_evidence');
     assert.equal(parsed.tasks[0].work_type, 'support');
     assert.equal(parsed.tasks[0].decision_ref, 'DEC-001');
+    assert.equal(parsed.tasks[0].model_tier_default, 'gpt-5.4-mini');
+    assert.equal(parsed.tasks[0].premium_budget, 1);
+    assert.equal(parsed.tasks[0].premium_calls_used, 0);
+    assert.equal(parsed.tasks[0].premium_gate_state, 'closed');
+    assert.equal(parsed.tasks[0].decision_packet_ref, '');
+    assert.equal(
+        parsed.tasks[0].model_policy_version,
+        '2026-03-17-codex-model-routing-v2'
+    );
+    assert.equal(parsed.tasks[0].id, 'CDX-001');
 });
 
 test('core-serializers serializeDecisions roundtrip basico', () => {

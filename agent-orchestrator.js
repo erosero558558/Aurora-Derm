@@ -41,6 +41,7 @@ const domainDecisions = require('./tools/agent-orchestrator/domain/decisions');
 const domainTaskGuards = require('./tools/agent-orchestrator/domain/task-guards');
 const domainTaskCreate = require('./tools/agent-orchestrator/domain/task-create');
 const domainTaskShape = require('./tools/agent-orchestrator/domain/task-shape');
+const domainModelRouting = require('./tools/agent-orchestrator/domain/model-routing');
 const domainDiagnostics = require('./tools/agent-orchestrator/domain/diagnostics');
 const domainMetrics = require('./tools/agent-orchestrator/domain/metrics');
 const domainRuntime = require('./tools/agent-orchestrator/domain/runtime');
@@ -107,6 +108,16 @@ const PUBLISH_EVENTS_PATH = resolve(
     ROOT,
     'verification',
     'agent-publish-events.jsonl'
+);
+const CODEX_MODEL_USAGE_LEDGER_PATH = resolve(
+    ROOT,
+    'verification',
+    'codex-model-usage.jsonl'
+);
+const CODEX_DECISION_PACKETS_DIR = resolve(
+    ROOT,
+    'verification',
+    'codex-decisions'
 );
 const DEFAULT_GITHUB_REPOSITORY =
     process.env.AGENT_GITHUB_REPOSITORY ||
@@ -193,6 +204,39 @@ const DEFAULT_GOVERNANCE_POLICY = {
         thresholds: {
             domain_score_priority_yellow_below: 80,
         },
+    },
+    codex_model_routing: {
+        version: domainModelRouting.DEFAULT_POLICY_VERSION,
+        scope: 'codex_only',
+        default_model_tier: domainModelRouting.DEFAULT_MODEL_TIER,
+        premium_model_tier: domainModelRouting.DEFAULT_PREMIUM_MODEL,
+        root_thread_model_tier:
+            domainModelRouting.DEFAULT_ROOT_THREAD_MODEL_TIER,
+        premium_budget_unit: domainModelRouting.DEFAULT_PREMIUM_BUDGET_UNIT,
+        ledger_path: 'verification/codex-model-usage.jsonl',
+        decision_packets_dir: 'verification/codex-decisions',
+        allowed_gate_states: domainModelRouting.DEFAULT_ALLOWED_GATE_STATES,
+        premium_reasons: domainModelRouting.DEFAULT_PREMIUM_REASONS,
+        allowed_execution_modes:
+            domainModelRouting.DEFAULT_ALLOWED_EXECUTION_MODES,
+        prohibited_premium_uses:
+            domainModelRouting.DEFAULT_PROHIBITED_PREMIUM_USES,
+        decision_packet_fields:
+            domainModelRouting.DEFAULT_DECISION_PACKET_FIELDS,
+        target_mix: {
+            zero_premium_pct: 80,
+            one_premium_pct: 15,
+            two_premium_pct: 5,
+            throughput_drop_guardrail_pct: 10,
+        },
+        fallback_order: ['tools/local', 'gpt-5.4-mini', 'gpt-5.4'],
+        gate_open_conditions: [
+            'critical_zone',
+            'cross_lane_high_risk',
+            'mini_failed_unblock',
+            'critical_review',
+        ],
+        notes: 'Fase 1 codex-only: hilo principal en GPT-5.4 mini, GPT-5.4 solo en subagentes premium o excepciones importadas auditadas.',
     },
     enforcement: {
         branch_profiles: {
@@ -485,6 +529,37 @@ function parseBoard() {
     });
 }
 
+function getModelRoutingPolicy() {
+    return domainModelRouting.getModelRoutingPolicy(getGovernancePolicy());
+}
+
+function loadModelUsageLedger(options = {}) {
+    const policy = getModelRoutingPolicy();
+    const ledgerPath = options.ledgerPath
+        ? resolve(ROOT, String(options.ledgerPath))
+        : resolve(ROOT, String(policy.ledger_path || ''));
+    return domainModelRouting.readModelUsageLedger({
+        governancePolicy: policy,
+        ledgerPath,
+        readJsonlFile: (filePath) =>
+            coreIo.readJsonlFile(filePath, {
+                exists: existsSync,
+                readFile: readFileSync,
+            }),
+    });
+}
+
+function appendModelUsageLedgerEntries(entries, options = {}) {
+    const policy = getModelRoutingPolicy();
+    const ledgerPath = options.ledgerPath
+        ? resolve(ROOT, String(options.ledgerPath))
+        : resolve(ROOT, String(policy.ledger_path || ''));
+    return coreIo.appendJsonlFile(ledgerPath, entries, {
+        ensureDir: coreIo.ensureDirForFile,
+        writeFile: writeFileSync,
+    });
+}
+
 function parseHandoffs() {
     if (!existsSync(HANDOFFS_PATH)) {
         return { version: 1, handoffs: [] };
@@ -667,6 +742,95 @@ function validateTaskGovernancePrechecks(board, task, options = {}) {
         ownershipMatrix: DUAL_CODEX_OWNERSHIP_MATRIX,
         activeStatuses: ACTIVE_STATUSES,
         isExpired,
+        governancePolicy: getModelRoutingPolicy(),
+        ledgerEntries:
+            options.ledgerEntries ||
+            loadModelUsageLedger(options.modelRoutingOptions || {}),
+        syncTaskModelRoutingState,
+        collectTaskModelRoutingErrors,
+    });
+}
+
+function syncTaskModelRoutingState(task, options = {}) {
+    return domainModelRouting.syncTaskModelRoutingState(task, {
+        ...options,
+        governancePolicy: options.governancePolicy || getModelRoutingPolicy(),
+        ledgerEntries:
+            options.ledgerEntries ||
+            loadModelUsageLedger(options.modelRoutingOptions || {}),
+    });
+}
+
+function collectTaskModelRoutingErrors(task, options = {}) {
+    return domainModelRouting.collectTaskModelRoutingErrors(task, {
+        ...options,
+        governancePolicy: options.governancePolicy || getModelRoutingPolicy(),
+        ledgerEntries:
+            options.ledgerEntries ||
+            loadModelUsageLedger(options.modelRoutingOptions || {}),
+        rootPath: ROOT,
+        existsSync,
+        readFileSync,
+        activeStatuses: ACTIVE_STATUSES,
+    });
+}
+
+function collectPremiumGateBlockers(tasks, options = {}) {
+    return domainModelRouting.collectPremiumGateBlockers(tasks, {
+        ...options,
+        governancePolicy: options.governancePolicy || getModelRoutingPolicy(),
+        ledgerEntries:
+            options.ledgerEntries ||
+            loadModelUsageLedger(options.modelRoutingOptions || {}),
+        rootPath: ROOT,
+        existsSync,
+        readFileSync,
+        activeStatuses: ACTIVE_STATUSES,
+    });
+}
+
+function buildModelUsageSummary(tasks, options = {}) {
+    return domainModelRouting.buildModelUsageSummary(tasks, {
+        ...options,
+        governancePolicy: options.governancePolicy || getModelRoutingPolicy(),
+        ledgerEntries:
+            options.ledgerEntries ||
+            loadModelUsageLedger(options.modelRoutingOptions || {}),
+        rootPath: ROOT,
+        existsSync,
+        readFileSync,
+        activeStatuses: ACTIVE_STATUSES,
+    });
+}
+
+function buildPremiumRoi(tasks, options = {}) {
+    return domainModelRouting.buildPremiumRoi(tasks, {
+        ...options,
+        governancePolicy: options.governancePolicy || getModelRoutingPolicy(),
+        ledgerEntries:
+            options.ledgerEntries ||
+            loadModelUsageLedger(options.modelRoutingOptions || {}),
+        activeStatuses: ACTIVE_STATUSES,
+    });
+}
+
+function buildTaskModelUsageSummary(task, options = {}) {
+    return domainModelRouting.buildTaskModelUsageSummary(task, {
+        ...options,
+        governancePolicy: options.governancePolicy || getModelRoutingPolicy(),
+        ledgerEntries:
+            options.ledgerEntries ||
+            loadModelUsageLedger(options.modelRoutingOptions || {}),
+    });
+}
+
+function validateDecisionPacketFile(ref, options = {}) {
+    return domainModelRouting.validateDecisionPacketFile(ref, {
+        ...options,
+        governancePolicy: options.governancePolicy || getModelRoutingPolicy(),
+        rootPath: ROOT,
+        existsSync,
+        readFileSync,
     });
 }
 
@@ -1437,6 +1601,9 @@ async function cmdStatus(args) {
         loadJobsSnapshot,
         loadPublishEvents,
         summarizeJobsSnapshot,
+        loadModelUsageLedger,
+        buildModelUsageSummary,
+        collectPremiumGateBlockers,
     });
 }
 
@@ -1507,6 +1674,11 @@ function cmdMetrics(args = []) {
         writeFileSync,
         CONTRIBUTION_HISTORY_PATH,
         DOMAIN_HEALTH_HISTORY_PATH,
+        getGovernancePolicy,
+        loadModelUsageLedger,
+        buildModelUsageSummary,
+        collectPremiumGateBlockers,
+        buildPremiumRoi,
     });
 }
 
@@ -1839,6 +2011,8 @@ async function cmdClose(args) {
         getLastBoardWriteMeta,
         toTaskJson,
         parseExpectedBoardRevisionFlag,
+        loadModelUsageLedger,
+        buildTaskModelUsageSummary,
     });
 }
 
@@ -2304,6 +2478,15 @@ const governanceRuntime =
         validateTaskGovernancePrechecks,
         buildBoardWipLimitDiagnostics,
         getGovernancePolicy,
+        loadModelUsageLedger,
+        buildModelUsageSummary,
+        collectPremiumGateBlockers,
+        appendModelUsageLedgerEntries,
+        syncTaskModelRoutingState,
+        buildTaskModelUsageSummary,
+        validateDecisionPacketFile,
+        printJson: coreOutput.printJson,
+        toTaskJson,
     });
 
 async function main() {

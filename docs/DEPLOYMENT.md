@@ -63,6 +63,7 @@ Si `git-sync` no replica `origin/main` o GitHub runners no alcanzan el hosting, 
 - [PUBLIC_V2_MANUAL_DEPLOY.md](./PUBLIC_V2_MANUAL_DEPLOY.md)
 - [PUBLIC_V3_MANUAL_DEPLOY.md](./PUBLIC_V3_MANUAL_DEPLOY.md)
 - [PUBLIC_MAIN_UPDATE_RUNBOOK.md](./PUBLIC_MAIN_UPDATE_RUNBOOK.md)
+- [PUBLIC_V3_CRON_INSTALL.md](./PUBLIC_V3_CRON_INSTALL.md)
 - Script reusable canónico: `bin/deploy-public-v3-live.sh`
 - Compatibilidad temporal: `bin/deploy-public-v2-live.sh` delega a V3
 

@@ -5,6 +5,7 @@ Este archivo se conserva como shim compatible para referencias historicas.
 Fuente canonica:
 
 - `docs/SECURITY_AUDIT.md`
+- `docs/SECURITY.md`
 - `docs/RUNBOOKS.md`
 
 Nota:

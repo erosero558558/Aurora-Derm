@@ -1,4 +1,46 @@
 export function renderCallbacksWorkbench() {
+    const quickFilters = [
+        ['all', 'Todos', true],
+        ['pending', 'Pendientes', false],
+        ['contacted', 'Contactados', false],
+        ['today', 'Hoy', false],
+        ['sla_urgent', 'Urgentes SLA', false],
+    ];
+    const filters = [
+        ['all', 'Todos'],
+        ['pending', 'Pendientes'],
+        ['contacted', 'Contactados'],
+        ['today', 'Hoy'],
+        ['sla_urgent', 'Urgentes SLA'],
+    ];
+    const sorts = [
+        ['priority_desc', 'Prioridad comercial'],
+        ['recent_desc', 'Mas recientes'],
+        ['waiting_desc', 'Mayor espera (SLA)'],
+    ];
+
+    const quickFilterButtons = quickFilters
+        .map(
+            ([value, label, active]) => `
+                <button type="button" class="callback-quick-filter-btn${active ? ' is-active' : ''}" data-action="callback-quick-filter" data-filter-value="${value}">${label}</button>
+            `
+        )
+        .join('');
+    const filterOptions = filters
+        .map(
+            ([value, label]) => `
+                <option value="${value}">${label}</option>
+            `
+        )
+        .join('');
+    const sortOptions = sorts
+        .map(
+            ([value, label]) => `
+                <option value="${value}">${label}</option>
+            `
+        )
+        .join('');
+
     return `
         <div class="sony-panel callbacks-workbench">
             <header class="section-header callbacks-workbench-head">
@@ -9,30 +51,20 @@ export function renderCallbacksWorkbench() {
             </header>
             <div class="toolbar-row">
                 <div class="toolbar-group">
-                    <button type="button" class="callback-quick-filter-btn is-active" data-action="callback-quick-filter" data-filter-value="all">Todos</button>
-                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="pending">Pendientes</button>
-                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="contacted">Contactados</button>
-                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="today">Hoy</button>
-                    <button type="button" class="callback-quick-filter-btn" data-action="callback-quick-filter" data-filter-value="sla_urgent">Urgentes SLA</button>
+                    ${quickFilterButtons}
                 </div>
             </div>
             <div class="toolbar-row callbacks-toolbar">
                 <label>
                     <span class="sr-only">Filtro callbacks</span>
                     <select id="callbackFilter">
-                        <option value="all">Todos</option>
-                        <option value="pending">Pendientes</option>
-                        <option value="contacted">Contactados</option>
-                        <option value="today">Hoy</option>
-                        <option value="sla_urgent">Urgentes SLA</option>
+                        ${filterOptions}
                     </select>
                 </label>
                 <label>
                     <span class="sr-only">Orden callbacks</span>
                     <select id="callbackSort">
-                        <option value="priority_desc">Prioridad comercial</option>
-                        <option value="recent_desc">Mas recientes</option>
-                        <option value="waiting_desc">Mayor espera (SLA)</option>
+                        ${sortOptions}
                     </select>
                 </label>
                 <input type="search" id="searchCallbacks" placeholder="Buscar telefono o servicio" />

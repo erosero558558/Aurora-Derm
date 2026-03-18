@@ -13,6 +13,7 @@ const srcNoConsoleRule = [
 module.exports = [
     {
         ignores: [
+            '.generated/**',
             '_deploy_bundle/**',
             'vendor/**',
             'node_modules/**',
@@ -26,6 +27,7 @@ module.exports = [
         // These runtime bundles stay versioned for git-sync deploy, but drift is
         // enforced by artifact contracts instead of authored-source lint.
         ignores: [
+            '.generated/**',
             'admin.js',
             'script.js',
             'vendor/**',

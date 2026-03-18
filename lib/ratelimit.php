@@ -115,22 +115,53 @@ function rate_limit_ip_in_range(string $ip, string $range): bool
 }
 
 /**
- * Resolves a stable user identifier from headers/session for per-user limits.
+ * Adds a normalized candidate identifier when it is not empty.
+ *
+ * @param array<int,string> $candidates
  */
-function rate_limit_user_identifier(): string
+function rate_limit_add_candidate(array &$candidates, $candidate): void
+{
+    if (!is_string($candidate) && !is_int($candidate)) {
+        return;
+    }
+
+    $value = trim((string) $candidate);
+    if ($value === '') {
+        return;
+    }
+
+    if (strlen($value) > 256) {
+        $value = substr($value, 0, 256);
+    }
+
+    $candidates[] = $value;
+}
+
+/**
+ * Reads a positive integer from the environment with a fallback.
+ */
+function rate_limit_env_int(string $name, int $fallback): int
+{
+    $raw = getenv($name);
+    $value = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : $fallback;
+    return max(1, $value);
+}
+
+/**
+ * Collects user identifier candidates from request headers.
+ *
+ * @return array<int,string>
+ */
+function rate_limit_header_identifier_candidates(): array
 {
     $candidates = [];
 
-    $headerCandidates = [
+    foreach ([
         $_SERVER['HTTP_X_USER_ID'] ?? null,
         $_SERVER['HTTP_X_PATIENT_ID'] ?? null,
         $_SERVER['HTTP_X_SESSION_ID'] ?? null
-    ];
-
-    foreach ($headerCandidates as $candidate) {
-        if (is_string($candidate) && trim($candidate) !== '') {
-            $candidates[] = trim($candidate);
-        }
+    ] as $candidate) {
+        rate_limit_add_candidate($candidates, $candidate);
     }
 
     $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? null;
@@ -139,56 +170,79 @@ function rate_limit_user_identifier(): string
         if (preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches) === 1) {
             $token = trim((string) ($matches[1] ?? ''));
             if ($token !== '') {
-                $candidates[] = 'bearer:' . hash('sha256', $token);
+                rate_limit_add_candidate(
+                    $candidates,
+                    'bearer:' . hash('sha256', $token)
+                );
             }
         } else {
-            $candidates[] = 'auth:' . hash('sha256', $authHeader);
+            rate_limit_add_candidate(
+                $candidates,
+                'auth:' . hash('sha256', $authHeader)
+            );
         }
     }
 
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        $operatorSession = function_exists('operator_auth_current_identity')
-            ? operator_auth_current_identity(false)
-            : null;
-        $sessionCandidates = [
-            $_SESSION['user_id'] ?? null,
-            $_SESSION['patient_id'] ?? null,
-            is_array($operatorSession) ? ('operator:' . trim((string) ($operatorSession['email'] ?? ''))) : null,
-            $_SESSION['admin_logged_in'] ?? null
-        ];
+    return $candidates;
+}
 
-        if (function_exists('operator_auth_current_identity')) {
-            $operator = operator_auth_current_identity(false);
-            if (is_array($operator)) {
-                $email = strtolower(trim((string) ($operator['email'] ?? '')));
-                if ($email !== '') {
-                    $sessionCandidates[] = 'operator:' . $email;
-                }
-            }
-        }
+/**
+ * Collects user identifier candidates from the active session.
+ *
+ * @return array<int,string>
+ */
+function rate_limit_session_identifier_candidates(): array
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        return [];
+    }
 
-        foreach ($sessionCandidates as $candidate) {
-            if (is_bool($candidate)) {
-                if ($candidate === true) {
-                    $candidates[] = 'session:admin';
-                }
-                continue;
-            }
-            if (is_int($candidate) || is_string($candidate)) {
-                $value = trim((string) $candidate);
-                if ($value !== '') {
-                    $candidates[] = 'session:' . $value;
-                }
-            }
+    $candidates = [];
+    $operatorSession = function_exists('operator_auth_current_identity')
+        ? operator_auth_current_identity(false)
+        : null;
+    $sessionCandidates = [
+        $_SESSION['user_id'] ?? null,
+        $_SESSION['patient_id'] ?? null,
+        $_SESSION['admin_logged_in'] ?? null,
+    ];
+
+    if (is_array($operatorSession)) {
+        $email = strtolower(trim((string) ($operatorSession['email'] ?? '')));
+        if ($email !== '') {
+            $sessionCandidates[] = 'operator:' . $email;
         }
     }
+
+    foreach ($sessionCandidates as $candidate) {
+        if (is_bool($candidate)) {
+            if ($candidate === true) {
+                rate_limit_add_candidate($candidates, 'session:admin');
+            }
+            continue;
+        }
+
+        if (is_int($candidate) || is_string($candidate)) {
+            rate_limit_add_candidate($candidates, 'session:' . $candidate);
+        }
+    }
+
+    return $candidates;
+}
+
+/**
+ * Resolves a stable user identifier from headers/session for per-user limits.
+ */
+function rate_limit_user_identifier(): string
+{
+    $candidates = array_merge(
+        rate_limit_header_identifier_candidates(),
+        rate_limit_session_identifier_candidates()
+    );
 
     foreach ($candidates as $candidate) {
         if (!is_string($candidate) || trim($candidate) === '') {
             continue;
-        }
-        if (strlen($candidate) > 256) {
-            $candidate = substr($candidate, 0, 256);
         }
         return $candidate;
     }
@@ -213,9 +267,10 @@ function rate_limit_user_limits_enabled(): bool
  */
 function rate_limit_user_max_requests(int $fallback): int
 {
-    $raw = getenv('PIELARMONIA_RATE_LIMIT_USER_MAX_REQUESTS');
-    $value = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : $fallback;
-    return max(1, $value);
+    return rate_limit_env_int(
+        'PIELARMONIA_RATE_LIMIT_USER_MAX_REQUESTS',
+        $fallback
+    );
 }
 
 /**
@@ -223,9 +278,10 @@ function rate_limit_user_max_requests(int $fallback): int
  */
 function rate_limit_user_window_seconds(int $fallback): int
 {
-    $raw = getenv('PIELARMONIA_RATE_LIMIT_USER_WINDOW_SECONDS');
-    $value = is_string($raw) && trim($raw) !== '' ? (int) trim($raw) : $fallback;
-    return max(1, $value);
+    return rate_limit_env_int(
+        'PIELARMONIA_RATE_LIMIT_USER_WINDOW_SECONDS',
+        $fallback
+    );
 }
 
 /**
@@ -323,6 +379,88 @@ function rate_limit_write_entries(string $filePath, array $entries): void
 }
 
 /**
+ * Reads and filters the active window entries for a persisted key.
+ *
+ * @return int[]
+ */
+function rate_limit_entries_in_window(string $filePath, int $now, int $windowSeconds): array
+{
+    return rate_limit_filter_window(
+        rate_limit_read_entries($filePath),
+        $now,
+        $windowSeconds
+    );
+}
+
+/**
+ * Returns the current per-user rate-limit state for an action.
+ *
+ * @return array{enabled:bool,userId:string,filePath:string,entries:int[],maxRequests:int,windowSeconds:int}
+ */
+function rate_limit_user_state(string $action, int $now, int $maxRequests, int $windowSeconds): array
+{
+    if (!rate_limit_user_limits_enabled()) {
+        return [
+            'enabled' => false,
+            'userId' => '',
+            'filePath' => '',
+            'entries' => [],
+            'maxRequests' => $maxRequests,
+            'windowSeconds' => $windowSeconds,
+        ];
+    }
+
+    $userId = rate_limit_user_identifier();
+    if ($userId === '') {
+        return [
+            'enabled' => false,
+            'userId' => '',
+            'filePath' => '',
+            'entries' => [],
+            'maxRequests' => $maxRequests,
+            'windowSeconds' => $windowSeconds,
+        ];
+    }
+
+    $userMaxRequests = rate_limit_user_max_requests($maxRequests);
+    $userWindowSeconds = rate_limit_user_window_seconds($windowSeconds);
+    $userFilePath = rate_limit_file_path($action . ':user', $userId);
+
+    return [
+        'enabled' => true,
+        'userId' => $userId,
+        'filePath' => $userFilePath,
+        'entries' => rate_limit_entries_in_window($userFilePath, $now, $userWindowSeconds),
+        'maxRequests' => $userMaxRequests,
+        'windowSeconds' => $userWindowSeconds,
+    ];
+}
+
+/**
+ * Persists a blocked rate-limit window and emits the audit event.
+ *
+ * @param int[] $entries
+ */
+function rate_limit_emit_blocked(string $action, string $scope, string $ip, string $filePath, array $entries, int $maxRequests, int $windowSeconds, string $userId = ''): void
+{
+    rate_limit_write_entries($filePath, $entries);
+    $details = [
+        'action' => $action,
+        'scope' => $scope,
+        'ip' => $ip,
+        'count' => count($entries),
+        'maxRequests' => $maxRequests,
+        'windowSeconds' => $windowSeconds,
+    ];
+
+    if ($userId !== '') {
+        $details['user'] = $userId;
+    }
+
+    rate_limit_emit_event('ratelimit.blocked', $details);
+}
+
+/**
  * Performs probabilistic shard cleanup to avoid full-directory scans per request.
  */
 function rate_limit_cleanup_random_shard(string $rateDir, int $now): void
@@ -356,28 +494,13 @@ function is_rate_limited(string $action, int $maxRequests = 10, int $windowSecon
 
     $now = time();
     $filePath = rate_limit_file_path($action);
-    $entries = rate_limit_read_entries($filePath);
-    $entries = rate_limit_filter_window($entries, $now, $windowSeconds);
+    $entries = rate_limit_entries_in_window($filePath, $now, $windowSeconds);
     if (count($entries) >= $maxRequests) {
         return true;
     }
 
-    if (!rate_limit_user_limits_enabled()) {
-        return false;
-    }
-
-    $userId = rate_limit_user_identifier();
-    if ($userId === '') {
-        return false;
-    }
-
-    $userMaxRequests = rate_limit_user_max_requests($maxRequests);
-    $userWindowSeconds = rate_limit_user_window_seconds($windowSeconds);
-    $userFilePath = rate_limit_file_path($action . ':user', $userId);
-    $userEntries = rate_limit_read_entries($userFilePath);
-    $userEntries = rate_limit_filter_window($userEntries, $now, $userWindowSeconds);
-
-    return count($userEntries) >= $userMaxRequests;
+    $userState = rate_limit_user_state($action, $now, $maxRequests, $windowSeconds);
+    return $userState['enabled'] && count($userState['entries']) >= $userState['maxRequests'];
 }
 
 /**
@@ -392,53 +515,40 @@ function check_rate_limit(string $action, int $maxRequests = 10, int $windowSeco
     $filePath = rate_limit_file_path($action);
     $now = time();
 
-    $entries = rate_limit_read_entries($filePath);
-    $entries = rate_limit_filter_window($entries, $now, $windowSeconds);
+    $entries = rate_limit_entries_in_window($filePath, $now, $windowSeconds);
     $clientIp = rate_limit_client_ip();
 
     if (count($entries) >= $maxRequests) {
-        rate_limit_write_entries($filePath, $entries);
-        rate_limit_emit_event('ratelimit.blocked', [
-            'action' => $action,
-            'scope' => 'ip',
-            'ip' => $clientIp,
-            'count' => count($entries),
-            'maxRequests' => $maxRequests,
-            'windowSeconds' => $windowSeconds
-        ]);
+        rate_limit_emit_blocked(
+            $action,
+            'ip',
+            $clientIp,
+            $filePath,
+            $entries,
+            $maxRequests,
+            $windowSeconds
+        );
         return false;
     }
 
-    $userId = '';
-    $userFilePath = '';
-    $userMaxRequests = 0;
-    $userWindowSeconds = 0;
-    if (rate_limit_user_limits_enabled()) {
-        $userId = rate_limit_user_identifier();
-        if ($userId !== '') {
-            $userMaxRequests = rate_limit_user_max_requests($maxRequests);
-            $userWindowSeconds = rate_limit_user_window_seconds($windowSeconds);
-            $userFilePath = rate_limit_file_path($action . ':user', $userId);
-            $userEntries = rate_limit_read_entries($userFilePath);
-            $userEntries = rate_limit_filter_window($userEntries, $now, $userWindowSeconds);
-
-            if (count($userEntries) >= $userMaxRequests) {
-                rate_limit_write_entries($userFilePath, $userEntries);
-                rate_limit_emit_event('ratelimit.blocked', [
-                    'action' => $action,
-                    'scope' => 'user',
-                    'ip' => $clientIp,
-                    'user' => $userId,
-                    'count' => count($userEntries),
-                    'maxRequests' => $userMaxRequests,
-                    'windowSeconds' => $userWindowSeconds
-                ]);
-                return false;
-            }
-
-            $userEntries[] = $now;
-            rate_limit_write_entries($userFilePath, $userEntries);
+    $userState = rate_limit_user_state($action, $now, $maxRequests, $windowSeconds);
+    if ($userState['enabled']) {
+        if (count($userState['entries']) >= $userState['maxRequests']) {
+            rate_limit_emit_blocked(
+                $action,
+                'user',
+                $clientIp,
+                $userState['filePath'],
+                $userState['entries'],
+                $userState['maxRequests'],
+                $userState['windowSeconds'],
+                $userState['userId']
+            );
+            return false;
         }
+
+        $userState['entries'][] = $now;
+        rate_limit_write_entries($userState['filePath'], $userState['entries']);
     }
 
     $entries[] = $now;
@@ -448,13 +558,15 @@ function check_rate_limit(string $action, int $maxRequests = 10, int $windowSeco
 
     rate_limit_emit_event('ratelimit.allowed', [
         'action' => $action,
-        'scope' => $userId !== '' ? 'ip+user' : 'ip',
+        'scope' => $userState['enabled'] ? 'ip+user' : 'ip',
         'ip' => $clientIp,
-        'user' => $userId,
+        'user' => $userState['enabled'] ? $userState['userId'] : '',
         'remainingIp' => max(0, $maxRequests - count($entries)),
-        'remainingUser' => $userId !== '' ? max(0, $userMaxRequests - count($userEntries)) : null,
+        'remainingUser' => $userState['enabled']
+            ? max(0, $userState['maxRequests'] - count($userState['entries']))
+            : null,
         'windowSeconds' => $windowSeconds,
-        'userWindowSeconds' => $userWindowSeconds > 0 ? $userWindowSeconds : null
+        'userWindowSeconds' => $userState['enabled'] ? $userState['windowSeconds'] : null
     ]);
 
     return true;

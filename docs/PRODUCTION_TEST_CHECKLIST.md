@@ -4,6 +4,11 @@ Fuente canonica detallada para smoke manual y validacion operativa en
 produccion. `CHECKLIST-PRUEBAS-PRODUCCION.md` en la raiz queda solo como shim
 compatible.
 
+Runbooks relacionados:
+
+- `docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md`
+- `docs/PUBLIC_V3_CRON_INSTALL.md`
+
 Fecha de ejecucion sugerida: completar al desplegar.
 
 ## 1. Pre-check de servidor

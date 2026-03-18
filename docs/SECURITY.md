@@ -1,6 +1,7 @@
 # Guía de Seguridad
 
 La seguridad es una prioridad crítica para Piel en Armonía, especialmente considerando el manejo de datos de pacientes (PII) y pagos.
+Si necesitas ubicar el flujo correcto antes de actuar, empieza por `docs/OPERATIONS_INDEX.md`.
 
 ## Políticas de Seguridad
 

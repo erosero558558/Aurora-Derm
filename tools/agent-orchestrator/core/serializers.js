@@ -214,6 +214,38 @@ function serializeBoard(board, options = {}) {
         lines.push(
             `    runtime_last_transport: ${task.runtime_last_transport || ''}`
         );
+        const shouldEmitModelRoutingFields =
+            /^CDX-\d+$/i.test(String(task.id || '').trim()) &&
+            (['ready', 'in_progress', 'review', 'blocked'].includes(
+                String(task.status || '').trim()
+            ) ||
+                Boolean(
+                    String(task.model_tier_default || '').trim() ||
+                    String(task.decision_packet_ref || '').trim() ||
+                    String(task.model_policy_version || '').trim() ||
+                    Number.isFinite(Number(task.premium_budget)) ||
+                    Number.isFinite(Number(task.premium_calls_used))
+                ));
+        if (shouldEmitModelRoutingFields) {
+            lines.push(
+                `    model_tier_default: ${quote(task.model_tier_default || 'gpt-5.4-mini')}`
+            );
+            lines.push(
+                `    premium_budget: ${normalizeTaskInt(task.premium_budget, 0)}`
+            );
+            lines.push(
+                `    premium_calls_used: ${normalizeTaskInt(task.premium_calls_used, 0)}`
+            );
+            lines.push(
+                `    premium_gate_state: ${quote(task.premium_gate_state || 'closed')}`
+            );
+            lines.push(
+                `    decision_packet_ref: ${quote(task.decision_packet_ref || '')}`
+            );
+            lines.push(
+                `    model_policy_version: ${quote(task.model_policy_version || '')}`
+            );
+        }
         lines.push(`    files: ${serializeArrayInline(task.files || [])}`);
         lines.push(`    source_signal: ${task.source_signal || 'manual'}`);
         lines.push(`    source_ref: ${quote(task.source_ref || '')}`);

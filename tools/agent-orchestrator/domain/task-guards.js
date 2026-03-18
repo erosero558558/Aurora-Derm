@@ -481,9 +481,9 @@ function isFrontendPublicReleaseSupportTask(task) {
     if (!task || typeof task !== 'object') return false;
     return Boolean(
         domainStrategy.isReleasePromotionExceptionTask(task) &&
-            normalizeOptionalToken(task.scope) === 'frontend-public' &&
-            normalizeOptionalToken(task.codex_instance) === 'codex_frontend' &&
-            normalizeOptionalToken(task.domain_lane) === 'frontend_content'
+        normalizeOptionalToken(task.scope) === 'frontend-public' &&
+        normalizeOptionalToken(task.codex_instance) === 'codex_frontend' &&
+        normalizeOptionalToken(task.domain_lane) === 'frontend_content'
     );
 }
 
@@ -751,6 +751,9 @@ function validateTaskGovernancePrechecks(board, task, options = {}) {
         : DEFAULT_CRITICAL_SCOPE_KEYWORDS;
     const activeStatuses = options.activeStatuses || DEFAULT_ACTIVE_STATUSES;
     ensureTaskDualCodexDefaults(task, options);
+    if (typeof options.syncTaskModelRoutingState === 'function') {
+        options.syncTaskModelRoutingState(task, options);
+    }
     const activeStrategy = domainStrategy.getActiveStrategy(board);
     const taskStatus = String(task?.status || '').trim();
     if (activeStrategy && activeStatuses.has(taskStatus)) {
@@ -803,6 +806,18 @@ function validateTaskGovernancePrechecks(board, task, options = {}) {
         activeStatuses,
         decisionsData: options.decisionsData,
     });
+    if (typeof options.collectTaskModelRoutingErrors === 'function') {
+        const modelRoutingErrors = options.collectTaskModelRoutingErrors(task, {
+            ...options,
+            activeStatuses,
+        });
+        if (
+            Array.isArray(modelRoutingErrors) &&
+            modelRoutingErrors.length > 0
+        ) {
+            throw new Error(modelRoutingErrors[0]);
+        }
+    }
 }
 
 module.exports = {

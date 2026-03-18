@@ -44,6 +44,17 @@ function printCloseJsonError(error) {
     return payload;
 }
 
+function createBoardRevisionMismatchError(expectedRevision, actualRevision) {
+    const error = new Error(
+        `board revision mismatch: expected ${expectedRevision}, actual ${actualRevision}`
+    );
+    error.code = 'board_revision_mismatch';
+    error.error_code = 'board_revision_mismatch';
+    error.expected_revision = expectedRevision;
+    error.actual_revision = actualRevision;
+    return error;
+}
+
 function syncCodexPlanOnClose(taskId, ctx = {}) {
     if (!/^CDX-\d+$/i.test(String(taskId || '').trim())) {
         return;
@@ -91,6 +102,8 @@ async function handleCloseCommand(ctx) {
         getLastBoardWriteMeta,
         toTaskJson,
         parseExpectedBoardRevisionFlag,
+        loadModelUsageLedger,
+        buildTaskModelUsageSummary,
     } = ctx;
     const { positionals, flags } = parseFlags(args);
     const wantsJson = args.includes('--json');
@@ -111,6 +124,30 @@ async function handleCloseCommand(ctx) {
     if (!task) {
         throw new Error(`No existe task_id ${taskId} en AGENT_BOARD.yaml`);
     }
+    const expectRevision = parseExpectedRevisionFromFlags(
+        flags,
+        parseExpectedBoardRevisionFlag,
+        { required: true, commandLabel: 'close' }
+    );
+    const currentRevisionRaw = Number(board?.policy?.revision);
+    const currentRevision =
+        Number.isInteger(currentRevisionRaw) && currentRevisionRaw >= 0
+            ? currentRevisionRaw
+            : 0;
+    if (
+        expectRevision !== null &&
+        expectRevision !== undefined &&
+        Number(expectRevision) !== currentRevision
+    ) {
+        throw createBoardRevisionMismatchError(
+            Number(expectRevision),
+            currentRevision
+        );
+    }
+    const modelUsageLedger =
+        typeof loadModelUsageLedger === 'function'
+            ? loadModelUsageLedger()
+            : [];
 
     if (task.cross_domain) {
         const handoffData =
@@ -140,11 +177,6 @@ async function handleCloseCommand(ctx) {
         toRelativeRepoPath(evidencePath)
     );
     board.policy.updated_at = currentDate();
-    const expectRevision = parseExpectedRevisionFromFlags(
-        flags,
-        parseExpectedBoardRevisionFlag,
-        { required: true, commandLabel: 'close' }
-    );
     const isCodexTask =
         String(task.executor || '')
             .trim()
@@ -276,6 +308,12 @@ async function handleCloseCommand(ctx) {
         : null;
 
     if (wantsJson) {
+        const modelUsageSummary =
+            typeof buildTaskModelUsageSummary === 'function'
+                ? buildTaskModelUsageSummary(task, {
+                      ledgerEntries: modelUsageLedger,
+                  })
+                : null;
         console.log(
             JSON.stringify(
                 {
@@ -294,6 +332,7 @@ async function handleCloseCommand(ctx) {
                     live_status: publishResult?.live_status || null,
                     verification_pending:
                         publishResult?.verification_pending || false,
+                    model_usage_summary: modelUsageSummary,
                 },
                 null,
                 2
@@ -302,14 +341,22 @@ async function handleCloseCommand(ctx) {
         return;
     }
 
+    const modelUsageSummary =
+        typeof buildTaskModelUsageSummary === 'function'
+            ? buildTaskModelUsageSummary(task, {
+                  ledgerEntries: modelUsageLedger,
+              })
+            : null;
     if (publishResult?.published_commit) {
         console.log(
-            `Tarea cerrada y publicada: ${taskId} -> ${publishResult.published_commit}`
+            `Tarea cerrada y publicada: ${taskId} -> ${publishResult.published_commit}${modelUsageSummary ? ` | premium=${modelUsageSummary.premium_calls_used}/${modelUsageSummary.premium_budget}` : ''}`
         );
         return;
     }
 
-    console.log(`Tarea cerrada: ${taskId}`);
+    console.log(
+        `Tarea cerrada: ${taskId}${modelUsageSummary ? ` | premium=${modelUsageSummary.premium_calls_used}/${modelUsageSummary.premium_budget}` : ''}`
+    );
 }
 
 module.exports = {

@@ -12,6 +12,61 @@ import {
     whatsappLink,
 } from '../utils.js';
 
+const TRANSFER_REVIEW_PAYMENT_STATUSES = new Set([
+    'pending_transfer_review',
+    'pending_transfer',
+]);
+
+function buildStatusNotes(status, paymentStatus, priorityNote) {
+    if (paymentStatus === 'pending_transfer_review') {
+        return 'Transferencia por validar';
+    }
+    if (status === 'no_show') {
+        return 'Paciente ausente';
+    }
+    if (status === 'cancelled') {
+        return 'Cita cerrada';
+    }
+
+    return priorityNote;
+}
+
+function buildAppointmentPillStack(className, tone, label, detailsHtml) {
+    return `
+        <div class="${escapeHtml(className)}">
+            <span class="appointment-pill" data-tone="${escapeHtml(tone)}">${escapeHtml(label)}</span>
+            ${detailsHtml}
+        </div>
+    `;
+}
+
+function buildActionLink(href, label, itemName) {
+    return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${escapeHtml(itemName || 'Paciente')}" title="WhatsApp para seguimiento">${escapeHtml(label)}</a>`;
+}
+
+function buildActionButton(label, action, id) {
+    return `<button type="button" data-action="${escapeHtml(action)}" data-id="${id}">${escapeHtml(label)}</button>`;
+}
+
+function buildRowActions(item, paymentStatus, phoneHref) {
+    const id = Number(item.id || 0);
+    const actions = [];
+
+    if (phoneHref) {
+        actions.push(buildActionLink(phoneHref, 'WhatsApp', item.name));
+    }
+
+    if (TRANSFER_REVIEW_PAYMENT_STATUSES.has(paymentStatus)) {
+        actions.push(buildActionButton('Aprobar', 'approve-transfer', id));
+        actions.push(buildActionButton('Rechazar', 'reject-transfer', id));
+    }
+
+    actions.push(buildActionButton('No show', 'mark-no-show', id));
+    actions.push(buildActionButton('Cancelar', 'cancel-appointment', id));
+
+    return actions.join('');
+}
+
 export function paymentCell(item) {
     const paymentStatus = item.paymentStatus || item.payment_status || '';
     const proofUrl = String(
@@ -21,71 +76,43 @@ export function paymentCell(item) {
             ''
     ).trim();
 
-    return `
-        <div class="appointment-payment-stack">
-            <span class="appointment-pill" data-tone="${escapeHtml(paymentTone(paymentStatus))}">${escapeHtml(paymentLabel(paymentStatus))}</span>
+    return buildAppointmentPillStack(
+        'appointment-payment-stack',
+        paymentTone(paymentStatus),
+        paymentLabel(paymentStatus),
+        `
             <small>Metodo: ${escapeHtml(paymentMethodLabel(item.paymentMethod || item.payment_method || ''))}</small>
-            ${proofUrl ? `<a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener">Ver comprobante</a>` : '<small>Sin comprobante adjunto</small>'}
-        </div>
-    `;
+            ${
+                proofUrl
+                    ? `<a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener">Ver comprobante</a>`
+                    : '<small>Sin comprobante adjunto</small>'
+            }
+        `
+    );
 }
 
 export function statusCell(item) {
     const status = normalizeAppointmentStatus(item.status);
     const paymentStatus = normalizePaymentStatus(item);
     const priority = appointmentPriority(item);
-    const notes = [];
+    const note = buildStatusNotes(status, paymentStatus, priority.note);
 
-    if (paymentStatus === 'pending_transfer_review') {
-        notes.push('Transferencia por validar');
-    }
-    if (status === 'no_show') {
-        notes.push('Paciente ausente');
-    }
-    if (status === 'cancelled') {
-        notes.push('Cita cerrada');
-    }
-
-    return `
-        <div class="appointment-status-stack">
-            <span class="appointment-pill" data-tone="${escapeHtml(statusTone(status))}">${escapeHtml(statusLabel(status))}</span>
-            <small>${escapeHtml(notes[0] || priority.note)}</small>
-        </div>
-    `;
+    return buildAppointmentPillStack(
+        'appointment-status-stack',
+        statusTone(status),
+        statusLabel(status),
+        `<small>${escapeHtml(note)}</small>`
+    );
 }
 
 export function rowActions(item) {
-    const id = Number(item.id || 0);
     const paymentStatus = normalizePaymentStatus(item);
     const phoneHref = whatsappLink(item.phone || '');
-    const actions = [];
-
-    if (phoneHref) {
-        actions.push(
-            `<a href="${escapeHtml(phoneHref)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${escapeHtml(item.name || 'Paciente')}" title="WhatsApp para seguimiento">WhatsApp</a>`
-        );
-    }
-
-    if (
-        paymentStatus === 'pending_transfer_review' ||
-        paymentStatus === 'pending_transfer'
-    ) {
-        actions.push(
-            `<button type="button" data-action="approve-transfer" data-id="${id}">Aprobar</button>`
-        );
-        actions.push(
-            `<button type="button" data-action="reject-transfer" data-id="${id}">Rechazar</button>`
-        );
-    }
-
-    actions.push(
-        `<button type="button" data-action="mark-no-show" data-id="${id}">No show</button>`
-    );
-    actions.push(
-        `<button type="button" data-action="cancel-appointment" data-id="${id}">Cancelar</button>`
-    );
-
-    return `<div class="table-actions">${actions.join('')}</div>`;
+    return `<div class="table-actions">${buildRowActions(
+        item,
+        paymentStatus,
+        phoneHref
+    )}</div>`;
 }
 
 export function serviceCell(item) {

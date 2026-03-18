@@ -51,6 +51,13 @@ const LEADOPS_HELPER_SOURCE = join(
     'lead-ai-worker.js'
 );
 const DATE = '2026-02-24';
+const CODEX_MODEL_ROUTING_FIELDS = `
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 0
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v2"`;
 
 function createFixtureDir() {
     const dir = mkdtempSync(join(tmpdir(), 'agent-orchestrator-test-'));
@@ -337,7 +344,13 @@ function isMutatingCommandArgs(args = []) {
 
     if (command === 'close') return true;
     if (command === 'codex') {
-        return ['start', 'stop'].includes(subcommand);
+        if (['start', 'stop'].includes(subcommand)) return true;
+        return (
+            subcommand === 'premium' &&
+            String(args[2] || '')
+                .trim()
+                .toLowerCase() === 'record'
+        );
     }
     if (command === 'leases') {
         return ['heartbeat', 'clear'].includes(subcommand);
@@ -671,6 +684,7 @@ tasks:
     runtime_surface: ${runtimeSurface}
     runtime_transport: ${runtimeTransport}
     runtime_last_transport: ""
+${CODEX_MODEL_ROUTING_FIELDS}
     files: [${files.map((item) => `"${item}"`).join(', ')}]
     source_signal: manual
     source_ref: "${sourceRef}"
@@ -1056,6 +1070,7 @@ policy:
   canonical: AGENTS.md
   autonomy: semi_autonomous_guardrails
   kpi: reduce_rework
+  revision: 0
   updated_at: ${DATE}
 tasks:
   - id: AG-001
@@ -1063,9 +1078,29 @@ tasks:
     status: in_progress
     files: ["controllers/AppointmentController.php"]
   - id: CDX-001
+    title: "Codex lifecycle fixture"
+    owner: ernesto
     executor: codex
-    status: done
+    status: ready
+    risk: high
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 1
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v2"
     files: ["tests/chat-booking-calendar-errors.spec.js", "tests/cookie-consent.spec.js"]
+    acceptance: "ok"
+    acceptance_ref: "verification/agent-runs/CDX-001.md"
+    depends_on: []
+    prompt: "lifecycle"
+    created_at: ${DATE}
+    updated_at: ${DATE}
 `;
 }
 
@@ -1090,6 +1125,7 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+${CODEX_MODEL_ROUTING_FIELDS}
     files: ["controllers/SlotOneController.php"]
     acceptance: "ok"
     acceptance_ref: "verification/agent-runs/CDX-010.md"
@@ -1108,6 +1144,7 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+${CODEX_MODEL_ROUTING_FIELDS}
     files: ["controllers/SlotTwoController.php"]
     acceptance: "ok"
     acceptance_ref: "verification/agent-runs/CDX-011.md"
@@ -1126,6 +1163,7 @@ tasks:
     domain_lane: backend_ops
     lane_lock: strict
     cross_domain: false
+${CODEX_MODEL_ROUTING_FIELDS}
     files: ["controllers/SlotThreeController.php"]
     acceptance: "ok"
     acceptance_ref: "verification/agent-runs/CDX-012.md"
@@ -1148,10 +1186,22 @@ tasks:
   - id: AG-001
     executor: codex
     status: in_progress
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 0
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v1"
     files: ["tests/agenda.spec.js", "lib/booking.php"]
   - id: CDX-001
     executor: codex
     status: ${codexStatus}
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 0
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v1"
     files: ["tests/agenda.spec.js", "docs/notes.md"]
 `;
 }
@@ -1172,6 +1222,7 @@ tasks:
     status: ready
     risk: low
     scope: docs
+${CODEX_MODEL_ROUTING_FIELDS}
     files: ["docs/task-fixture.md"]
     acceptance: "Fixture acceptance"
     acceptance_ref: ""
@@ -1198,6 +1249,12 @@ tasks:
     status: in_progress
     risk: medium
     scope: backend
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 0
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v1"
     files: ["lib/mailer.php", "tests/MailerTest.php"]
     acceptance: "A"
     acceptance_ref: ""
@@ -1254,6 +1311,83 @@ test('codex start/stop lifecycle mantiene espejo valido y actualiza CODEX_ACTIVE
     const board = readBoard(dir);
     assert.match(board, /- id: CDX-001/);
     assert.match(board, /status: done/);
+});
+
+test('codex premium record registra sesion premium subagent y resincroniza board/ledger', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForCodexLifecycle(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+    mkdirSync(join(dir, 'verification', 'codex-decisions'), {
+        recursive: true,
+    });
+    writeFileSync(
+        join(dir, 'verification', 'codex-decisions', 'CDX-001-1.md'),
+        [
+            'task_id: CDX-001',
+            'execution_mode: subagent',
+            'premium_reason: critical_review',
+            'problem: validar diff critico',
+            'why_mini_or_local_failed: mini no destrabo el review final',
+            'exact_decision_requested: confirmar siguiente accion',
+            'acceptable_output: decision estructurada',
+            'risk_if_wrong: retrabajo',
+            'action_taken: abrir subagente premium',
+        ].join('\n') + '\n',
+        'utf8'
+    );
+
+    const result = runCli(dir, [
+        'codex',
+        'premium',
+        'record',
+        'CDX-001',
+        '--decision-packet-ref',
+        'verification/codex-decisions/CDX-001-1.md',
+        '--reason',
+        'critical_review',
+        '--execution-mode',
+        'subagent',
+        '--premium-session-id',
+        'sess-001',
+        '--json',
+    ]);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.ok, true);
+    assert.equal(json.command, 'codex');
+    assert.equal(json.action, 'premium');
+    assert.equal(json.subaction, 'record');
+    assert.equal(json.model_usage_summary.premium_calls_used, 1);
+    assert.equal(json.model_usage_summary.premium_subagent_sessions_total, 1);
+    assert.equal(json.model_usage_summary.premium_root_exceptions_total, 0);
+    assert.equal(json.model_usage_summary.mini_root_compliance_pct, 100);
+
+    const ledger = parseJsonLines(
+        readFileSync(
+            join(dir, 'verification', 'codex-model-usage.jsonl'),
+            'utf8'
+        )
+    );
+    assert.equal(ledger.length, 1);
+    assert.equal(ledger[0].execution_mode, 'subagent');
+    assert.equal(ledger[0].budget_unit, 'premium_session');
+    assert.equal(ledger[0].premium_session_id, 'sess-001');
+    assert.equal(ledger[0].root_thread_model_tier, 'gpt-5.4-mini');
+
+    const board = readBoard(dir);
+    assert.match(board, /premium_calls_used:\s+1/);
+    assert.match(board, /premium_gate_state:\s+"consumed"/);
+    assert.match(
+        board,
+        /decision_packet_ref:\s+"verification\/codex-decisions\/CDX-001-1\.md"/
+    );
+
+    runCli(dir, ['codex-check']);
 });
 
 test('codex start permite dos slots por lane, review y blocked ocupan slot, ready libera el bloque', (t) => {

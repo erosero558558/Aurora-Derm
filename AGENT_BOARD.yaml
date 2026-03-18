@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 713
+  revision: 714
   updated_at: 2026-03-17
 
 strategy:
@@ -834,6 +834,12 @@ tasks:
     runtime_surface: 
     runtime_transport: 
     runtime_last_transport: 
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 1
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v2"
     files: ["api.php", "controllers/AdminDataController.php", "controllers/QueueController.php", "lib/TurneroClinicProfile.php", "lib/QueueSurfaceStatusStore.php", "lib/QueueService.php", "bin/turnero-clinic-profile.js", "scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1", "tests/test_queue_service.php", "tests/test_figo_queue_core.php", "verification/agent-runs/CDX-043.md"]
     source_signal: manual
     source_ref: "STRAT-2026-03-turnero-web-pilot"
@@ -887,6 +893,12 @@ tasks:
     runtime_surface: 
     runtime_transport: 
     runtime_last_transport: 
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 0
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v2"
     files: ["admin.html", "operador-turnos.html", "kiosco-turnos.html", "sala-turnos.html", "src/apps/admin-v3/shared/core/router.js", "src/apps/admin-v3/shared/modules/queue", "src/apps/admin-v3/core/boot/navigation/sections.js", "src/apps/admin-v3/core/boot/navigation/commands.js", "src/apps/admin-v3/core/boot/listeners/action-groups/queue", "src/apps/admin-v3/ui/frame/templates/sections/queue", "src/apps/queue-operator", "src/apps/queue-kiosk", "src/apps/queue-display", "src/apps/queue-shared"]
     source_signal: manual
     source_ref: "STRAT-2026-03-turnero-web-pilot"
@@ -10738,12 +10750,12 @@ tasks:
     scope: deploy
     codex_instance: codex_backend_ops
     domain_lane: backend_ops
-    lane_lock: strict
-    cross_domain: false
-    provider_mode: 
-    runtime_surface: 
-    runtime_transport: 
-    runtime_last_transport: 
+    lane_lock: handoff_allowed
+    cross_domain: true
+    provider_mode: ""
+    runtime_surface: ""
+    runtime_transport: ""
+    runtime_last_transport: ""
     files: ["docs/PUBLIC_MAIN_UPDATE_RUNBOOK.md", "scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1"]
     source_signal: manual
     source_ref: ""
@@ -10765,7 +10777,7 @@ tasks:
     acceptance: "Restore checks.publicSync host telemetry for public_main_sync"
     acceptance_ref: ""
     evidence_ref: ""
-    depends_on: []
+    depends_on: ["AG-207"]
     prompt: "Restore checks.publicSync host telemetry for public_main_sync"
     created_at: 2026-03-17
     updated_at: 2026-03-17

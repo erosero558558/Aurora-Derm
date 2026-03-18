@@ -25,6 +25,38 @@ const CLINICAL_HISTORY_QUEUE_FILTERS = Object.freeze([
     'alert',
     'with_attachments',
 ]);
+const CLINICAL_HISTORY_QUEUE_FILTER_OPTIONS = Object.freeze([
+    { id: 'all', label: 'Todos' },
+    { id: 'review_required', label: 'Revision' },
+    { id: 'pending_ai', label: 'IA' },
+    { id: 'alert', label: 'Alertas' },
+    { id: 'with_attachments', label: 'Adjuntos' },
+]);
+const CLINICAL_HISTORY_WORKSPACE_OPTIONS = Object.freeze([
+    {
+        workspace: 'review',
+        label: 'Revision medica',
+        metaLabel: (meta) =>
+            `${normalizeList(meta.reviewQueue).length} caso(s) clinicos`,
+    },
+    {
+        workspace: 'media-flow',
+        label: 'Media Flow',
+        metaLabel: (meta, mediaMeta) =>
+            `${normalizeList(mediaMeta.queue).length} caso(s) editoriales`,
+    },
+]);
+const CLINICAL_HISTORY_SEX_CHOICES = Object.freeze([
+    { value: '', label: 'Sin dato' },
+    { value: 'femenino', label: 'Femenino' },
+    { value: 'masculino', label: 'Masculino' },
+    { value: 'intersexual', label: 'Intersexual' },
+]);
+const CLINICAL_HISTORY_PREGNANCY_CHOICES = Object.freeze([
+    { value: '', label: 'Sin dato' },
+    { value: 'no', label: 'No' },
+    { value: 'yes', label: 'Si' },
+]);
 
 let scheduledAutoSelection = '';
 
@@ -731,6 +763,41 @@ function formatHtmlMultiline(value) {
     return safe ? safe.replace(/\n/g, '<br>') : '';
 }
 
+function buildClinicalHistoryFieldHint(hint) {
+    return hint
+        ? `<small>${escapeHtml(hint)}</small>`
+        : '<small>&nbsp;</small>';
+}
+
+function buildClinicalHistoryFieldShell(id, label, content, hint = '') {
+    return `
+        <label class="clinical-history-field" for="${escapeHtml(id)}">
+            <span>${escapeHtml(label)}</span>
+            ${content}
+            ${buildClinicalHistoryFieldHint(hint)}
+        </label>
+    `;
+}
+
+function buildClinicalHistoryChoiceOptions(choices, value) {
+    return choices
+        .map(
+            (choice) => `
+                <option
+                    value="${escapeHtml(choice.value)}"
+                    ${
+                        normalizeString(choice.value) === normalizeString(value)
+                            ? 'selected'
+                            : ''
+                    }
+                >
+                    ${escapeHtml(choice.label)}
+                </option>
+            `
+        )
+        .join('');
+}
+
 function summaryStatCard(title, value, meta, tone = 'neutral') {
     return `
         <article class="clinical-history-stat-card" data-tone="${escapeHtml(
@@ -741,6 +808,13 @@ function summaryStatCard(title, value, meta, tone = 'neutral') {
             <small>${escapeHtml(meta)}</small>
         </article>
     `;
+}
+
+function setButtonDisabled(buttonId, disabled) {
+    const button = document.getElementById(buttonId);
+    if (button instanceof HTMLButtonElement) {
+        button.disabled = disabled;
+    }
 }
 
 function buildSummaryCards(review) {
@@ -764,65 +838,93 @@ function buildSummaryCards(review) {
         draft.clinicianDraft.preguntasFaltantes.length ||
         draft.intake.preguntasFaltantes.length;
 
-    return [
-        summaryStatCard(
-            'Paciente',
-            currentSelectionLabel(review),
-            patient.email || patient.phone || 'Sin contacto documentado'
-        ),
-        summaryStatCard(
-            'Estado',
-            formatReviewStatus(draft.reviewStatus),
-            pendingAiStatus || reviewReasons,
-            statusTone
-        ),
-        summaryStatCard(
-            'Guardrails',
-            draft.requiresHumanReview ? 'Revisar' : 'Listo',
-            draft.reviewReasons.length > 0
-                ? truncateText(draft.reviewReasons.join(', '), 90)
-                : 'Sin bloqueo determinista activo',
-            draft.requiresHumanReview ? 'warning' : 'success'
-        ),
-        summaryStatCard(
-            'Paciente facts',
-            formatConfidence(draft.confidence),
-            formatPatientFacts(patient, draft.intake) ||
-                'Sin datos clinicos base'
-        ),
-        summaryStatCard(
-            'Preguntas',
-            String(followUps),
-            followUps > 0
-                ? 'Faltan respuestas para cerrar la anamnesis'
-                : 'Sin preguntas abiertas',
-            followUps > 0 ? 'warning' : 'success'
-        ),
-        summaryStatCard(
-            'Actividad',
-            readableTimestamp(
+    const cards = [
+        {
+            title: 'Paciente',
+            value: currentSelectionLabel(review),
+            meta: patient.email || patient.phone || 'Sin contacto documentado',
+        },
+        {
+            title: 'Estado',
+            value: formatReviewStatus(draft.reviewStatus),
+            meta: pendingAiStatus || reviewReasons,
+            tone: statusTone,
+        },
+        {
+            title: 'Guardrails',
+            value: draft.requiresHumanReview ? 'Revisar' : 'Listo',
+            meta:
+                draft.reviewReasons.length > 0
+                    ? truncateText(draft.reviewReasons.join(', '), 90)
+                    : 'Sin bloqueo determinista activo',
+            tone: draft.requiresHumanReview ? 'warning' : 'success',
+        },
+        {
+            title: 'Paciente facts',
+            value: formatConfidence(draft.confidence),
+            meta:
+                formatPatientFacts(patient, draft.intake) ||
+                'Sin datos clinicos base',
+        },
+        {
+            title: 'Preguntas',
+            value: String(followUps),
+            meta:
+                followUps > 0
+                    ? 'Faltan respuestas para cerrar la anamnesis'
+                    : 'Sin preguntas abiertas',
+            tone: followUps > 0 ? 'warning' : 'success',
+        },
+        {
+            title: 'Actividad',
+            value: readableTimestamp(
                 review.session.lastMessageAt ||
                     review.session.updatedAt ||
                     draft.updatedAt
             ),
-            review.session.surface || 'Sin superficie'
-        ),
-    ].join('');
+            meta: review.session.surface || 'Sin superficie',
+        },
+    ];
+
+    return cards
+        .map(({ title, value, meta, tone }) =>
+            summaryStatCard(title, value, meta, tone)
+        )
+        .join('');
+}
+
+function buildEmptyClinicalCard(title, message, options = {}) {
+    const { cardClass = 'clinical-history-empty-card', tone = '' } = options;
+
+    return `
+        <article class="${escapeHtml(cardClass)}"${
+            tone ? ` data-tone="${escapeHtml(tone)}"` : ''
+        }>
+            <strong>${escapeHtml(title)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </article>
+    `;
+}
+
+function buildClinicalHistoryCollection(items, emptyRenderer, renderItem) {
+    const list = normalizeList(items);
+    if (list.length === 0) {
+        return typeof emptyRenderer === 'function' ? emptyRenderer() : '';
+    }
+
+    return list.map(renderItem).join('');
 }
 
 function buildAttachmentStrip(review) {
-    const attachments = normalizeList(review.draft.intake.adjuntos);
-    if (attachments.length === 0) {
-        return `
-            <article class="clinical-history-attachment-card is-empty">
-                <strong>Sin adjuntos clinicos</strong>
-                <small>Las fotos y documentos privados del caso apareceran aqui.</small>
-            </article>
-        `;
-    }
-
-    return attachments
-        .map((attachment) => {
+    return buildClinicalHistoryCollection(
+        review.draft.intake.adjuntos,
+        () =>
+            buildEmptyClinicalCard(
+                'Sin adjuntos clinicos',
+                'Las fotos y documentos privados del caso apareceran aqui.',
+                { cardClass: 'clinical-history-attachment-card is-empty' }
+            ),
+        (attachment) => {
             const details = [
                 normalizeString(attachment.kind) || 'archivo',
                 normalizeString(attachment.mime),
@@ -843,8 +945,8 @@ function buildAttachmentStrip(review) {
                     )}</span>
                 </article>
             `;
-        })
-        .join('');
+        }
+    );
 }
 
 function queueReasons(item) {
@@ -917,20 +1019,12 @@ function buildQueueFilterChips(meta, activeFilter) {
     const reviewQueue = normalizeList(meta.reviewQueue).map(
         normalizeReviewQueueItem
     );
-    const filters = [
-        ['all', 'Todos'],
-        ['review_required', 'Revision'],
-        ['pending_ai', 'IA'],
-        ['alert', 'Alertas'],
-        ['with_attachments', 'Adjuntos'],
-    ];
-    return filters
-        .map(([id, label]) => {
-            const count =
-                id === 'all'
-                    ? reviewQueue.length
-                    : filterClinicalReviewQueue(reviewQueue, id).length;
-            return `
+    return CLINICAL_HISTORY_QUEUE_FILTER_OPTIONS.map(({ id, label }) => {
+        const count =
+            id === 'all'
+                ? reviewQueue.length
+                : filterClinicalReviewQueue(reviewQueue, id).length;
+        return `
                 <button
                     type="button"
                     class="clinical-history-filter-chip${
@@ -943,240 +1037,258 @@ function buildQueueFilterChips(meta, activeFilter) {
                     ${escapeHtml(label)} <span>${escapeHtml(String(count))}</span>
                 </button>
             `;
-        })
-        .join('');
+    }).join('');
 }
 
 function buildWorkspaceTabs(activeWorkspace, meta, mediaMeta) {
-    const tabs = [
-        [
-            'review',
-            'Revision medica',
-            `${normalizeList(meta.reviewQueue).length} caso(s) clinicos`,
-        ],
-        [
-            'media-flow',
-            'Media Flow',
-            `${normalizeList(mediaMeta.queue).length} caso(s) editoriales`,
-        ],
-    ];
-    return tabs
-        .map(
-            ([workspace, label, metaLabel]) => `
+    return CLINICAL_HISTORY_WORKSPACE_OPTIONS.map(
+        ({ workspace, label, metaLabel }) => {
+            const isActive = activeWorkspace === workspace;
+            const workspaceMetaLabel =
+                typeof metaLabel === 'function'
+                    ? metaLabel(meta, mediaMeta)
+                    : '';
+            return `
                 <button
                     type="button"
                     class="clinical-history-workspace-tab${
-                        activeWorkspace === workspace ? ' is-active' : ''
+                        isActive ? ' is-active' : ''
                     }"
                     data-clinical-workspace="${escapeHtml(workspace)}"
-                    aria-pressed="${
-                        activeWorkspace === workspace ? 'true' : 'false'
-                    }"
+                    aria-pressed="${isActive ? 'true' : 'false'}"
                 >
                     <strong>${escapeHtml(label)}</strong>
-                    <small>${escapeHtml(metaLabel)}</small>
+                    <small>${escapeHtml(workspaceMetaLabel)}</small>
                 </button>
-            `
-        )
-        .join('');
+            `;
+        }
+    ).join('');
+}
+
+function buildQueueEmptyState(filter) {
+    return buildEmptyClinicalCard(
+        normalizeClinicalQueueFilter(filter) === 'all'
+            ? 'Sin cola activa'
+            : `Sin casos en ${queueFilterLabel(filter)}`,
+        normalizeClinicalQueueFilter(filter) === 'all'
+            ? 'No hay historias clinicas esperando revision humana.'
+            : 'Prueba con otro filtro o vuelve a Todos para revisar el resto de la cola.'
+    );
+}
+
+function buildQueueItemChips(item, status) {
+    return [
+        status,
+        formatConfidence(item.confidence),
+        queueAlertMeta(item),
+        item.attachmentCount > 0 ? `${item.attachmentCount} adjunto(s)` : '',
+    ].filter(Boolean);
+}
+
+function buildQueueItemMeta(item) {
+    return [
+        item.latestOpenEventTitle,
+        readableTimestamp(item.updatedAt || item.createdAt),
+    ]
+        .filter(Boolean)
+        .join(' • ');
+}
+
+function buildClinicalHistoryMiniChipRow(chips) {
+    return `
+        <div class="clinical-history-mini-chip-row">
+            ${normalizeList(chips)
+                .map(
+                    (chip) =>
+                        `<span class="clinical-history-mini-chip">${escapeHtml(
+                            chip
+                        )}</span>`
+                )
+                .join('')}
+        </div>
+    `;
+}
+
+function buildQueueItemCard(item, selectedSessionId, loading) {
+    const sessionId = normalizeString(item.sessionId);
+    const summary = truncateText(
+        item.summary ||
+            queueReasons(item).join(' • ') ||
+            'Caso listo para revision clinica.',
+        140
+    );
+    const status =
+        formatPendingAiStatus(item.pendingAiStatus) ||
+        formatReviewStatus(item.reviewStatus || item.sessionStatus);
+    const tone = formatTone(
+        item.reviewStatus || item.sessionStatus,
+        item.requiresHumanReview,
+        item.pendingAiStatus,
+        item.highestOpenSeverity
+    );
+    const chips = buildQueueItemChips(item, status);
+    const queueMeta = buildQueueItemMeta(item);
+
+    return `
+        <button
+            type="button"
+            class="clinical-history-queue-item${
+                sessionId === selectedSessionId ? ' is-selected' : ''
+            }"
+            data-clinical-session-id="${escapeHtml(sessionId)}"
+            ${loading ? 'disabled' : ''}
+        >
+            <div class="clinical-history-queue-head">
+                <strong>${escapeHtml(
+                    item.patientName || item.caseId || 'Caso clinico'
+                )}</strong>
+                <span class="clinical-history-mini-chip" data-tone="${escapeHtml(
+                    tone
+                )}">
+                    ${escapeHtml(status)}
+                </span>
+            </div>
+            <p>${escapeHtml(summary)}</p>
+            ${buildClinicalHistoryMiniChipRow(chips)}
+            <small>${escapeHtml(queueMeta || 'Sin timestamp')}</small>
+        </button>
+    `;
 }
 
 function buildQueueList(meta, selectedSessionId, loading, filter) {
     const reviewQueue = filterClinicalReviewQueue(meta.reviewQueue, filter);
-    if (reviewQueue.length === 0) {
-        return `
-            <article class="clinical-history-empty-card">
-                <strong>${
-                    normalizeClinicalQueueFilter(filter) === 'all'
-                        ? 'Sin cola activa'
-                        : `Sin casos en ${queueFilterLabel(filter)}`
-                }</strong>
-                <p>${
-                    normalizeClinicalQueueFilter(filter) === 'all'
-                        ? 'No hay historias clinicas esperando revision humana.'
-                        : 'Prueba con otro filtro o vuelve a Todos para revisar el resto de la cola.'
-                }</p>
-            </article>
-        `;
-    }
+    return buildClinicalHistoryCollection(
+        reviewQueue,
+        () => buildQueueEmptyState(filter),
+        (item) => buildQueueItemCard(item, selectedSessionId, loading)
+    );
+}
 
-    return reviewQueue
-        .map((item) => {
-            const sessionId = normalizeString(item.sessionId);
-            const summary = truncateText(
-                item.summary ||
-                    queueReasons(item).join(' • ') ||
-                    'Caso listo para revision clinica.',
-                140
-            );
-            const status =
-                formatPendingAiStatus(item.pendingAiStatus) ||
-                formatReviewStatus(item.reviewStatus || item.sessionStatus);
-            const tone = formatTone(
-                item.reviewStatus || item.sessionStatus,
-                item.requiresHumanReview,
-                item.pendingAiStatus,
-                item.highestOpenSeverity
-            );
-            const chips = [
-                status,
-                formatConfidence(item.confidence),
-                queueAlertMeta(item),
-                item.attachmentCount > 0
-                    ? `${item.attachmentCount} adjunto(s)`
-                    : '',
-            ].filter(Boolean);
-            const queueMeta = [
-                item.latestOpenEventTitle,
-                readableTimestamp(item.updatedAt || item.createdAt),
-            ]
-                .filter(Boolean)
-                .join(' • ');
+function buildQueueMetaText(meta, filter) {
+    return `Mostrando ${filterClinicalReviewQueue(meta.reviewQueue, filter).length} de ${
+        normalizeList(meta.reviewQueue).length
+    } caso(s) en ${queueFilterLabel(filter).toLowerCase()}.`;
+}
 
-            return `
-                <button
-                    type="button"
-                    class="clinical-history-queue-item${
-                        sessionId === selectedSessionId ? ' is-selected' : ''
-                    }"
-                    data-clinical-session-id="${escapeHtml(sessionId)}"
-                    ${loading ? 'disabled' : ''}
-                >
-                    <div class="clinical-history-queue-head">
-                        <strong>${escapeHtml(
-                            item.patientName || item.caseId || 'Caso clinico'
-                        )}</strong>
-                        <span class="clinical-history-mini-chip" data-tone="${escapeHtml(
-                            tone
-                        )}">
-                            ${escapeHtml(status)}
-                        </span>
-                    </div>
-                    <p>${escapeHtml(summary)}</p>
-                    <div class="clinical-history-mini-chip-row">
-                        ${chips
-                            .map(
-                                (chip) =>
-                                    `<span class="clinical-history-mini-chip">${escapeHtml(
-                                        chip
-                                    )}</span>`
-                            )
-                            .join('')}
-                    </div>
-                    <small>${escapeHtml(queueMeta || 'Sin timestamp')}</small>
-                </button>
-            `;
-        })
-        .join('');
+function buildTranscriptMessageCard(message) {
+    const surface = normalizeString(message.surface);
+    const fieldKey = normalizeString(message.fieldKey);
+    const meta = [surface, fieldKey].filter(Boolean).join(' • ');
+
+    return `
+        <article
+            class="clinical-history-message"
+            data-actor-tone="${escapeHtml(transcriptActorTone(message))}"
+        >
+            <header>
+                <span class="clinical-history-mini-chip">${escapeHtml(
+                    transcriptActorLabel(message)
+                )}</span>
+                <time>${escapeHtml(readableTimestamp(message.createdAt))}</time>
+            </header>
+            <p>${formatHtmlMultiline(message.content)}</p>
+            <small>${escapeHtml(meta || 'Sin metadata clinica')}</small>
+        </article>
+    `;
 }
 
 function buildTranscript(review, loading, error) {
     if (loading && review.session.transcript.length === 0) {
-        return `
-            <article class="clinical-history-empty-card">
-                <strong>Cargando conversacion</strong>
-                <p>Estamos recuperando el transcript y el borrador medico.</p>
-            </article>
-        `;
+        return buildEmptyClinicalCard(
+            'Cargando conversacion',
+            'Estamos recuperando el transcript y el borrador medico.'
+        );
     }
 
     if (error && review.session.transcript.length === 0) {
-        return `
-            <article class="clinical-history-empty-card" data-tone="warning">
-                <strong>No se pudo cargar el caso</strong>
-                <p>${escapeHtml(error)}</p>
-            </article>
-        `;
+        return buildEmptyClinicalCard('No se pudo cargar el caso', error, {
+            tone: 'warning',
+        });
     }
 
     if (review.session.transcript.length === 0) {
-        return `
-            <article class="clinical-history-empty-card">
-                <strong>Sin transcript</strong>
-                <p>La conversacion del paciente aparecera aqui cuando exista una sesion cargada.</p>
-            </article>
-        `;
+        return buildEmptyClinicalCard(
+            'Sin transcript',
+            'La conversacion del paciente aparecera aqui cuando exista una sesion cargada.'
+        );
     }
 
-    return review.session.transcript
-        .map((message) => {
-            const surface = normalizeString(message.surface);
-            const fieldKey = normalizeString(message.fieldKey);
-            const meta = [surface, fieldKey].filter(Boolean).join(' • ');
-            return `
-                <article
-                    class="clinical-history-message"
-                    data-actor-tone="${escapeHtml(transcriptActorTone(message))}"
-                >
-                    <header>
-                        <span class="clinical-history-mini-chip">${escapeHtml(
-                            transcriptActorLabel(message)
-                        )}</span>
-                        <time>${escapeHtml(
-                            readableTimestamp(message.createdAt)
-                        )}</time>
-                    </header>
-                    <p>${formatHtmlMultiline(message.content)}</p>
-                    <small>${escapeHtml(meta || 'Sin metadata clinica')}</small>
-                </article>
-            `;
-        })
-        .join('');
+    return buildClinicalHistoryCollection(
+        review.session.transcript,
+        () => '',
+        buildTranscriptMessageCard
+    );
+}
+
+function buildTranscriptMetaText(review) {
+    return review.session.sessionId
+        ? `${currentSelectionLabel(review)} • ${
+              review.session.surface || 'clinical_intake'
+          }`
+        : 'El transcript del paciente aparece aqui.';
+}
+
+function buildTranscriptCountText(review) {
+    return `${normalizeList(review.session.transcript).length} mensaje(s)`;
+}
+
+function buildClinicalEventCard(event) {
+    const tone = buildEventTone(event);
+    const meta = [
+        event.status ? `Estado ${event.status}` : '',
+        readableTimestamp(
+            event.occurredAt || event.acknowledgedAt || event.resolvedAt
+        ),
+    ]
+        .filter(Boolean)
+        .join(' • ');
+
+    return `
+        <article class="clinical-history-event-card" data-tone="${escapeHtml(
+            tone
+        )}">
+            <div class="clinical-history-event-head">
+                <span class="clinical-history-mini-chip">${escapeHtml(
+                    formatSeverity(event.severity)
+                )}</span>
+                <span class="clinical-history-mini-chip">${escapeHtml(
+                    event.status || 'open'
+                )}</span>
+            </div>
+            <strong>${escapeHtml(event.title || event.type || 'Evento clinico')}</strong>
+            <p>${escapeHtml(event.message || 'Sin detalle operativo adicional.')}</p>
+            <small>${escapeHtml(meta || 'Sin timestamp')}</small>
+        </article>
+    `;
 }
 
 function buildEvents(review) {
-    if (review.events.length === 0) {
-        return `
-            <article class="clinical-history-empty-card">
-                <strong>Sin eventos abiertos</strong>
-                <p>Cuando haya alertas, conciliaciones o acciones pendientes apareceran aqui.</p>
-            </article>
-        `;
+    return buildClinicalHistoryCollection(
+        review.events,
+        () =>
+            buildEmptyClinicalCard(
+                'Sin eventos abiertos',
+                'Cuando haya alertas, conciliaciones o acciones pendientes apareceran aqui.'
+            ),
+        buildClinicalEventCard
+    );
+}
+
+function buildEventTone(event) {
+    const severity = normalizeString(event.severity).toLowerCase();
+    if (severity === 'critical') {
+        return 'danger';
     }
+    if (severity === 'warning' || event.requiresAction) {
+        return 'warning';
+    }
+    return 'neutral';
+}
 
-    return review.events
-        .map((event) => {
-            const tone =
-                normalizeString(event.severity).toLowerCase() === 'critical'
-                    ? 'danger'
-                    : normalizeString(event.severity).toLowerCase() ===
-                        'warning'
-                      ? 'warning'
-                      : event.requiresAction
-                        ? 'warning'
-                        : 'neutral';
-            const meta = [
-                event.status ? `Estado ${event.status}` : '',
-                readableTimestamp(
-                    event.occurredAt || event.acknowledgedAt || event.resolvedAt
-                ),
-            ]
-                .filter(Boolean)
-                .join(' • ');
-
-            return `
-                <article class="clinical-history-event-card" data-tone="${escapeHtml(
-                    tone
-                )}">
-                    <div class="clinical-history-event-head">
-                        <span class="clinical-history-mini-chip">${escapeHtml(
-                            formatSeverity(event.severity)
-                        )}</span>
-                        <span class="clinical-history-mini-chip">${escapeHtml(
-                            event.status || 'open'
-                        )}</span>
-                    </div>
-                    <strong>${escapeHtml(
-                        event.title || event.type || 'Evento clinico'
-                    )}</strong>
-                    <p>${escapeHtml(
-                        event.message || 'Sin detalle operativo adicional.'
-                    )}</p>
-                    <small>${escapeHtml(meta || 'Sin timestamp')}</small>
-                </article>
-            `;
-        })
-        .join('');
+function buildEventsMetaText(review) {
+    return review.events.length > 0
+        ? `${review.events.length} evento(s) registrados para este caso.`
+        : 'Alertas, conciliacion y acciones pendientes.';
 }
 
 function highestReviewEventSeverity(review) {
@@ -1201,12 +1313,85 @@ function highestReviewEventSeverity(review) {
     return highest;
 }
 
+function buildDraftMetaText(slice, draft) {
+    if (slice.saving) {
+        return 'Guardando borrador clinico...';
+    }
+    if (slice.loading) {
+        return 'Cargando sesion clinica...';
+    }
+    if (slice.error) {
+        return slice.error;
+    }
+    if (slice.dirty) {
+        return 'Cambios sin guardar';
+    }
+    if (draft.updatedAt) {
+        return `Ultima actualizacion ${readableTimestamp(draft.updatedAt)}`;
+    }
+
+    return 'Sin cambios';
+}
+
+function buildDraftSummaryText(review, draft) {
+    return review.session.sessionId
+        ? `Editando ${currentSelectionLabel(review)} • ${formatReviewStatus(
+              draft.reviewStatus
+          )}`
+        : 'Selecciona un caso para editar anamnesis, plan y guardrails.';
+}
+
+function buildFollowUpMetaText(review) {
+    return review.session.sessionId
+        ? `La pregunta saldra por el mismo hilo de ${currentSelectionLabel(
+              review
+          )}.`
+        : 'Envia una pregunta puntual al paciente sin salir del review.';
+}
+
+function buildClinicalHeaderMetaText(review) {
+    const selectedLabel = currentSelectionLabel(review);
+    const headerMeta = [
+        review.session.caseId ? `Caso ${review.session.caseId}` : '',
+        review.session.surface || '',
+        review.session.appointmentId
+            ? `Cita ${review.session.appointmentId}`
+            : '',
+        selectedLabel,
+    ]
+        .filter(Boolean)
+        .join(' • ');
+
+    return (
+        headerMeta ||
+        'Selecciona un caso para revisar la conversacion y el borrador medico.'
+    );
+}
+
+function buildClinicalStatusMetaText(draft, pendingAiStatus, meta) {
+    const statusMeta = [
+        pendingAiStatus,
+        draft.requiresHumanReview
+            ? 'Firma humana requerida'
+            : 'Lista para cierre',
+        formatConfidence(draft.confidence),
+    ]
+        .filter(Boolean)
+        .join(' • ');
+
+    return (
+        statusMeta ||
+        `${normalizeList(meta.reviewQueue).length} caso(s) listos para revision`
+    );
+}
+
 function textareaField(id, label, value, options = {}) {
     const { placeholder = '', rows = 4, hint = '', disabled = false } = options;
 
-    return `
-        <label class="clinical-history-field" for="${escapeHtml(id)}">
-            <span>${escapeHtml(label)}</span>
+    return buildClinicalHistoryFieldShell(
+        id,
+        label,
+        `
             <textarea
                 id="${escapeHtml(id)}"
                 name="${escapeHtml(id)}"
@@ -1214,13 +1399,9 @@ function textareaField(id, label, value, options = {}) {
                 placeholder="${escapeHtml(placeholder)}"
                 ${disabled ? 'disabled' : ''}
             >${escapeHtml(value)}</textarea>
-            ${
-                hint
-                    ? `<small>${escapeHtml(hint)}</small>`
-                    : '<small>&nbsp;</small>'
-            }
-        </label>
-    `;
+        `,
+        hint
+    );
 }
 
 function inputField(id, label, value, options = {}) {
@@ -1233,9 +1414,10 @@ function inputField(id, label, value, options = {}) {
         disabled = false,
     } = options;
 
-    return `
-        <label class="clinical-history-field" for="${escapeHtml(id)}">
-            <span>${escapeHtml(label)}</span>
+    return buildClinicalHistoryFieldShell(
+        id,
+        label,
+        `
             <input
                 id="${escapeHtml(id)}"
                 name="${escapeHtml(id)}"
@@ -1246,13 +1428,9 @@ function inputField(id, label, value, options = {}) {
                 ${min !== '' ? `min="${escapeHtml(min)}"` : ''}
                 ${disabled ? 'disabled' : ''}
             />
-            ${
-                hint
-                    ? `<small>${escapeHtml(hint)}</small>`
-                    : '<small>&nbsp;</small>'
-            }
-        </label>
-    `;
+        `,
+        hint
+    );
 }
 
 function checkboxField(id, label, checked, options = {}) {
@@ -1276,55 +1454,47 @@ function checkboxField(id, label, checked, options = {}) {
 
 function selectField(id, label, value, choices, options = {}) {
     const { hint = '', disabled = false } = options;
-    return `
-        <label class="clinical-history-field" for="${escapeHtml(id)}">
-            <span>${escapeHtml(label)}</span>
+    return buildClinicalHistoryFieldShell(
+        id,
+        label,
+        `
             <select
                 id="${escapeHtml(id)}"
                 name="${escapeHtml(id)}"
                 ${disabled ? 'disabled' : ''}
             >
-                ${choices
-                    .map(
-                        (choice) => `
-                            <option
-                                value="${escapeHtml(choice.value)}"
-                                ${
-                                    normalizeString(choice.value) ===
-                                    normalizeString(value)
-                                        ? 'selected'
-                                        : ''
-                                }
-                            >
-                                ${escapeHtml(choice.label)}
-                            </option>
-                        `
-                    )
-                    .join('')}
+                ${buildClinicalHistoryChoiceOptions(choices, value)}
             </select>
-            ${
-                hint
-                    ? `<small>${escapeHtml(hint)}</small>`
-                    : '<small>&nbsp;</small>'
-            }
-        </label>
+        `,
+        hint
+    );
+}
+
+function buildClinicalHistoryInlineGrid(fields) {
+    return `
+        <div class="clinical-history-inline-grid">
+            ${fields.join('')}
+        </div>
     `;
 }
 
-function buildDraftForm(draft, saving) {
-    const disabled = saving || normalizeString(draft.sessionId) === '';
-    const pregnancyValue = pregnancySelectValue(
-        draft.intake.datosPaciente.embarazo
-    );
-    const reviewReasons = draft.reviewReasons.join(', ');
-
+function buildClinicalHistorySection(title, description, body) {
     return `
-        <div class="clinical-history-form-grid">
             <section class="clinical-history-form-section">
                 <header>
-                    <h4>Intake estructurado</h4>
-                    <p>Motivo de consulta, evolucion y datos del paciente.</p>
+                    <h4>${escapeHtml(title)}</h4>
+                    <p>${escapeHtml(description)}</p>
                 </header>
+                ${body}
+            </section>
+    `;
+}
+
+function buildClinicalHistoryIntakeSection(draft, disabled, pregnancyValue) {
+    return buildClinicalHistorySection(
+        'Intake estructurado',
+        'Motivo de consulta, evolucion y datos del paciente.',
+        `
                 ${inputField(
                     'intake_motivo_consulta',
                     'Motivo de consulta',
@@ -1345,8 +1515,8 @@ function buildDraftForm(draft, saving) {
                         disabled,
                     }
                 )}
-                <div class="clinical-history-inline-grid">
-                    ${textareaField(
+                ${buildClinicalHistoryInlineGrid([
+                    textareaField(
                         'intake_antecedentes',
                         'Antecedentes',
                         draft.intake.antecedentes,
@@ -1356,8 +1526,8 @@ function buildDraftForm(draft, saving) {
                                 'Dermatologicos, familiares, cronicos.',
                             disabled,
                         }
-                    )}
-                    ${textareaField(
+                    ),
+                    textareaField(
                         'intake_alergias',
                         'Alergias',
                         draft.intake.alergias,
@@ -1366,10 +1536,10 @@ function buildDraftForm(draft, saving) {
                             placeholder: 'Medicamentos, alimentos, contacto.',
                             disabled,
                         }
-                    )}
-                </div>
-                <div class="clinical-history-inline-grid">
-                    ${textareaField(
+                    ),
+                ])}
+                ${buildClinicalHistoryInlineGrid([
+                    textareaField(
                         'intake_medicacion_actual',
                         'Medicacion actual',
                         draft.intake.medicacionActual,
@@ -1378,8 +1548,8 @@ function buildDraftForm(draft, saving) {
                             placeholder: 'Nombre, dosis, frecuencia.',
                             disabled,
                         }
-                    )}
-                    ${textareaField(
+                    ),
+                    textareaField(
                         'intake_ros_red_flags',
                         'ROS / red flags',
                         listToTextarea(draft.intake.rosRedFlags),
@@ -1390,8 +1560,8 @@ function buildDraftForm(draft, saving) {
                             hint: 'Cada linea se guarda como item separado.',
                             disabled,
                         }
-                    )}
-                </div>
+                    ),
+                ])}
                 ${textareaField(
                     'intake_resumen_clinico',
                     'Resumen clinico',
@@ -1412,8 +1582,8 @@ function buildDraftForm(draft, saving) {
                         disabled,
                     }
                 )}
-                <div class="clinical-history-inline-grid">
-                    ${inputField(
+                ${buildClinicalHistoryInlineGrid([
+                    inputField(
                         'patient_edad_anios',
                         'Edad (anos)',
                         draft.intake.datosPaciente.edadAnios ?? '',
@@ -1423,8 +1593,8 @@ function buildDraftForm(draft, saving) {
                             step: '1',
                             disabled,
                         }
-                    )}
-                    ${inputField(
+                    ),
+                    inputField(
                         'patient_peso_kg',
                         'Peso (kg)',
                         draft.intake.datosPaciente.pesoKg ?? '',
@@ -1434,38 +1604,31 @@ function buildDraftForm(draft, saving) {
                             step: '0.1',
                             disabled,
                         }
-                    )}
-                    ${selectField(
+                    ),
+                    selectField(
                         'patient_sexo_biologico',
                         'Sexo biologico',
                         draft.intake.datosPaciente.sexoBiologico,
-                        [
-                            { value: '', label: 'Sin dato' },
-                            { value: 'femenino', label: 'Femenino' },
-                            { value: 'masculino', label: 'Masculino' },
-                            { value: 'intersexual', label: 'Intersexual' },
-                        ],
+                        CLINICAL_HISTORY_SEX_CHOICES,
                         { disabled }
-                    )}
-                    ${selectField(
+                    ),
+                    selectField(
                         'patient_embarazo',
                         'Embarazo',
                         pregnancyValue,
-                        [
-                            { value: '', label: 'Sin dato' },
-                            { value: 'no', label: 'No' },
-                            { value: 'yes', label: 'Si' },
-                        ],
+                        CLINICAL_HISTORY_PREGNANCY_CHOICES,
                         { disabled }
-                    )}
-                </div>
-            </section>
+                    ),
+                ])}
+            `
+    );
+}
 
-            <section class="clinical-history-form-section">
-                <header>
-                    <h4>Sintesis del medico</h4>
-                    <p>Bloque solo interno: resumen, CIE-10, plan y guardrails.</p>
-                </header>
+function buildClinicalHistoryClinicianSection(draft, disabled, reviewReasons) {
+    return buildClinicalHistorySection(
+        'Sintesis del medico',
+        'Bloque solo interno: resumen, CIE-10, plan y guardrails.',
+        `
                 ${textareaField(
                     'clinician_resumen',
                     'Resumen medico',
@@ -1476,8 +1639,8 @@ function buildDraftForm(draft, saving) {
                         disabled,
                     }
                 )}
-                <div class="clinical-history-inline-grid">
-                    ${textareaField(
+                ${buildClinicalHistoryInlineGrid([
+                    textareaField(
                         'clinician_preguntas_faltantes',
                         'Preguntas faltantes',
                         listToTextarea(draft.clinicianDraft.preguntasFaltantes),
@@ -1486,8 +1649,8 @@ function buildDraftForm(draft, saving) {
                             placeholder: 'Una linea por pregunta.',
                             disabled,
                         }
-                    )}
-                    ${textareaField(
+                    ),
+                    textareaField(
                         'clinician_cie10',
                         'CIE-10 sugeridos',
                         listToTextarea(draft.clinicianDraft.cie10Sugeridos),
@@ -1496,8 +1659,8 @@ function buildDraftForm(draft, saving) {
                             placeholder: 'Ej. L20.9',
                             disabled,
                         }
-                    )}
-                </div>
+                    ),
+                ])}
                 ${textareaField(
                     'clinician_tratamiento',
                     'Tratamiento borrador',
@@ -1509,8 +1672,8 @@ function buildDraftForm(draft, saving) {
                         disabled,
                     }
                 )}
-                <div class="clinical-history-inline-grid">
-                    ${textareaField(
+                ${buildClinicalHistoryInlineGrid([
+                    textareaField(
                         'posologia_texto',
                         'Posologia borrador',
                         draft.clinicianDraft.posologiaBorrador.texto,
@@ -1519,8 +1682,8 @@ function buildDraftForm(draft, saving) {
                             placeholder: 'Ej. 1 comp cada 12 h por 7 dias.',
                             disabled,
                         }
-                    )}
-                    ${textareaField(
+                    ),
+                    textareaField(
                         'posologia_base_calculo',
                         'Base de calculo',
                         draft.clinicianDraft.posologiaBorrador.baseCalculo,
@@ -1529,10 +1692,10 @@ function buildDraftForm(draft, saving) {
                             placeholder: 'Regla, mg/kg, fuente o criterio.',
                             disabled,
                         }
-                    )}
-                </div>
-                <div class="clinical-history-inline-grid">
-                    ${inputField(
+                    ),
+                ])}
+                ${buildClinicalHistoryInlineGrid([
+                    inputField(
                         'posologia_peso_kg',
                         'Peso usado (kg)',
                         draft.clinicianDraft.posologiaBorrador.pesoKg ?? '',
@@ -1542,8 +1705,8 @@ function buildDraftForm(draft, saving) {
                             step: '0.1',
                             disabled,
                         }
-                    )}
-                    ${inputField(
+                    ),
+                    inputField(
                         'posologia_edad_anios',
                         'Edad usada (anos)',
                         draft.clinicianDraft.posologiaBorrador.edadAnios ?? '',
@@ -1553,8 +1716,8 @@ function buildDraftForm(draft, saving) {
                             step: '1',
                             disabled,
                         }
-                    )}
-                    ${inputField(
+                    ),
+                    inputField(
                         'posologia_units',
                         'Unidades',
                         draft.clinicianDraft.posologiaBorrador.units,
@@ -1562,8 +1725,8 @@ function buildDraftForm(draft, saving) {
                             placeholder: 'mg, mg/kg/dia, ml',
                             disabled,
                         }
-                    )}
-                </div>
+                    ),
+                ])}
                 ${checkboxField(
                     'posologia_ambiguous',
                     'La posologia sigue ambigua',
@@ -1584,7 +1747,21 @@ function buildDraftForm(draft, saving) {
                         disabled,
                     }
                 )}
-            </section>
+            `
+    );
+}
+
+function buildDraftForm(draft, saving) {
+    const disabled = saving || normalizeString(draft.sessionId) === '';
+    const pregnancyValue = pregnancySelectValue(
+        draft.intake.datosPaciente.embarazo
+    );
+    const reviewReasons = draft.reviewReasons.join(', ');
+
+    return `
+        <div class="clinical-history-form-grid">
+            ${buildClinicalHistoryIntakeSection(draft, disabled, pregnancyValue)}
+            ${buildClinicalHistoryClinicianSection(draft, disabled, reviewReasons)}
         </div>
     `;
 }
@@ -1595,65 +1772,25 @@ function syncDraftStatusMeta() {
     const review = currentReviewSource(state);
     const draft = currentDraftSource(state);
 
-    let meta = 'Sin cambios';
-    if (slice.saving) {
-        meta = 'Guardando borrador clinico...';
-    } else if (slice.loading) {
-        meta = 'Cargando sesion clinica...';
-    } else if (slice.error) {
-        meta = slice.error;
-    } else if (slice.dirty) {
-        meta = 'Cambios sin guardar';
-    } else if (draft.updatedAt) {
-        meta = `Ultima actualizacion ${readableTimestamp(draft.updatedAt)}`;
-    }
-
-    setText('#clinicalHistoryDraftMeta', meta);
+    setText('#clinicalHistoryDraftMeta', buildDraftMetaText(slice, draft));
     setText(
         '#clinicalHistoryDraftSummary',
-        review.session.sessionId
-            ? `Editando ${currentSelectionLabel(review)} • ${formatReviewStatus(
-                  draft.reviewStatus
-              )}`
-            : 'Selecciona un caso para editar anamnesis, plan y guardrails.'
+        buildDraftSummaryText(review, draft)
     );
-    setText(
-        '#clinicalHistoryFollowUpMeta',
-        review.session.sessionId
-            ? `La pregunta saldra por el mismo hilo de ${currentSelectionLabel(
-                  review
-              )}.`
-            : 'Envia una pregunta puntual al paciente sin salir del review.'
-    );
+    setText('#clinicalHistoryFollowUpMeta', buildFollowUpMetaText(review));
 
     const hasSelection = normalizeString(review.session.sessionId) !== '';
     const sharedDisabled = !hasSelection || slice.loading || slice.saving;
-    const saveButton = document.getElementById('clinicalHistorySaveBtn');
-    const approveButton = document.getElementById('clinicalHistoryApproveBtn');
-    const refreshButton = document.getElementById('clinicalHistoryRefreshBtn');
-    const reviewButton = document.getElementById(
-        'clinicalHistoryReviewRequiredBtn'
+    [
+        'clinicalHistorySaveBtn',
+        'clinicalHistoryApproveBtn',
+        'clinicalHistoryRefreshBtn',
+        'clinicalHistoryReviewRequiredBtn',
+    ].forEach((buttonId) => setButtonDisabled(buttonId, sharedDisabled));
+    setButtonDisabled(
+        'clinicalHistorySendFollowUpBtn',
+        sharedDisabled || normalizeString(slice.followUpQuestion) === ''
     );
-    const followUpButton = document.getElementById(
-        'clinicalHistorySendFollowUpBtn'
-    );
-
-    if (saveButton instanceof HTMLButtonElement) {
-        saveButton.disabled = sharedDisabled;
-    }
-    if (approveButton instanceof HTMLButtonElement) {
-        approveButton.disabled = sharedDisabled;
-    }
-    if (refreshButton instanceof HTMLButtonElement) {
-        refreshButton.disabled = sharedDisabled;
-    }
-    if (reviewButton instanceof HTMLButtonElement) {
-        reviewButton.disabled = sharedDisabled;
-    }
-    if (followUpButton instanceof HTMLButtonElement) {
-        followUpButton.disabled =
-            sharedDisabled || normalizeString(slice.followUpQuestion) === '';
-    }
 }
 
 function serializeDraftForm(form, baseDraft) {
@@ -1738,7 +1875,6 @@ function serializeDraftForm(form, baseDraft) {
 }
 
 function renderClinicalHeader(review, meta) {
-    const selectedLabel = currentSelectionLabel(review);
     const draft = currentDraftSource();
     const pendingAiStatus =
         formatPendingAiStatus(
@@ -1758,35 +1894,10 @@ function renderClinicalHeader(review, meta) {
             : 'Sin seleccion';
     }
 
-    const headerMeta = [
-        review.session.caseId ? `Caso ${review.session.caseId}` : '',
-        review.session.surface || '',
-        review.session.appointmentId
-            ? `Cita ${review.session.appointmentId}`
-            : '',
-        selectedLabel,
-    ]
-        .filter(Boolean)
-        .join(' • ');
-    setText(
-        '#clinicalHistoryHeaderMeta',
-        headerMeta ||
-            'Selecciona un caso para revisar la conversacion y el borrador medico.'
-    );
-
-    const statusMeta = [
-        pendingAiStatus,
-        draft.requiresHumanReview
-            ? 'Firma humana requerida'
-            : 'Lista para cierre',
-        formatConfidence(draft.confidence),
-    ]
-        .filter(Boolean)
-        .join(' • ');
+    setText('#clinicalHistoryHeaderMeta', buildClinicalHeaderMetaText(review));
     setText(
         '#clinicalHistoryStatusMeta',
-        statusMeta ||
-            `${normalizeList(meta.reviewQueue).length} caso(s) listos para revision`
+        buildClinicalStatusMetaText(draft, pendingAiStatus, meta)
     );
 }
 
@@ -2330,30 +2441,13 @@ export function renderClinicalHistorySection() {
         '#clinicalHistoryQueueFilters',
         buildQueueFilterChips(meta, queueFilter)
     );
-    setText(
-        '#clinicalHistoryQueueMeta',
-        `Mostrando ${filterClinicalReviewQueue(meta.reviewQueue, queueFilter).length} de ${
-            normalizeList(meta.reviewQueue).length
-        } caso(s) en ${queueFilterLabel(queueFilter).toLowerCase()}.`
-    );
-    setText(
-        '#clinicalHistoryTranscriptMeta',
-        review.session.sessionId
-            ? `${currentSelectionLabel(review)} • ${
-                  review.session.surface || 'clinical_intake'
-              }`
-            : 'El transcript del paciente aparece aqui.'
-    );
+    setText('#clinicalHistoryQueueMeta', buildQueueMetaText(meta, queueFilter));
+    setText('#clinicalHistoryTranscriptMeta', buildTranscriptMetaText(review));
     setText(
         '#clinicalHistoryTranscriptCount',
-        `${normalizeList(review.session.transcript).length} mensaje(s)`
+        buildTranscriptCountText(review)
     );
-    setText(
-        '#clinicalHistoryEventsMeta',
-        review.events.length > 0
-            ? `${review.events.length} evento(s) registrados para este caso.`
-            : 'Alertas, conciliacion y acciones pendientes.'
-    );
+    setText('#clinicalHistoryEventsMeta', buildEventsMetaText(review));
 
     setHtml('#clinicalHistorySummaryGrid', buildSummaryCards(review));
     setHtml('#clinicalHistoryAttachmentStrip', buildAttachmentStrip(review));

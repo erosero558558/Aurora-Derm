@@ -2,6 +2,7 @@
 
 Fuente canonica detallada para correr backend, admin y QA local.
 `SERVIDOR-LOCAL.md` en la raiz queda solo como shim de compatibilidad.
+Si no sabes que flujo seguir, empieza por `docs/OPERATIONS_INDEX.md`.
 
 Para probar la web con backend (API + admin) no uses `file://`.
 

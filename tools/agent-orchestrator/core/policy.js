@@ -172,6 +172,117 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
         );
     }
 
+    const codexModelRouting = merged?.codex_model_routing;
+    if (codexModelRouting !== undefined) {
+        if (
+            !codexModelRouting ||
+            typeof codexModelRouting !== 'object' ||
+            Array.isArray(codexModelRouting)
+        ) {
+            errors.push('codex_model_routing debe ser objeto');
+        } else {
+            for (const key of [
+                'version',
+                'scope',
+                'default_model_tier',
+                'premium_model_tier',
+                'root_thread_model_tier',
+                'premium_budget_unit',
+                'ledger_path',
+                'decision_packets_dir',
+                'notes',
+            ]) {
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        codexModelRouting,
+                        key
+                    ) &&
+                    typeof codexModelRouting[key] !== 'string'
+                ) {
+                    errors.push(`codex_model_routing.${key} debe ser string`);
+                }
+            }
+            for (const key of [
+                'allowed_gate_states',
+                'allowed_execution_modes',
+                'premium_reasons',
+                'prohibited_premium_uses',
+                'decision_packet_fields',
+                'fallback_order',
+                'gate_open_conditions',
+            ]) {
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        codexModelRouting,
+                        key
+                    ) &&
+                    !Array.isArray(codexModelRouting[key])
+                ) {
+                    errors.push(`codex_model_routing.${key} debe ser array`);
+                }
+            }
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    codexModelRouting,
+                    'target_mix'
+                )
+            ) {
+                const targetMix = codexModelRouting.target_mix;
+                if (
+                    !targetMix ||
+                    typeof targetMix !== 'object' ||
+                    Array.isArray(targetMix)
+                ) {
+                    errors.push(
+                        'codex_model_routing.target_mix debe ser objeto'
+                    );
+                } else {
+                    for (const [name, rawValue] of Object.entries(targetMix)) {
+                        const value = Number(rawValue);
+                        if (!Number.isFinite(value) || value < 0) {
+                            errors.push(
+                                `codex_model_routing.target_mix.${name} invalido (${rawValue})`
+                            );
+                        }
+                    }
+                }
+            }
+            warnUnknownKeys(
+                sourcePolicy?.codex_model_routing,
+                [
+                    'version',
+                    'scope',
+                    'default_model_tier',
+                    'premium_model_tier',
+                    'root_thread_model_tier',
+                    'premium_budget_unit',
+                    'ledger_path',
+                    'decision_packets_dir',
+                    'allowed_gate_states',
+                    'allowed_execution_modes',
+                    'premium_reasons',
+                    'prohibited_premium_uses',
+                    'decision_packet_fields',
+                    'target_mix',
+                    'fallback_order',
+                    'gate_open_conditions',
+                    'notes',
+                ],
+                'codex_model_routing'
+            );
+            warnUnknownKeys(
+                sourcePolicy?.codex_model_routing?.target_mix,
+                [
+                    'zero_premium_pct',
+                    'one_premium_pct',
+                    'two_premium_pct',
+                    'throughput_drop_guardrail_pct',
+                ],
+                'codex_model_routing.target_mix'
+            );
+        }
+    }
+
     const agents = merged?.agents;
     if (agents !== undefined) {
         if (!agents || typeof agents !== 'object' || Array.isArray(agents)) {
@@ -808,6 +919,7 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
             'version',
             'domain_health',
             'summary',
+            'codex_model_routing',
             'agents',
             'publishing',
             'runtime',
@@ -862,6 +974,12 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
                         : null,
                 },
             },
+            codex_model_routing:
+                codexModelRouting &&
+                typeof codexModelRouting === 'object' &&
+                !Array.isArray(codexModelRouting)
+                    ? codexModelRouting
+                    : {},
             agents: {
                 active_executors: Array.isArray(agents?.active_executors)
                     ? agents.active_executors.map((value) => String(value))

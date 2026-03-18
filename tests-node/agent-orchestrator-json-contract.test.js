@@ -51,6 +51,13 @@ const LEADOPS_HELPER_SOURCE = join(
     'lead-ai-worker.js'
 );
 const DATE = '2026-02-25';
+const CODEX_MODEL_ROUTING_FIELDS = `
+    model_tier_default: "gpt-5.4-mini"
+    premium_budget: 0
+    premium_calls_used: 0
+    premium_gate_state: "closed"
+    decision_packet_ref: ""
+    model_policy_version: "2026-03-17-codex-model-routing-v2"`;
 
 function createFixtureDir() {
     const dir = mkdtempSync(
@@ -124,6 +131,7 @@ tasks:
     status: in_progress
     risk: medium
     scope: codex-governance
+${CODEX_MODEL_ROUTING_FIELDS}
     files: ["AGENTS.md", "agent-orchestrator.js"]
     acceptance: "Fixture"
     acceptance_ref: "PLAN_MAESTRO_CODEX_2026.md"
@@ -273,7 +281,13 @@ function isMutatingCommandArgs(args = []) {
 
     if (command === 'close') return true;
     if (command === 'codex') {
-        return ['start', 'stop'].includes(subcommand);
+        if (['start', 'stop'].includes(subcommand)) return true;
+        return (
+            subcommand === 'premium' &&
+            String(args[2] || '')
+                .trim()
+                .toLowerCase() === 'record'
+        );
     }
     if (command === 'leases') {
         return ['heartbeat', 'clear'].includes(subcommand);
@@ -621,6 +635,14 @@ test('JSON contract minimo estable para status/conflicts/handoffs/codex-check/le
         assert.equal(typeof status.conflicts, 'number');
         assert.equal(typeof status.evidence_summary, 'object');
         assert.equal(typeof status.evidence_summary.terminal_tasks, 'number');
+        assert.equal(typeof status.model_usage_summary, 'object');
+        assert.equal(status.model_usage_summary.codex_tasks_total, 1);
+        assert.equal(typeof status.premium_subagent_sessions_total, 'number');
+        assert.equal(typeof status.premium_root_exceptions_total, 'number');
+        assert.equal(typeof status.premium_by_execution_mode, 'object');
+        assert.equal(typeof status.mini_root_compliance_pct, 'number');
+        assert.equal(typeof status.premium_budget_remaining, 'object');
+        assert.equal(Array.isArray(status.premium_gate_blockers), true);
         assert.equal(Array.isArray(status.diagnostics), true);
         assert.equal(typeof status.warnings_count, 'number');
         assert.equal(typeof status.errors_count, 'number');
@@ -657,6 +679,9 @@ test('JSON contract minimo estable para status/conflicts/handoffs/codex-check/le
         assert.equal(Array.isArray(codexCheck.summary.slot_statuses), true);
         assert.equal(Array.isArray(codexCheck.plan_blocks), true);
         assert.equal(typeof codexCheck.plan_blocks[0].subfront_id, 'string');
+        assert.equal(typeof codexCheck.model_usage_summary, 'object');
+        assert.equal(typeof codexCheck.premium_budget_remaining, 'object');
+        assert.equal(Array.isArray(codexCheck.premium_gate_blockers), true);
         assert.equal(Array.isArray(codexCheck.diagnostics), true);
 
         const leasesStatus = runJson(dir, ['leases', 'status']);
@@ -793,6 +818,7 @@ tasks:
     status: in_progress
     risk: medium
     scope: codex-governance
+${CODEX_MODEL_ROUTING_FIELDS}
     files: ["AGENTS.md", "agent-orchestrator.js"]
     acceptance: "Fixture"
     acceptance_ref: "PLAN_MAESTRO_CODEX_2026.md"
@@ -1197,6 +1223,15 @@ test('JSON contract minimo estable para metrics --json', () => {
         assert.equal(typeof metrics.contribution_delta, 'object');
         assert.equal(typeof metrics.domain_health, 'object');
         assert.equal(typeof metrics.domain_health_history, 'object');
+        assert.equal(typeof metrics.model_usage_summary, 'object');
+        assert.equal(metrics.model_usage_summary.codex_tasks_total, 1);
+        assert.equal(typeof metrics.premium_subagent_sessions_total, 'number');
+        assert.equal(typeof metrics.premium_root_exceptions_total, 'number');
+        assert.equal(typeof metrics.premium_by_execution_mode, 'object');
+        assert.equal(typeof metrics.mini_root_compliance_pct, 'number');
+        assert.equal(typeof metrics.premium_budget_remaining, 'object');
+        assert.equal(Array.isArray(metrics.premium_gate_blockers), true);
+        assert.equal(typeof metrics.premium_roi, 'object');
         assert.equal(typeof metrics.io, 'object');
         assert.equal(typeof metrics.io.profile, 'string');
         assert.equal(typeof metrics.io.write_mode, 'string');
@@ -1292,6 +1327,67 @@ test('JSON contract status/metrics exponen runtime transversal por instancia pro
             ),
             true
         );
+    } finally {
+        cleanupFixtureDir(dir);
+    }
+});
+
+test('JSON contract codex premium record devuelve ledger entry y model usage summary', () => {
+    const dir = createFixtureDir();
+    try {
+        writeFixtureFiles(dir);
+        writeFileSync(
+            join(dir, 'AGENT_BOARD.yaml'),
+            readFileSync(join(dir, 'AGENT_BOARD.yaml'), 'utf8').replace(
+                '    risk: medium',
+                '    risk: high'
+            ),
+            'utf8'
+        );
+        mkdirSync(join(dir, 'verification', 'codex-decisions'), {
+            recursive: true,
+        });
+        writeFileSync(
+            join(dir, 'verification', 'codex-decisions', 'CDX-001-1.md'),
+            [
+                'task_id: CDX-001',
+                'execution_mode: subagent',
+                'premium_reason: critical_review',
+                'problem: validar cambio critico',
+                'why_mini_or_local_failed: mini no destrabo el review',
+                'exact_decision_requested: confirmar merge',
+                'acceptable_output: decision estructurada',
+                'risk_if_wrong: retrabajo',
+                'action_taken: abrir subagente premium',
+            ].join('\n') + '\n',
+            'utf8'
+        );
+
+        const json = runJson(dir, [
+            'codex',
+            'premium',
+            'record',
+            'CDX-001',
+            '--decision-packet-ref',
+            'verification/codex-decisions/CDX-001-1.md',
+            '--reason',
+            'critical_review',
+            '--execution-mode',
+            'subagent',
+            '--premium-session-id',
+            'sess-json-001',
+        ]);
+
+        assertVersionLike(json.version);
+        assert.equal(json.ok, true);
+        assert.equal(json.command, 'codex');
+        assert.equal(json.action, 'premium');
+        assert.equal(json.subaction, 'record');
+        assert.equal(typeof json.ledger_entry, 'object');
+        assert.equal(json.ledger_entry.execution_mode, 'subagent');
+        assert.equal(json.ledger_entry.budget_unit, 'premium_session');
+        assert.equal(typeof json.model_usage_summary, 'object');
+        assert.equal(json.model_usage_summary.premium_calls_used, 1);
     } finally {
         cleanupFixtureDir(dir);
     }
