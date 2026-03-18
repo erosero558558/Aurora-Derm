@@ -77,6 +77,7 @@ test('gate:turnero:web-pilot limita los contratos al frente web por clinica', ()
 
     for (const snippet of [
         'admin-data-turnero-clinic-profile-contract.test.js',
+        'admin-queue-pilot-readiness.test.js',
         'health-turnero-pilot-contract.test.js',
         'turnero-clinic-profile-registry.test.js',
         'turnero-clinic-profile-cli.test.js',

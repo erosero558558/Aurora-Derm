@@ -2,6 +2,37 @@ import {
     bindQueueOpsPilotActions,
     renderQueueOpsPilotActionMarkup,
 } from './actions.js';
+import { mountTurneroRemoteReleaseReadinessCard } from '../../../../../../../../queue-shared/turnero-remote-release-readiness.js';
+import { mountTurneroPublicShellDriftCard } from '../../../../../../../../queue-shared/turnero-public-shell-drift.js';
+
+function resolvePublicShellDriftOptions(manifest = {}) {
+    const config =
+        manifest?.publicShellDrift ||
+        manifest?.turneroPublicShellDrift ||
+        manifest?.queuePublicShellDrift ||
+        {};
+
+    const ga4Needles = Array.isArray(config.expectedGa4Needles)
+        ? config.expectedGa4Needles
+        : Array.isArray(config.trustedGa4Needles)
+          ? config.trustedGa4Needles
+          : ['googletagmanager.com', 'gtag(', 'dataLayer'];
+
+    return {
+        pageUrl: '/',
+        timeoutMs: config.timeoutMs || 6000,
+        expectedStylesNeedle:
+            config.expectedStylesNeedle ||
+            config.trustedPublicStylesNeedle ||
+            'styles.css',
+        expectedShellScriptNeedle:
+            config.expectedShellScriptNeedle ||
+            config.trustedPublicShellScriptNeedle ||
+            'script.js',
+        expectedGa4Needles: ga4Needles,
+        requireGa4Markers: config.requireGa4Markers !== false,
+    };
+}
 
 function renderPilotRolloutStations(pilot, escapeHtml) {
     if (
@@ -249,6 +280,10 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                 pilot.goLiveSupport
                             )}</p>
                         </section>
+                        <div
+                            id="queuePublicShellDriftCard"
+                            data-turnero-public-shell-drift
+                        ></div>
                         <section id="queueOpsPilotCanon" class="queue-ops-pilot__canon">
                             <div class="queue-ops-pilot__canon-head">
                                 <div>
@@ -429,6 +464,11 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                                 pilot.handoffSupport
                             )}</p>
                         </section>
+                        <div
+                            id="queueOpsPilotRemoteReleaseHost"
+                            class="queue-ops-pilot__remote-release-host"
+                            aria-live="polite"
+                        ></div>
                     </div>
                     <div class="queue-ops-pilot__status">
                         <div class="queue-ops-pilot__progress">
@@ -461,6 +501,24 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
             </section>
         `
     );
+
+    void mountTurneroRemoteReleaseReadinessCard(
+        '#queueOpsPilotRemoteReleaseHost',
+        {
+            clinicId: pilot.clinicId,
+            profileFingerprint: pilot.profileFingerprint,
+        }
+    );
+
+    const publicShellDriftHost = document.getElementById(
+        'queuePublicShellDriftCard'
+    );
+    if (publicShellDriftHost instanceof HTMLElement) {
+        void mountTurneroPublicShellDriftCard(
+            publicShellDriftHost,
+            resolvePublicShellDriftOptions(manifest)
+        );
+    }
 
     bindQueueOpsPilotActions(manifest, detectedPlatform, deps);
 }

@@ -10425,6 +10425,10 @@ body[data-ops-tone='light'] .queue-apps-hub__header p {
     line-height: 1.4;
 }
 
+.queue-ops-pilot__remote-release-host {
+    margin-top: 0.35rem;
+}
+
 .queue-ops-pilot__action {
     display: inline-flex;
     align-items: center;

@@ -60,6 +60,7 @@ import {
     resetOpsPlaybookMode as resetOpsPlaybookModeModule,
     setOpsPlaybookStep as setOpsPlaybookStepModule,
 } from './install-hub/playbook.js';
+import { mountAdminQueuePilotReadinessCard } from '../../../../../../queue-shared/admin-queue-pilot-readiness.js';
 
 const QUEUE_INSTALL_PRESET_STORAGE_KEY = 'queueInstallPresetV1';
 const QUEUE_OPENING_CHECKLIST_STORAGE_KEY = 'queueOpeningChecklistV1';
@@ -22172,6 +22173,15 @@ export function renderQueueInstallHub(options = {}) {
     queueOpsInteractionController.clearDeferred();
     const adminMode = ensureQueueAdminViewMode();
     renderQueueAdminViewMode(manifest, platform);
+    mountAdminQueuePilotReadinessCard(getTurneroClinicProfile(), {
+        currentRoute: `${window.location.pathname || ''}${
+            window.location.hash || ''
+        }`,
+        trustedProfileFingerprint:
+            getTurneroClinicProfileMeta()?.profileFingerprint ||
+            getTurneroClinicProfile()?.runtime_meta?.profileFingerprint ||
+            '',
+    });
     renderQueueHubCorePanels(manifest, platform);
     if (shouldRenderQueueHubExpandedPanels(adminMode)) {
         renderQueueHubExpertPanels(manifest, platform);

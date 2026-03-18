@@ -163,6 +163,44 @@ function buildQueuePilotClinicProfile(options = {}) {
     };
 }
 
+function hashClinicProfileSource(input) {
+    let hash = 2166136261;
+    for (let index = 0; index < input.length; index += 1) {
+        hash ^= input.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function buildQueuePilotProfileFingerprint(profile) {
+    if (!profile || typeof profile !== 'object') {
+        return '';
+    }
+
+    const source = [
+        String(profile?.clinic_id || '').trim(),
+        String(profile?.branding?.base_url || '').trim(),
+        String(profile?.consultorios?.c1?.label || '').trim(),
+        String(profile?.consultorios?.c1?.short_label || '').trim(),
+        String(profile?.consultorios?.c2?.label || '').trim(),
+        String(profile?.consultorios?.c2?.short_label || '').trim(),
+        profile?.surfaces?.admin?.enabled ? '1' : '0',
+        String(profile?.surfaces?.admin?.route || '').trim(),
+        profile?.surfaces?.operator?.enabled ? '1' : '0',
+        String(profile?.surfaces?.operator?.route || '').trim(),
+        profile?.surfaces?.kiosk?.enabled ? '1' : '0',
+        String(profile?.surfaces?.kiosk?.route || '').trim(),
+        profile?.surfaces?.display?.enabled ? '1' : '0',
+        String(profile?.surfaces?.display?.route || '').trim(),
+        String(profile?.release?.mode || '').trim(),
+        String(profile?.release?.admin_mode_default || '').trim(),
+        profile?.release?.separate_deploy ? '1' : '0',
+        profile?.release?.native_apps_blocking ? '1' : '0',
+    ].join('|');
+
+    return source ? hashClinicProfileSource(source) : '';
+}
+
 function buildQueuePilotSurfaceStatusEntry(surface, options = {}) {
     const defaultsBySurface = {
         operator: {
@@ -272,6 +310,103 @@ function buildQueuePilotHealthPayload(options = {}) {
                 ...publicSyncOverride,
             },
             ...checksOverride,
+        },
+    };
+}
+
+function buildQueuePilotHealthDiagnosticsPayload(options = {}) {
+    const publicSyncOverride =
+        options.publicSync && typeof options.publicSync === 'object'
+            ? options.publicSync
+            : {};
+    const turneroPilotOverride =
+        options.turneroPilot && typeof options.turneroPilot === 'object'
+            ? options.turneroPilot
+            : {};
+    const checksOverride =
+        options.checks && typeof options.checks === 'object'
+            ? options.checks
+            : {};
+
+    return {
+        ok: true,
+        status: 'ok',
+        figoConfigured:
+            options.figoConfigured === undefined
+                ? true
+                : options.figoConfigured === true,
+        figoRecursiveConfig:
+            options.figoRecursiveConfig === undefined
+                ? false
+                : options.figoRecursiveConfig === true,
+        calendarConfigured:
+            options.calendarConfigured === undefined
+                ? true
+                : options.calendarConfigured === true,
+        calendarReachable:
+            options.calendarReachable === undefined
+                ? true
+                : options.calendarReachable === true,
+        calendarRequirementMet:
+            options.calendarRequirementMet === undefined
+                ? true
+                : options.calendarRequirementMet === true,
+        calendarMode: options.calendarMode || 'google',
+        calendarSource: options.calendarSource || 'primary',
+        checks: {
+            publicSync: {
+                configured: true,
+                healthy: true,
+                operationallyHealthy: true,
+                repoHygieneIssue: false,
+                state: 'ok',
+                deployedCommit: '8c4ee5cb7f2f5034f6f471234567890abcdef12',
+                headDrift: false,
+                ageSeconds: 18,
+                expectedMaxLagSeconds: 120,
+                failureReason: '',
+                ...publicSyncOverride,
+            },
+            turneroPilot: {
+                available: true,
+                configured: true,
+                ready: true,
+                profileSource: 'file',
+                clinicId: String(options.clinicId || '').trim(),
+                profileFingerprint: String(
+                    options.profileFingerprint || ''
+                ).trim(),
+                catalogAvailable: true,
+                catalogMatched: true,
+                catalogReady: true,
+                releaseMode: 'suite_v2',
+                adminModeDefault: 'basic',
+                separateDeploy: true,
+                nativeAppsBlocking: true,
+                ...turneroPilotOverride,
+            },
+            ...checksOverride,
+        },
+    };
+}
+
+function buildQueuePilotBookedSlotsPayload(options = {}) {
+    const bookedSlots =
+        Array.isArray(options.bookedSlots) || Array.isArray(options.data)
+            ? options.bookedSlots || options.data || []
+            : [];
+    const metaOverride =
+        options.meta && typeof options.meta === 'object' ? options.meta : {};
+
+    return {
+        ok: true,
+        data: bookedSlots,
+        meta: {
+            source: 'store',
+            mode: 'live',
+            generatedAt: new Date().toISOString(),
+            degraded: false,
+            ...metaOverride,
         },
     };
 }
@@ -534,17 +669,55 @@ async function installQueuePilotApiMocks(page, options = {}) {
                 options.clinicProfileMeta?.clinicId ||
                 ''
         ).trim() || '';
+    const profileFingerprint = String(
+        options.profileFingerprint ||
+            options.clinicProfileMeta?.profileFingerprint ||
+            buildQueuePilotProfileFingerprint(clinicProfile)
+    ).trim();
     const clinicProfileCatalogStatus =
         options.clinicProfileCatalogStatus === undefined
             ? clinicId
                 ? buildTurneroClinicProfileCatalogStatus({ clinicId })
                 : null
             : options.clinicProfileCatalogStatus;
+    const healthPayload =
+        options.healthPayload || buildQueuePilotHealthPayload();
+    const healthDiagnosticsPayload =
+        options.healthDiagnosticsPayload ||
+        buildQueuePilotHealthDiagnosticsPayload({
+            clinicId,
+            profileFingerprint,
+            publicSync:
+                healthPayload?.checks?.publicSync &&
+                typeof healthPayload.checks.publicSync === 'object'
+                    ? healthPayload.checks.publicSync
+                    : {},
+            turneroPilot:
+                healthPayload?.checks?.turneroPilot &&
+                typeof healthPayload.checks.turneroPilot === 'object'
+                    ? healthPayload.checks.turneroPilot
+                    : {},
+            figoConfigured: options.figoConfigured,
+            figoRecursiveConfig: options.figoRecursiveConfig,
+            calendarConfigured: options.calendarConfigured,
+            calendarReachable: options.calendarReachable,
+            calendarRequirementMet: options.calendarRequirementMet,
+            calendarMode: options.calendarMode,
+            calendarSource: options.calendarSource,
+        });
+    const bookedSlotsPayload =
+        options.bookedSlotsPayload ||
+        buildQueuePilotBookedSlotsPayload({
+            bookedSlots: options.bookedSlots,
+            meta: options.bookedSlotsMeta,
+        });
 
     return installAdminQueueApiMocks(page, {
         queueTickets,
         queueState,
-        healthPayload: options.healthPayload || buildQueuePilotHealthPayload(),
+        healthPayload,
+        availability: options.availability || {},
+        availabilityMeta: options.availabilityMeta || {},
         dataOverrides: {
             ...(clinicProfile ? { turneroClinicProfile: clinicProfile } : {}),
             ...(options.clinicProfileMeta
@@ -560,7 +733,29 @@ async function installQueuePilotApiMocks(page, options = {}) {
                 ? { queueSurfaceStatus: options.queueSurfaceStatus }
                 : {}),
         },
-        handleRoute: options.handleRoute || null,
+        handleRoute: async (context) => {
+            if (typeof options.handleRoute === 'function') {
+                const handled = await options.handleRoute(context);
+                if (handled) {
+                    return true;
+                }
+            }
+
+            if (context.resource === 'health-diagnostics') {
+                await context.fulfillJson(
+                    context.route,
+                    healthDiagnosticsPayload
+                );
+                return true;
+            }
+
+            if (context.resource === 'booked-slots') {
+                await context.fulfillJson(context.route, bookedSlotsPayload);
+                return true;
+            }
+
+            return false;
+        },
     });
 }
 
@@ -12462,6 +12657,21 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#queueOpsPilotIssuesItem_smoke')
         ).toContainText('Todavía falta un llamado real o de prueba');
+        await expect(
+            page.locator('#queuePublicShellDriftStatus')
+        ).toContainText(/Listo|Bloqueado/i);
+        await expect(page.locator('#queuePublicShellDriftCard')).toContainText(
+            'GET /'
+        );
+        await expect(page.locator('#queuePublicShellDriftCard')).toContainText(
+            'stylesheet'
+        );
+        await expect(page.locator('#queuePublicShellDriftCard')).toContainText(
+            'shell script'
+        );
+        await expect(page.locator('#queuePublicShellDriftCard')).toContainText(
+            'GA4'
+        );
         await expect(page.locator('#queueOpsPilotCanonTitle')).toContainText(
             'Rutas por clínica'
         );
@@ -12518,7 +12728,9 @@ test.describe('Admin turnero sala', () => {
         ).toContainText('3/4 rutas verificadas');
         await expect(
             page.locator('#queueOpsPilotHandoffItem_blockers')
-        ).toContainText(/Bloqueo activo|Señal viva \/ heartbeats|PIN operativo/i);
+        ).toContainText(
+            /Bloqueo activo|Señal viva \/ heartbeats|PIN operativo/i
+        );
         await expect(
             page.locator('#queueOpsPilotHandoffCopyBtn')
         ).toContainText('Copiar paquete');
@@ -13591,6 +13803,139 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#queueOpsPilotHandoffItem_blockers')
         ).toContainText('clinic-profile.json');
+    });
+
+    test('queue monta la tarjeta de salida remota debajo del handoff y la deja lista cuando diagnostics y agenda coinciden', async ({
+        page,
+    }) => {
+        const nowIso = new Date().toISOString();
+        const clinicProfile = buildQueuePilotClinicProfile({
+            clinicId: 'clinica-remota-demo',
+            branding: {
+                name: 'Clínica Remota',
+                short_name: 'Remota',
+                base_url: 'https://clinica-remota.example',
+            },
+            consultorios: {
+                c1: {
+                    label: 'Consultorio Remoto 1',
+                    short_label: 'R1',
+                },
+                c2: {
+                    label: 'Consultorio Remoto 2',
+                    short_label: 'R2',
+                },
+            },
+        });
+        const profileFingerprint =
+            buildQueuePilotProfileFingerprint(clinicProfile);
+        const publicSync = {
+            configured: true,
+            healthy: true,
+            operationallyHealthy: true,
+            repoHygieneIssue: false,
+            state: 'ok',
+            deployedCommit: '75a8d7c5e18a9f4c2b3d4e5f60718293a4b5c6d7',
+            headDrift: false,
+            ageSeconds: 12,
+            expectedMaxLagSeconds: 120,
+            failureReason: '',
+        };
+
+        await installQueueAdminAuthMock(
+            page,
+            'csrf_queue_pilot_remote_release'
+        );
+        await installQueuePilotApiMocks(page, {
+            queueState: buildQueueIdleState(nowIso),
+            clinicProfile,
+            clinicProfileMeta: {
+                source: 'remote',
+                cached: false,
+                clinicId: clinicProfile.clinic_id,
+                profileFingerprint,
+                fetchedAt: nowIso,
+            },
+            availability: {
+                [nowIso.slice(0, 10)]: ['09:00', '09:30'],
+            },
+            availabilityMeta: {
+                source: 'store',
+                mode: 'live',
+                generatedAt: nowIso,
+                degraded: false,
+            },
+            bookedSlotsPayload: buildQueuePilotBookedSlotsPayload({
+                bookedSlots: ['09:00'],
+                meta: {
+                    source: 'store',
+                    mode: 'live',
+                    generatedAt: nowIso,
+                    degraded: false,
+                },
+            }),
+            healthPayload: buildQueuePilotHealthPayload({
+                publicSync,
+            }),
+            healthDiagnosticsPayload: buildQueuePilotHealthDiagnosticsPayload({
+                clinicId: clinicProfile.clinic_id,
+                profileFingerprint,
+                publicSync,
+                turneroPilot: {
+                    available: true,
+                    configured: true,
+                    ready: true,
+                    profileSource: 'file',
+                    clinicId: clinicProfile.clinic_id,
+                    profileFingerprint,
+                    catalogAvailable: true,
+                    catalogMatched: true,
+                    catalogReady: true,
+                    releaseMode: 'suite_v2',
+                    adminModeDefault: 'basic',
+                    separateDeploy: true,
+                    nativeAppsBlocking: true,
+                },
+                figoConfigured: true,
+                figoRecursiveConfig: false,
+                calendarConfigured: true,
+                calendarReachable: true,
+                calendarRequirementMet: true,
+                calendarMode: 'google',
+                calendarSource: 'primary',
+            }),
+        });
+
+        await page.goto(adminUrl());
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await page.locator('.nav-item[data-section="queue"]').click();
+
+        await expect(
+            page.locator('#queueOpsPilotRemoteReleaseReadiness')
+        ).toHaveAttribute('data-state', 'ready');
+        await expect(
+            page.locator('#queueOpsPilotRemoteReleaseTitle')
+        ).toContainText('Salida remota lista');
+        await expect(
+            page.locator('#queueOpsPilotRemoteReleaseItem_diagnostics')
+        ).toContainText('Listo');
+        await expect(
+            page.locator('#queueOpsPilotRemoteReleaseItem_identity')
+        ).toContainText('Listo');
+        await expect(
+            page.locator('#queueOpsPilotRemoteReleaseItem_public_sync')
+        ).toContainText('Listo');
+        await expect(
+            page.locator('#queueOpsPilotRemoteReleaseItem_availability')
+        ).toContainText('Listo');
+        await expect(
+            page.locator('#queueOpsPilotRemoteReleaseItem_booked_slots')
+        ).toContainText('Listo');
+
+        const nextHostId = await page
+            .locator('#queueOpsPilotHandoff')
+            .evaluate((element) => element.nextElementSibling?.id || '');
+        expect(nextHostId).toBe('queueOpsPilotRemoteReleaseHost');
     });
 
     test('queue bloquea acciones operativas del admin si admin.html#queue queda fuera del canon del piloto', async ({

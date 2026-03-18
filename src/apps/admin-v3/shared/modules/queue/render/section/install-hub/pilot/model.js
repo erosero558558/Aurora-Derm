@@ -1262,6 +1262,8 @@ export function buildQueueOpsPilotModel(manifest, detectedPlatform, deps) {
             ? 'Usa “Copiar paquete” para pasar el estado del go-live con surfaces nativas y fallback web de la clínica.'
             : 'Aunque el gate siga en warning o alert, este paquete resume exactamente qué falta antes del go-live.';
     const sharedPilotPayload = {
+        clinicId,
+        profileFingerprint,
         progressPct,
         confirmedCount,
         suggestedCount,
