@@ -59,8 +59,10 @@ import { mountTurneroReleaseReliabilityRecoveryNerveCenter } from '../../../../.
 import { mountTurneroReleaseServiceExcellenceAdoptionCloud } from '../../../../../../queue-shared/turnero-release-service-excellence-adoption-cloud.js';
 import { mountTurneroReleaseSafetyPrivacyCockpit } from '../../../../../../queue-shared/turnero-release-safety-privacy-cockpit.js';
 import { mountTurneroReleaseRepoDiagnosticPrepHub } from '../../../../../../queue-shared/turnero-release-repo-diagnostic-prep-hub.js';
+import { mountTurneroReleaseFinalDiagnosticExecutionConsole } from '../../../../../../queue-shared/turnero-release-final-diagnostic-execution-console.js';
 import { readTurneroIncidentJournal } from '../../../../../../queue-shared/turnero-release-incident-journal.js';
 import { renderQueueAssuranceControlPlane } from './install-hub/assurance-control-plane.js';
+import { renderQueueUnifiedOrchestrationFabric } from './install-hub/unified-orchestration-fabric.js';
 import { hasRecentQueueSmokeSignalForState } from './install-hub/smoke-signal.js';
 import {
     buildPlaybookDefinitions as buildPlaybookDefinitionsModule,
@@ -125,6 +127,7 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueReleaseAssuranceControlPlaneHost',
     'queueReleaseSafetyPrivacyCockpitHost',
     'queueReleaseServiceExcellenceAdoptionCloudHost',
+    'queueReleaseUnifiedOrchestrationFabricHost',
     'queueReleaseRepoDiagnosticPrepHubHost',
     'queueOpeningChecklist',
     'queueShiftHandoff',
@@ -136,6 +139,7 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueAppDownloadsCards',
     'queueOpsLog',
     'queueInstallConfigurator',
+    'queueFinalDiagnosticExecutionConsoleHost',
 ]);
 const QUEUE_ADMIN_EXPERT_PANEL_IDS = Object.freeze([
     'queueTicketLookup',
@@ -5018,6 +5022,87 @@ function clearQueueExpertPanels() {
     });
 }
 
+function renderQueueFinalDiagnosticExecutionConsole(
+    manifest,
+    detectedPlatform
+) {
+    const root = document.getElementById(
+        'queueFinalDiagnosticExecutionConsoleHost'
+    );
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const currentSnapshot = buildQueueReleaseHistoryCurrentSnapshot();
+    const releaseEvidenceBundle =
+        currentSnapshot.parts?.releaseEvidenceBundle ||
+        currentSnapshot.releaseEvidenceBundle ||
+        currentSnapshot;
+    const clinicProfile =
+        currentSnapshot.parts?.clinicProfile ||
+        currentSnapshot.turneroClinicProfile ||
+        currentSnapshot.clinicProfile ||
+        getTurneroClinicProfile();
+    const surfaces =
+        releaseEvidenceBundle.surfaces ||
+        currentSnapshot.surfaces ||
+        currentSnapshot.parts?.releaseEvidenceBundle?.surfaces ||
+        clinicProfile?.surfaces ||
+        [];
+    const contracts =
+        releaseEvidenceBundle.contracts ||
+        currentSnapshot.contracts ||
+        currentSnapshot.parts?.releaseEvidenceBundle?.contracts ||
+        clinicProfile?.contracts ||
+        [];
+    const registryRows =
+        releaseEvidenceBundle.registryRows ||
+        currentSnapshot.registryRows ||
+        currentSnapshot.parts?.releaseEvidenceBundle?.registryRows ||
+        [];
+    const inventoryRows =
+        releaseEvidenceBundle.inventoryRows ||
+        currentSnapshot.inventoryRows ||
+        currentSnapshot.parts?.releaseEvidenceBundle?.inventoryRows ||
+        [];
+    const gaps =
+        releaseEvidenceBundle.gaps ||
+        currentSnapshot.gaps ||
+        currentSnapshot.parts?.releaseEvidenceBundle?.gaps ||
+        [];
+    const clinicId = String(
+        currentSnapshot.clinicId ||
+            clinicProfile?.clinic_id ||
+            getTurneroClinicId()
+    ).trim();
+    const clinicLabel = String(
+        currentSnapshot.clinicName ||
+            currentSnapshot.brandName ||
+            clinicProfile?.branding?.name ||
+            clinicProfile?.branding?.short_name ||
+            getTurneroClinicBrandName() ||
+            getTurneroClinicShortName() ||
+            'Piel en Armonia'
+    ).trim();
+
+    return mountTurneroReleaseFinalDiagnosticExecutionConsole(root, {
+        manifest,
+        detectedPlatform,
+        sourceManifest: manifest,
+        currentSnapshot,
+        releaseEvidenceBundle,
+        clinicProfile,
+        turneroClinicProfile: clinicProfile,
+        clinicId,
+        clinicLabel,
+        surfaces,
+        contracts,
+        registryRows,
+        inventoryRows,
+        gaps,
+    });
+}
+
 function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderQueueFocusMode(manifest, detectedPlatform);
     renderQueueNumpadGuide(manifest, detectedPlatform);
@@ -5043,6 +5128,7 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
         manifest,
         detectedPlatform
     );
+    renderQueueUnifiedOrchestrationFabric(manifest, detectedPlatform);
     renderQueueReleaseRepoDiagnosticPrepHub(manifest, detectedPlatform);
     renderOpeningChecklist(manifest, detectedPlatform);
     renderShiftHandoff(manifest, detectedPlatform);
@@ -5052,6 +5138,7 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     );
     renderQueueOpsLog(manifest, detectedPlatform);
     renderInstallConfigurator(manifest, detectedPlatform);
+    renderQueueFinalDiagnosticExecutionConsole(manifest, detectedPlatform);
 }
 
 function renderQueueHubExpertPanels(manifest, detectedPlatform) {

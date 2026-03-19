@@ -15170,6 +15170,15 @@ test.describe('Admin turnero sala', () => {
             page.locator('#queueReleaseAssuranceControlPlaneTitle')
         ).toContainText('Assurance Control Plane');
         await expect(
+            page.locator('#queueReleaseUnifiedOrchestrationFabricHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseUnifiedOrchestrationFabric')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseUnifiedOrchestrationFabric')
+        ).toContainText('Unified Orchestration Fabric');
+        await expect(
             page.locator(
                 '#queueReleaseAssuranceControlPlaneCopyCertificationBriefBtn'
             )
@@ -15993,6 +16002,15 @@ test.describe('Admin turnero sala', () => {
             page.locator('.turnero-release-service-excellence-adoption-cloud')
         ).toContainText('Service Excellence Adoption Cloud');
         await expect(
+            page.locator('#queueReleaseUnifiedOrchestrationFabricHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseUnifiedOrchestrationFabric')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseUnifiedOrchestrationFabric')
+        ).toContainText('Unified Orchestration Fabric');
+        await expect(
             page.locator('#queueReleaseRepoDiagnosticPrepHubHost')
         ).toBeVisible();
         await expect(
@@ -16007,6 +16025,9 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#turneroReleaseRepoDiagnosticPrepHub')
         ).toContainText('Download diagnostic JSON');
+        await expect(
+            page.locator('#queueFinalDiagnosticExecutionConsoleHost')
+        ).toContainText('Final Diagnostic Execution Console');
         await expect(
             page.locator('#turneroReleaseGovernanceBudget')
         ).toBeVisible();
@@ -16036,6 +16057,7 @@ test.describe('Admin turnero sala', () => {
             'queueReleaseAssuranceControlPlaneHost',
             'queueReleaseSafetyPrivacyCockpitHost',
             'queueReleaseServiceExcellenceAdoptionCloudHost',
+            'queueReleaseUnifiedOrchestrationFabricHost',
             'queueReleaseRepoDiagnosticPrepHubHost',
             'queueAppDownloadsCards',
             'queueOpeningChecklist',
