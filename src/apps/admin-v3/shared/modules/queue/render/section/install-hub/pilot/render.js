@@ -2,6 +2,7 @@ import {
     bindQueueOpsPilotActions,
     renderQueueOpsPilotActionMarkup,
 } from './actions.js';
+import { getState } from '../../../../../../core/store.js';
 import {
     createTurneroRemoteReleaseReadinessModel,
     loadTurneroRemoteReleaseHealth,
@@ -12,10 +13,17 @@ import {
     loadTurneroPublicShellHtml,
     renderTurneroPublicShellDriftCard,
 } from '../../../../../../../../queue-shared/turnero-public-shell-drift.js';
+import { mountTurneroReleaseControlCenterCard } from '../../../../../../../../queue-shared/turnero-release-control-center.js';
 import {
+    createTurneroReleaseEvidenceBundleModel,
     mountTurneroReleaseEvidenceBundleCard,
     renderTurneroReleaseEvidenceBundleCard,
 } from '../../../../../../../../queue-shared/turnero-release-evidence-bundle.js';
+import { mountTurneroReleaseRolloutCommandCenterCard } from '../../../../../../../../queue-shared/turnero-release-rollout-command-center.js';
+import { renderTurneroReleaseAutomationMesh } from '../../../../../../../../queue-shared/turnero-release-automation-mesh.js';
+import { mountTurneroReleaseOpsConsoleCard } from '../../../../../../../../queue-shared/turnero-release-ops-console.js';
+import { renderTurneroReleaseWarRoom } from '../../../../../../../../queue-shared/turnero-release-war-room.js';
+import { mountQueueIncidentExecutionWorkbenchCard } from './incident-execution-workbench.js';
 
 function resolvePublicShellDriftOptions(manifest = {}) {
     const config =
@@ -204,11 +212,183 @@ function buildQueueOpsPilotReleaseEvidenceRemoteModel(
     };
 }
 
+function buildQueueOpsPilotReleaseEvidenceSnapshot(
+    pilot,
+    remoteState,
+    remoteReadinessModel,
+    publicShellDriftModel
+) {
+    const generatedAt = new Date().toISOString();
+    const turneroClinicProfile =
+        pilot.clinicProfile ||
+        pilot.turneroClinicProfile ||
+        getState()?.data?.turneroClinicProfile ||
+        null;
+    const localReadinessModel =
+        buildQueueOpsPilotReleaseEvidenceLocalModel(pilot);
+    const remoteReleaseModel = buildQueueOpsPilotReleaseEvidenceRemoteModel(
+        remoteState,
+        remoteReadinessModel
+    );
+
+    return {
+        generatedAt,
+        turneroClinicProfile,
+        pilotReadiness: pilot,
+        remoteReleaseReadiness: remoteReadinessModel,
+        publicShellDrift: publicShellDriftModel,
+        localReadinessModel,
+        remoteReleaseModel,
+        publicShellDriftModel,
+        releaseEvidenceBundle: {
+            generatedAt,
+            turneroClinicProfile,
+            pilotReadiness: pilot,
+            remoteReleaseReadiness: remoteReadinessModel,
+            publicShellDrift: publicShellDriftModel,
+            localReadinessModel,
+            remoteReleaseModel,
+            publicShellDriftModel,
+        },
+    };
+}
+
+function renderQueueOpsPilotReleaseWarRoom(
+    root,
+    pilot,
+    manifest,
+    requestId,
+    options = {}
+) {
+    const host = document.getElementById('queueOpsPilotReleaseWarRoomHost');
+
+    if (
+        !(host instanceof HTMLElement) ||
+        root.dataset.turneroQueueOpsPilotRenderId !== requestId
+    ) {
+        return;
+    }
+
+    return renderTurneroReleaseWarRoom(
+        host,
+        {
+            clinicProfile:
+                manifest?.turneroClinicProfile ||
+                manifest?.clinicProfile ||
+                getState()?.data?.turneroClinicProfile ||
+                null,
+            pilotReadiness: pilot,
+            remoteReleaseReadiness:
+                options.remoteReleaseReadiness ||
+                manifest?.turneroRemoteReleaseReadiness ||
+                manifest?.remoteReleaseReadiness ||
+                getState()?.data?.turneroRemoteReleaseReadiness ||
+                null,
+            publicShellDrift:
+                options.publicShellDrift ||
+                manifest?.turneroPublicShellDrift ||
+                manifest?.publicShellDrift ||
+                getState()?.data?.turneroPublicShellDrift ||
+                null,
+            releaseEvidenceBundle:
+                options.releaseEvidenceBundle ||
+                manifest?.turneroReleaseEvidenceBundle ||
+                manifest?.releaseEvidenceBundle ||
+                getState()?.data?.turneroReleaseEvidenceBundle ||
+                null,
+        },
+        { replace: true }
+    );
+}
+
+function renderQueueOpsPilotAutomationMesh(
+    root,
+    pilot,
+    manifest,
+    requestId,
+    options = {}
+) {
+    const host = document.getElementById('queueOpsPilotAutomationMeshHost');
+
+    if (
+        !(host instanceof HTMLElement) ||
+        root.dataset.turneroQueueOpsPilotRenderId !== requestId
+    ) {
+        return null;
+    }
+
+    return renderTurneroReleaseAutomationMesh(
+        host,
+        {
+            clinicProfile:
+                options.snapshot?.turneroClinicProfile ||
+                options.snapshot?.clinicProfile ||
+                pilot.clinicProfile ||
+                pilot.turneroClinicProfile ||
+                manifest?.turneroClinicProfile ||
+                manifest?.clinicProfile ||
+                getState()?.data?.turneroClinicProfile ||
+                null,
+            pilotReadiness: pilot,
+            remoteReleaseReadiness:
+                options.remoteReleaseReadiness ||
+                manifest?.turneroRemoteReleaseReadiness ||
+                manifest?.remoteReleaseReadiness ||
+                getState()?.data?.turneroRemoteReleaseReadiness ||
+                null,
+            publicShellDrift:
+                options.publicShellDrift ||
+                manifest?.turneroPublicShellDrift ||
+                manifest?.publicShellDrift ||
+                getState()?.data?.turneroPublicShellDrift ||
+                null,
+            releaseEvidenceBundle:
+                options.releaseEvidenceBundle ||
+                manifest?.turneroReleaseEvidenceBundle ||
+                manifest?.releaseEvidenceBundle ||
+                getState()?.data?.turneroReleaseEvidenceBundle ||
+                null,
+            releaseControlCenterSnapshot: options.snapshot || null,
+            releaseWarRoomSnapshot: options.releaseWarRoomSnapshot || null,
+            incidentJournalEntries:
+                options.incidentJournalEntries ||
+                options.releaseWarRoomSnapshot?.journalEntries ||
+                getState()?.data?.turneroIncidentJournalEntries ||
+                [],
+            incidentExecutorState: options.incidentExecutorState || null,
+            releaseCommandDeckSnapshot:
+                options.releaseCommandDeckSnapshot || null,
+            ownerWorkbenchSnapshot: options.ownerWorkbenchSnapshot || null,
+            recheckQueueSnapshot: options.recheckQueueSnapshot || null,
+        },
+        {
+            decision:
+                options.releaseEvidenceBundle?.finalDecision ||
+                options.releaseEvidenceBundle?.decision ||
+                pilot.readinessState,
+            releaseMode:
+                pilot.releaseMode ||
+                pilot.clinicProfile?.release?.mode ||
+                manifest?.release?.mode ||
+                '',
+            baseUrl:
+                pilot.clinicProfile?.branding?.base_url ||
+                pilot.clinicProfile?.branding?.baseUrl ||
+                pilot.clinicProfile?.baseUrl ||
+                globalThis?.location?.origin ||
+                '',
+            storage: options.storage,
+            clinicId: pilot.clinicId,
+        }
+    );
+}
+
 async function hydrateQueueOpsPilotReleaseEvidence(
     root,
     pilot,
     manifest,
-    requestId
+    requestId,
+    options = {}
 ) {
     const remoteReleaseHost = document.getElementById(
         'queueOpsPilotRemoteReleaseHost'
@@ -216,8 +396,20 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     const publicShellDriftHost = document.getElementById(
         'queuePublicShellDriftCard'
     );
+    const releaseControlCenterHost = document.getElementById(
+        'queueReleaseControlCenterHost'
+    );
     const releaseEvidenceHost = document.getElementById(
         'queueOpsPilotReleaseEvidenceHost'
+    );
+    const rolloutGovernorHost = document.getElementById(
+        'queueOpsPilotRolloutGovernorHost'
+    );
+    const releaseOpsConsoleHost = document.getElementById(
+        'queueReleaseOpsConsoleHost'
+    );
+    const incidentWorkbenchHost = document.getElementById(
+        'queueIncidentExecutionWorkbenchHost'
     );
 
     if (
@@ -238,9 +430,18 @@ async function hydrateQueueOpsPilotReleaseEvidence(
 
     remoteReleaseHost.setAttribute('aria-busy', 'true');
     publicShellDriftHost.setAttribute('aria-busy', 'true');
+    if (releaseControlCenterHost instanceof HTMLElement) {
+        releaseControlCenterHost.setAttribute('aria-busy', 'true');
+    }
     releaseEvidenceHost.setAttribute('aria-busy', 'true');
+    if (rolloutGovernorHost instanceof HTMLElement) {
+        rolloutGovernorHost.setAttribute('aria-busy', 'true');
+    }
 
-    let snapshot = null;
+    let snapshot;
+    let remoteReadinessModel;
+    let publicShellDriftModel;
+    let releaseEvidenceBundleModel;
 
     try {
         const [remoteState, publicShellScan] = await Promise.all([
@@ -255,9 +456,9 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             return;
         }
 
-        const remoteReadinessModel =
+        remoteReadinessModel =
             createTurneroRemoteReleaseReadinessModel(remoteState);
-        const publicShellDriftModel = createTurneroPublicShellDriftModel(
+        publicShellDriftModel = createTurneroPublicShellDriftModel(
             {
                 pageOk: publicShellScan.ok,
                 pageStatus: publicShellScan.pageStatus,
@@ -273,15 +474,16 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             publicShellOptions
         );
 
-        snapshot = {
-            localReadinessModel:
-                buildQueueOpsPilotReleaseEvidenceLocalModel(pilot),
-            remoteReleaseModel: buildQueueOpsPilotReleaseEvidenceRemoteModel(
-                remoteState,
-                remoteReadinessModel
-            ),
-            publicShellDriftModel,
-        };
+        snapshot = buildQueueOpsPilotReleaseEvidenceSnapshot(
+            pilot,
+            remoteState,
+            remoteReadinessModel,
+            publicShellDriftModel
+        );
+        releaseEvidenceBundleModel = createTurneroReleaseEvidenceBundleModel(
+            snapshot,
+            bundleOptions
+        );
     } catch (error) {
         if (root.dataset.turneroQueueOpsPilotRenderId !== requestId) {
             return;
@@ -324,9 +526,9 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             },
             loadedAt: new Date().toISOString(),
         };
-        const remoteReadinessModel =
+        remoteReadinessModel =
             createTurneroRemoteReleaseReadinessModel(fallbackRemoteState);
-        const publicShellDriftModel = createTurneroPublicShellDriftModel(
+        publicShellDriftModel = createTurneroPublicShellDriftModel(
             {
                 pageOk: false,
                 pageStatus: 0,
@@ -342,25 +544,43 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             publicShellOptions
         );
 
-        snapshot = {
-            localReadinessModel:
-                buildQueueOpsPilotReleaseEvidenceLocalModel(pilot),
-            remoteReleaseModel: buildQueueOpsPilotReleaseEvidenceRemoteModel(
-                fallbackRemoteState,
-                remoteReadinessModel
-            ),
-            publicShellDriftModel,
-        };
+        snapshot = buildQueueOpsPilotReleaseEvidenceSnapshot(
+            pilot,
+            fallbackRemoteState,
+            remoteReadinessModel,
+            publicShellDriftModel
+        );
+        releaseEvidenceBundleModel = createTurneroReleaseEvidenceBundleModel(
+            snapshot,
+            bundleOptions
+        );
     } finally {
         if (root.dataset.turneroQueueOpsPilotRenderId === requestId) {
             remoteReleaseHost.removeAttribute('aria-busy');
             publicShellDriftHost.removeAttribute('aria-busy');
+            if (releaseControlCenterHost instanceof HTMLElement) {
+                releaseControlCenterHost.removeAttribute('aria-busy');
+            }
             releaseEvidenceHost.removeAttribute('aria-busy');
+            if (rolloutGovernorHost instanceof HTMLElement) {
+                rolloutGovernorHost.removeAttribute('aria-busy');
+            }
         }
     }
 
     if (!snapshot || root.dataset.turneroQueueOpsPilotRenderId !== requestId) {
         return;
+    }
+
+    if (releaseControlCenterHost instanceof HTMLElement) {
+        try {
+            mountTurneroReleaseControlCenterCard(
+                releaseControlCenterHost,
+                snapshot
+            );
+        } catch (_error) {
+            releaseControlCenterHost.innerHTML = '';
+        }
     }
 
     try {
@@ -375,9 +595,91 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             bundleOptions
         );
     }
+
+    if (rolloutGovernorHost instanceof HTMLElement) {
+        try {
+            mountTurneroReleaseRolloutCommandCenterCard(rolloutGovernorHost, {
+                snapshot,
+                clinicId: pilot.clinicId,
+                clinicLabel:
+                    pilot.clinicName ||
+                    pilot.brandName ||
+                    pilot.clinicProfile?.branding?.name ||
+                    pilot.clinicId,
+            });
+        } catch (_error) {
+            rolloutGovernorHost.innerHTML = '';
+        }
+    }
+
+    if (releaseOpsConsoleHost instanceof HTMLElement) {
+        try {
+            mountTurneroReleaseOpsConsoleCard(releaseOpsConsoleHost, {
+                snapshot,
+                clinicProfile:
+                    pilot.clinicProfile || pilot.turneroClinicProfile,
+                refreshPilotReadiness: () => snapshot.pilotReadiness || pilot,
+                refreshRemoteRelease: () =>
+                    loadTurneroRemoteReleaseHealth({
+                        clinicId: pilot.clinicId,
+                        profileFingerprint: pilot.profileFingerprint,
+                    }),
+                refreshPublicShellDrift: () =>
+                    loadTurneroPublicShellHtml(publicShellOptions),
+                publicShellOptions,
+            });
+        } catch (_error) {
+            releaseOpsConsoleHost.innerHTML = '';
+        }
+    }
+
+    if (incidentWorkbenchHost instanceof HTMLElement) {
+        try {
+            mountQueueIncidentExecutionWorkbenchCard(incidentWorkbenchHost, {
+                pilot,
+                manifest,
+                snapshot,
+            });
+        } catch (_error) {
+            incidentWorkbenchHost.innerHTML = '';
+        }
+    }
+
+    const releaseWarRoomSnapshot = renderQueueOpsPilotReleaseWarRoom(
+        root,
+        pilot,
+        manifest,
+        requestId,
+        {
+            remoteReleaseReadiness: remoteReadinessModel,
+            publicShellDrift: publicShellDriftModel,
+            releaseEvidenceBundle:
+                releaseEvidenceBundleModel ||
+                createTurneroReleaseEvidenceBundleModel(
+                    snapshot,
+                    bundleOptions
+                ),
+        }
+    );
+
+    renderQueueOpsPilotAutomationMesh(root, pilot, manifest, requestId, {
+        snapshot,
+        remoteReadiness: remoteReadinessModel,
+        publicShellDrift: publicShellDriftModel,
+        releaseEvidenceBundle:
+            releaseEvidenceBundleModel ||
+            createTurneroReleaseEvidenceBundleModel(snapshot, bundleOptions),
+        releaseWarRoomSnapshot:
+            releaseWarRoomSnapshot || options.releaseWarRoomSnapshot || null,
+        incidentJournalEntries:
+            releaseWarRoomSnapshot?.journalEntries ||
+            options.releaseWarRoomSnapshot?.journalEntries ||
+            snapshot?.journalEntries ||
+            [],
+    });
 }
 
-export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
+export function renderQueueOpsPilotView(manifest, detectedPlatform, deps = {}) {
     const { buildQueueOpsPilot, setHtml, escapeHtml } = deps;
     const root = document.getElementById('queueOpsPilot');
     if (!(root instanceof HTMLElement)) {
@@ -595,6 +897,10 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                             id="queuePublicShellDriftCard"
                             data-turnero-public-shell-drift
                         ></div>
+                        <div
+                            id="queueReleaseControlCenterHost"
+                            aria-live="polite"
+                        ></div>
                         <section id="queueOpsPilotCanon" class="queue-ops-pilot__canon">
                             <div class="queue-ops-pilot__canon-head">
                                 <div>
@@ -785,6 +1091,21 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                             class="queue-ops-pilot__release-evidence-host"
                             aria-live="polite"
                         ></div>
+                        <div
+                            id="queueOpsPilotRolloutGovernorHost"
+                            class="queue-ops-pilot__rollout-governor-host"
+                            aria-live="polite"
+                        ></div>
+                        <div
+                            id="queueReleaseOpsConsoleHost"
+                            class="queue-ops-pilot__release-ops-console-host"
+                            aria-live="polite"
+                        ></div>
+                        <div
+                            id="queueIncidentExecutionWorkbenchHost"
+                            class="queue-ops-pilot__incident-workbench-host"
+                            aria-live="polite"
+                        ></div>
                     </div>
                     <div class="queue-ops-pilot__status">
                         <div class="queue-ops-pilot__progress">
@@ -814,15 +1135,35 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps) {
                         </div>
                     </div>
                 </div>
+                <div
+                    id="queueOpsPilotReleaseWarRoomHost"
+                    class="queue-ops-pilot__release-war-room-host"
+                    aria-live="polite"
+                ></div>
+                <div
+                    id="queueOpsPilotAutomationMeshHost"
+                    class="queue-ops-pilot__automation-mesh-host"
+                    aria-live="polite"
+                ></div>
             </section>
         `
+    );
+
+    const releaseWarRoomSnapshot = renderQueueOpsPilotReleaseWarRoom(
+        root,
+        pilot,
+        manifest,
+        renderRequestId
     );
 
     void hydrateQueueOpsPilotReleaseEvidence(
         root,
         pilot,
         manifest,
-        renderRequestId
+        renderRequestId,
+        {
+            releaseWarRoomSnapshot,
+        }
     );
 
     bindQueueOpsPilotActions(manifest, detectedPlatform, deps);

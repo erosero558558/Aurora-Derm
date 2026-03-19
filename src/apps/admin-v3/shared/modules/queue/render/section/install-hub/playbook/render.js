@@ -7,6 +7,7 @@ export function renderQueuePlaybookView(manifest, detectedPlatform, deps) {
         setOpsPlaybookStep,
         appendOpsLogEntry,
         renderQueuePlaybook,
+        renderQueueReleaseCommandDeck,
         renderQueueOpsLog,
         copyQueuePlaybookReport,
         resetOpsPlaybookMode,
@@ -164,6 +165,9 @@ export function renderQueuePlaybookView(manifest, detectedPlatform, deps) {
                 summary: `${playbook.nextStep.title} quedó marcado como hecho desde el playbook activo.`,
             });
             renderQueuePlaybook(manifest, detectedPlatform);
+            if (typeof renderQueueReleaseCommandDeck === 'function') {
+                renderQueueReleaseCommandDeck(manifest, detectedPlatform);
+            }
             renderQueueOpsLog(manifest, detectedPlatform);
         };
     }
@@ -184,6 +188,9 @@ export function renderQueuePlaybookView(manifest, detectedPlatform, deps) {
                 summary: `Se confirmaron ${assist.suggestedIds.length} paso(s) sugeridos por señales del sistema.`,
             });
             renderQueuePlaybook(manifest, detectedPlatform);
+            if (typeof renderQueueReleaseCommandDeck === 'function') {
+                renderQueueReleaseCommandDeck(manifest, detectedPlatform);
+            }
             renderQueueOpsLog(manifest, detectedPlatform);
         };
     }
@@ -207,6 +214,9 @@ export function renderQueuePlaybookView(manifest, detectedPlatform, deps) {
                     'La secuencia del modo activo se reinició para volver a guiar el flujo desde el primer paso.',
             });
             renderQueuePlaybook(manifest, detectedPlatform);
+            if (typeof renderQueueReleaseCommandDeck === 'function') {
+                renderQueueReleaseCommandDeck(manifest, detectedPlatform);
+            }
             renderQueueOpsLog(manifest, detectedPlatform);
         };
     }
@@ -220,6 +230,9 @@ export function renderQueuePlaybookView(manifest, detectedPlatform, deps) {
             const nextValue = !playbook.modeState[stepId];
             setOpsPlaybookStep(playbook.mode, stepId, nextValue);
             renderQueuePlaybook(manifest, detectedPlatform);
+            if (typeof renderQueueReleaseCommandDeck === 'function') {
+                renderQueueReleaseCommandDeck(manifest, detectedPlatform);
+            }
         };
     });
 }

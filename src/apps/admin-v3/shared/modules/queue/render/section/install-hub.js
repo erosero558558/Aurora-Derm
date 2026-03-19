@@ -48,6 +48,10 @@ import {
     buildQueueOpsPilot as buildQueueOpsPilotModule,
     renderQueueOpsPilot as renderQueueOpsPilotModule,
 } from './install-hub/pilot.js';
+import { buildTurneroReleaseControlCenterModel } from '../../../../../../queue-shared/turnero-release-control-center.js';
+import { renderTurneroReleaseCommandDeck } from '../../../../../../queue-shared/turnero-release-command-deck.js';
+import { mountReleaseIntelligenceSuiteCard } from '../../../../../../queue-shared/turnero-release-baseline-promotion-center.js';
+import { createReleaseHistoryDashboard } from '../../../../../../queue-shared/turnero-release-history-dashboard.js';
 import { hasRecentQueueSmokeSignalForState } from './install-hub/smoke-signal.js';
 import {
     buildPlaybookDefinitions as buildPlaybookDefinitionsModule,
@@ -102,6 +106,9 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueSurfaceTelemetry',
     'queueOpsAlerts',
     'queueOpsPilot',
+    'queueReleaseCommandDeck',
+    'queueReleaseIntelligenceSuiteHost',
+    'queueReleaseHistoryDashboard',
     'queueOpeningChecklist',
     'queueShiftHandoff',
     'queueContingencyDeck',
@@ -169,6 +176,7 @@ let queueAdminViewModeClinicId = null;
 let queueBasicFullView = false;
 let queueBasicFullViewClinicId = null;
 let installPresetClinicId = null;
+let queueReleaseHistoryDashboard = null;
 
 function getDefaultAppDownloads() {
     return getInstallHubDefaultAppDownloads();
@@ -216,6 +224,39 @@ function getTurneroOperatorAccessMeta() {
 function getTurneroV2Readiness() {
     const readiness = getState().data.turneroV2Readiness;
     return readiness && typeof readiness === 'object' ? readiness : null;
+}
+
+function getTurneroReleaseCommandDeckParts() {
+    const state = getState();
+    const data =
+        state && state.data && typeof state.data === 'object' ? state.data : {};
+    const clinicProfile = getTurneroClinicProfile();
+    const clinicProfileMeta = getTurneroClinicProfileMeta();
+    const profileFingerprint = String(
+        clinicProfile?.runtime_meta?.profileFingerprint ||
+            clinicProfile?.profileFingerprint ||
+            clinicProfileMeta?.profileFingerprint ||
+            ''
+    ).trim();
+    const pilotReadiness = getTurneroV2Readiness();
+
+    return {
+        clinicProfile,
+        turneroClinicProfile: clinicProfile,
+        clinicId: getTurneroClinicId(),
+        profileFingerprint,
+        releaseMode: String(clinicProfile?.release?.mode || '').trim(),
+        pilotReadiness,
+        turneroPilotReadiness: pilotReadiness,
+        turneroV2Readiness: pilotReadiness,
+        remoteReleaseReadiness: data.turneroRemoteReleaseReadiness || null,
+        turneroRemoteReleaseReadiness:
+            data.turneroRemoteReleaseReadiness || null,
+        publicShellDrift: data.turneroPublicShellDrift || null,
+        turneroPublicShellDrift: data.turneroPublicShellDrift || null,
+        releaseEvidenceBundle: data.turneroReleaseEvidenceBundle || null,
+        turneroReleaseEvidenceBundle: data.turneroReleaseEvidenceBundle || null,
+    };
 }
 
 function getTurneroClinicBrandName() {
@@ -2527,9 +2568,264 @@ function renderQueueOpsPilot(manifest, detectedPlatform) {
         renderQueueQuickConsole,
         renderQueuePlaybook,
         renderQueueOpsPilot,
+        renderQueueReleaseCommandDeck,
         renderOpeningChecklist,
         renderQueueOpsLog,
     });
+}
+
+function renderQueueReleaseCommandDeck(manifest, detectedPlatform) {
+    const root = document.getElementById('queueReleaseCommandDeck');
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const rendered = renderTurneroReleaseCommandDeck(
+        root,
+        getTurneroReleaseCommandDeckParts(),
+        {
+            manifest,
+            detectedPlatform,
+        }
+    );
+
+    renderQueueReleaseIntelligenceSuite(manifest, detectedPlatform);
+    return rendered;
+}
+
+function renderQueueReleaseIntelligenceSuite(manifest, detectedPlatform) {
+    const root = document.getElementById('queueReleaseIntelligenceSuiteHost');
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    return mountReleaseIntelligenceSuiteCard(
+        root,
+        getTurneroReleaseCommandDeckParts(),
+        {
+            manifest,
+            detectedPlatform,
+        }
+    );
+}
+
+function getQueueReleaseHistoryDashboard() {
+    if (!queueReleaseHistoryDashboard) {
+        queueReleaseHistoryDashboard = createReleaseHistoryDashboard();
+    }
+
+    return queueReleaseHistoryDashboard;
+}
+
+function getQueueReleaseHistorySnapshotParts() {
+    const data = getState().data;
+    const clinicProfile = getTurneroClinicProfile();
+    const clinicProfileMeta = getTurneroClinicProfileMeta();
+    const pilotReadiness = getTurneroV2Readiness();
+
+    return {
+        clinicProfile,
+        turneroClinicProfile: clinicProfile,
+        pilotReadiness,
+        turneroPilotReadiness: pilotReadiness,
+        remoteReleaseReadiness: data.turneroRemoteReleaseReadiness || null,
+        turneroRemoteReleaseReadiness:
+            data.turneroRemoteReleaseReadiness || null,
+        publicShellDrift: data.turneroPublicShellDrift || null,
+        turneroPublicShellDrift: data.turneroPublicShellDrift || null,
+        releaseEvidenceBundle: data.turneroReleaseEvidenceBundle || null,
+        turneroReleaseEvidenceBundle: data.turneroReleaseEvidenceBundle || null,
+        clinicId:
+            clinicProfile?.clinic_id ||
+            clinicProfileMeta?.clinicId ||
+            'default-clinic',
+        profileFingerprint:
+            clinicProfileMeta?.profileFingerprint ||
+            clinicProfile?.runtime_meta?.profileFingerprint ||
+            '',
+        releaseMode:
+            clinicProfile?.release?.mode ||
+            clinicProfile?.releaseMode ||
+            'suite_v2',
+    };
+}
+
+function buildQueueReleaseHistoryCurrentSnapshot() {
+    const parts = getQueueReleaseHistorySnapshotParts();
+    const model = buildTurneroReleaseControlCenterModel(parts);
+    const clinicId = model.clinicId || parts.clinicId || 'default-clinic';
+
+    return {
+        ...model,
+        snapshotId: `live-${clinicId}`,
+        source: 'queue-release-history',
+        label: model.clinicShortName || model.clinicName || clinicId,
+    };
+}
+
+function renderQueueReleaseHistoryDashboard(manifest, detectedPlatform) {
+    const root = document.getElementById('queueReleaseHistoryDashboard');
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const dashboard = getQueueReleaseHistoryDashboard();
+    const currentSnapshot = buildQueueReleaseHistoryCurrentSnapshot();
+    const viewModel = dashboard.buildViewModel({
+        clinicId: currentSnapshot.clinicId,
+        currentSnapshot,
+    });
+
+    setHtml(
+        '#queueReleaseHistoryDashboard',
+        dashboard.renderTextCard(viewModel)
+    );
+
+    const panel = document.getElementById('queueReleaseHistoryDashboardPanel');
+    if (!(panel instanceof HTMLElement)) {
+        return null;
+    }
+
+    const rerender = () =>
+        renderQueueReleaseHistoryDashboard(manifest, detectedPlatform);
+
+    panel.onchange = async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLSelectElement)) {
+            return;
+        }
+
+        if (
+            target.matches(
+                '[data-history-select="snapshot-a"], [data-history-select="snapshot-b"]'
+            )
+        ) {
+            const selectA = panel.querySelector(
+                '[data-history-select="snapshot-a"]'
+            );
+            const selectB = panel.querySelector(
+                '[data-history-select="snapshot-b"]'
+            );
+            if (
+                selectA instanceof HTMLSelectElement &&
+                selectB instanceof HTMLSelectElement
+            ) {
+                dashboard.setComparisonSelection({
+                    clinicId: viewModel.clinicId,
+                    snapshotAId: selectA.value,
+                    snapshotBId: selectB.value,
+                });
+                rerender();
+            }
+        }
+    };
+
+    panel.onclick = async (event) => {
+        const trigger =
+            event.target instanceof HTMLElement
+                ? event.target.closest('[data-history-action]')
+                : null;
+        if (!(trigger instanceof HTMLElement)) {
+            return;
+        }
+
+        const action = trigger.dataset.historyAction || '';
+        const snapshotId = trigger.dataset.historySnapshotId || '';
+
+        if (action === 'save-current') {
+            const result = dashboard.saveCurrentSnapshot({
+                clinicId: viewModel.clinicId,
+                currentSnapshot,
+            });
+            createToast(
+                result.saved
+                    ? `Snapshot guardado: ${result.savedSnapshot?.snapshotId || ''}`
+                    : 'No hay snapshot actual para guardar',
+                result.saved ? 'ready' : 'warning'
+            );
+            rerender();
+            return;
+        }
+
+        if (action === 'set-baseline-current') {
+            const result = dashboard.setBaseline({
+                clinicId: viewModel.clinicId,
+                currentSnapshot,
+            });
+            createToast(
+                result
+                    ? `Baseline fijado: ${result.snapshotId}`
+                    : 'No hay snapshot actual para fijar como baseline',
+                result ? 'ready' : 'warning'
+            );
+            rerender();
+            return;
+        }
+
+        if (action === 'copy-summary') {
+            const result = await dashboard.copySummary({
+                clinicId: viewModel.clinicId,
+                currentSnapshot,
+            });
+            createToast(
+                result.copied
+                    ? 'Resumen copiado'
+                    : 'No se pudo copiar el resumen',
+                result.copied ? 'ready' : 'warning'
+            );
+            return;
+        }
+
+        if (action === 'download-json') {
+            const result = dashboard.exportPack({
+                clinicId: viewModel.clinicId,
+                currentSnapshot,
+            });
+            createToast(
+                result.downloaded
+                    ? `Pack descargado: ${result.filename}`
+                    : 'No se pudo descargar el pack',
+                result.downloaded ? 'ready' : 'warning'
+            );
+            return;
+        }
+
+        if (action === 'select-a') {
+            dashboard.setComparisonSelection({
+                clinicId: viewModel.clinicId,
+                snapshotAId: snapshotId,
+                snapshotBId: viewModel.selectedSnapshotBId || '',
+            });
+            rerender();
+            return;
+        }
+
+        if (action === 'select-b') {
+            dashboard.setComparisonSelection({
+                clinicId: viewModel.clinicId,
+                snapshotAId: viewModel.selectedSnapshotAId || '',
+                snapshotBId: snapshotId,
+            });
+            rerender();
+            return;
+        }
+
+        if (action === 'set-baseline') {
+            const result = dashboard.setBaseline({
+                clinicId: viewModel.clinicId,
+                snapshotId,
+            });
+            createToast(
+                result
+                    ? `Baseline fijado: ${result.snapshotId}`
+                    : 'No se encontró el snapshot para fijarlo como baseline',
+                result ? 'ready' : 'warning'
+            );
+            rerender();
+        }
+    };
+
+    return panel;
 }
 
 function formatHeartbeatAge(ageSec) {
@@ -4108,6 +4404,8 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderQueueQuickConsole(manifest, detectedPlatform);
     renderQueuePlaybook(manifest, detectedPlatform);
     renderQueueOpsPilot(manifest, detectedPlatform);
+    renderQueueReleaseCommandDeck(manifest, detectedPlatform);
+    renderQueueReleaseHistoryDashboard(manifest, detectedPlatform);
     renderOpeningChecklist(manifest, detectedPlatform);
     renderShiftHandoff(manifest, detectedPlatform);
     setHtml(
@@ -20744,6 +21042,7 @@ function renderQueuePlaybook(manifest, detectedPlatform) {
         setOpsPlaybookStep,
         appendOpsLogEntry,
         renderQueuePlaybook,
+        renderQueueReleaseCommandDeck,
         renderQueueOpsLog,
         copyQueuePlaybookReport,
         resetOpsPlaybookMode,
@@ -21212,6 +21511,7 @@ function renderOpeningChecklist(manifest, detectedPlatform) {
             renderQueueQuickConsole(manifest, detectedPlatform);
             renderQueuePlaybook(manifest, detectedPlatform);
             renderQueueOpsPilot(manifest, detectedPlatform);
+            renderQueueReleaseCommandDeck(manifest, detectedPlatform);
             renderOpeningChecklist(manifest, detectedPlatform);
             renderShiftHandoff(manifest, detectedPlatform);
         };
@@ -21238,6 +21538,7 @@ function renderOpeningChecklist(manifest, detectedPlatform) {
             renderQueueQuickConsole(manifest, detectedPlatform);
             renderQueuePlaybook(manifest, detectedPlatform);
             renderQueueOpsPilot(manifest, detectedPlatform);
+            renderQueueReleaseCommandDeck(manifest, detectedPlatform);
             renderOpeningChecklist(manifest, detectedPlatform);
             renderShiftHandoff(manifest, detectedPlatform);
             renderQueueOpsLog(manifest, detectedPlatform);
@@ -21261,6 +21562,7 @@ function renderOpeningChecklist(manifest, detectedPlatform) {
             renderQueueQuickConsole(manifest, detectedPlatform);
             renderQueuePlaybook(manifest, detectedPlatform);
             renderQueueOpsPilot(manifest, detectedPlatform);
+            renderQueueReleaseCommandDeck(manifest, detectedPlatform);
             renderOpeningChecklist(manifest, detectedPlatform);
             renderShiftHandoff(manifest, detectedPlatform);
             renderQueueOpsLog(manifest, detectedPlatform);
@@ -21460,6 +21762,7 @@ function renderShiftHandoff(manifest, detectedPlatform) {
             renderQueueFocusMode(manifest, detectedPlatform);
             renderQueueQuickConsole(manifest, detectedPlatform);
             renderQueuePlaybook(manifest, detectedPlatform);
+            renderQueueReleaseCommandDeck(manifest, detectedPlatform);
             renderShiftHandoff(manifest, detectedPlatform);
             renderQueueOpsLog(manifest, detectedPlatform);
         };
@@ -21479,6 +21782,7 @@ function renderShiftHandoff(manifest, detectedPlatform) {
             renderQueueFocusMode(manifest, detectedPlatform);
             renderQueueQuickConsole(manifest, detectedPlatform);
             renderQueuePlaybook(manifest, detectedPlatform);
+            renderQueueReleaseCommandDeck(manifest, detectedPlatform);
             renderShiftHandoff(manifest, detectedPlatform);
             renderQueueOpsLog(manifest, detectedPlatform);
         };
@@ -21496,6 +21800,7 @@ function renderShiftHandoff(manifest, detectedPlatform) {
             renderQueueFocusMode(manifest, detectedPlatform);
             renderQueueQuickConsole(manifest, detectedPlatform);
             renderQueuePlaybook(manifest, detectedPlatform);
+            renderQueueReleaseCommandDeck(manifest, detectedPlatform);
             renderShiftHandoff(manifest, detectedPlatform);
         };
     });

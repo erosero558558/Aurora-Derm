@@ -13946,6 +13946,60 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#queueOpsPilotReleaseEvidenceHost')
         ).toContainText('Descargar JSON');
+        await expect(
+            page.locator('#queueOpsPilotRolloutGovernorHost')
+        ).toContainText('Rollout Governor');
+        await expect(
+            page.locator('#queueOpsPilotRolloutGovernorHost')
+        ).toContainText('Copiar resumen ejecutivo');
+        await expect(
+            page.locator('#queueIncidentExecutionWorkbench')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueIncidentExecutionWorkbenchTitle')
+        ).toContainText('Incident Execution Workbench');
+        await expect(
+            page.locator('#queueIncidentExecutionWorkbenchOwnerBoard')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueIncidentExecutionWorkbenchAccordion')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueIncidentExecutionWorkbenchCopyBoardBtn')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueIncidentExecutionWorkbenchCopyCommandsBtn')
+        ).toBeVisible();
+
+        const doingToggle = page
+            .locator(
+                '#queueIncidentExecutionWorkbench [data-workbench-action="set-step-state"][data-next-state="doing"]'
+            )
+            .first();
+        await expect(doingToggle).toBeVisible();
+        await doingToggle.evaluate((element) => element.click());
+
+        const executorKey = (
+            await page
+                .locator('#queueIncidentExecutionWorkbenchFooter code')
+                .first()
+                .textContent()
+        )?.trim();
+        expect(executorKey).toMatch(/^turnero\.release\.incident\.executor\./);
+        const storedIncidentState = await page.evaluate((key) => {
+            const raw = window.localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : null;
+        }, executorKey);
+
+        expect(storedIncidentState).not.toBeNull();
+        expect(storedIncidentState.incidents).toBeTruthy();
+        expect(
+            Object.values(storedIncidentState.incidents).some((incident) =>
+                Object.values(incident.steps || {}).some(
+                    (step) => step.state === 'doing'
+                )
+            )
+        ).toBe(true);
     });
 
     test('queue bloquea acciones operativas del admin si admin.html#queue queda fuera del canon del piloto', async ({
@@ -14748,6 +14802,18 @@ test.describe('Admin turnero sala', () => {
         await expect(page.locator('#queueAppDownloadsCards')).toContainText(
             'Descargar APK'
         );
+        await expect(
+            page.locator('#queueReleaseIntelligenceSuite')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseIntelligenceSuiteSummary')
+        ).toContainText('Score');
+        await expect(
+            page.locator('#queueReleaseIntelligenceSuiteSummary')
+        ).toContainText('Decision');
+        await expect(
+            page.locator('#queueReleaseIntelligenceSuiteEvidence')
+        ).toContainText('Sin baseline activo');
         await expect(page.locator('#queueInstallConfigurator')).toContainText(
             'Asistente de instalación'
         );

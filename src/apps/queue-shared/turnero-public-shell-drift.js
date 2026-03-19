@@ -414,5 +414,10 @@ export async function mountTurneroPublicShellDriftCard(target, options = {}) {
     }
 
     target.innerHTML = renderTurneroPublicShellDriftCard(model, options);
-    return target.querySelector('#queuePublicShellDrift');
+    const section = target.querySelector('#queuePublicShellDrift');
+    if (section instanceof HTMLElement) {
+        section.__turneroPublicShellDriftModel = model;
+    }
+
+    return section;
 }

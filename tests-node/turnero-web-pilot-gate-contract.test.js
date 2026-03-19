@@ -86,6 +86,7 @@ test('gate:turnero:web-pilot limita los contratos al frente web por clinica', ()
         'queue-pilot-smoke-signal-contract.test.js',
         'queue-operator-shell-state.test.js',
         'queue-operator-heartbeat-payload.test.js',
+        'turnero-release-control-center.test.js',
         'turnero-web-pilot-gate-contract.test.js',
     ]) {
         assert.equal(

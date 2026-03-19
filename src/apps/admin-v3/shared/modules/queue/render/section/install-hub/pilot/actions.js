@@ -51,6 +51,7 @@ export function bindQueueOpsPilotActions(manifest, detectedPlatform, deps) {
         renderQueueQuickConsole,
         renderQueuePlaybook,
         renderQueueOpsPilot,
+        renderQueueReleaseCommandDeck,
         renderOpeningChecklist,
         renderQueueOpsLog,
     } = deps;
@@ -69,8 +70,8 @@ export function bindQueueOpsPilotActions(manifest, detectedPlatform, deps) {
                 ),
                 '',
                 'Rutas canónicas:',
-                ...pilot.canonicalSurfaces.map((item) =>
-                    `- ${item.label}: ${item.url || item.route}`
+                ...pilot.canonicalSurfaces.map(
+                    (item) => `- ${item.label}: ${item.url || item.route}`
                 ),
                 '',
                 'Secuencia de smoke:',
@@ -85,7 +86,10 @@ export function bindQueueOpsPilotActions(manifest, detectedPlatform, deps) {
                 await navigator.clipboard.writeText(report);
                 createToast('Paquete de apertura copiado', 'success');
             } catch (_error) {
-                createToast('No se pudo copiar el paquete de apertura', 'error');
+                createToast(
+                    'No se pudo copiar el paquete de apertura',
+                    'error'
+                );
             }
         };
     }
@@ -113,6 +117,9 @@ export function bindQueueOpsPilotActions(manifest, detectedPlatform, deps) {
         renderQueueQuickConsole(manifest, detectedPlatform);
         renderQueuePlaybook(manifest, detectedPlatform);
         renderQueueOpsPilot(manifest, detectedPlatform);
+        if (typeof renderQueueReleaseCommandDeck === 'function') {
+            renderQueueReleaseCommandDeck(manifest, detectedPlatform);
+        }
         renderOpeningChecklist(manifest, detectedPlatform);
         renderQueueOpsLog(manifest, detectedPlatform);
     };

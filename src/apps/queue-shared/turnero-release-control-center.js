@@ -1,4 +1,11 @@
-const OWNER_KEYS = new Set(['deploy', 'backend', 'frontend', 'ops', 'unknown']);
+const OWNER_KEYS = new Set([
+    'deploy',
+    'backend',
+    'frontend',
+    'ops',
+    'config',
+    'unknown',
+]);
 
 function toText(value, fallback = '') {
     const normalized = String(value ?? '').trim();
@@ -549,6 +556,8 @@ export function toReleaseControlCenterSnapshot(parts = {}) {
         profileFingerprint,
         releaseMode,
         generatedAt,
+        turneroClinicProfile: clinicProfile,
+        clinicProfile,
         parts: {
             clinicProfile,
             pilotReadiness,
@@ -566,6 +575,773 @@ export function toReleaseControlCenterSnapshot(parts = {}) {
         ),
     };
 }
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeMd(value) {
+    return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/`/g, '\\`')
+        .replace(/\r?\n/g, ' ')
+        .trim();
+}
+
+function safeFilePart(value, fallback = 'turnero-release-control-center') {
+    const normalized = String(value ?? '')
+        .trim()
+        .replace(/[^a-z0-9._-]+/gi, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+    return normalized || fallback;
+}
+
+function makeIncident({ code, severity, title, detail, source, owner }) {
+    const normalizedSeverity =
+        severity === 'hold'
+            ? 'hold'
+            : severity === 'review'
+              ? 'review'
+              : 'ready';
+
+    return {
+        code: toText(code),
+        severity: normalizedSeverity,
+        state:
+            normalizedSeverity === 'hold'
+                ? 'alert'
+                : normalizedSeverity === 'review'
+                  ? 'warning'
+                  : 'ready',
+        title: toText(title),
+        detail: toText(detail),
+        source: toText(source, 'runtime'),
+        owner: normalizeOwner(owner),
+    };
+}
+
+function issueBadge(severity) {
+    return severity === 'hold'
+        ? 'hold'
+        : severity === 'review'
+          ? 'review'
+          : 'ready';
+}
+
+function incidentPriority(severity) {
+    return severity === 'hold' ? 0 : severity === 'review' ? 1 : 2;
+}
+
+function getControlCenterClinicProfile(parts = {}) {
+    return asObject(
+        parts.clinicProfile || parts.turneroClinicProfile || parts.profile || {}
+    );
+}
+
+function getControlCenterPilotReadiness(parts = {}, snapshot = {}) {
+    return asObject(
+        parts.pilotReadiness ||
+            parts.turneroPilotReadiness ||
+            parts.openingReadiness ||
+            snapshot.parts?.pilotReadiness ||
+            {}
+    );
+}
+
+function getControlCenterRemoteReleaseReadiness(parts = {}, snapshot = {}) {
+    return asObject(
+        parts.remoteReleaseReadiness ||
+            parts.turneroRemoteReleaseReadiness ||
+            parts.releaseReadiness ||
+            snapshot.parts?.remoteReleaseReadiness ||
+            {}
+    );
+}
+
+function getControlCenterPublicShellDrift(parts = {}, snapshot = {}) {
+    return asObject(
+        parts.publicShellDrift ||
+            parts.turneroPublicShellDrift ||
+            parts.shellDrift ||
+            snapshot.parts?.publicShellDrift ||
+            {}
+    );
+}
+
+function collectControlCenterIncidents(parts, snapshot) {
+    const incidents = [];
+    const clinicProfileInput = getControlCenterClinicProfile(parts);
+    const clinicProfilePresent =
+        Boolean(
+            parts.clinicProfile || parts.turneroClinicProfile || parts.profile
+        ) && Object.keys(clinicProfileInput).length > 0;
+    const clinicRuntimeSource = clinicProfilePresent
+        ? String(clinicProfileInput.runtime_meta?.source || 'remote')
+              .trim()
+              .toLowerCase()
+        : 'missing';
+    const pilot = getControlCenterPilotReadiness(parts, snapshot);
+    const remote = getControlCenterRemoteReleaseReadiness(parts, snapshot);
+    const shell = getControlCenterPublicShellDrift(parts, snapshot);
+    const turneroPilot = asObject(remote.checks?.turneroPilot);
+    const publicSync = asObject(remote.checks?.publicSync);
+    const diagnosticsPayload = asObject(
+        remote.diagnosticsPayload || remote.diagnostics?.payload
+    );
+
+    if (!clinicProfilePresent) {
+        incidents.push(
+            makeIncident({
+                code: 'clinic_profile_missing',
+                severity: 'hold',
+                title: 'Perfil clínico ausente',
+                detail: 'No existe un clinic-profile activo en runtime; la release no puede validarse con evidencia confiable.',
+                source: 'clinic_profile',
+                owner: 'config',
+            })
+        );
+    } else if (clinicRuntimeSource === 'fallback_default') {
+        incidents.push(
+            makeIncident({
+                code: 'clinic_profile_fallback',
+                severity: 'hold',
+                title: 'Perfil clínico en fallback',
+                detail: 'El perfil activo sigue viniendo del fallback_default y no del canon remoto por clínica.',
+                source: 'clinic_profile',
+                owner: 'config',
+            })
+        );
+    }
+
+    if (
+        String(
+            pilot.readinessState ||
+                snapshot.signals?.pilotReadiness?.state ||
+                ''
+        ).trim() !== 'ready' ||
+        String(pilot.goLiveIssueState || '').trim() !== 'ready'
+    ) {
+        incidents.push(
+            makeIncident({
+                code: 'surface_not_ready',
+                severity:
+                    pilot.readinessState === 'alert' ||
+                    pilot.goLiveIssueState === 'alert' ||
+                    snapshot.signals?.pilotReadiness?.state === 'alert'
+                        ? 'hold'
+                        : 'review',
+                title: 'Superficies no listas',
+                detail:
+                    [pilot.readinessSummary, pilot.goLiveSummary]
+                        .filter(Boolean)
+                        .join(' · ') || 'La superficie todavía no quedó lista.',
+                source: 'pilot.readiness',
+                owner: 'frontend',
+            })
+        );
+    }
+
+    if (remote.diagnostics?.kind === 'denied') {
+        incidents.push(
+            makeIncident({
+                code: 'remote_health_diagnostics_denied',
+                severity: 'hold',
+                title: 'Diagnóstico remoto denegado',
+                detail: 'health-diagnostics respondió 401/403 y no deja validar la señal remota de Turnero.',
+                source: 'remote.diagnostics',
+                owner: 'ops',
+            })
+        );
+    }
+
+    if (
+        !Object.keys(turneroPilot).length ||
+        turneroPilot.available !== true ||
+        turneroPilot.configured !== true ||
+        turneroPilot.ready !== true
+    ) {
+        incidents.push(
+            makeIncident({
+                code: 'remote_turnero_pilot_missing',
+                severity: 'hold',
+                title: 'Turnero remoto no confirmado',
+                detail: !Object.keys(turneroPilot).length
+                    ? 'health-diagnostics no expone checks.turneroPilot.'
+                    : turneroPilot.available !== true
+                      ? 'turneroPilot.available=false en health-diagnostics.'
+                      : turneroPilot.configured !== true
+                        ? 'turneroPilot.configured=false en health-diagnostics.'
+                        : 'turneroPilot.ready=false en health-diagnostics.',
+                source: 'remote.checks.turneroPilot',
+                owner: 'ops',
+            })
+        );
+    }
+
+    if (
+        !Object.keys(publicSync).length ||
+        publicSync.available !== true ||
+        publicSync.configured !== true
+    ) {
+        incidents.push(
+            makeIncident({
+                code: 'remote_public_sync_missing',
+                severity: 'hold',
+                title: 'Public sync no expuesto',
+                detail: !Object.keys(publicSync).length
+                    ? 'health-diagnostics no expone checks.publicSync.'
+                    : publicSync.available !== true
+                      ? 'publicSync no respondió como señal disponible.'
+                      : 'publicSync configured=false en health-diagnostics.',
+                source: 'remote.checks.publicSync',
+                owner: 'ops',
+            })
+        );
+    } else if (
+        publicSync.healthy !== true ||
+        publicSync.operationallyHealthy === false ||
+        publicSync.headDrift === true
+    ) {
+        incidents.push(
+            makeIncident({
+                code: 'remote_public_sync_unverified',
+                severity: 'hold',
+                title: 'Public sync no verificado',
+                detail:
+                    publicSync.headDrift === true
+                        ? 'publicSync sigue con headDrift=true y no coincide con el remoto.'
+                        : publicSync.healthy === false
+                          ? `publicSync sigue ${toText(publicSync.state, 'desconocido')}.`
+                          : 'publicSync no quedó operacionalmente sano.',
+                source: 'remote.checks.publicSync',
+                owner: 'ops',
+            })
+        );
+    } else if (!toText(publicSync.deployedCommit)) {
+        incidents.push(
+            makeIncident({
+                code: 'remote_public_sync_unverified',
+                severity: 'review',
+                title: 'Public sync aún no verificado del todo',
+                detail: 'publicSync no reporta deployedCommit y todavía requiere confirmación.',
+                source: 'remote.checks.publicSync',
+                owner: 'ops',
+            })
+        );
+    }
+
+    if (
+        remote.diagnostics?.kind === 'ok' &&
+        (diagnosticsPayload.figoConfigured === false ||
+            diagnosticsPayload.figoRecursiveConfig === true)
+    ) {
+        incidents.push(
+            makeIncident({
+                code: 'remote_figo_degraded',
+                severity: 'hold',
+                title: 'Figo degradado',
+                detail:
+                    diagnosticsPayload.figoConfigured === false
+                        ? 'figoConfigured=false en health-diagnostics.'
+                        : 'figoRecursiveConfig=true en health-diagnostics.',
+                source: 'remote.diagnostics',
+                owner: 'ops',
+            })
+        );
+    }
+
+    if (
+        (snapshot.clinicId &&
+            remote.clinicId &&
+            remote.clinicId.toLowerCase() !==
+                snapshot.clinicId.toLowerCase()) ||
+        (snapshot.profileFingerprint &&
+            remote.profileFingerprint &&
+            remote.profileFingerprint !== snapshot.profileFingerprint)
+    ) {
+        incidents.push(
+            makeIncident({
+                code: 'remote_profile_mismatch',
+                severity: 'hold',
+                title: 'Perfil remoto no coincide',
+                detail: [
+                    snapshot.clinicId && remote.clinicId
+                        ? `clinicId remoto ${remote.clinicId} != ${snapshot.clinicId}`
+                        : '',
+                    snapshot.profileFingerprint && remote.profileFingerprint
+                        ? `profileFingerprint remoto ${remote.profileFingerprint} != ${snapshot.profileFingerprint}`
+                        : '',
+                ]
+                    .filter(Boolean)
+                    .join(' · '),
+                source: 'remote.identity',
+                owner: 'ops',
+            })
+        );
+    }
+
+    const mappedRemoteIds = new Set([
+        'diagnostics',
+        'identity',
+        'public_sync',
+        'figo',
+    ]);
+    const remoteResiduals = toArray(remote.items).filter(
+        (item) => item.state !== 'ready' && !mappedRemoteIds.has(item.id)
+    );
+    if (remoteResiduals.length > 0) {
+        incidents.push(
+            makeIncident({
+                code: 'surface_not_ready',
+                severity: remoteResiduals.some((item) => item.state === 'alert')
+                    ? 'hold'
+                    : 'review',
+                title: 'Superficies remotas todavía no listas',
+                detail: remoteResiduals
+                    .map((item) => `${item.label}: ${item.detail}`)
+                    .join(' · '),
+                source: 'remote.items',
+                owner: 'ops',
+            })
+        );
+    }
+
+    const structuralKeys = new Set([
+        'public_shell_unavailable',
+        'public_shell_fetch_failed',
+        'stylesheet_missing',
+        'stylesheet_drift',
+        'shell_script_missing',
+        'shell_script_drift',
+    ]);
+    const shellBlockers = toArray(shell.blockers).map((item) => asObject(item));
+    const structuralBlockers = shellBlockers.filter((item) =>
+        structuralKeys.has(toText(item.key))
+    );
+    if (shell.pageOk === false || shell.pageStatus === 0) {
+        incidents.push(
+            makeIncident({
+                code: 'public_shell_unreachable',
+                severity: 'hold',
+                title: 'Shell público no alcanzable',
+                detail: `GET / respondió ${shell.pageStatus || 'n/a'} y no deja validar el corte público.`,
+                source: 'public_shell.page',
+                owner: 'frontend',
+            })
+        );
+    }
+    if (structuralBlockers.length > 0) {
+        incidents.push(
+            makeIncident({
+                code: 'public_shell_drift',
+                severity: 'hold',
+                title: 'Drift del shell público',
+                detail: structuralBlockers
+                    .map((item) => `${item.title}: ${item.detail}`)
+                    .join(' · '),
+                source: 'public_shell.blockers',
+                owner: 'frontend',
+            })
+        );
+    }
+    if (Number(shell.inlineExecutableScripts || 0) > 0) {
+        incidents.push(
+            makeIncident({
+                code: 'inline_script_detected',
+                severity: 'hold',
+                title: 'Script inline detectado',
+                detail: `Se detectaron ${shell.inlineExecutableScripts} script(s) inline ejecutable(s) en el shell público.`,
+                source: 'public_shell.inline',
+                owner: 'frontend',
+            })
+        );
+    }
+    if (
+        shellBlockers.some((item) => item.key === 'ga4_markers_missing') ||
+        (toArray(shell.ga4Required).length > 0 &&
+            toArray(shell.ga4Found).length < toArray(shell.ga4Required).length)
+    ) {
+        incidents.push(
+            makeIncident({
+                code: 'ga4_markers_missing',
+                severity: 'review',
+                title: 'Marcadores GA4 incompletos',
+                detail: toArray(shell.ga4Required).length
+                    ? `Presentes ${toArray(shell.ga4Found).length}/${toArray(shell.ga4Required).length}: ${
+                          toArray(shell.ga4Found).join(', ') || 'ninguno'
+                      }.`
+                    : 'No se detectaron marcadores GA4 requeridos.',
+                source: 'public_shell.analytics',
+                owner: 'frontend',
+            })
+        );
+    }
+
+    return incidents.sort(
+        (left, right) =>
+            incidentPriority(left.severity) -
+                incidentPriority(right.severity) ||
+            left.code.localeCompare(right.code)
+    );
+}
+
+function buildReleaseControlCenterSummary(
+    snapshot,
+    decision,
+    alertCount,
+    warningCount,
+    incidents
+) {
+    if (decision === 'ready') {
+        return `Ready: ${snapshot.clinicShortName || snapshot.clinicName || snapshot.clinicId || 'Sin perfil'} quedó alineada con la evidencia local, remota y pública.`;
+    }
+
+    const top = incidents.find((item) =>
+        decision === 'hold' ? item.state === 'alert' : item.state === 'warning'
+    );
+
+    return decision === 'hold'
+        ? `Hold: ${alertCount} bloqueo(s) impiden la liberación. ${top?.title || ''}: ${top?.detail || ''}`.trim()
+        : `Review: ${warningCount} señal(es) requieren validación manual. ${top?.title || ''}: ${top?.detail || ''}`.trim();
+}
+
+function buildReleaseControlCenterRunbook(snapshot, decision, incidents) {
+    const signalLines = [
+        `- Pilot readiness: ${escapeMd(snapshot.pilotReadiness?.readinessState || snapshot.signals?.pilotReadiness?.state || 'n/a')} · ${escapeMd(
+            snapshot.pilotReadiness?.readinessSummary ||
+                snapshot.pilotReadiness?.readinessSupport ||
+                'n/a'
+        )}`,
+        `- Go-live issues: ${escapeMd(snapshot.pilotReadiness?.goLiveIssueState || 'n/a')} · ${escapeMd(
+            snapshot.pilotReadiness?.goLiveSummary ||
+                snapshot.pilotReadiness?.goLiveSupport ||
+                'n/a'
+        )}`,
+        `- Remote readiness: ${escapeMd(snapshot.remoteReleaseReadiness?.tone || snapshot.remoteReleaseReadiness?.state || 'n/a')} · ${escapeMd(
+            snapshot.remoteReleaseReadiness?.summary ||
+                snapshot.remoteReleaseReadiness?.supportCopy ||
+                'n/a'
+        )}`,
+        `- Public shell: ${escapeMd(snapshot.publicShellDrift?.driftStatus || snapshot.publicShellDrift?.state || 'n/a')} · ${escapeMd(
+            snapshot.publicShellDrift?.signalSummary ||
+                snapshot.publicShellDrift?.supportCopy ||
+                'n/a'
+        )}`,
+    ];
+    const incidentLines = incidents.length
+        ? incidents.map(
+              (incident) =>
+                  `- \`${escapeMd(incident.code)}\` [${escapeMd(
+                      incident.severity
+                  )}] ${escapeMd(incident.title)}: ${escapeMd(incident.detail)}`
+          )
+        : ['- Sin incidentes.'];
+
+    return [
+        '# Turnero Release Control Center',
+        '',
+        `- Decision: ${decision}`,
+        `- Clinic: ${escapeMd(snapshot.clinicName)} (${escapeMd(
+            snapshot.clinicId || 'sin clinic_id'
+        )})`,
+        `- Profile source: ${escapeMd(
+            snapshot.turneroClinicProfile?.runtime_meta?.source || 'missing'
+        )}`,
+        `- Generated at: ${escapeMd(snapshot.generatedAt)}`,
+        '',
+        '## Decision Summary',
+        escapeMd(snapshot.evidenceSummary || snapshot.summary || ''),
+        '',
+        '## Incidents',
+        ...incidentLines,
+        '',
+        '## Signals',
+        ...signalLines,
+        '',
+        '## Next Action',
+        decision === 'ready'
+            ? '- Liberate la release.'
+            : decision === 'review'
+              ? '- Revisa las señales warning antes de liberar.'
+              : '- Corrige los bloqueos hold antes de liberar.',
+    ].join('\n');
+}
+
+export function buildTurneroReleaseControlCenterModel(parts = {}) {
+    const snapshot = toReleaseControlCenterSnapshot(parts);
+    const incidents = collectControlCenterIncidents(parts, snapshot);
+    const alertCount = incidents.filter(
+        (item) => item.state === 'alert'
+    ).length;
+    const warningCount = incidents.filter(
+        (item) => item.state === 'warning'
+    ).length;
+    const decision =
+        alertCount > 0 ? 'hold' : warningCount > 0 ? 'review' : 'ready';
+    const releaseEvidenceBundle = asObject(
+        snapshot.parts.releaseEvidenceBundle
+    );
+    const summary = buildReleaseControlCenterSummary(
+        snapshot,
+        decision,
+        alertCount,
+        warningCount,
+        incidents
+    );
+    const supportCopy =
+        decision === 'ready'
+            ? `Puedes seguir con la liberación de ${snapshot.clinicName}.`
+            : decision === 'review'
+              ? 'No hay bloqueos duros, pero todavía quedan señales de revisión antes de liberar.'
+              : 'No liberes esta salida hasta cerrar los incidentes hold listados arriba.';
+    const decisionReason =
+        decision === 'ready'
+            ? 'Sin incidentes hold ni review en la evidencia cargada.'
+            : incidents[0]
+              ? `${incidents[0].code}: ${incidents[0].detail}`
+              : 'Hay señales pendientes.';
+    const clipboardSummary = [
+        'Turnero release control center',
+        `Decision: ${decision}`,
+        `Clinic: ${snapshot.clinicName || 'Sin perfil'} (${snapshot.clinicId || 'sin clinic_id'})`,
+        `Profile source: ${snapshot.turneroClinicProfile?.runtime_meta?.source || 'missing'}`,
+        `Summary: ${summary}`,
+        `Incidents: ${incidents.map((item) => item.code).join(', ') || 'none'}`,
+    ].join('\n');
+    const runbookMarkdown = buildReleaseControlCenterRunbook(
+        {
+            ...snapshot,
+            turneroClinicProfile: snapshot.parts.clinicProfile,
+            pilotReadiness: snapshot.parts.pilotReadiness,
+            remoteReleaseReadiness: snapshot.parts.remoteReleaseReadiness,
+            publicShellDrift: snapshot.parts.publicShellDrift,
+            releaseEvidenceBundle,
+        },
+        decision,
+        incidents
+    );
+
+    return {
+        ...snapshot,
+        turneroClinicProfile: snapshot.parts.clinicProfile,
+        pilotReadiness: snapshot.parts.pilotReadiness,
+        remoteReleaseReadiness: snapshot.parts.remoteReleaseReadiness,
+        publicShellDrift: snapshot.parts.publicShellDrift,
+        releaseEvidenceBundle,
+        incidents,
+        alertCount,
+        warningCount,
+        decision,
+        tone:
+            decision === 'hold'
+                ? 'alert'
+                : decision === 'review'
+                  ? 'warning'
+                  : 'ready',
+        summary,
+        supportCopy,
+        decisionReason,
+        clipboardSummary,
+        runbookMarkdown,
+        snapshotFileName: `${safeFilePart(
+            snapshot.clinicId || snapshot.clinicShortName || snapshot.clinicName
+        )}-${snapshot.generatedAt.slice(0, 10).replaceAll('-', '')}.json`,
+        snapshot: {
+            ...snapshot,
+            turneroClinicProfile: snapshot.parts.clinicProfile,
+            pilotReadiness: snapshot.parts.pilotReadiness,
+            remoteReleaseReadiness: snapshot.parts.remoteReleaseReadiness,
+            publicShellDrift: snapshot.parts.publicShellDrift,
+            releaseEvidenceBundle,
+            incidents: incidents.map((incident) => ({ ...incident })),
+            alertCount,
+            warningCount,
+            decision,
+            tone:
+                decision === 'hold'
+                    ? 'alert'
+                    : decision === 'review'
+                      ? 'warning'
+                      : 'ready',
+            summary,
+            supportCopy,
+            decisionReason,
+            clipboardSummary,
+            runbookMarkdown,
+        },
+    };
+}
+
+function renderIncident(incident, escapeHtmlImpl) {
+    return `
+        <article
+            id="queueReleaseControlCenterIncident_${escapeHtmlImpl(incident.code)}"
+            class="queue-ops-pilot__issues-item"
+            data-state="${escapeHtmlImpl(incident.state)}"
+            data-incident-code="${escapeHtmlImpl(incident.code)}"
+            role="listitem"
+        >
+            <div class="queue-ops-pilot__issues-item-head">
+                <strong>${escapeHtmlImpl(incident.title)}</strong>
+                <span class="queue-ops-pilot__issues-item-badge">${escapeHtmlImpl(
+                    issueBadge(incident.severity)
+                )}</span>
+            </div>
+            <p>${escapeHtmlImpl(incident.detail)}</p>
+            <code>${escapeHtmlImpl(incident.code)}</code>
+        </article>
+    `.trim();
+}
+
+export function renderTurneroReleaseControlCenterCard(
+    input = {},
+    options = {}
+) {
+    const model =
+        input && Array.isArray(input.incidents)
+            ? input
+            : buildTurneroReleaseControlCenterModel(input);
+    const escapeHtmlImpl =
+        typeof options.escapeHtml === 'function'
+            ? options.escapeHtml
+            : escapeHtml;
+
+    return `
+        <section
+            id="queueReleaseControlCenter"
+            class="queue-ops-pilot__issues queue-ops-pilot__release-control-center"
+            data-state="${escapeHtmlImpl(model.tone)}"
+            data-decision="${escapeHtmlImpl(model.decision)}"
+            aria-labelledby="queueReleaseControlCenterTitle"
+            aria-live="polite"
+        >
+            <div class="queue-ops-pilot__issues-head">
+                <div>
+                    <p class="queue-app-card__eyebrow">Release control center</p>
+                    <h6 id="queueReleaseControlCenterTitle">Playbook de liberación</h6>
+                </div>
+                <span
+                    id="queueReleaseControlCenterStatus"
+                    class="queue-ops-pilot__issues-status"
+                    data-state="${escapeHtmlImpl(model.tone)}"
+                >
+                    ${escapeHtmlImpl(model.decision)}
+                </span>
+            </div>
+            <p id="queueReleaseControlCenterSummary" class="queue-ops-pilot__issues-summary">${escapeHtmlImpl(
+                model.summary
+            )}</p>
+            <p id="queueReleaseControlCenterEvidence" class="queue-ops-pilot__issues-support">${escapeHtmlImpl(
+                model.evidenceSummary || model.snapshot.evidenceSummary || ''
+            )}</p>
+            <div id="queueReleaseControlCenterIncidents" class="queue-ops-pilot__issues-items" role="list" aria-label="Incidentes normalizados de Turnero">
+                ${
+                    model.incidents.length
+                        ? model.incidents
+                              .map((incident) =>
+                                  renderIncident(incident, escapeHtmlImpl)
+                              )
+                              .join('')
+                        : renderIncident(
+                              {
+                                  code: 'ready',
+                                  severity: 'ready',
+                                  state: 'ready',
+                                  title: 'Sin incidentes',
+                                  detail: 'La evidencia quedó alineada y no hay tareas abiertas para el release.',
+                              },
+                              escapeHtmlImpl
+                          )
+                }
+            </div>
+            <div class="queue-ops-pilot__actions" aria-label="Acciones del control center">
+                <button id="queueReleaseControlCopySummaryBtn" type="button" class="queue-ops-pilot__action">Copiar resumen</button>
+                <button id="queueReleaseControlCopyRunbookBtn" type="button" class="queue-ops-pilot__action">Copiar runbook</button>
+                <button id="queueReleaseControlDownloadBtn" type="button" class="queue-ops-pilot__action">Descargar JSON</button>
+            </div>
+            <p id="queueReleaseControlCenterSupport" class="queue-ops-pilot__issues-support">${escapeHtmlImpl(
+                model.supportCopy
+            )}</p>
+            <details id="queueReleaseControlRunbookDetails">
+                <summary>Runbook Markdown</summary>
+                <pre id="queueReleaseControlRunbookMarkdown">${escapeHtmlImpl(
+                    model.runbookMarkdown
+                )}</pre>
+            </details>
+        </section>
+    `.trim();
+}
+
+function bindReleaseControlCenterActions(section, model) {
+    const summaryBtn = section.querySelector(
+        '#queueReleaseControlCopySummaryBtn'
+    );
+    const runbookBtn = section.querySelector(
+        '#queueReleaseControlCopyRunbookBtn'
+    );
+    const downloadBtn = section.querySelector(
+        '#queueReleaseControlDownloadBtn'
+    );
+
+    if (
+        typeof HTMLButtonElement !== 'undefined' &&
+        summaryBtn instanceof HTMLButtonElement
+    ) {
+        summaryBtn.onclick = async () => {
+            await copyToClipboardSafe(model.clipboardSummary);
+        };
+    }
+
+    if (
+        typeof HTMLButtonElement !== 'undefined' &&
+        runbookBtn instanceof HTMLButtonElement
+    ) {
+        runbookBtn.onclick = async () => {
+            await copyToClipboardSafe(model.runbookMarkdown);
+        };
+    }
+
+    if (
+        typeof HTMLButtonElement !== 'undefined' &&
+        downloadBtn instanceof HTMLButtonElement
+    ) {
+        downloadBtn.onclick = () => {
+            downloadJsonSnapshot(model.snapshotFileName, model.snapshot);
+        };
+    }
+}
+
+export function mountTurneroReleaseControlCenterCard(
+    target,
+    parts = {},
+    options = {}
+) {
+    if (!isDomElement(target)) {
+        return null;
+    }
+
+    const model = buildTurneroReleaseControlCenterModel(parts);
+    target.innerHTML = renderTurneroReleaseControlCenterCard(model, options);
+
+    const section = target.querySelector('#queueReleaseControlCenter');
+    if (section instanceof HTMLElement) {
+        section.__turneroReleaseControlCenterModel = model;
+        bindReleaseControlCenterActions(section, model);
+        return section;
+    }
+
+    return null;
+}
+
+export const buildTurneroReleaseControlCenterSnapshot =
+    toReleaseControlCenterSnapshot;
 
 export async function copyToClipboardSafe(text) {
     const value = toText(text);
@@ -660,3 +1436,5 @@ export {
     toArray,
     toText,
 };
+
+export default buildTurneroReleaseControlCenterModel;
