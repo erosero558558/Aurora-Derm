@@ -54,6 +54,8 @@ import { mountReleaseIntelligenceSuiteCard } from '../../../../../../queue-share
 import { createReleaseHistoryDashboard } from '../../../../../../queue-shared/turnero-release-history-dashboard.js';
 import { mountTurneroReleaseGovernanceSuite } from '../../../../../../queue-shared/turnero-release-governance-suite.js';
 import { mountRegionalProgramOfficeCard } from '../../../../../../queue-shared/turnero-release-program-office.js';
+import { mountTurneroReleaseReliabilityRecoveryNerveCenter } from '../../../../../../queue-shared/turnero-release-reliability-recovery-nerve-center.js';
+import { mountTurneroReleaseServiceExcellenceAdoptionCloud } from '../../../../../../queue-shared/turnero-release-service-excellence-adoption-cloud.js';
 import { renderQueueAssuranceControlPlane } from './install-hub/assurance-control-plane.js';
 import { hasRecentQueueSmokeSignalForState } from './install-hub/smoke-signal.js';
 import {
@@ -115,9 +117,11 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueReleaseGovernanceSuiteHost',
     'queueRegionalProgramOfficeHost',
     'queueReleaseAssuranceControlPlaneHost',
+    'queueReleaseServiceExcellenceAdoptionCloudHost',
     'queueOpeningChecklist',
     'queueShiftHandoff',
     'queueContingencyDeck',
+    'queueReliabilityRecoveryNerveCenterHost',
     'queueQuickTrays',
     'queueQuickConsole',
     'queuePlaybook',
@@ -2898,6 +2902,62 @@ function renderQueueReleaseGovernanceSuite(manifest, detectedPlatform) {
     );
 }
 
+function renderQueueReleaseServiceExcellenceAdoptionCloud(
+    manifest,
+    detectedPlatform
+) {
+    const root = document.getElementById(
+        'queueReleaseServiceExcellenceAdoptionCloudHost'
+    );
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const currentSnapshot = buildQueueReleaseHistoryCurrentSnapshot();
+    const releaseEvidenceBundle =
+        currentSnapshot.parts?.releaseEvidenceBundle ||
+        currentSnapshot.releaseEvidenceBundle ||
+        currentSnapshot;
+    const clinicProfile =
+        currentSnapshot.parts?.clinicProfile ||
+        currentSnapshot.turneroClinicProfile ||
+        currentSnapshot.clinicProfile ||
+        null;
+
+    return mountTurneroReleaseServiceExcellenceAdoptionCloud(
+        root,
+        {
+            scope:
+                currentSnapshot.region ||
+                currentSnapshot.clinicId ||
+                clinicProfile?.region ||
+                'global',
+            region: currentSnapshot.region || clinicProfile?.region || '',
+            clinicId:
+                currentSnapshot.clinicId || clinicProfile?.clinic_id || '',
+            currentSnapshot,
+            releaseEvidenceBundle,
+            clinicProfile,
+            turneroClinicProfile: clinicProfile,
+            clinics:
+                releaseEvidenceBundle.regionalClinics ||
+                currentSnapshot.parts?.releaseEvidenceBundle?.regionalClinics ||
+                currentSnapshot.regionalClinics ||
+                clinicProfile?.regionalClinics ||
+                [],
+            incidents:
+                currentSnapshot.parts?.incidents ||
+                currentSnapshot.incidents ||
+                releaseEvidenceBundle.incidents ||
+                [],
+        },
+        {
+            manifest,
+            detectedPlatform,
+        }
+    );
+}
+
 function formatHeartbeatAge(ageSec) {
     const safeAge = Number(ageSec);
     if (!Number.isFinite(safeAge) || safeAge < 0) {
@@ -4478,7 +4538,12 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderQueueReleaseHistoryDashboard(manifest, detectedPlatform);
     renderQueueReleaseGovernanceSuite(manifest, detectedPlatform);
     renderQueueRegionalProgramOffice(manifest, detectedPlatform);
+    renderQueueReliabilityRecoveryNerveCenter(manifest, detectedPlatform);
     renderQueueAssuranceControlPlane(manifest, detectedPlatform);
+    renderQueueReleaseServiceExcellenceAdoptionCloud(
+        manifest,
+        detectedPlatform
+    );
     renderOpeningChecklist(manifest, detectedPlatform);
     renderShiftHandoff(manifest, detectedPlatform);
     setHtml(
@@ -21475,6 +21540,40 @@ function renderQueueRegionalProgramOffice(manifest, detectedPlatform) {
             detectedPlatform,
         }
     );
+}
+
+function renderQueueReliabilityRecoveryNerveCenter(manifest, detectedPlatform) {
+    const root = document.getElementById(
+        'queueReliabilityRecoveryNerveCenterHost'
+    );
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const currentSnapshot = buildQueueReleaseHistoryCurrentSnapshot();
+    const clinicProfile =
+        currentSnapshot.turneroClinicProfile ||
+        currentSnapshot.clinicProfile ||
+        getTurneroClinicProfile();
+    const scope =
+        String(
+            clinicProfile?.region || currentSnapshot.region || 'regional'
+        ).trim() || 'regional';
+    const releaseIncidents = Array.isArray(currentSnapshot.incidents)
+        ? currentSnapshot.incidents
+        : [];
+    const assurancePack =
+        currentSnapshot.parts?.releaseEvidenceBundle ||
+        currentSnapshot.releaseEvidenceBundle ||
+        currentSnapshot;
+
+    return mountTurneroReleaseReliabilityRecoveryNerveCenter(root, {
+        clinicProfile,
+        releaseIncidents,
+        assurancePack,
+        scope,
+        region: scope,
+    });
 }
 
 function renderOpeningChecklist(manifest, detectedPlatform) {

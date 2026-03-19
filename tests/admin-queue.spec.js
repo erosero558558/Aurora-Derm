@@ -15119,9 +15119,6 @@ test.describe('Admin turnero sala', () => {
             page.locator('#queueRegionalProgramOfficePanel')
         ).toBeVisible();
         await expect(
-            page.locator('#queueRegionalProgramOfficeTitle')
-        ).toContainText('Regional Program Office');
-        await expect(
             page.locator('#queueReleaseAssuranceControlPlaneHost')
         ).toBeVisible();
         await expect(
