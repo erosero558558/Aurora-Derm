@@ -183,8 +183,17 @@ test('queueOpsPilot expone los hosts del control center y la consola de operacio
 
         assert.match(capturedHtml, /queueReleaseControlCenterHost/);
         assert.match(capturedHtml, /queueReleaseOpsConsoleHost/);
+        assert.match(capturedHtml, /queueReleaseMissionControlHost/);
         assert.match(capturedHtml, /queueOpsPilotRemoteReleaseHost/);
         assert.match(capturedHtml, /queueOpsPilotRolloutGovernorHost/);
+        assert.match(capturedHtml, /queueMultiClinicControlTowerHost/);
+        assert.ok(
+            capturedHtml.indexOf('queueOpsPilotRolloutGovernorHost') <
+                capturedHtml.indexOf('queueMultiClinicControlTowerHost') &&
+                capturedHtml.indexOf('queueMultiClinicControlTowerHost') <
+                    capturedHtml.indexOf('queueReleaseOpsConsoleHost'),
+            'el host multi-clinic debe quedar entre rollout governor y ops console'
+        );
     } finally {
         if (previousDocument === undefined) {
             delete global.document;

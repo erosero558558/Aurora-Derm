@@ -19,7 +19,9 @@ import {
     mountTurneroReleaseEvidenceBundleCard,
     renderTurneroReleaseEvidenceBundleCard,
 } from '../../../../../../../../queue-shared/turnero-release-evidence-bundle.js';
+import { mountMultiClinicControlTowerCard } from '../../../../../../../../queue-shared/turnero-release-control-tower.js';
 import { mountTurneroReleaseRolloutCommandCenterCard } from '../../../../../../../../queue-shared/turnero-release-rollout-command-center.js';
+import { mountTurneroReleaseMissionControlCard } from '../../../../../../../../queue-shared/turnero-release-mission-control.js';
 import { renderTurneroReleaseAutomationMesh } from '../../../../../../../../queue-shared/turnero-release-automation-mesh.js';
 import { mountTurneroReleaseOpsConsoleCard } from '../../../../../../../../queue-shared/turnero-release-ops-console.js';
 import { renderTurneroReleaseWarRoom } from '../../../../../../../../queue-shared/turnero-release-war-room.js';
@@ -405,8 +407,14 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     const rolloutGovernorHost = document.getElementById(
         'queueOpsPilotRolloutGovernorHost'
     );
+    const multiClinicControlTowerHost = document.getElementById(
+        'queueMultiClinicControlTowerHost'
+    );
     const releaseOpsConsoleHost = document.getElementById(
         'queueReleaseOpsConsoleHost'
+    );
+    const missionControlHost = document.getElementById(
+        'queueReleaseMissionControlHost'
     );
     const incidentWorkbenchHost = document.getElementById(
         'queueIncidentExecutionWorkbenchHost'
@@ -436,6 +444,12 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     releaseEvidenceHost.setAttribute('aria-busy', 'true');
     if (rolloutGovernorHost instanceof HTMLElement) {
         rolloutGovernorHost.setAttribute('aria-busy', 'true');
+    }
+    if (multiClinicControlTowerHost instanceof HTMLElement) {
+        multiClinicControlTowerHost.setAttribute('aria-busy', 'true');
+    }
+    if (missionControlHost instanceof HTMLElement) {
+        missionControlHost.setAttribute('aria-busy', 'true');
     }
 
     let snapshot;
@@ -565,6 +579,12 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             if (rolloutGovernorHost instanceof HTMLElement) {
                 rolloutGovernorHost.removeAttribute('aria-busy');
             }
+            if (multiClinicControlTowerHost instanceof HTMLElement) {
+                multiClinicControlTowerHost.removeAttribute('aria-busy');
+            }
+            if (missionControlHost instanceof HTMLElement) {
+                missionControlHost.removeAttribute('aria-busy');
+            }
         }
     }
 
@@ -609,6 +629,30 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             });
         } catch (_error) {
             rolloutGovernorHost.innerHTML = '';
+        }
+    }
+
+    if (multiClinicControlTowerHost instanceof HTMLElement) {
+        try {
+            mountMultiClinicControlTowerCard(multiClinicControlTowerHost, {
+                snapshot,
+                clinicId: pilot.clinicId,
+                clinicLabel:
+                    pilot.clinicName ||
+                    pilot.brandName ||
+                    pilot.clinicProfile?.branding?.name ||
+                    pilot.clinicId,
+                clinicProfile:
+                    pilot.clinicProfile || pilot.turneroClinicProfile,
+                clinicProfiles:
+                    pilot.clinicProfiles ||
+                    pilot.turneroClinicProfiles ||
+                    manifest.clinicProfiles ||
+                    manifest.turneroClinicProfiles,
+                storage: options.storage,
+            });
+        } catch (_error) {
+            multiClinicControlTowerHost.innerHTML = '';
         }
     }
 
@@ -661,6 +705,24 @@ async function hydrateQueueOpsPilotReleaseEvidence(
                 ),
         }
     );
+
+    if (missionControlHost instanceof HTMLElement) {
+        try {
+            mountTurneroReleaseMissionControlCard(missionControlHost, {
+                snapshot,
+                releaseWarRoomSnapshot:
+                    releaseWarRoomSnapshot ||
+                    options.releaseWarRoomSnapshot ||
+                    null,
+                storage: options.storage,
+                clinicId: pilot.clinicId,
+                clinicProfile:
+                    pilot.clinicProfile || pilot.turneroClinicProfile,
+            });
+        } catch (_error) {
+            missionControlHost.innerHTML = '';
+        }
+    }
 
     renderQueueOpsPilotAutomationMesh(root, pilot, manifest, requestId, {
         snapshot,
@@ -1097,8 +1159,18 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps = {}) {
                             aria-live="polite"
                         ></div>
                         <div
+                            id="queueMultiClinicControlTowerHost"
+                            class="queue-ops-pilot__multi-clinic-control-tower-host"
+                            aria-live="polite"
+                        ></div>
+                        <div
                             id="queueReleaseOpsConsoleHost"
                             class="queue-ops-pilot__release-ops-console-host"
+                            aria-live="polite"
+                        ></div>
+                        <div
+                            id="queueReleaseMissionControlHost"
+                            class="queue-ops-pilot__release-mission-control-host"
                             aria-live="polite"
                         ></div>
                         <div
