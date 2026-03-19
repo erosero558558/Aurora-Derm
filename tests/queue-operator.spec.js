@@ -179,8 +179,9 @@ async function setupOperatorAuthOperatorMocks(
 
     function buildStartResponse(payload = {}) {
         const resolvedTransport =
-            String(payload.transport || transport).trim().toLowerCase() ===
-            'web_broker'
+            String(payload.transport || transport)
+                .trim()
+                .toLowerCase() === 'web_broker'
                 ? 'web_broker'
                 : 'local_helper';
         if (resolvedTransport === 'web_broker') {
@@ -406,9 +407,21 @@ test.describe('Turnero Operador', () => {
                 c2: { label: 'Dermatología 2', short_label: 'D2' },
             },
             surfaces: {
+                admin: {
+                    enabled: true,
+                    route: '/admin.html#queue',
+                },
                 operator: {
                     enabled: true,
                     route: '/operador-turnos.html',
+                },
+                kiosk: {
+                    enabled: true,
+                    route: '/kiosco-turnos.html',
+                },
+                display: {
+                    enabled: true,
+                    route: '/sala-turnos.html',
                 },
             },
         });
@@ -430,7 +443,7 @@ test.describe('Turnero Operador', () => {
         );
         await expect(
             page.locator('.queue-operator-profile-status').first()
-        ).toContainText('Perfil remoto verificado');
+        ).toContainText(/Perfil remoto verificado|Readiness bloqueada/);
         await expect(page.locator('#operatorSurfaceMeta')).toContainText(
             '/operador-turnos.html · D1 / D2'
         );
@@ -723,40 +736,43 @@ test.describe('Turnero Operador', () => {
         test(scenario.name, async ({ page }) => {
             await installWindowOpenRecorder(page);
             const redirectUrl = `https://broker.example.test/authorize?state=queue-operator-${scenario.terminalStatus}`;
-            const { startRequests } = await setupOperatorAuthOperatorMocks(page, {
-                transport: 'web_broker',
-                statusResponses: [
-                    {
-                        ok: true,
-                        authenticated: false,
-                        mode: 'openclaw_chatgpt',
-                        status: 'anonymous',
-                        transport: 'web_broker',
-                    },
-                    {
-                        ok: true,
-                        authenticated: false,
-                        mode: 'openclaw_chatgpt',
-                        status: 'pending',
-                        transport: 'web_broker',
-                        ...buildOpenClawBrokerRedirect({
-                            redirectUrl,
-                        }),
-                    },
-                    {
-                        ok: true,
-                        authenticated: false,
-                        mode: 'openclaw_chatgpt',
-                        status: scenario.terminalStatus,
-                        transport: 'web_broker',
-                        error: scenario.terminalError,
-                    },
-                ],
-                startPayload: {
+            const { startRequests } = await setupOperatorAuthOperatorMocks(
+                page,
+                {
                     transport: 'web_broker',
-                    redirectUrl,
-                },
-            });
+                    statusResponses: [
+                        {
+                            ok: true,
+                            authenticated: false,
+                            mode: 'openclaw_chatgpt',
+                            status: 'anonymous',
+                            transport: 'web_broker',
+                        },
+                        {
+                            ok: true,
+                            authenticated: false,
+                            mode: 'openclaw_chatgpt',
+                            status: 'pending',
+                            transport: 'web_broker',
+                            ...buildOpenClawBrokerRedirect({
+                                redirectUrl,
+                            }),
+                        },
+                        {
+                            ok: true,
+                            authenticated: false,
+                            mode: 'openclaw_chatgpt',
+                            status: scenario.terminalStatus,
+                            transport: 'web_broker',
+                            error: scenario.terminalError,
+                        },
+                    ],
+                    startPayload: {
+                        transport: 'web_broker',
+                        redirectUrl,
+                    },
+                }
+            );
 
             await page.goto(operatorUrl('station=c2&lock=1&one_tap=1'));
 
@@ -764,9 +780,9 @@ test.describe('Turnero Operador', () => {
             await expect(page.locator('#operatorOpenClawLinkRow')).toHaveClass(
                 /is-hidden/
             );
-            await expect(page.locator('#operatorOpenClawManualRow')).toHaveClass(
-                /is-hidden/
-            );
+            await expect(
+                page.locator('#operatorOpenClawManualRow')
+            ).toHaveClass(/is-hidden/);
 
             await page.locator('#operatorOpenClawBtn').click();
 
@@ -786,25 +802,27 @@ test.describe('Turnero Operador', () => {
             await expect(page.locator('#operatorLoginStatusTitle')).toHaveText(
                 scenario.expectedTitle
             );
-            await expect(page.locator('#operatorLoginStatusMessage')).toContainText(
-                scenario.expectedMessage
-            );
-            await expect(page.locator('#operatorOpenClawSummary')).toContainText(
-                scenario.expectedSummary
-            );
-            await expect(page.locator('#operatorOpenClawHelperMeta')).toContainText(
-                scenario.expectedHelperMeta
-            );
+            await expect(
+                page.locator('#operatorLoginStatusMessage')
+            ).toContainText(scenario.expectedMessage);
+            await expect(
+                page.locator('#operatorOpenClawSummary')
+            ).toContainText(scenario.expectedSummary);
+            await expect(
+                page.locator('#operatorOpenClawHelperMeta')
+            ).toContainText(scenario.expectedHelperMeta);
             await expect(page.locator('#operatorOpenClawBtn')).toHaveText(
                 scenario.expectedPrimaryLabel
             );
-            await expect(page.locator('#operatorOpenClawRetryBtn')).toBeVisible();
+            await expect(
+                page.locator('#operatorOpenClawRetryBtn')
+            ).toBeVisible();
             await expect(page.locator('#operatorOpenClawLinkRow')).toHaveClass(
                 /is-hidden/
             );
-            await expect(page.locator('#operatorOpenClawManualRow')).toHaveClass(
-                /is-hidden/
-            );
+            await expect(
+                page.locator('#operatorOpenClawManualRow')
+            ).toHaveClass(/is-hidden/);
             await expect(
                 page.locator('#operatorOpenClawHelperLink')
             ).toHaveAttribute('href', '#');

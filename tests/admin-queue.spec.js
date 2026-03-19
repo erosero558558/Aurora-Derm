@@ -5,6 +5,12 @@ const {
     installBasicAdminApiMocks,
 } = require('./helpers/admin-api-mocks');
 const { installLegacyAdminAuthMock } = require('./helpers/admin-auth-mocks');
+const {
+    buildEvidenceSnapshot,
+    buildPilotReadiness,
+    buildRemoteReadiness,
+    buildShellDrift,
+} = require('../tests-node/turnero-release-test-fixtures.js');
 
 function json(route, payload, status = 200) {
     return route.fulfill({
@@ -13952,6 +13958,36 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#queueOpsPilotRolloutGovernorHost')
         ).toContainText('Copiar resumen ejecutivo');
+        const executiveHostId = await page
+            .locator('#queueOpsPilotRolloutGovernorHost')
+            .evaluate((element) => element.nextElementSibling?.id || '');
+        expect(executiveHostId).toBe(
+            'queueOpsPilotExecutivePortfolioStudioHost'
+        );
+        await expect(
+            page.locator('#queueOpsPilotExecutivePortfolioStudioHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueExecutivePortfolioStudio')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueExecutivePortfolioStudioTitle')
+        ).toContainText('Executive Portfolio Studio');
+        await expect(
+            page.locator('#queueExecutivePortfolioStudioCopyBriefBtn')
+        ).toContainText('Copy executive brief');
+        await expect(
+            page.locator('#queueExecutivePortfolioStudioDownloadJsonBtn')
+        ).toContainText('Download executive JSON');
+        await expect(
+            page.locator('#queueExecutivePortfolioStudioBenefitsPanel')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueExecutivePortfolioStudioFundingPanel')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueExecutivePortfolioStudioValuePanel')
+        ).toBeVisible();
         await expect(
             page.locator('#queueIncidentExecutionWorkbench')
         ).toBeVisible();
@@ -15027,6 +15063,83 @@ test.describe('Admin turnero sala', () => {
         );
     });
 
+    test('queue renderiza Progressive Delivery Mission Control en el hub operativo', async ({
+        page,
+    }) => {
+        test.setTimeout(20000);
+
+        const nowIso = new Date().toISOString();
+
+        await installQueueAdminAuthMock(
+            page,
+            'csrf_queue_mission_control_smoke'
+        );
+        await installQueueOperationalAppsApiMocks(page, {
+            updatedAt: nowIso,
+            queueState: buildQueueIdleState(nowIso),
+            queueSurfaceStatus: buildQueueOperationalAppsSurfaceStatus(),
+        });
+
+        await page.goto(adminUrl());
+        await page.locator('.nav-item[data-section="queue"]').click();
+
+        await expect(
+            page.locator('#queueReleaseBoardOpsHubHost')
+        ).toBeVisible();
+        await expect(page.locator('#queueReleaseBoardOpsHub')).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseBoardOpsHubTitle')
+        ).toContainText('Board Ops Hub');
+        await expect(
+            page.locator('#queueReleaseBoardOpsHubCopyAgendaBtn')
+        ).toContainText('Copiar agenda');
+        await expect(
+            page.locator('#queueReleaseBoardOpsHubCopyBriefBtn')
+        ).toContainText('Copiar brief');
+        await expect(
+            page.locator('#queueReleaseBoardOpsHubCopyActionPackBtn')
+        ).toContainText('Copiar action pack');
+        await expect(
+            page.locator('#queueReleaseBoardOpsHubDownloadJsonBtn')
+        ).toContainText('Descargar JSON');
+        await expect(
+            page.locator('#queueReleaseMissionControlHost')
+        ).toBeVisible();
+        await expect(page.locator('#queueReleaseMissionControl')).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseMissionControlTitle')
+        ).toContainText('Progressive Delivery Mission Control');
+        await expect(
+            page.locator('#queueReleaseMissionControlCopyBriefBtn')
+        ).toContainText('Copiar brief ejecutivo');
+        await expect(
+            page.locator('#queueRegionalProgramOfficeHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueRegionalProgramOfficePanel')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueRegionalProgramOfficeTitle')
+        ).toContainText('Regional Program Office');
+        await expect(
+            page.locator('#queueReleaseAssuranceControlPlaneHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseAssuranceControlPlane')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseAssuranceControlPlaneTitle')
+        ).toContainText('Assurance Control Plane');
+        await expect(
+            page.locator(
+                '#queueReleaseAssuranceControlPlaneCopyCertificationBriefBtn'
+            )
+        ).toContainText('Copy certification brief');
+        await expect(
+            page.locator('#queueReleaseAssuranceControlPlaneDownloadJsonBtn')
+        ).toContainText('Download assurance JSON');
+    });
+
     test('admin muestra dos operadores Windows por estacion en operaciones e incidentes', async ({
         page,
     }) => {
@@ -15494,5 +15607,222 @@ test.describe('Admin turnero sala', () => {
         await expect(page.locator('#queueOpsAlertsItems')).toContainText(
             'Descargando update 42%'
         );
+    });
+
+    test('queue renderiza la suite financiera y de riesgo con historia y evidencia actuales', async ({
+        page,
+    }) => {
+        test.setTimeout(20000);
+
+        const clinicId = 'clinica-demo';
+        const profileFingerprint = '1234abcd';
+        const turneroClinicProfile = buildQueuePilotClinicProfile({
+            clinicId,
+            branding: {
+                name: 'Clínica Demo',
+                short_name: 'Demo',
+                base_url: 'https://demo.example',
+            },
+            runtime_meta: {
+                source: 'file',
+                profileFingerprint,
+            },
+        });
+        const turneroV2Readiness = buildPilotReadiness({
+            clinicId,
+            profileFingerprint,
+        });
+        const turneroRemoteReleaseReadiness = buildRemoteReadiness({
+            clinicId,
+            profileFingerprint,
+        });
+        const turneroPublicShellDrift = buildShellDrift({
+            pageOk: true,
+            driftStatus: 'ready',
+        });
+        const historySnapshots = [
+            {
+                snapshotId: 'clinica-demo-20260317-090000',
+                clinicId,
+                clinicName: 'Clínica Demo',
+                clinicShortName: 'Demo',
+                label: 'Wave 1',
+                decision: 'ready',
+                severity: 'info',
+                summary: 'Wave 1 estable',
+                savedAt: '2026-03-17T09:00:00.000Z',
+                generatedAt: '2026-03-17T09:00:00.000Z',
+                incidentCount: 1,
+                surfaceCount: 4,
+                clinicCount: 2,
+                baseCost: 22000,
+                supportCost: 6000,
+                incidentReserve: 1500,
+            },
+            {
+                snapshotId: 'clinica-demo-20260318-090000',
+                clinicId,
+                clinicName: 'Clínica Demo',
+                clinicShortName: 'Demo',
+                label: 'Wave 2',
+                decision: 'review',
+                severity: 'warning',
+                summary: 'Wave 2 lista para revisión',
+                savedAt: '2026-03-18T09:00:00.000Z',
+                generatedAt: '2026-03-18T09:00:00.000Z',
+                incidentCount: 2,
+                surfaceCount: 4,
+                clinicCount: 2,
+                baseCost: 21000,
+                supportCost: 5800,
+                incidentReserve: 1800,
+            },
+        ];
+        const turneroReleaseEvidenceBundle = {
+            ...buildEvidenceSnapshot({
+                turneroClinicProfile,
+                pilotReadiness: turneroV2Readiness,
+                remoteReleaseReadiness: turneroRemoteReleaseReadiness,
+                publicShellDrift: turneroPublicShellDrift,
+            }),
+            regionalClinics: [
+                {
+                    clinicId: 'clinica-norte',
+                    label: 'Clínica Norte',
+                    shortLabel: 'Norte',
+                    region: 'norte',
+                    plannedBudget: 35000,
+                    committedBudget: 24000,
+                    atRiskBudget: 2500,
+                    riskScore: 34,
+                    valueScore: 82,
+                },
+                {
+                    clinicId: 'clinica-sur',
+                    label: 'Clínica Sur',
+                    shortLabel: 'Sur',
+                    region: 'sur',
+                    plannedBudget: 25000,
+                    committedBudget: 18000,
+                    atRiskBudget: 3500,
+                    riskScore: 46,
+                    valueScore: 68,
+                },
+            ],
+            historySnapshots,
+        };
+
+        await page.addInitScript(
+            ({
+                clinicId: seedClinicId,
+                historyKey,
+                baselineKey,
+                snapshots,
+            }) => {
+                const baselineId = snapshots[0]?.snapshotId || '';
+                window.localStorage.setItem(
+                    historyKey,
+                    JSON.stringify(snapshots)
+                );
+                if (baselineId) {
+                    window.localStorage.setItem(
+                        baselineKey,
+                        JSON.stringify({
+                            clinicId: seedClinicId,
+                            snapshotId: baselineId,
+                            updatedAt:
+                                snapshots[snapshots.length - 1]?.savedAt ||
+                                new Date().toISOString(),
+                        })
+                    );
+                }
+            },
+            {
+                clinicId,
+                historyKey: `turnero.release.history.v1:${clinicId}:history`,
+                baselineKey: `turnero.release.history.v1:${clinicId}:baseline`,
+                snapshots: historySnapshots,
+            }
+        );
+
+        await installQueueAdminAuthMock(page, 'csrf_queue_governance_suite');
+        await installQueueOperationalAppsApiMocks(page, {
+            updatedAt: turneroReleaseEvidenceBundle.generatedAt,
+            queueState: buildQueueIdleState(
+                turneroReleaseEvidenceBundle.generatedAt
+            ),
+            dataOverrides: {
+                turneroClinicProfile,
+                turneroV2Readiness,
+                turneroRemoteReleaseReadiness,
+                turneroPublicShellDrift,
+                turneroReleaseEvidenceBundle,
+            },
+        });
+
+        await page.goto(adminUrl());
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+
+        await page.locator('.nav-item[data-section="queue"]').click();
+        await page.locator('#queueDomainDeployment').dispatchEvent('click');
+
+        await expect(page.locator('#queueReleaseCommandDeck')).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseIntelligenceSuiteHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseHistoryDashboard')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseGovernanceSuiteHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseHistoryDashboardPanel')
+        ).toContainText('Snapshots 2');
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toHaveAttribute('data-decision', 'ready');
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toHaveAttribute('data-compliance', /^(green|amber)$/);
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toHaveAttribute('data-risk-grade', 'A');
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toContainText('Financial / Risk Governance Suite');
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toContainText('Budget');
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toContainText('Risk');
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toContainText('Compliance');
+        await expect(
+            page.locator('#turneroReleaseGovernanceSuite')
+        ).toContainText('Mapa de inversión');
+        await expect(
+            page.locator('#turneroReleaseGovernanceBudget')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseGovernanceCosts')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseGovernanceRisk')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseGovernanceCompliance')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseGovernanceHeatmap')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseGovernanceBoard')
+        ).toBeVisible();
     });
 });

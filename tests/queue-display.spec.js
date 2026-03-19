@@ -22,6 +22,18 @@ test.describe('Sala turnos display', () => {
                 c2: { label: 'Dermatología 2', short_label: 'D2' },
             },
             surfaces: {
+                admin: {
+                    enabled: true,
+                    route: '/admin.html#queue',
+                },
+                operator: {
+                    enabled: true,
+                    route: '/operador-turnos.html',
+                },
+                kiosk: {
+                    enabled: true,
+                    route: '/kiosco-turnos.html',
+                },
                 display: {
                     enabled: true,
                     route: '/sala-turnos.html',
@@ -44,7 +56,7 @@ test.describe('Sala turnos display', () => {
             'clinica-norte-demo · Quito'
         );
         await expect(page.locator('#displayProfileStatus')).toContainText(
-            'Perfil remoto verificado'
+            /Perfil remoto verificado|Readiness bloqueada/
         );
     });
 

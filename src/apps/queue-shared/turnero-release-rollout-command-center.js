@@ -5,6 +5,7 @@ import {
     toArray,
 } from './turnero-release-control-center.js';
 import { buildReleaseRolloutGovernor } from './turnero-release-rollout-governor.js';
+export { buildReleaseRolloutGovernor };
 import {
     approveReleaseApproval,
     rejectReleaseApproval,

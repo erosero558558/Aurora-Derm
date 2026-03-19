@@ -10921,6 +10921,291 @@ body[data-ops-tone='light'] .queue-apps-hub__header p {
     width: 100%;
 }
 
+.queue-ops-pilot__release-mission-control-host {
+    margin-top: 0.9rem;
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
+.queue-ops-pilot__executive-portfolio-studio-host {
+    margin-top: 0.9rem;
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
+.queue-ops-pilot__board-ops-hub-host {
+    margin-top: 0.9rem;
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
+.turnero-release-board-ops-hub__panels {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.turnero-release-executive-portfolio-studio {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 24px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(245 248 253 / 92%)),
+        radial-gradient(circle at top right, rgb(15 107 220 / 9%), transparent 42%);
+    box-shadow: 0 22px 38px rgb(15 23 32 / 8%);
+}
+
+.turnero-release-executive-portfolio-studio[data-state='ready'] {
+    border-color: color-mix(in srgb, #0f9b5f 22%, #ffffff 78%);
+}
+
+.turnero-release-executive-portfolio-studio[data-state='warning'] {
+    border-color: color-mix(in srgb, #d19328 22%, #ffffff 78%);
+}
+
+.turnero-release-executive-portfolio-studio[data-state='alert'] {
+    border-color: color-mix(in srgb, #de4437 22%, #ffffff 78%);
+}
+
+.turnero-release-executive-portfolio-studio__header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.turnero-release-executive-portfolio-studio__copy {
+    display: grid;
+    gap: 0.28rem;
+    max-width: 72ch;
+}
+
+.turnero-release-executive-portfolio-studio__header h6,
+.turnero-release-executive-portfolio-studio__summary,
+.turnero-release-executive-portfolio-studio__support {
+    margin: 0;
+}
+
+.turnero-release-executive-portfolio-studio__summary {
+    color: #10233f;
+    line-height: 1.5;
+}
+
+.turnero-release-executive-portfolio-studio__support {
+    color: var(--text-muted, #526173);
+    line-height: 1.45;
+}
+
+.turnero-release-executive-portfolio-studio__meta {
+    display: grid;
+    gap: 0.45rem;
+    justify-items: end;
+}
+
+.turnero-release-executive-portfolio-studio__meta span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0.34rem 0.72rem;
+    border-radius: 999px;
+    background: rgb(15 107 220 / 10%);
+    color: #0f4a93;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.turnero-release-executive-portfolio-studio__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
+}
+
+.turnero-release-executive-portfolio-studio__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.turnero-release-executive-portfolio-studio__metric {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.78rem 0.84rem;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: rgb(255 255 255 / 86%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
+}
+
+.turnero-release-executive-portfolio-studio__metric[data-state='warning'],
+.turnero-release-executive-portfolio-studio__row[data-state='warning'],
+.turnero-release-executive-portfolio-studio__panel[data-state='warning'] {
+    border-color: color-mix(in srgb, #d19328 18%, #ffffff 82%);
+}
+
+.turnero-release-executive-portfolio-studio__metric[data-state='alert'],
+.turnero-release-executive-portfolio-studio__row[data-state='alert'],
+.turnero-release-executive-portfolio-studio__panel[data-state='alert'] {
+    border-color: color-mix(in srgb, #de4437 18%, #ffffff 82%);
+}
+
+.turnero-release-executive-portfolio-studio__metric[data-state='ready'],
+.turnero-release-executive-portfolio-studio__row[data-state='ready'],
+.turnero-release-executive-portfolio-studio__panel[data-state='ready'] {
+    border-color: color-mix(in srgb, #0f9b5f 18%, #ffffff 82%);
+}
+
+.turnero-release-executive-portfolio-studio__metric span {
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #5b6d81;
+}
+
+.turnero-release-executive-portfolio-studio__metric strong {
+    color: #10233f;
+    font-size: 1.06rem;
+    font-weight: 700;
+}
+
+.turnero-release-executive-portfolio-studio__metric small {
+    color: #526173;
+    line-height: 1.4;
+}
+
+.turnero-release-executive-portfolio-studio__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.9rem;
+}
+
+.turnero-release-executive-portfolio-studio__panel {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.95rem;
+    border-radius: 22px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(245 248 253 / 92%)),
+        radial-gradient(circle at top right, rgb(15 107 220 / 6%), transparent 42%);
+    box-shadow: 0 18px 32px rgb(15 23 32 / 6%);
+}
+
+.turnero-release-executive-portfolio-studio__panel-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.turnero-release-executive-portfolio-studio__panel-header h4,
+.turnero-release-executive-portfolio-studio__panel-header p,
+.turnero-release-executive-portfolio-studio__panel-summary,
+.turnero-release-executive-portfolio-studio__row p,
+.turnero-release-executive-portfolio-studio__row strong,
+.turnero-release-executive-portfolio-studio__row small {
+    margin: 0;
+}
+
+.turnero-release-executive-portfolio-studio__panel-header h4 {
+    color: #10233f;
+    font-size: 1.02rem;
+}
+
+.turnero-release-executive-portfolio-studio__panel-header span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0.32rem 0.68rem;
+    border-radius: 999px;
+    background: rgb(15 107 220 / 10%);
+    color: #0f4a93;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.turnero-release-executive-portfolio-studio__eyebrow {
+    margin: 0 0 0.24rem;
+    color: #0f6bdc;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.turnero-release-executive-portfolio-studio__panel-summary {
+    color: #526173;
+    line-height: 1.5;
+}
+
+.turnero-release-executive-portfolio-studio__mini-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.65rem;
+}
+
+.turnero-release-executive-portfolio-studio__rows {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.turnero-release-executive-portfolio-studio__row {
+    display: grid;
+    gap: 0.22rem;
+    padding: 0.76rem 0.84rem;
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: rgb(255 255 255 / 86%);
+}
+
+.turnero-release-executive-portfolio-studio__row-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    align-items: flex-start;
+}
+
+.turnero-release-executive-portfolio-studio__row strong {
+    color: #10233f;
+    font-size: 0.95rem;
+}
+
+.turnero-release-executive-portfolio-studio__row p {
+    color: #44556b;
+    line-height: 1.45;
+}
+
+.turnero-release-executive-portfolio-studio__row small {
+    color: #5b6d81;
+}
+
+.turnero-release-executive-portfolio-studio__pack {
+    margin: 0;
+    padding-top: 0.2rem;
+}
+
+.turnero-release-executive-portfolio-studio__pack summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.turnero-release-executive-portfolio-studio__pack pre {
+    margin: 0.75rem 0 0;
+    padding: 1rem;
+    border-radius: 18px;
+    overflow: auto;
+    background: rgb(8 15 23 / 94%);
+    color: #e8f0f8;
+}
+
 .turnero-release-rollout-governor {
     display: grid;
     gap: 1rem;
@@ -10978,6 +11263,386 @@ body[data-ops-tone='light'] .queue-apps-hub__header p {
     .turnero-release-rollout-governor__grid {
         grid-template-columns: 1fr;
     }
+}
+
+.turnero-release-mission-control {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 24px;
+    border: 1px solid color-mix(in srgb, #0f766e 16%, #ffffff 84%);
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(243 251 250 / 92%)),
+        radial-gradient(circle at top right, rgb(15 118 110 / 10%), transparent 42%),
+        radial-gradient(circle at bottom left, rgb(15 107 220 / 7%), transparent 38%);
+    box-shadow: 0 22px 38px rgb(15 23 32 / 8%);
+}
+
+.turnero-release-mission-control[data-state='alert'] {
+    border-color: color-mix(in srgb, #de4437 22%, #ffffff 78%);
+    background:
+        linear-gradient(180deg, rgb(255 244 242 / 96%), rgb(255 255 255 / 95%)),
+        radial-gradient(circle at top right, rgb(222 68 55 / 10%), transparent 42%);
+}
+
+.turnero-release-mission-control[data-state='warning'] {
+    border-color: color-mix(in srgb, #d19328 22%, #ffffff 78%);
+    background:
+        linear-gradient(180deg, rgb(255 250 239 / 96%), rgb(255 255 255 / 95%)),
+        radial-gradient(circle at top right, rgb(209 147 40 / 10%), transparent 42%);
+}
+
+.turnero-release-mission-control[data-state='ready'] {
+    border-color: color-mix(in srgb, #0f766e 18%, #ffffff 82%);
+}
+
+.turnero-release-mission-control__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.turnero-release-mission-control__copy {
+    display: grid;
+    gap: 0.35rem;
+    max-width: 74ch;
+}
+
+.turnero-release-mission-control__header h6,
+.turnero-release-mission-control__summary,
+.turnero-release-mission-control__support {
+    margin: 0;
+}
+
+.turnero-release-mission-control__summary {
+    color: #10233f;
+    line-height: 1.55;
+}
+
+.turnero-release-mission-control__support {
+    color: #526173;
+    line-height: 1.45;
+}
+
+.turnero-release-mission-control__meta {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: end;
+}
+
+.turnero-release-mission-control__meta span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0.32rem 0.72rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: rgb(15 118 110 / 8%);
+    color: #0f4a93;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.turnero-release-mission-control__actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.6rem;
+}
+
+.turnero-release-mission-control__actions button {
+    min-height: 42px;
+    padding: 0.68rem 0.9rem;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: #fff;
+    color: #10233f;
+    font-weight: 800;
+    line-height: 1.25;
+    transition:
+        transform var(--ops-motion-fast, 180ms) var(--ops-ease-premium, ease),
+        border-color var(--ops-motion-fast, 180ms) var(--ops-ease-premium, ease),
+        box-shadow var(--ops-motion-fast, 180ms) var(--ops-ease-premium, ease);
+}
+
+.turnero-release-mission-control__actions button:hover,
+.turnero-release-mission-control__actions button:focus-visible {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, #0f766e 26%, #ffffff 74%);
+    box-shadow: 0 14px 24px rgb(15 23 42 / 8%);
+}
+
+.turnero-release-mission-control__primary-action {
+    background: linear-gradient(135deg, #0f766e, #0f6bdc);
+    border-color: #0f6bdc;
+    color: #fff !important;
+}
+
+.turnero-release-mission-control__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.turnero-release-mission-control__chip {
+    display: grid;
+    gap: 0.12rem;
+    min-width: 140px;
+    padding: 0.65rem 0.8rem;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: rgb(255 255 255 / 85%);
+}
+
+.turnero-release-mission-control__chip[data-state='warning'] {
+    border-color: color-mix(in srgb, #d19328 24%, #ffffff 76%);
+}
+
+.turnero-release-mission-control__chip[data-state='alert'] {
+    border-color: color-mix(in srgb, #de4437 24%, #ffffff 76%);
+}
+
+.turnero-release-mission-control__chip strong {
+    color: #0f4a93;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.turnero-release-mission-control__chip small {
+    color: #10233f;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+
+.turnero-release-mission-control__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.9rem;
+}
+
+.turnero-release-mission-control__panel,
+.turnero-release-mission-control__freeze-editor {
+    display: grid;
+    gap: 0.8rem;
+    padding: 0.92rem;
+    border-radius: 22px;
+    border: 1px solid color-mix(in srgb, #10233f 10%, #ffffff 90%);
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 95%), rgb(246 250 252 / 92%)),
+        radial-gradient(circle at top right, rgb(15 118 110 / 6%), transparent 38%);
+    box-shadow: 0 18px 34px rgb(15 23 32 / 6%);
+}
+
+.turnero-release-mission-control__panel-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.turnero-release-mission-control__panel-header h4,
+.turnero-release-mission-control__panel-header p {
+    margin: 0;
+}
+
+.turnero-release-mission-control__panel-header h4 {
+    font-family: 'FrauncesSoft', serif;
+    font-size: clamp(1.05rem, 1.7vw, 1.28rem);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+.turnero-release-mission-control__panel-header span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0.32rem 0.68rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: rgb(15 107 220 / 8%);
+    color: #0f4a93;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.turnero-release-mission-control__eyebrow {
+    margin: 0 0 0.3rem;
+    color: #0f766e;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.turnero-release-mission-control__panel-summary {
+    margin: 0;
+    color: #526173;
+    line-height: 1.5;
+}
+
+.turnero-release-mission-control__wave-grid,
+.turnero-release-mission-control__freeze-rows {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.turnero-release-mission-control__wave-card {
+    display: grid;
+    gap: 0.6rem;
+    padding: 0.82rem;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: rgb(255 255 255 / 88%);
+}
+
+.turnero-release-mission-control__wave-card[data-state='warning'] {
+    border-color: color-mix(in srgb, #d19328 22%, #ffffff 78%);
+}
+
+.turnero-release-mission-control__wave-card[data-state='alert'] {
+    border-color: color-mix(in srgb, #de4437 22%, #ffffff 78%);
+}
+
+.turnero-release-mission-control__wave-list,
+.turnero-release-mission-control__row-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.turnero-release-mission-control__wave-item,
+.turnero-release-mission-control__gate-row,
+.turnero-release-mission-control__scenario-row,
+.turnero-release-mission-control__step-row,
+.turnero-release-mission-control__maintenance-row {
+    display: grid;
+    gap: 0.22rem;
+    padding: 0.72rem 0.78rem;
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, #0f1720 8%, #ffffff 92%);
+    background: rgb(255 255 255 / 86%);
+}
+
+.turnero-release-mission-control__wave-item[data-state='warning'],
+.turnero-release-mission-control__gate-row[data-state='warning'],
+.turnero-release-mission-control__scenario-row[data-state='warning'],
+.turnero-release-mission-control__step-row[data-state='warning'],
+.turnero-release-mission-control__maintenance-row[data-state='warning'] {
+    border-color: color-mix(in srgb, #d19328 22%, #ffffff 78%);
+}
+
+.turnero-release-mission-control__wave-item[data-state='alert'],
+.turnero-release-mission-control__gate-row[data-state='alert'],
+.turnero-release-mission-control__scenario-row[data-state='alert'],
+.turnero-release-mission-control__step-row[data-state='alert'],
+.turnero-release-mission-control__maintenance-row[data-state='alert'] {
+    border-color: color-mix(in srgb, #de4437 22%, #ffffff 78%);
+}
+
+.turnero-release-mission-control__wave-item strong,
+.turnero-release-mission-control__gate-row strong,
+.turnero-release-mission-control__scenario-row strong,
+.turnero-release-mission-control__step-row strong,
+.turnero-release-mission-control__maintenance-row strong {
+    color: #10233f;
+    font-size: 0.95rem;
+}
+
+.turnero-release-mission-control__wave-item p,
+.turnero-release-mission-control__gate-row p,
+.turnero-release-mission-control__scenario-row p,
+.turnero-release-mission-control__step-row p,
+.turnero-release-mission-control__maintenance-row p,
+.turnero-release-mission-control__wave-item small,
+.turnero-release-mission-control__gate-row small,
+.turnero-release-mission-control__scenario-row small,
+.turnero-release-mission-control__step-row small,
+.turnero-release-mission-control__maintenance-row small {
+    margin: 0;
+    color: #526173;
+    line-height: 1.45;
+}
+
+.turnero-release-mission-control__freeze-row {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.82rem;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, #0f1720 8%, #ffffff 92%);
+    background: rgb(255 255 255 / 86%);
+}
+
+.turnero-release-mission-control__freeze-row-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.65rem;
+    align-items: center;
+}
+
+.turnero-release-mission-control__freeze-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.6rem;
+}
+
+.turnero-release-mission-control__freeze-grid label {
+    display: grid;
+    gap: 0.24rem;
+    color: #405163;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.turnero-release-mission-control__freeze-grid input,
+.turnero-release-mission-control__freeze-grid textarea {
+    width: 100%;
+    padding: 0.58rem 0.64rem;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, #0f1720 10%, #ffffff 90%);
+    background: #fff;
+    color: #10233f;
+    font: inherit;
+}
+
+.turnero-release-mission-control__freeze-notes {
+    grid-column: 1 / -1;
+}
+
+.turnero-release-mission-control__freeze-notes textarea {
+    min-height: 84px;
+    resize: vertical;
+}
+
+.turnero-release-mission-control__pack summary {
+    cursor: pointer;
+    color: #0f4a93;
+    font-weight: 800;
+}
+
+.turnero-release-mission-control__pack pre {
+    margin: 0.75rem 0 0;
+    max-height: 320px;
+    overflow: auto;
+    padding: 0.85rem;
+    border-radius: 18px;
+    background: #0c1726;
+    color: #f8fafc;
+    font-size: 0.76rem;
+    line-height: 1.55;
+}
+
+.turnero-release-mission-control__muted {
+    margin: 0;
+    color: #526173;
+    font-style: italic;
 }
 
 .turnero-release-war-room {

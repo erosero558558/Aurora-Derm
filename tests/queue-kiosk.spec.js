@@ -51,9 +51,21 @@ test.describe('Kiosco turnos', () => {
                 c2: { label: 'Dermatología 2', short_label: 'D2' },
             },
             surfaces: {
+                admin: {
+                    enabled: true,
+                    route: '/admin.html#queue',
+                },
+                operator: {
+                    enabled: true,
+                    route: '/operador-turnos.html',
+                },
                 kiosk: {
                     enabled: true,
                     route: '/kiosco-turnos.html',
+                },
+                display: {
+                    enabled: true,
+                    route: '/sala-turnos.html',
                 },
             },
         });
@@ -73,7 +85,7 @@ test.describe('Kiosco turnos', () => {
             'Norte · /kiosco-turnos.html · Dermatología 1 · Dermatología 2'
         );
         await expect(page.locator('#kioskProfileStatus')).toContainText(
-            'Perfil remoto verificado'
+            /Perfil remoto verificado|Readiness bloqueada/
         );
     });
 

@@ -52,7 +52,9 @@ import { buildTurneroReleaseControlCenterModel } from '../../../../../../queue-s
 import { renderTurneroReleaseCommandDeck } from '../../../../../../queue-shared/turnero-release-command-deck.js';
 import { mountReleaseIntelligenceSuiteCard } from '../../../../../../queue-shared/turnero-release-baseline-promotion-center.js';
 import { createReleaseHistoryDashboard } from '../../../../../../queue-shared/turnero-release-history-dashboard.js';
+import { mountTurneroReleaseGovernanceSuite } from '../../../../../../queue-shared/turnero-release-governance-suite.js';
 import { mountRegionalProgramOfficeCard } from '../../../../../../queue-shared/turnero-release-program-office.js';
+import { renderQueueAssuranceControlPlane } from './install-hub/assurance-control-plane.js';
 import { hasRecentQueueSmokeSignalForState } from './install-hub/smoke-signal.js';
 import {
     buildPlaybookDefinitions as buildPlaybookDefinitionsModule,
@@ -110,7 +112,9 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueReleaseCommandDeck',
     'queueReleaseIntelligenceSuiteHost',
     'queueReleaseHistoryDashboard',
+    'queueReleaseGovernanceSuiteHost',
     'queueRegionalProgramOfficeHost',
+    'queueReleaseAssuranceControlPlaneHost',
     'queueOpeningChecklist',
     'queueShiftHandoff',
     'queueContingencyDeck',
@@ -2830,6 +2834,70 @@ function renderQueueReleaseHistoryDashboard(manifest, detectedPlatform) {
     return panel;
 }
 
+function renderQueueReleaseGovernanceSuite(manifest, detectedPlatform) {
+    const root = document.getElementById('queueReleaseGovernanceSuiteHost');
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const currentSnapshot = buildQueueReleaseHistoryCurrentSnapshot();
+    const dashboard = getQueueReleaseHistoryDashboard();
+    const historyViewModel = dashboard.buildViewModel({
+        clinicId: currentSnapshot.clinicId,
+        currentSnapshot,
+    });
+    const releaseEvidenceBundle =
+        currentSnapshot.parts?.releaseEvidenceBundle ||
+        currentSnapshot.releaseEvidenceBundle ||
+        currentSnapshot;
+
+    return mountTurneroReleaseGovernanceSuite(
+        root,
+        {
+            clinicId: currentSnapshot.clinicId,
+            clinicLabel:
+                currentSnapshot.clinicName ||
+                currentSnapshot.clinicShortName ||
+                currentSnapshot.clinicId,
+            clinicShortName:
+                currentSnapshot.clinicShortName ||
+                currentSnapshot.clinicName ||
+                currentSnapshot.clinicId,
+            region: currentSnapshot.region || '',
+            currentSnapshot,
+            releaseEvidenceBundle,
+            remoteReadiness:
+                currentSnapshot.parts?.remoteReleaseReadiness ||
+                currentSnapshot.remoteReleaseReadiness ||
+                null,
+            publicShellDrift:
+                currentSnapshot.parts?.publicShellDrift ||
+                currentSnapshot.publicShellDrift ||
+                null,
+            clinicProfile:
+                currentSnapshot.parts?.clinicProfile ||
+                currentSnapshot.turneroClinicProfile ||
+                currentSnapshot.clinicProfile ||
+                null,
+            regionalClinics:
+                releaseEvidenceBundle.regionalClinics ||
+                currentSnapshot.parts?.releaseEvidenceBundle?.regionalClinics ||
+                currentSnapshot.regionalClinics ||
+                [],
+            historySnapshots: historyViewModel.pack.timeline?.length
+                ? historyViewModel.pack.timeline
+                : releaseEvidenceBundle.historySnapshots ||
+                  currentSnapshot.parts?.releaseEvidenceBundle
+                      ?.historySnapshots ||
+                  [],
+        },
+        {
+            manifest,
+            detectedPlatform,
+        }
+    );
+}
+
 function formatHeartbeatAge(ageSec) {
     const safeAge = Number(ageSec);
     if (!Number.isFinite(safeAge) || safeAge < 0) {
@@ -4408,7 +4476,9 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderQueueOpsPilot(manifest, detectedPlatform);
     renderQueueReleaseCommandDeck(manifest, detectedPlatform);
     renderQueueReleaseHistoryDashboard(manifest, detectedPlatform);
+    renderQueueReleaseGovernanceSuite(manifest, detectedPlatform);
     renderQueueRegionalProgramOffice(manifest, detectedPlatform);
+    renderQueueAssuranceControlPlane(manifest, detectedPlatform);
     renderOpeningChecklist(manifest, detectedPlatform);
     renderShiftHandoff(manifest, detectedPlatform);
     setHtml(

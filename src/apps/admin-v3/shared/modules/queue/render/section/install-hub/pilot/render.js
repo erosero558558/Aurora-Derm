@@ -21,9 +21,11 @@ import {
 } from '../../../../../../../../queue-shared/turnero-release-evidence-bundle.js';
 import { mountMultiClinicControlTowerCard } from '../../../../../../../../queue-shared/turnero-release-control-tower.js';
 import { mountTurneroReleaseRolloutCommandCenterCard } from '../../../../../../../../queue-shared/turnero-release-rollout-command-center.js';
+import { mountTurneroReleaseExecutivePortfolioStudio } from '../../../../../../../../queue-shared/turnero-release-executive-portfolio-studio.js';
 import { mountTurneroReleaseMissionControlCard } from '../../../../../../../../queue-shared/turnero-release-mission-control.js';
 import { renderTurneroReleaseAutomationMesh } from '../../../../../../../../queue-shared/turnero-release-automation-mesh.js';
 import { mountTurneroReleaseOpsConsoleCard } from '../../../../../../../../queue-shared/turnero-release-ops-console.js';
+import { mountTurneroReleaseBoardOpsHub } from '../../../../../../../../queue-shared/turnero-release-board-ops-hub.js';
 import { renderTurneroReleaseWarRoom } from '../../../../../../../../queue-shared/turnero-release-war-room.js';
 import { mountQueueIncidentExecutionWorkbenchCard } from './incident-execution-workbench.js';
 
@@ -90,6 +92,421 @@ function renderPilotRolloutStations(pilot, escapeHtml) {
                 .join('')}
         </div>
     `;
+}
+
+function normalizeBoardOpsHubText(value, fallback = '') {
+    const normalized = String(value ?? '').trim();
+    return normalized || fallback;
+}
+
+function normalizeBoardOpsHubNumber(value, fallback = 0) {
+    const normalized = Number(value);
+    return Number.isFinite(normalized) ? normalized : fallback;
+}
+
+function clampBoardOpsHubPercent(value, fallback = 0) {
+    return Math.max(
+        0,
+        Math.min(100, normalizeBoardOpsHubNumber(value, fallback))
+    );
+}
+
+function normalizeBoardOpsHubArray(value) {
+    return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function normalizeBoardOpsHubSeverity(value, fallback = 'warning') {
+    const normalized = normalizeBoardOpsHubText(value, fallback).toLowerCase();
+    if (
+        ['alert', 'critical', 'blocker', 'blocked', 'high'].includes(normalized)
+    ) {
+        return 'alert';
+    }
+    if (
+        ['warning', 'watch', 'pending', 'review', 'medium'].includes(normalized)
+    ) {
+        return 'warning';
+    }
+    if (
+        ['ready', 'done', 'approved', 'closed', 'ok', 'success'].includes(
+            normalized
+        )
+    ) {
+        return 'ready';
+    }
+    return fallback;
+}
+
+function normalizeBoardOpsHubApprovalStatus(value, fallback = 'requested') {
+    const normalized = normalizeBoardOpsHubText(value, fallback).toLowerCase();
+    if (['approved', 'done', 'closed'].includes(normalized)) {
+        return 'done';
+    }
+    if (['rejected', 'cancelled', 'canceled', 'blocked'].includes(normalized)) {
+        return 'blocked';
+    }
+    if (['working', 'in-progress', 'progress', 'doing'].includes(normalized)) {
+        return 'working';
+    }
+    if (['paused', 'hold'].includes(normalized)) {
+        return 'paused';
+    }
+    return 'requested';
+}
+
+function averageBoardOpsHubPercent(values, fallback = 0) {
+    const numbers = normalizeBoardOpsHubArray(values)
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value));
+
+    if (!numbers.length) {
+        return fallback;
+    }
+
+    return Number(
+        (
+            numbers.reduce((sum, value) => sum + value, 0) / numbers.length
+        ).toFixed(1)
+    );
+}
+
+function normalizeBoardOpsHubClinic(
+    source = {},
+    index = 0,
+    region = 'regional'
+) {
+    const clinic = source && typeof source === 'object' ? source : {};
+    return {
+        clinicId: normalizeBoardOpsHubText(
+            clinic.clinicId ||
+                clinic.clinic_id ||
+                clinic.id ||
+                `clinic-${index + 1}`,
+            `clinic-${index + 1}`
+        ),
+        label: normalizeBoardOpsHubText(
+            clinic.label ||
+                clinic.clinicName ||
+                clinic.name ||
+                clinic.branding?.name ||
+                clinic.branding?.short_name ||
+                `Clínica ${index + 1}`
+        ),
+        region: normalizeBoardOpsHubText(
+            clinic.region || region || 'regional',
+            'regional'
+        ),
+        status: normalizeBoardOpsHubText(
+            clinic.status || (clinic.ready === false ? 'watch' : 'active'),
+            'active'
+        ),
+        adoptionRate: clampBoardOpsHubPercent(
+            clinic.adoptionRate ??
+                clinic.adoptionPct ??
+                clinic.adoption ??
+                clinic.progressPct,
+            72
+        ),
+        valueScore: clampBoardOpsHubPercent(
+            clinic.valueScore ??
+                clinic.valuePct ??
+                clinic.value ??
+                clinic.valueRealization,
+            76
+        ),
+    };
+}
+
+function normalizeBoardOpsHubIncident(
+    source = {},
+    index = 0,
+    kind = 'incident'
+) {
+    const incident = source && typeof source === 'object' ? source : {};
+    const severity = normalizeBoardOpsHubSeverity(
+        incident.severity ||
+            incident.state ||
+            incident.tone ||
+            incident.status ||
+            'warning',
+        'warning'
+    );
+
+    return {
+        id: normalizeBoardOpsHubText(
+            incident.id || incident.incidentId || `${kind}-${index + 1}`
+        ),
+        title: normalizeBoardOpsHubText(
+            incident.title ||
+                incident.label ||
+                incident.name ||
+                incident.summary ||
+                'Incident'
+        ),
+        detail: normalizeBoardOpsHubText(
+            incident.detail ||
+                incident.summary ||
+                incident.note ||
+                incident.reason ||
+                ''
+        ),
+        owner: normalizeBoardOpsHubText(
+            incident.owner ||
+                incident.assignee ||
+                incident.suggestedOwner ||
+                'board'
+        ),
+        severity,
+        state: severity,
+        source: normalizeBoardOpsHubText(
+            incident.source || incident.kind || kind || 'pilot'
+        ),
+        category: normalizeBoardOpsHubText(
+            incident.category || incident.type || kind || 'go-live'
+        ),
+        dueDate: normalizeBoardOpsHubText(
+            incident.dueDate || incident.dueAt || incident.due || ''
+        ),
+    };
+}
+
+function normalizeBoardOpsHubApproval(
+    source = {},
+    index = 0,
+    kind = 'approval'
+) {
+    const approval = source && typeof source === 'object' ? source : {};
+    const status = normalizeBoardOpsHubApprovalStatus(
+        approval.status ||
+            approval.state ||
+            (approval.ready === false ? 'requested' : 'approved')
+    );
+
+    return {
+        id: normalizeBoardOpsHubText(
+            approval.id || approval.approvalId || `${kind}-${index + 1}`
+        ),
+        title: normalizeBoardOpsHubText(
+            approval.title ||
+                approval.label ||
+                approval.name ||
+                approval.summary ||
+                'Approval'
+        ),
+        detail: normalizeBoardOpsHubText(
+            approval.detail ||
+                approval.summary ||
+                approval.note ||
+                approval.reason ||
+                ''
+        ),
+        owner: normalizeBoardOpsHubText(
+            approval.owner ||
+                approval.assignee ||
+                approval.suggestedApprover ||
+                'board'
+        ),
+        status,
+        source: normalizeBoardOpsHubText(
+            approval.source || approval.kind || kind || 'pilot'
+        ),
+        requestedAt: normalizeBoardOpsHubText(
+            approval.requestedAt || new Date().toISOString()
+        ),
+        resolvedAt:
+            approval.resolvedAt === undefined || approval.resolvedAt === null
+                ? null
+                : normalizeBoardOpsHubText(approval.resolvedAt),
+    };
+}
+
+function buildBoardOpsHubPayload(
+    pilot = {},
+    manifest = {},
+    releaseControlCenterModel = {}
+) {
+    const clinicProfile =
+        pilot.clinicProfile ||
+        pilot.turneroClinicProfile ||
+        manifest.clinicProfile ||
+        manifest.turneroClinicProfile ||
+        {};
+    const region = normalizeBoardOpsHubText(
+        pilot.region ||
+            clinicProfile.region ||
+            clinicProfile.branding?.region ||
+            clinicProfile.address?.region ||
+            manifest.region ||
+            'regional',
+        'regional'
+    );
+    const scope = normalizeBoardOpsHubText(
+        pilot.scope ||
+            region ||
+            clinicProfile.clinicId ||
+            clinicProfile.clinic_id ||
+            'regional',
+        'regional'
+    );
+    const programName = normalizeBoardOpsHubText(
+        pilot.programName ||
+            pilot.program ||
+            clinicProfile.programName ||
+            clinicProfile.branding?.name ||
+            clinicProfile.branding?.short_name ||
+            'Turnero Web por Clínica'
+    );
+
+    const clinicCandidates = [
+        pilot.clinicProfiles,
+        pilot.turneroClinicProfiles,
+        manifest.clinicProfiles,
+        manifest.turneroClinicProfiles,
+        clinicProfile.regionalClinics,
+        clinicProfile.clinics,
+    ].find((entry) => Array.isArray(entry) && entry.length > 0);
+
+    const clinics = clinicCandidates
+        ? clinicCandidates.map((clinic, index) =>
+              normalizeBoardOpsHubClinic(clinic, index, region)
+          )
+        : [
+              normalizeBoardOpsHubClinic(
+                  {
+                      clinicId:
+                          clinicProfile.clinicId ||
+                          clinicProfile.clinic_id ||
+                          pilot.clinicId ||
+                          `${region}-clinic`,
+                      label:
+                          clinicProfile.branding?.name ||
+                          clinicProfile.branding?.short_name ||
+                          pilot.clinicName ||
+                          pilot.brandName ||
+                          programName,
+                      region,
+                      adoptionRate:
+                          pilot.progressPct ||
+                          (normalizeBoardOpsHubNumber(pilot.totalSteps, 0) > 0
+                              ? Number(
+                                    (
+                                        (normalizeBoardOpsHubNumber(
+                                            pilot.confirmedCount,
+                                            0
+                                        ) /
+                                            normalizeBoardOpsHubNumber(
+                                                pilot.totalSteps,
+                                                1
+                                            )) *
+                                        100
+                                    ).toFixed(1)
+                                )
+                              : 72),
+                      valueScore: normalizeBoardOpsHubNumber(
+                          pilot.valueScore || pilot.valuePct,
+                          76
+                      ),
+                      status:
+                          pilot.readinessState === 'ready' ? 'active' : 'watch',
+                  },
+                  0,
+                  region
+              ),
+          ];
+
+    const goLiveIssues = normalizeBoardOpsHubArray(pilot.goLiveIssues);
+    const readinessItems = normalizeBoardOpsHubArray(pilot.readinessItems);
+    const handoffItems = normalizeBoardOpsHubArray(pilot.handoffItems);
+    const readinessIncidents = readinessItems
+        .filter((item) => {
+            const state = item && typeof item === 'object' ? item : {};
+            return !(
+                state.ready === true ||
+                normalizeBoardOpsHubSeverity(
+                    state.state || state.severity || state.tone || state.status,
+                    'warning'
+                ) === 'ready'
+            );
+        })
+        .map((item, index) =>
+            normalizeBoardOpsHubIncident(item, index, 'readiness')
+        );
+
+    const incidents = [
+        ...goLiveIssues.map((item, index) =>
+            normalizeBoardOpsHubIncident(item, index, 'go-live')
+        ),
+        ...readinessIncidents,
+    ];
+
+    const approvals = readinessItems
+        .filter((item) => {
+            const state = item && typeof item === 'object' ? item : {};
+            return (
+                state.ready === true ||
+                normalizeBoardOpsHubSeverity(
+                    state.state || state.severity || state.tone || state.status,
+                    'warning'
+                ) === 'ready'
+            );
+        })
+        .map((item, index) =>
+            normalizeBoardOpsHubApproval(item, index, 'readiness')
+        )
+        .concat(
+            handoffItems.map((item, index) =>
+                normalizeBoardOpsHubApproval(item, index, 'handoff')
+            )
+        );
+
+    return {
+        pilot,
+        manifest,
+        releaseControlCenterModel,
+        clinicProfile,
+        region,
+        scope,
+        programName,
+        clinics,
+        incidents,
+        approvals,
+        kpis: {
+            blockedIncidents: incidents.filter(
+                (item) => item.severity === 'alert'
+            ).length,
+            pendingApprovals: approvals.filter((item) => item.status !== 'done')
+                .length,
+            avgAdoption: averageBoardOpsHubPercent(
+                clinics.map((clinic) => clinic.adoptionRate),
+                72
+            ),
+            avgValue: averageBoardOpsHubPercent(
+                clinics.map((clinic) => clinic.valueScore),
+                76
+            ),
+            clinicCount: clinics.length,
+        },
+        value: {
+            realizationPct: averageBoardOpsHubPercent(
+                clinics.map((clinic) => clinic.valueScore),
+                76
+            ),
+            valueScore: averageBoardOpsHubPercent(
+                clinics.map((clinic) => clinic.valueScore),
+                76
+            ),
+        },
+        governance: {
+            decision:
+                releaseControlCenterModel?.decision ||
+                pilot.readinessState ||
+                'review',
+            mode:
+                releaseControlCenterModel?.decision ||
+                pilot.readinessState ||
+                'review',
+        },
+    };
 }
 
 function normalizeReleaseEvidenceState(value, fallback = 'warning') {
@@ -407,8 +824,14 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     const rolloutGovernorHost = document.getElementById(
         'queueOpsPilotRolloutGovernorHost'
     );
+    const executivePortfolioStudioHost = document.getElementById(
+        'queueOpsPilotExecutivePortfolioStudioHost'
+    );
     const multiClinicControlTowerHost = document.getElementById(
         'queueMultiClinicControlTowerHost'
+    );
+    const boardOpsHubHost = document.getElementById(
+        'queueReleaseBoardOpsHubHost'
     );
     const releaseOpsConsoleHost = document.getElementById(
         'queueReleaseOpsConsoleHost'
@@ -445,6 +868,9 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     if (rolloutGovernorHost instanceof HTMLElement) {
         rolloutGovernorHost.setAttribute('aria-busy', 'true');
     }
+    if (executivePortfolioStudioHost instanceof HTMLElement) {
+        executivePortfolioStudioHost.setAttribute('aria-busy', 'true');
+    }
     if (multiClinicControlTowerHost instanceof HTMLElement) {
         multiClinicControlTowerHost.setAttribute('aria-busy', 'true');
     }
@@ -456,6 +882,8 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     let remoteReadinessModel;
     let publicShellDriftModel;
     let releaseEvidenceBundleModel;
+    let releaseControlCenterSection = null;
+    let rolloutGovernorModel = null;
 
     try {
         const [remoteState, publicShellScan] = await Promise.all([
@@ -579,6 +1007,9 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             if (rolloutGovernorHost instanceof HTMLElement) {
                 rolloutGovernorHost.removeAttribute('aria-busy');
             }
+            if (executivePortfolioStudioHost instanceof HTMLElement) {
+                executivePortfolioStudioHost.removeAttribute('aria-busy');
+            }
             if (multiClinicControlTowerHost instanceof HTMLElement) {
                 multiClinicControlTowerHost.removeAttribute('aria-busy');
             }
@@ -594,7 +1025,7 @@ async function hydrateQueueOpsPilotReleaseEvidence(
 
     if (releaseControlCenterHost instanceof HTMLElement) {
         try {
-            mountTurneroReleaseControlCenterCard(
+            releaseControlCenterSection = mountTurneroReleaseControlCenterCard(
                 releaseControlCenterHost,
                 snapshot
             );
@@ -632,6 +1063,63 @@ async function hydrateQueueOpsPilotReleaseEvidence(
         }
     }
 
+    const releaseControlCenterModel =
+        releaseControlCenterSection?.__turneroReleaseControlCenterModel ||
+        releaseControlCenterHost.querySelector?.('#queueReleaseControlCenter')
+            ?.__turneroReleaseControlCenterModel ||
+        null;
+    rolloutGovernorModel =
+        rolloutGovernorHost.__turneroReleaseRolloutCommandCenterModel || null;
+
+    if (executivePortfolioStudioHost instanceof HTMLElement) {
+        try {
+            mountTurneroReleaseExecutivePortfolioStudio(
+                executivePortfolioStudioHost,
+                {
+                    controlCenterModel: releaseControlCenterModel,
+                    releaseControlCenterModel,
+                    governancePack: rolloutGovernorModel,
+                    rolloutGovernorModel,
+                    releaseIncidents:
+                        releaseControlCenterModel?.incidents || [],
+                    clinicProfile:
+                        pilot.clinicProfile ||
+                        pilot.turneroClinicProfile ||
+                        releaseControlCenterModel?.turneroClinicProfile ||
+                        snapshot.turneroClinicProfile,
+                    regionalClinics:
+                        pilot.regionalClinics ||
+                        pilot.turneroRegionalClinics ||
+                        manifest.regionalClinics ||
+                        manifest.turneroRegionalClinics ||
+                        releaseControlCenterModel?.turneroClinicProfile
+                            ?.regionalClinics ||
+                        [],
+                    region:
+                        pilot.region ||
+                        pilot.clinicProfile?.region ||
+                        manifest.region ||
+                        releaseControlCenterModel?.turneroClinicProfile
+                            ?.region ||
+                        'regional',
+                    runwayBudget:
+                        rolloutGovernorModel?.riskBudget?.remainingBudget ||
+                        rolloutGovernorModel?.riskBudget?.budgetMax ||
+                        snapshot?.runwayBudget,
+                    riskGrade: rolloutGovernorModel?.scorecard?.grade || 'B',
+                    complianceStatus:
+                        releaseControlCenterModel?.decision === 'hold'
+                            ? 'red'
+                            : releaseControlCenterModel?.decision === 'review'
+                              ? 'amber'
+                              : 'green',
+                }
+            );
+        } catch (_error) {
+            executivePortfolioStudioHost.innerHTML = '';
+        }
+    }
+
     if (multiClinicControlTowerHost instanceof HTMLElement) {
         try {
             mountMultiClinicControlTowerCard(multiClinicControlTowerHost, {
@@ -653,6 +1141,22 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             });
         } catch (_error) {
             multiClinicControlTowerHost.innerHTML = '';
+        }
+    }
+
+    if (boardOpsHubHost instanceof HTMLElement) {
+        try {
+            mountTurneroReleaseBoardOpsHub(boardOpsHubHost, {
+                ...buildBoardOpsHubPayload(
+                    pilot,
+                    manifest,
+                    releaseControlCenterModel
+                ),
+                snapshot,
+                storage: options.storage,
+            });
+        } catch (_error) {
+            boardOpsHubHost.innerHTML = '';
         }
     }
 
@@ -1159,8 +1663,18 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps = {}) {
                             aria-live="polite"
                         ></div>
                         <div
+                            id="queueOpsPilotExecutivePortfolioStudioHost"
+                            class="queue-ops-pilot__executive-portfolio-studio-host"
+                            aria-live="polite"
+                        ></div>
+                        <div
                             id="queueMultiClinicControlTowerHost"
                             class="queue-ops-pilot__multi-clinic-control-tower-host"
+                            aria-live="polite"
+                        ></div>
+                        <div
+                            id="queueReleaseBoardOpsHubHost"
+                            class="queue-ops-pilot__board-ops-hub-host"
                             aria-live="polite"
                         ></div>
                         <div
