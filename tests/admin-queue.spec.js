@@ -15804,6 +15804,23 @@ test.describe('Admin turnero sala', () => {
             page.locator('#turneroReleaseGovernanceSuite')
         ).toContainText('Mapa de inversión');
         await expect(
+            page.locator('#queueReleaseSafetyPrivacyCockpitHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseSafetyPrivacyCockpit')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseSafetyPrivacyCockpitTitle')
+        ).toContainText('Safety Privacy Cockpit');
+        await expect(
+            page.locator(
+                '#turneroReleaseSafetyPrivacyCockpitCopyPrivacyBriefBtn'
+            )
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseSafetyPrivacyCockpitDownloadJsonBtn')
+        ).toBeVisible();
+        await expect(
             page.locator('#turneroReleaseGovernanceBudget')
         ).toBeVisible();
         await expect(

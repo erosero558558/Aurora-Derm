@@ -53,9 +53,12 @@ import { renderTurneroReleaseCommandDeck } from '../../../../../../queue-shared/
 import { mountReleaseIntelligenceSuiteCard } from '../../../../../../queue-shared/turnero-release-baseline-promotion-center.js';
 import { createReleaseHistoryDashboard } from '../../../../../../queue-shared/turnero-release-history-dashboard.js';
 import { mountTurneroReleaseGovernanceSuite } from '../../../../../../queue-shared/turnero-release-governance-suite.js';
+import { mountTurneroReleaseIntegrationCommandCenter } from '../../../../../../queue-shared/turnero-release-integration-command-center.js';
 import { mountRegionalProgramOfficeCard } from '../../../../../../queue-shared/turnero-release-program-office.js';
 import { mountTurneroReleaseReliabilityRecoveryNerveCenter } from '../../../../../../queue-shared/turnero-release-reliability-recovery-nerve-center.js';
 import { mountTurneroReleaseServiceExcellenceAdoptionCloud } from '../../../../../../queue-shared/turnero-release-service-excellence-adoption-cloud.js';
+import { mountTurneroReleaseSafetyPrivacyCockpit } from '../../../../../../queue-shared/turnero-release-safety-privacy-cockpit.js';
+import { readTurneroIncidentJournal } from '../../../../../../queue-shared/turnero-release-incident-journal.js';
 import { renderQueueAssuranceControlPlane } from './install-hub/assurance-control-plane.js';
 import { hasRecentQueueSmokeSignalForState } from './install-hub/smoke-signal.js';
 import {
@@ -115,8 +118,10 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueReleaseIntelligenceSuiteHost',
     'queueReleaseHistoryDashboard',
     'queueReleaseGovernanceSuiteHost',
+    'queueReleaseIntegrationCommandCenterHost',
     'queueRegionalProgramOfficeHost',
     'queueReleaseAssuranceControlPlaneHost',
+    'queueReleaseSafetyPrivacyCockpitHost',
     'queueReleaseServiceExcellenceAdoptionCloudHost',
     'queueOpeningChecklist',
     'queueShiftHandoff',
@@ -2902,6 +2907,288 @@ function renderQueueReleaseGovernanceSuite(manifest, detectedPlatform) {
     );
 }
 
+function renderQueueReleaseIntegrationCommandCenter(
+    manifest,
+    detectedPlatform
+) {
+    const root = document.getElementById(
+        'queueReleaseIntegrationCommandCenterHost'
+    );
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const currentSnapshot = buildQueueReleaseHistoryCurrentSnapshot();
+    const releaseEvidenceBundle =
+        currentSnapshot.parts?.releaseEvidenceBundle ||
+        currentSnapshot.releaseEvidenceBundle ||
+        currentSnapshot;
+    const clinicProfile =
+        currentSnapshot.parts?.clinicProfile ||
+        currentSnapshot.turneroClinicProfile ||
+        currentSnapshot.clinicProfile ||
+        getTurneroClinicProfile();
+    const releaseDecision =
+        String(
+            currentSnapshot.releaseDecision ||
+                currentSnapshot.decision ||
+                currentSnapshot.remoteReleaseModel?.finalState ||
+                currentSnapshot.remoteReleaseModel?.status ||
+                currentSnapshot.remoteReleaseModel?.releaseStatus ||
+                releaseEvidenceBundle.decision ||
+                'review'
+        )
+            .trim()
+            .toLowerCase() || 'review';
+    const releaseIncidents = Array.isArray(currentSnapshot.incidents)
+        ? currentSnapshot.incidents
+        : Array.isArray(releaseEvidenceBundle.incidents)
+          ? releaseEvidenceBundle.incidents
+          : [];
+    const clinicId = String(
+        currentSnapshot.clinicId || clinicProfile?.clinic_id || ''
+    ).trim();
+    const region =
+        String(
+            currentSnapshot.region || clinicProfile?.region || 'regional'
+        ).trim() || 'regional';
+    const incidentCount = releaseIncidents.length;
+    const baseState =
+        releaseDecision === 'hold' || releaseDecision === 'blocked'
+            ? 'degraded'
+            : releaseDecision === 'review'
+              ? 'watch'
+              : 'active';
+    const contracts = [
+        {
+            id: 'contract-health',
+            label: 'Health Public Contract',
+            source: 'admin queue',
+            target: 'api.php?resource=health',
+            owner: 'infra',
+            version: 'v1',
+            criticality: 'critical',
+            freshnessSlaMinutes: 10,
+            state: incidentCount > 0 ? 'watch' : baseState,
+        },
+        {
+            id: 'contract-public-sync',
+            label: 'Public Sync Contract',
+            source: 'public shell',
+            target: 'public_main_sync',
+            owner: 'web',
+            version: 'v1',
+            criticality: 'high',
+            freshnessSlaMinutes: 15,
+            state:
+                incidentCount > 1
+                    ? 'degraded'
+                    : incidentCount > 0
+                      ? 'watch'
+                      : baseState,
+        },
+        {
+            id: 'contract-figo-bridge',
+            label: 'Figo Bridge Contract',
+            source: 'queue surfaces',
+            target: 'figo bridge',
+            owner: 'backend',
+            version: 'v1',
+            criticality: 'critical',
+            freshnessSlaMinutes: 12,
+            state:
+                releaseDecision === 'hold' || releaseDecision === 'blocked'
+                    ? 'degraded'
+                    : incidentCount > 0
+                      ? 'watch'
+                      : baseState,
+        },
+    ];
+    const exchanges = [
+        {
+            id: 'exchange-admin-health',
+            label: 'Admin -> Health',
+            source: 'admin queue',
+            target: 'health endpoint',
+            direction: 'read',
+            payloadClass: 'operational',
+            owner: 'infra',
+        },
+        {
+            id: 'exchange-shell-sync',
+            label: 'Public shell sync',
+            source: 'public shell',
+            target: 'public sync',
+            direction:
+                releaseDecision === 'hold' || releaseDecision === 'blocked'
+                    ? 'read'
+                    : 'bidirectional',
+            payloadClass: 'operational',
+            owner: 'web',
+        },
+        {
+            id: 'exchange-figo-queue',
+            label: 'Queue -> Figo bridge',
+            source: 'queue surfaces',
+            target: 'figo bridge',
+            direction: 'bidirectional',
+            payloadClass: 'clinical-sensitive',
+            owner: 'backend',
+        },
+    ];
+    const healthSignals = contracts.map((contract) => {
+        const lagBase =
+            contract.id === 'contract-public-sync'
+                ? 6
+                : contract.id === 'contract-health'
+                  ? 4
+                  : 5;
+        const successBase =
+            contract.id === 'contract-health'
+                ? 98
+                : contract.id === 'contract-public-sync'
+                  ? 96
+                  : 97;
+        const decisionLag =
+            releaseDecision === 'hold' || releaseDecision === 'blocked'
+                ? 5
+                : releaseDecision === 'review'
+                  ? 2
+                  : 0;
+        const decisionPenalty =
+            releaseDecision === 'hold' || releaseDecision === 'blocked'
+                ? 8
+                : releaseDecision === 'review'
+                  ? 3
+                  : 0;
+
+        return {
+            contractId: contract.id,
+            lagMinutes:
+                lagBase +
+                incidentCount *
+                    (contract.id === 'contract-public-sync' ? 5 : 3) +
+                decisionLag,
+            successRate: Math.max(
+                60,
+                successBase - incidentCount * 4 - decisionPenalty
+            ),
+        };
+    });
+    const bridgeSignals = [
+        {
+            id: 'bridge-figo',
+            label: 'Figo bridge',
+            latencyMs:
+                860 +
+                incidentCount * 150 +
+                (releaseDecision === 'hold' || releaseDecision === 'blocked'
+                    ? 280
+                    : releaseDecision === 'review'
+                      ? 120
+                      : 0),
+            errorRate: Number(
+                (
+                    1 +
+                    incidentCount * 0.6 +
+                    (releaseDecision === 'hold' || releaseDecision === 'blocked'
+                        ? 1.8
+                        : releaseDecision === 'review'
+                          ? 0.8
+                          : 0)
+                ).toFixed(1)
+            ),
+            freshnessLag:
+                5 +
+                incidentCount * 2 +
+                (releaseDecision === 'hold' || releaseDecision === 'blocked'
+                    ? 8
+                    : releaseDecision === 'review'
+                      ? 2
+                      : 0),
+        },
+        {
+            id: 'bridge-public',
+            label: 'Public sync bridge',
+            latencyMs:
+                1120 +
+                incidentCount * 180 +
+                (releaseDecision === 'hold' || releaseDecision === 'blocked'
+                    ? 280
+                    : releaseDecision === 'review'
+                      ? 120
+                      : 0),
+            errorRate: Number(
+                (
+                    1.4 +
+                    incidentCount * 0.7 +
+                    (releaseDecision === 'hold' || releaseDecision === 'blocked'
+                        ? 1.8
+                        : releaseDecision === 'review'
+                          ? 0.8
+                          : 0)
+                ).toFixed(1)
+            ),
+            freshnessLag:
+                9 +
+                incidentCount * 3 +
+                (releaseDecision === 'hold' || releaseDecision === 'blocked'
+                    ? 8
+                    : releaseDecision === 'review'
+                      ? 2
+                      : 0),
+        },
+    ];
+
+    return mountTurneroReleaseIntegrationCommandCenter(root, {
+        currentSnapshot,
+        releaseEvidenceBundle,
+        clinicProfile,
+        turneroClinicProfile: clinicProfile,
+        clinicId,
+        region,
+        scope: clinicId || region || 'global',
+        releaseDecision,
+        releaseIncidents,
+        incidents: releaseIncidents,
+        contracts,
+        exchanges,
+        healthSignals,
+        bridgeSignals,
+        manifest,
+        detectedPlatform,
+    });
+}
+
+function renderQueueSafetyPrivacyCockpit(manifest, detectedPlatform) {
+    const root = document.getElementById(
+        'queueReleaseSafetyPrivacyCockpitHost'
+    );
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const clinicProfile = getTurneroClinicProfile();
+    const clinicId = getTurneroClinicId();
+    const region =
+        String(
+            clinicProfile?.region ||
+                clinicProfile?.address?.region ||
+                clinicProfile?.location?.region ||
+                'regional'
+        ).trim() || 'regional';
+
+    return mountTurneroReleaseSafetyPrivacyCockpit(root, {
+        scope: region,
+        region,
+        clinicId,
+        clinicProfile,
+        incidents: readTurneroIncidentJournal(clinicId),
+        manifest,
+        detectedPlatform,
+    });
+}
+
 function renderQueueReleaseServiceExcellenceAdoptionCloud(
     manifest,
     detectedPlatform
@@ -4537,9 +4824,11 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderQueueReleaseCommandDeck(manifest, detectedPlatform);
     renderQueueReleaseHistoryDashboard(manifest, detectedPlatform);
     renderQueueReleaseGovernanceSuite(manifest, detectedPlatform);
+    renderQueueReleaseIntegrationCommandCenter(manifest, detectedPlatform);
     renderQueueRegionalProgramOffice(manifest, detectedPlatform);
     renderQueueReliabilityRecoveryNerveCenter(manifest, detectedPlatform);
     renderQueueAssuranceControlPlane(manifest, detectedPlatform);
+    renderQueueSafetyPrivacyCockpit(manifest, detectedPlatform);
     renderQueueReleaseServiceExcellenceAdoptionCloud(
         manifest,
         detectedPlatform
@@ -22674,6 +22963,15 @@ export function renderQueueInstallHub(options = {}) {
     const hubRoot = getQueueAppsHubRoot();
     if (hubRoot) {
         queueOpsInteractionController.bind(hubRoot);
+    }
+    if (cardsRoot instanceof HTMLElement) {
+        queueOpsInteractionController.bind(cardsRoot);
+    }
+    const configuratorRoot = document.getElementById(
+        'queueInstallConfigurator'
+    );
+    if (configuratorRoot instanceof HTMLElement) {
+        queueOpsInteractionController.bind(configuratorRoot);
     }
 
     const platform =
