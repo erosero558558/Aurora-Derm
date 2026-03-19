@@ -15987,8 +15987,11 @@ test.describe('Admin turnero sala', () => {
             page.locator('#queueReleaseServiceExcellenceAdoptionCloudHost')
         ).toBeVisible();
         await expect(
-            page.locator('#turneroReleaseServiceExcellenceAdoptionCloud')
+            page.locator('.turnero-release-service-excellence-adoption-cloud')
         ).toBeVisible();
+        await expect(
+            page.locator('.turnero-release-service-excellence-adoption-cloud')
+        ).toContainText('Service Excellence Adoption Cloud');
         await expect(
             page.locator('#queueReleaseRepoDiagnosticPrepHubHost')
         ).toBeVisible();
