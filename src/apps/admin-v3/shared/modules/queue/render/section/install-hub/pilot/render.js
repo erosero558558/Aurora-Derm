@@ -22,11 +22,13 @@ import {
 import { mountMultiClinicControlTowerCard } from '../../../../../../../../queue-shared/turnero-release-control-tower.js';
 import { mountTurneroReleaseRolloutCommandCenterCard } from '../../../../../../../../queue-shared/turnero-release-rollout-command-center.js';
 import { mountTurneroReleaseExecutivePortfolioStudio } from '../../../../../../../../queue-shared/turnero-release-executive-portfolio-studio.js';
+import { buildTurneroReleaseServiceQualityMetrics } from '../../../../../../../../queue-shared/turnero-release-service-quality-metrics.js';
 import { mountTurneroReleaseMissionControlCard } from '../../../../../../../../queue-shared/turnero-release-mission-control.js';
 import { renderTurneroReleaseAutomationMesh } from '../../../../../../../../queue-shared/turnero-release-automation-mesh.js';
 import { mountTurneroReleaseOpsConsoleCard } from '../../../../../../../../queue-shared/turnero-release-ops-console.js';
 import { mountTurneroReleaseBoardOpsHub } from '../../../../../../../../queue-shared/turnero-release-board-ops-hub.js';
 import { renderTurneroReleaseWarRoom } from '../../../../../../../../queue-shared/turnero-release-war-room.js';
+import { mountTurneroReleaseStrategyDigitalTwinStudio } from '../../../../../../../../queue-shared/turnero-release-strategy-digital-twin-studio.js';
 import { mountQueueIncidentExecutionWorkbenchCard } from './incident-execution-workbench.js';
 
 function resolvePublicShellDriftOptions(manifest = {}) {
@@ -509,6 +511,208 @@ function buildBoardOpsHubPayload(
     };
 }
 
+function normalizeStrategyDigitalTwinClinic(
+    source = {},
+    index = 0,
+    region = 'regional'
+) {
+    const clinic = source && typeof source === 'object' ? source : {};
+    const clinicId = normalizeBoardOpsHubText(
+        clinic.clinicId ||
+            clinic.clinic_id ||
+            clinic.id ||
+            clinic.code ||
+            clinic.branding?.short_name ||
+            clinic.branding?.name ||
+            `clinic-${index + 1}`,
+        `clinic-${index + 1}`
+    );
+    const clinicName = normalizeBoardOpsHubText(
+        clinic.clinicName ||
+            clinic.name ||
+            clinic.label ||
+            clinic.branding?.short_name ||
+            clinic.branding?.name ||
+            clinicId,
+        clinicId
+    );
+    const baseDemand = normalizeBoardOpsHubNumber(
+        clinic.baseDemand ??
+            clinic.expectedBenefit ??
+            clinic.demand ??
+            clinic.monthlyDemand ??
+            clinic.forecastDemand ??
+            clinic.valueScore,
+        22 + index * 3
+    );
+    const growthFactor = normalizeBoardOpsHubNumber(
+        clinic.growthFactor ?? clinic.growth ?? clinic.demandGrowth,
+        1.06
+    );
+    const seasonality = normalizeBoardOpsHubNumber(
+        clinic.seasonality ?? clinic.seasonalityFactor,
+        1
+    );
+    const adoptionRate = clampBoardOpsHubPercent(
+        clinic.adoptionRate ??
+            clinic.adoptionPct ??
+            clinic.adoption ??
+            clinic.procurementReadiness ??
+            clinic.valueScore,
+        72
+    );
+    const qualityScore = clampBoardOpsHubPercent(
+        clinic.qualityScore ?? clinic.serviceQualityScore ?? adoptionRate,
+        76
+    );
+    const resilienceScore = clampBoardOpsHubPercent(
+        clinic.resilienceScore ?? clinic.reliabilityScore ?? qualityScore - 4,
+        74
+    );
+
+    return {
+        clinicId,
+        clinicName,
+        label: clinicName,
+        region: normalizeBoardOpsHubText(
+            clinic.region || clinic.area || region,
+            region
+        ),
+        baseDemand,
+        growthFactor,
+        seasonality,
+        adoptionRate,
+        qualityScore,
+        resilienceScore,
+        queueFlowScore: clampBoardOpsHubPercent(
+            clinic.queueFlowScore ?? qualityScore * 0.75 + adoptionRate * 0.25,
+            qualityScore
+        ),
+        callAccuracyScore: clampBoardOpsHubPercent(
+            clinic.callAccuracyScore ??
+                qualityScore * 0.85 + resilienceScore * 0.15,
+            qualityScore
+        ),
+        deskReadinessScore: clampBoardOpsHubPercent(
+            clinic.deskReadinessScore ?? resilienceScore,
+            resilienceScore
+        ),
+        patientSignalScore: clampBoardOpsHubPercent(
+            clinic.patientSignalScore ??
+                adoptionRate * 0.6 + qualityScore * 0.4,
+            adoptionRate
+        ),
+        status: normalizeBoardOpsHubText(
+            clinic.status ||
+                (qualityScore >= 75
+                    ? 'active'
+                    : qualityScore >= 60
+                      ? 'watch'
+                      : 'stabilize'),
+            'watch'
+        ),
+    };
+}
+
+function resolveStrategyDigitalTwinStudioClinics(
+    pilot = {},
+    manifest = {},
+    releaseControlCenterModel = {},
+    snapshot = {}
+) {
+    const clinicProfile =
+        pilot.clinicProfile ||
+        pilot.turneroClinicProfile ||
+        releaseControlCenterModel?.turneroClinicProfile ||
+        snapshot?.turneroClinicProfile ||
+        manifest.clinicProfile ||
+        manifest.turneroClinicProfile ||
+        {};
+    const region = normalizeBoardOpsHubText(
+        pilot.region ||
+            clinicProfile.region ||
+            clinicProfile.branding?.region ||
+            manifest.region ||
+            releaseControlCenterModel?.turneroClinicProfile?.region ||
+            snapshot?.turneroClinicProfile?.region ||
+            'regional',
+        'regional'
+    );
+    const scope = normalizeBoardOpsHubText(
+        pilot.scope ||
+            region ||
+            clinicProfile.clinicId ||
+            clinicProfile.clinic_id ||
+            'regional',
+        'regional'
+    );
+    const clinicCandidates = [
+        pilot.regionalClinics,
+        pilot.turneroRegionalClinics,
+        manifest.regionalClinics,
+        manifest.turneroRegionalClinics,
+        releaseControlCenterModel?.turneroClinicProfile?.regionalClinics,
+        clinicProfile?.regionalClinics,
+        clinicProfile?.clinics,
+        snapshot?.turneroClinicProfile?.regionalClinics,
+        snapshot?.turneroClinicProfile?.clinics,
+    ].find((entry) => Array.isArray(entry) && entry.length > 0);
+    const clinics = clinicCandidates
+        ? clinicCandidates.map((clinic, index) =>
+              normalizeStrategyDigitalTwinClinic(clinic, index, region)
+          )
+        : [
+              normalizeStrategyDigitalTwinClinic(
+                  {
+                      clinicId:
+                          clinicProfile.clinicId ||
+                          clinicProfile.clinic_id ||
+                          pilot.clinicId ||
+                          region,
+                      clinicName:
+                          clinicProfile.branding?.name ||
+                          clinicProfile.branding?.short_name ||
+                          pilot.clinicName ||
+                          pilot.brandName ||
+                          region,
+                      region,
+                  },
+                  0,
+                  region
+              ),
+          ];
+
+    const qualityRows = buildTurneroReleaseServiceQualityMetrics({
+        clinics,
+    }).rows.map((row, index) => ({
+        clinicId: normalizeBoardOpsHubText(
+            row.clinicId || clinics[index]?.clinicId || `clinic-${index + 1}`,
+            `clinic-${index + 1}`
+        ),
+        score: Number(
+            clampBoardOpsHubPercent(
+                row.score,
+                clinics[index]?.qualityScore || 76
+            ).toFixed(1)
+        ),
+    }));
+    const reliabilityRows = clinics.map((clinic) => ({
+        clinicId: clinic.clinicId,
+        resilienceScore: Number(
+            clampBoardOpsHubPercent(clinic.resilienceScore, 74).toFixed(1)
+        ),
+    }));
+
+    return {
+        clinicProfile,
+        region,
+        scope,
+        clinics,
+        qualityRows,
+        reliabilityRows,
+    };
+}
+
 function normalizeReleaseEvidenceState(value, fallback = 'warning') {
     const normalized = String(value ?? '')
         .trim()
@@ -827,6 +1031,9 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     const executivePortfolioStudioHost = document.getElementById(
         'queueOpsPilotExecutivePortfolioStudioHost'
     );
+    const strategyDigitalTwinStudioHost = document.getElementById(
+        'queueOpsPilotStrategyDigitalTwinStudioHost'
+    );
     const multiClinicControlTowerHost = document.getElementById(
         'queueMultiClinicControlTowerHost'
     );
@@ -870,6 +1077,9 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     }
     if (executivePortfolioStudioHost instanceof HTMLElement) {
         executivePortfolioStudioHost.setAttribute('aria-busy', 'true');
+    }
+    if (strategyDigitalTwinStudioHost instanceof HTMLElement) {
+        strategyDigitalTwinStudioHost.setAttribute('aria-busy', 'true');
     }
     if (multiClinicControlTowerHost instanceof HTMLElement) {
         multiClinicControlTowerHost.setAttribute('aria-busy', 'true');
@@ -1010,6 +1220,9 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             if (executivePortfolioStudioHost instanceof HTMLElement) {
                 executivePortfolioStudioHost.removeAttribute('aria-busy');
             }
+            if (strategyDigitalTwinStudioHost instanceof HTMLElement) {
+                strategyDigitalTwinStudioHost.removeAttribute('aria-busy');
+            }
             if (multiClinicControlTowerHost instanceof HTMLElement) {
                 multiClinicControlTowerHost.removeAttribute('aria-busy');
             }
@@ -1117,6 +1330,43 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             );
         } catch (_error) {
             executivePortfolioStudioHost.innerHTML = '';
+        }
+    }
+
+    const strategyDigitalTwinStudioContext =
+        resolveStrategyDigitalTwinStudioClinics(
+            pilot,
+            manifest,
+            releaseControlCenterModel,
+            snapshot
+        );
+
+    if (strategyDigitalTwinStudioHost instanceof HTMLElement) {
+        try {
+            strategyDigitalTwinStudioHost.innerHTML = '';
+            mountTurneroReleaseStrategyDigitalTwinStudio(
+                strategyDigitalTwinStudioHost,
+                {
+                    ...strategyDigitalTwinStudioContext,
+                    clinicProfile:
+                        strategyDigitalTwinStudioContext.clinicProfile ||
+                        pilot.clinicProfile ||
+                        pilot.turneroClinicProfile ||
+                        releaseControlCenterModel?.turneroClinicProfile ||
+                        snapshot.turneroClinicProfile,
+                    turneroClinicProfile:
+                        pilot.turneroClinicProfile ||
+                        releaseControlCenterModel?.turneroClinicProfile ||
+                        snapshot.turneroClinicProfile,
+                    turneroRegionalClinics:
+                        pilot.turneroRegionalClinics ||
+                        manifest.turneroRegionalClinics ||
+                        releaseControlCenterModel?.turneroClinicProfile
+                            ?.regionalClinics,
+                }
+            );
+        } catch (_error) {
+            strategyDigitalTwinStudioHost.innerHTML = '';
         }
     }
 
@@ -1663,8 +1913,13 @@ export function renderQueueOpsPilotView(manifest, detectedPlatform, deps = {}) {
                             aria-live="polite"
                         ></div>
                         <div
-                            id="queueOpsPilotExecutivePortfolioStudioHost"
+                        id="queueOpsPilotExecutivePortfolioStudioHost"
                             class="queue-ops-pilot__executive-portfolio-studio-host"
+                            aria-live="polite"
+                        ></div>
+                        <div
+                            id="queueOpsPilotStrategyDigitalTwinStudioHost"
+                            class="queue-ops-pilot__strategy-digital-twin-studio-host"
                             aria-live="polite"
                         ></div>
                         <div

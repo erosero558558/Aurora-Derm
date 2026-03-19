@@ -58,6 +58,7 @@ import { mountRegionalProgramOfficeCard } from '../../../../../../queue-shared/t
 import { mountTurneroReleaseReliabilityRecoveryNerveCenter } from '../../../../../../queue-shared/turnero-release-reliability-recovery-nerve-center.js';
 import { mountTurneroReleaseServiceExcellenceAdoptionCloud } from '../../../../../../queue-shared/turnero-release-service-excellence-adoption-cloud.js';
 import { mountTurneroReleaseSafetyPrivacyCockpit } from '../../../../../../queue-shared/turnero-release-safety-privacy-cockpit.js';
+import { mountTurneroReleaseRepoDiagnosticPrepHub } from '../../../../../../queue-shared/turnero-release-repo-diagnostic-prep-hub.js';
 import { readTurneroIncidentJournal } from '../../../../../../queue-shared/turnero-release-incident-journal.js';
 import { renderQueueAssuranceControlPlane } from './install-hub/assurance-control-plane.js';
 import { hasRecentQueueSmokeSignalForState } from './install-hub/smoke-signal.js';
@@ -124,6 +125,7 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueReleaseAssuranceControlPlaneHost',
     'queueReleaseSafetyPrivacyCockpitHost',
     'queueReleaseServiceExcellenceAdoptionCloudHost',
+    'queueReleaseRepoDiagnosticPrepHubHost',
     'queueOpeningChecklist',
     'queueShiftHandoff',
     'queueContingencyDeck',
@@ -3246,6 +3248,185 @@ function renderQueueReleaseServiceExcellenceAdoptionCloud(
     );
 }
 
+function renderQueueReleaseRepoDiagnosticPrepHub(manifest, detectedPlatform) {
+    const root = document.getElementById(
+        'queueReleaseRepoDiagnosticPrepHubHost'
+    );
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    const currentSnapshot = buildQueueReleaseHistoryCurrentSnapshot();
+    const releaseEvidenceBundle =
+        currentSnapshot.parts?.releaseEvidenceBundle ||
+        currentSnapshot.releaseEvidenceBundle ||
+        currentSnapshot;
+    const clinicProfile =
+        currentSnapshot.parts?.clinicProfile ||
+        currentSnapshot.turneroClinicProfile ||
+        currentSnapshot.clinicProfile ||
+        getTurneroClinicProfile();
+    const clinicId = String(
+        currentSnapshot.clinicId || clinicProfile?.clinic_id || ''
+    ).trim();
+    const region = String(
+        currentSnapshot.region || clinicProfile?.region || ''
+    ).trim();
+
+    return mountTurneroReleaseRepoDiagnosticPrepHub(
+        root,
+        {
+            scope: clinicId || region || 'global',
+            region,
+            clinicId,
+            currentSnapshot,
+            releaseEvidenceBundle,
+            clinicProfile,
+            turneroClinicProfile: clinicProfile,
+            domains: [
+                {
+                    key: 'governance',
+                    label: 'Governance',
+                    owner: 'program',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+                {
+                    key: 'assurance',
+                    label: 'Assurance',
+                    owner: 'program',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+                {
+                    key: 'reliability',
+                    label: 'Reliability',
+                    owner: 'infra',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+                {
+                    key: 'service',
+                    label: 'Service Excellence',
+                    owner: 'ops',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+                {
+                    key: 'privacy',
+                    label: 'Safety Privacy',
+                    owner: 'governance',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+                {
+                    key: 'integration',
+                    label: 'Integration',
+                    owner: 'infra',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+                {
+                    key: 'telemetry',
+                    label: 'Telemetry',
+                    owner: 'ops',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+                {
+                    key: 'strategy',
+                    label: 'Strategy',
+                    owner: 'program',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+                {
+                    key: 'orchestration',
+                    label: 'Orchestration',
+                    owner: 'ops',
+                    mounted: true,
+                    surface: 'admin-queue',
+                    maturity: 'active',
+                },
+            ],
+            surfaces: [
+                {
+                    id: 'admin-queue',
+                    label: 'Admin Queue',
+                    domains: [
+                        'governance',
+                        'assurance',
+                        'reliability',
+                        'service',
+                        'privacy',
+                        'integration',
+                        'telemetry',
+                        'strategy',
+                        'orchestration',
+                    ],
+                },
+                {
+                    id: 'operator-turnos',
+                    label: 'Operator Turnos',
+                    domains: ['service', 'integration', 'reliability'],
+                },
+                {
+                    id: 'kiosco-turnos',
+                    label: 'Kiosco Turnos',
+                    domains: ['service', 'integration'],
+                },
+                {
+                    id: 'sala-turnos',
+                    label: 'Sala Turnos',
+                    domains: ['service', 'integration'],
+                },
+            ],
+            signals: [
+                {
+                    id: 'sig-1',
+                    domain: 'integration',
+                    owner: 'infra',
+                    label: 'Public sync freshness drift',
+                    route: 'owner-workbench',
+                },
+                {
+                    id: 'sig-2',
+                    domain: 'integration',
+                    owner: 'infra',
+                    label: 'Public sync freshness drift',
+                    route: 'war-room',
+                },
+                {
+                    id: 'sig-3',
+                    domain: 'service',
+                    owner: 'ops',
+                    label: 'Change saturation in cohort B',
+                    route: 'owner-workbench',
+                },
+                {
+                    id: 'sig-4',
+                    domain: 'governance',
+                    owner: 'program',
+                    label: 'Board actions overdue',
+                    route: 'backlog',
+                },
+            ],
+        },
+        {
+            manifest,
+            detectedPlatform,
+        }
+    );
+}
+
 function formatHeartbeatAge(ageSec) {
     const safeAge = Number(ageSec);
     if (!Number.isFinite(safeAge) || safeAge < 0) {
@@ -4862,6 +5043,7 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
         manifest,
         detectedPlatform
     );
+    renderQueueReleaseRepoDiagnosticPrepHub(manifest, detectedPlatform);
     renderOpeningChecklist(manifest, detectedPlatform);
     renderShiftHandoff(manifest, detectedPlatform);
     setHtml(

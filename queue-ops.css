@@ -10933,6 +10933,12 @@ body[data-ops-tone='light'] .queue-apps-hub__header p {
     width: 100%;
 }
 
+.queue-ops-pilot__strategy-digital-twin-studio-host {
+    margin-top: 0.9rem;
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
 .queue-ops-pilot__board-ops-hub-host {
     margin-top: 0.9rem;
     grid-column: 1 / -1;

@@ -202,15 +202,30 @@ test('queueOpsPilot expone los hosts del control center, board ops y la consola 
         assert.match(capturedHtml, /queueReleaseMissionControlHost/);
         assert.match(capturedHtml, /queueOpsPilotRemoteReleaseHost/);
         assert.match(capturedHtml, /queueOpsPilotRolloutGovernorHost/);
+        assert.match(
+            capturedHtml,
+            /queueOpsPilotStrategyDigitalTwinStudioHost/
+        );
         assert.match(capturedHtml, /queueMultiClinicControlTowerHost/);
         assert.ok(
             capturedHtml.indexOf('queueOpsPilotRolloutGovernorHost') <
-                capturedHtml.indexOf('queueMultiClinicControlTowerHost') &&
+                capturedHtml.indexOf(
+                    'queueOpsPilotExecutivePortfolioStudioHost'
+                ) &&
+                capturedHtml.indexOf(
+                    'queueOpsPilotExecutivePortfolioStudioHost'
+                ) <
+                    capturedHtml.indexOf(
+                        'queueOpsPilotStrategyDigitalTwinStudioHost'
+                    ) &&
+                capturedHtml.indexOf(
+                    'queueOpsPilotStrategyDigitalTwinStudioHost'
+                ) < capturedHtml.indexOf('queueMultiClinicControlTowerHost') &&
                 capturedHtml.indexOf('queueMultiClinicControlTowerHost') <
                     capturedHtml.indexOf('queueReleaseBoardOpsHubHost') &&
                 capturedHtml.indexOf('queueReleaseBoardOpsHubHost') <
                     capturedHtml.indexOf('queueReleaseOpsConsoleHost'),
-            'el host board ops debe quedar entre multi-clinic y ops console'
+            'el host strategy digital twin debe quedar entre executive portfolio y multi-clinic'
         );
     } finally {
         if (previousDocument === undefined) {

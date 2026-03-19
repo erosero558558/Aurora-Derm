@@ -13988,6 +13988,40 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#queueExecutivePortfolioStudioValuePanel')
         ).toBeVisible();
+        const strategyHostId = await page
+            .locator('#queueOpsPilotExecutivePortfolioStudioHost')
+            .evaluate((element) => element.nextElementSibling?.id || '');
+        expect(strategyHostId).toBe(
+            'queueOpsPilotStrategyDigitalTwinStudioHost'
+        );
+        await expect(
+            page.locator('#queueOpsPilotStrategyDigitalTwinStudioHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueStrategyDigitalTwinStudio')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueStrategyDigitalTwinStudioTitle')
+        ).toContainText('Strategy Digital Twin Studio');
+        await expect(
+            page.locator('#queueStrategyDigitalTwinStudioCopyBriefBtn')
+        ).toContainText('Copy strategy brief');
+        await expect(
+            page.locator('#queueStrategyDigitalTwinStudioDownloadJsonBtn')
+        ).toContainText('Download strategy JSON');
+        await expect(
+            page.locator('#queueStrategyDigitalTwinStudioAddWarGameBtn')
+        ).toContainText('Add war game');
+        await expect(
+            page.locator('#queueStrategyDigitalTwinStudioSummary')
+        ).toContainText('Forecast, digital twin');
+        await expect(
+            page.locator('#queueStrategyDigitalTwinStudioBrief')
+        ).toContainText('Strategy score');
+        const multiClinicHostId = await page
+            .locator('#queueOpsPilotStrategyDigitalTwinStudioHost')
+            .evaluate((element) => element.nextElementSibling?.id || '');
+        expect(multiClinicHostId).toBe('queueMultiClinicControlTowerHost');
         await expect(
             page.locator('#queueIncidentExecutionWorkbench')
         ).toBeVisible();
@@ -15950,6 +15984,27 @@ test.describe('Admin turnero sala', () => {
             page.locator('#turneroReleaseSafetyPrivacyCockpitDownloadJsonBtn')
         ).toBeVisible();
         await expect(
+            page.locator('#queueReleaseServiceExcellenceAdoptionCloudHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseServiceExcellenceAdoptionCloud')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueReleaseRepoDiagnosticPrepHubHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseRepoDiagnosticPrepHub')
+        ).toBeVisible();
+        await expect(
+            page.locator('#turneroReleaseRepoDiagnosticPrepHub')
+        ).toContainText('Repo Diagnostic Prep Hub');
+        await expect(
+            page.locator('#turneroReleaseRepoDiagnosticPrepHub')
+        ).toContainText('Copy diagnostic brief');
+        await expect(
+            page.locator('#turneroReleaseRepoDiagnosticPrepHub')
+        ).toContainText('Download diagnostic JSON');
+        await expect(
             page.locator('#turneroReleaseGovernanceBudget')
         ).toBeVisible();
         await expect(
@@ -15976,6 +16031,14 @@ test.describe('Admin turnero sala', () => {
             'queueReleaseIntegrationCommandCenterHost',
             'queueRegionalProgramOfficeHost',
             'queueReleaseAssuranceControlPlaneHost',
+            'queueReleaseSafetyPrivacyCockpitHost',
+            'queueReleaseServiceExcellenceAdoptionCloudHost',
+            'queueReleaseRepoDiagnosticPrepHubHost',
+            'queueAppDownloadsCards',
+            'queueOpeningChecklist',
+            'queueShiftHandoff',
+            'queueOpsLog',
+            'queueInstallConfigurator',
         ];
         const deploymentOrderChecks = await page.evaluate((ids) => {
             const nodes = ids.map((id) => document.getElementById(id));
