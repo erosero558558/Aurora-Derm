@@ -2398,12 +2398,12 @@ async function runDisplayPollTick() {
         setConnectionStatus('live', 'Conectado');
         setDisplayOpsHint(`Panel estable (${formatLastHealthySyncAge()}).`);
     } else if (refreshResult.ok && refreshResult.stale) {
-        state.failureStreak += 1;
+        // Keep transport status live: stale queue timestamps mean source drift,
+        // not necessarily that the display lost its backend connection.
+        state.failureStreak = 0;
+        state.lastHealthySyncAt = 0;
         const staleAge = formatElapsedAge(refreshResult.ageMs || 0);
-        setConnectionStatus(
-            'reconnecting',
-            `Watchdog: datos estancados ${staleAge}`
-        );
+        setConnectionStatus('live', `Watchdog: datos estancados ${staleAge}`);
         setDisplayOpsHint(
             `Datos estancados ${staleAge}. Verifica fuente de cola.`
         );
@@ -2444,9 +2444,11 @@ async function runDisplayManualRefresh() {
             return;
         }
         if (refreshResult.ok && refreshResult.stale) {
+            state.failureStreak = 0;
+            state.lastHealthySyncAt = 0;
             const staleAge = formatElapsedAge(refreshResult.ageMs || 0);
             setConnectionStatus(
-                'reconnecting',
+                'live',
                 `Watchdog: datos estancados ${staleAge}`
             );
             setDisplayOpsHint(`Persisten datos estancados (${staleAge}).`);

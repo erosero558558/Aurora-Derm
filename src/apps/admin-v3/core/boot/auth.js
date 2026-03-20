@@ -11,7 +11,11 @@ import {
     useLegacyFallbackLoginSurface,
     usePrimaryLoginSurface,
 } from '../../shared/modules/auth.js';
-import { syncQueueAutoRefresh } from '../../shared/modules/queue.js';
+import {
+    applyQueueRuntimeDefaults,
+    renderQueueSection,
+    syncQueueAutoRefresh,
+} from '../../shared/modules/queue.js';
 import {
     focusLoginField,
     hideCommandPalette,
@@ -44,6 +48,13 @@ const OPENCLAW_TERMINAL_STATUSES = new Set([
 
 let openClawPollTimer = 0;
 let openClawPolling = false;
+
+function syncQueueRuntimeDefaultsAfterBoot() {
+    applyQueueRuntimeDefaults();
+    if (getState().ui.activeSection === 'queue') {
+        renderQueueSection();
+    }
+}
 
 function normalizeAuthStatus(status) {
     return String(status || 'anonymous')
@@ -394,6 +405,7 @@ async function finishAuthenticatedLogin(toastMessage = 'Sesion iniciada') {
     });
     resetLoginForm({ clearPassword: true });
     await refreshDataAndRender(false);
+    syncQueueRuntimeDefaultsAfterBoot();
     syncQueueAutoRefresh({
         immediate: getState().ui.activeSection === 'queue',
         reason: 'login',
@@ -445,14 +457,6 @@ async function handleOpenClawSubmit() {
     const auth = getState().auth;
     const openClawState = getFailClosedOpenClawState(auth);
     const openClawStatus = normalizeAuthStatus(openClawState.status);
-    const localHelperUrl = String(
-        openClawState.challenge?.helperUrl || ''
-    ).trim();
-    const localPending =
-        openClawStatus === 'pending' &&
-        String(openClawState.transport || auth.transport || '')
-            .trim()
-            .toLowerCase() === 'local_helper';
 
     if (openClawStatus === 'transport_misconfigured') {
         syncLoginSurfaceFromState();
@@ -461,39 +465,6 @@ async function handleOpenClawSubmit() {
                 'El runtime de OpenClaw no publico un transport valido.',
             'error'
         );
-        return;
-    }
-
-    if (localPending && localHelperUrl) {
-        setLoginSubmittingState(true, {
-            mode: 'openclaw_chatgpt',
-            status: openClawState.status,
-            transport: openClawState.transport || auth.transport,
-        });
-        setLoginFeedback({
-            tone: 'neutral',
-            title: 'Reabriendo helper local',
-            message:
-                'Volvemos a abrir el helper local para terminar el codigo temporal que ya estaba pendiente.',
-        });
-
-        const helperOpened = openHelperWindow(localHelperUrl);
-        if (!helperOpened) {
-            createToast(
-                'Abra el helper local desde el enlace del codigo temporal.',
-                'warning'
-            );
-        }
-
-        if (openClawState.challenge) {
-            scheduleOpenClawPoll(openClawState.challenge.pollAfterMs || 1200);
-        }
-
-        setLoginSubmittingState(false, {
-            mode: 'openclaw_chatgpt',
-            status: openClawState.status,
-            transport: openClawState.transport || auth.transport,
-        });
         return;
     }
 
@@ -542,6 +513,7 @@ async function handleOpenClawSubmit() {
         const result = await startOpenClawLogin();
         const auth = getState().auth;
         syncLoginSurfaceFromState();
+        const isPending = normalizeAuthStatus(result.status) === 'pending';
 
         if (result.authenticated || auth.authenticated) {
             await finishAuthenticatedLogin('Sesion iniciada con OpenClaw');
@@ -559,18 +531,17 @@ async function handleOpenClawSubmit() {
             return;
         }
 
-        const helperOpened = openHelperWindow(result.challenge?.helperUrl);
-        if (!helperOpened && result.challenge?.helperUrl) {
+        const helperOpened = isPending
+            ? openHelperWindow(result.challenge?.helperUrl)
+            : false;
+        if (!helperOpened && isPending && result.challenge?.helperUrl) {
             createToast(
                 'Abre el helper local desde el enlace del challenge.',
                 'warning'
             );
         }
 
-        if (
-            normalizeAuthStatus(result.status) === 'pending' &&
-            result.challenge
-        ) {
+        if (isPending && result.challenge) {
             scheduleOpenClawPoll(result.challenge.pollAfterMs || 1200);
             createToast('Codigo temporal emitido', 'info');
         }
@@ -743,6 +714,7 @@ export async function bootAuthenticatedUi() {
     showDashboardView();
     hideCommandPalette();
     await refreshDataAndRender(false);
+    syncQueueRuntimeDefaultsAfterBoot();
 }
 
 export function resumeOpenClawPolling() {

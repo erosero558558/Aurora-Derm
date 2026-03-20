@@ -323,14 +323,19 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
         payload?.fallbacks,
         currentAuth.fallbacks
     );
+    const payloadHasChallenge = Object.prototype.hasOwnProperty.call(
+        payload || {},
+        'challenge'
+    );
     const nextChallenge = normalizeChallenge(payload?.challenge);
     const challenge =
         transport !== 'local_helper'
             ? null
-            : nextChallenge ||
-              (authenticated || mode !== 'openclaw_chatgpt'
-                  ? null
-                  : currentAuth.challenge);
+            : authenticated || mode !== 'openclaw_chatgpt'
+              ? null
+              : payloadHasChallenge
+                ? nextChallenge
+                : nextChallenge || currentAuth.challenge;
     const redirectUrl =
         authenticated || mode !== 'openclaw_chatgpt'
             ? ''

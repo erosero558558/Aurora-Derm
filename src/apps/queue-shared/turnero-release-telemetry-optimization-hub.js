@@ -662,7 +662,7 @@ function renderOptimizationHubMarkup(pack) {
     return `
         <section
             id="turneroReleaseTelemetryOptimizationHub"
-            class="queue-app-card queue-premium-band turnero-release-telemetry-optimization-hub"
+            class="queue-app-card queue-telemetry-band turnero-release-telemetry-optimization-hub"
             data-state="${escapeHtml(pack.score.decision)}"
             data-band="${escapeHtml(pack.score.band)}"
             data-scope="${escapeHtml(pack.scope)}"
