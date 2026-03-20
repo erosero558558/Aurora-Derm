@@ -15178,20 +15178,17 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#turneroReleaseUnifiedOrchestrationFabric')
         ).toContainText('Unified Orchestration Fabric');
-        const honestWorkspace = page.locator(
-            '#turneroReleaseHonestRepoDiagnosisWorkspace'
+        const honestWorkspaceHost = page.locator(
+            '#queueReleaseHonestRepoDiagnosisWorkspaceHost'
         );
-        await expect(
-            page.locator('#queueReleaseHonestRepoDiagnosisWorkspaceHost')
-        ).toBeVisible();
-        await expect(honestWorkspace).toBeVisible();
-        await expect(honestWorkspace).toContainText(
+        await expect(honestWorkspaceHost).toBeVisible();
+        await expect(honestWorkspaceHost).toContainText(
             'Honest Repo Diagnosis Workspace'
         );
-        await expect(honestWorkspace).toContainText('Copy honest brief');
-        await expect(honestWorkspace).toContainText('Download honest JSON');
+        await expect(honestWorkspaceHost).toContainText('Copy honest brief');
+        await expect(honestWorkspaceHost).toContainText('Download honest JSON');
         await expect(
-            honestWorkspace.locator('[data-role="honest-brief"]')
+            honestWorkspaceHost.locator('[data-role="honest-brief"]')
         ).toBeVisible();
         await expect(
             page.locator('#queueReleaseRepoTruthAuditStudioHost')
@@ -16144,7 +16141,7 @@ test.describe('Admin turnero sala', () => {
         );
         expect(installConfiguratorIndex).toBeGreaterThanOrEqual(0);
         expect(finalLaunchIndex).toBeGreaterThan(installConfiguratorIndex);
-        expect(honestWorkspaceIndex).toBeGreaterThan(finalLaunchIndex);
+        expect(finalLaunchIndex).toBeGreaterThan(honestWorkspaceIndex);
         expect(mainlineClosureIndex).toBeGreaterThan(installConfiguratorIndex);
         expect(repoDiagnosisIndex).toBeGreaterThan(mainlineClosureIndex);
         expect(finalExecutionIndex).toBeGreaterThan(honestWorkspaceIndex);
