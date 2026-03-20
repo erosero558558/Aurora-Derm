@@ -15178,6 +15178,21 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#turneroReleaseUnifiedOrchestrationFabric')
         ).toContainText('Unified Orchestration Fabric');
+        const runwayHost = page.locator(
+            '#queueReleaseTerminalDiagnosticRunwayHost'
+        );
+        await expect(runwayHost).toBeVisible();
+        await expect(runwayHost).toContainText('Terminal Diagnostic Runway');
+        await expect(runwayHost).toContainText('Copy runway brief');
+        await expect(runwayHost).toContainText('Download runway JSON');
+        await expect(
+            page.locator('#turneroReleaseTerminalDiagnosticRunway')
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '#turneroReleaseTerminalDiagnosticRunway [data-role="runway-brief"]'
+            )
+        ).toBeVisible();
         const honestWorkspaceHost = page.locator(
             '#queueReleaseHonestRepoDiagnosisWorkspaceHost'
         );
@@ -16127,6 +16142,9 @@ test.describe('Admin turnero sala', () => {
         const finalLaunchIndex = deploymentOrder.indexOf(
             'queueFinalDiagnosticLaunchConsoleHost'
         );
+        const runwayIndex = deploymentOrder.indexOf(
+            'queueReleaseTerminalDiagnosticRunwayHost'
+        );
         const mainlineClosureIndex = deploymentOrder.indexOf(
             'queueReleaseMainlineClosureCockpitHost'
         );
@@ -16138,9 +16156,11 @@ test.describe('Admin turnero sala', () => {
         );
         expect(installConfiguratorIndex).toBeGreaterThanOrEqual(0);
         expect(finalLaunchIndex).toBeGreaterThan(installConfiguratorIndex);
-        expect(finalLaunchIndex).toBeGreaterThan(honestWorkspaceIndex);
+        expect(finalLaunchIndex).toBeGreaterThan(repoDiagnosisIndex);
+        expect(runwayIndex).toBeGreaterThan(repoDiagnosisIndex);
+        expect(honestWorkspaceIndex).toBeGreaterThan(runwayIndex);
         expect(mainlineClosureIndex).toBeGreaterThan(installConfiguratorIndex);
         expect(repoDiagnosisIndex).toBeGreaterThan(mainlineClosureIndex);
-        expect(finalExecutionIndex).toBeGreaterThan(honestWorkspaceIndex);
+        expect(finalExecutionIndex).toBeGreaterThan(repoDiagnosisIndex);
     });
 });

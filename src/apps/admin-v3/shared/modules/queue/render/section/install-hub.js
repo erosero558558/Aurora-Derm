@@ -44,6 +44,7 @@ import { renderQueueMainlineAuditBridge as renderQueueMainlineAuditBridgeModule 
 import { renderQueueFinalDiagnosisAdjudicationBinder as renderQueueFinalDiagnosisAdjudicationBinderModule } from './install-hub/final-diagnosis-adjudication-binder.js';
 import { renderQueueHonestRepoDiagnosisWorkspace as renderQueueHonestRepoDiagnosisWorkspaceModule } from './install-hub/honest-repo-diagnosis-workspace.js';
 import { renderQueueRepoDiagnosisVerdictDossier as renderQueueRepoDiagnosisVerdictDossierModule } from './install-hub/repo-diagnosis-verdict-dossier.js';
+import { renderQueueTerminalDiagnosticRunway as renderQueueTerminalDiagnosticRunwayModule } from './install-hub/terminal-diagnostic-runway.js';
 import {
     buildQueueQuickConsole as buildQueueQuickConsoleModule,
     renderQueueQuickConsole as renderQueueQuickConsoleModule,
@@ -153,6 +154,7 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueOpsLog',
     'queueInstallConfigurator',
     'queueFinalDiagnosticLaunchConsoleHost',
+    'queueReleaseTerminalDiagnosticRunwayHost',
     'queueReleaseHonestRepoDiagnosisWorkspaceHost',
     'queueFinalDiagnosticExecutionConsoleHost',
     'queueFinalRepoDiagnosticHandoffPackHost',
@@ -5063,6 +5065,13 @@ function renderQueueRepoDiagnosisVerdictDossier(manifest, detectedPlatform) {
     );
 }
 
+function renderQueueTerminalDiagnosticRunway(manifest, detectedPlatform) {
+    return renderQueueTerminalDiagnosticRunwayModule(
+        manifest,
+        detectedPlatform
+    );
+}
+
 function renderQueueHonestRepoDiagnosisWorkspace(manifest, detectedPlatform) {
     return renderQueueHonestRepoDiagnosisWorkspaceModule(
         manifest,
@@ -5303,6 +5312,7 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderQueueRepoDiagnosisVerdictDossier(manifest, detectedPlatform);
     renderQueueFinalDiagnosisAdjudicationBinder(manifest, detectedPlatform);
     renderQueueFinalDiagnosticLaunchConsole(manifest, detectedPlatform);
+    renderQueueTerminalDiagnosticRunway(manifest, detectedPlatform);
     renderQueueHonestRepoDiagnosisWorkspace(manifest, detectedPlatform);
     renderQueueFinalDiagnosticExecutionConsole(manifest, detectedPlatform);
     renderQueueFinalRepoDiagnosticHandoffPack(manifest, detectedPlatform);

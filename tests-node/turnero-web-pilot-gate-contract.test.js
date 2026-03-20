@@ -94,6 +94,7 @@ test('gate:turnero:web-pilot limita los contratos al frente web por clinica', ()
         'turnero-release-final-repo-diagnostic-handoff-pack.test.js',
         'turnero-release-diagnostic-launch-console.test.js',
         'turnero-release-repo-diagnosis-verdict-dossier.test.js',
+        'turnero-release-terminal-diagnostic-runway.test.js',
     ]) {
         assert.equal(
             command.includes(snippet),
