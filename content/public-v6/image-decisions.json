@@ -1,560 +1,560 @@
 {
-  "version": "2026.03-v1-brand-surface-decisions",
-  "updated_at": "2026-03-12",
-  "revision": 1,
-  "decisions": [
-    {
-      "slotId": "home.hero.slides.s1",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.hero.slides.s2",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.hero.slides.s3",
-      "assetId": "v6-clinic-telemedicine-intake",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.hero.slides.s4",
-      "assetId": "v6-clinic-home-followup",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.hero.slides.s5",
-      "assetId": "v6-clinic-team-roundtable",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.editorial.cards.c1",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.editorial.cards.c2",
-      "assetId": "v6-clinic-acne-rosacea",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.editorial.cards.c3",
-      "assetId": "v6-clinic-laser-dermatologico",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.editorial.cards.c4",
-      "assetId": "v6-clinic-telemedicine-review",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.editorial.cards.c5",
-      "assetId": "v6-clinic-dermatologia-pediatrica",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.editorial.cards.c6",
-      "assetId": "v6-clinic-home-followup",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m1",
-      "assetId": "v6-clinic-diagnostico-integral",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m2",
-      "assetId": "v6-clinic-acne-rosacea",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m3",
-      "assetId": "v6-clinic-laser-dermatologico",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m4",
-      "assetId": "v6-clinic-cancer-piel",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m5",
-      "assetId": "v6-clinic-telemedicine-intake",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m6",
-      "assetId": "v6-clinic-bioestimuladores-colageno",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.hero",
-      "assetId": "v6-clinic-hub-editorial-map",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.featured.0",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.featured.1",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.featured.2",
-      "assetId": "v6-clinic-telemedicine-intake",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.clinical-core.cards.diagnostico-integral",
-      "assetId": "v6-clinic-diagnostico-integral",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.clinical-core.cards.acne-rosacea",
-      "assetId": "v6-clinic-acne-rosacea",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.clinical-core.cards.cancer-piel",
-      "assetId": "v6-clinic-cancer-piel",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.procedures.cards.laser-dermatologico",
-      "assetId": "v6-clinic-laser-dermatologico",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.procedures.cards.peeling-quimico",
-      "assetId": "v6-clinic-peeling-quimico",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.procedures.cards.bioestimuladores-colageno",
-      "assetId": "v6-clinic-bioestimuladores-colageno",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.extended.cards.dermatologia-pediatrica",
-      "assetId": "v6-clinic-statement-family-support",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.extended.cards.piel-cabello-unas",
-      "assetId": "v6-clinic-home-followup",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.sections.extended.cards.telemedicine",
-      "assetId": "v6-clinic-telemedicine-review",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.initiatives.0",
-      "assetId": "v6-clinic-home-followup",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.initiatives.1",
-      "assetId": "v6-clinic-acne-rosacea",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.initiatives.2",
-      "assetId": "v6-clinic-statement-family-support",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.initiatives.3",
-      "assetId": "v6-clinic-cancer-piel",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.initiatives.4",
-      "assetId": "v6-clinic-clinic-environment",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.initiatives.5",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.initiatives.6",
-      "assetId": "v6-clinic-legal-governance",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "hub.initiatives.7",
-      "assetId": "v6-clinic-hub-editorial-map",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "telemedicine.hero",
-      "assetId": "v6-clinic-telemedicine-intake",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "telemedicine.statement",
-      "assetId": "v6-clinic-telemedicine-review",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "telemedicine.initiatives.0",
-      "assetId": "v6-clinic-telemedicine-review",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "telemedicine.initiatives.1",
-      "assetId": "v6-clinic-home-followup",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "telemedicine.initiatives.2",
-      "assetId": "v6-clinic-clinic-environment",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "telemedicine.initiatives.3",
-      "assetId": "v6-clinic-legal-governance",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.statement",
-      "assetId": "v6-clinic-legal-governance",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.pages.terminos.hero",
-      "assetId": "v6-clinic-legal-governance",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.pages.privacidad.hero",
-      "assetId": "v6-clinic-clinic-environment",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.pages.cookies.hero",
-      "assetId": "v6-clinic-telemedicine-review",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.pages.aviso-medico.hero",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.indexCards.terminos",
-      "assetId": "v6-clinic-legal-governance",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.indexCards.privacidad",
-      "assetId": "v6-clinic-clinic-environment",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.indexCards.cookies",
-      "assetId": "v6-clinic-telemedicine-review",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "legal.indexCards.aviso-medico",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration",
-      "revision": 1
-    },
-    {
-      "slotId": "service.diagnostico-integral.hero",
-      "assetId": "v6-clinic-diagnostico-integral",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.diagnostico-integral.statement",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.acne-rosacea.hero",
-      "assetId": "v6-clinic-acne-rosacea",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.acne-rosacea.statement",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.verrugas.hero",
-      "assetId": "v6-clinic-verrugas",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.verrugas.statement",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.granitos-brazos-piernas.hero",
-      "assetId": "v6-clinic-granitos-brazos-piernas",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.granitos-brazos-piernas.statement",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.cicatrices.hero",
-      "assetId": "v6-clinic-cicatrices",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.cicatrices.statement",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.cancer-piel.hero",
-      "assetId": "v6-clinic-cancer-piel",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.cancer-piel.statement",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.peeling-quimico.hero",
-      "assetId": "v6-clinic-peeling-quimico",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.peeling-quimico.statement",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.mesoterapia.hero",
-      "assetId": "v6-clinic-mesoterapia",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.mesoterapia.statement",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.laser-dermatologico.hero",
-      "assetId": "v6-clinic-laser-dermatologico",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.laser-dermatologico.statement",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.botox.hero",
-      "assetId": "v6-clinic-botox",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.botox.statement",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.bioestimuladores-colageno.hero",
-      "assetId": "v6-clinic-bioestimuladores-colageno",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.bioestimuladores-colageno.statement",
-      "assetId": "v6-clinic-statement-procedure-guidance",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.piel-cabello-unas.hero",
-      "assetId": "v6-clinic-piel-cabello-unas",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.piel-cabello-unas.statement",
-      "assetId": "v6-clinic-statement-clinical-direction",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.dermatologia-pediatrica.hero",
-      "assetId": "v6-clinic-dermatologia-pediatrica",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    },
-    {
-      "slotId": "service.dermatologia-pediatrica.statement",
-      "assetId": "v6-clinic-statement-family-support",
-      "revision": 1,
-      "approvedAt": "2026-03-12T00:00:00.000Z",
-      "approvedBy": "seed_migration"
-    }
-  ]
+    "version": "2026.03-v1-brand-surface-decisions",
+    "updated_at": "2026-03-13",
+    "revision": 2,
+    "decisions": [
+        {
+            "slotId": "home.hero.slides.s1",
+            "assetId": "v6-clinic-statement-clinical-direction",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.hero.slides.s2",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.hero.slides.s3",
+            "assetId": "v6-clinic-telemedicine-intake",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.hero.slides.s4",
+            "assetId": "v6-clinic-home-followup",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.hero.slides.s5",
+            "assetId": "v6-clinic-team-roundtable",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.editorial.cards.c1",
+            "assetId": "v6-clinic-home-diagnostic-brief",
+            "approvedAt": "2026-03-13T00:00:00.000Z",
+            "approvedBy": "codex_home_hub_refresh",
+            "revision": 2
+        },
+        {
+            "slotId": "home.editorial.cards.c2",
+            "assetId": "v6-clinic-acne-rosacea",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.editorial.cards.c3",
+            "assetId": "v6-clinic-laser-dermatologico",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.editorial.cards.c4",
+            "assetId": "v6-clinic-telemedicine-review",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.editorial.cards.c5",
+            "assetId": "v6-clinic-dermatologia-pediatrica",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.editorial.cards.c6",
+            "assetId": "v6-clinic-home-followup-review",
+            "approvedAt": "2026-03-13T00:00:00.000Z",
+            "approvedBy": "codex_home_hub_refresh",
+            "revision": 2
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m1",
+            "assetId": "v6-clinic-diagnostico-integral",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m2",
+            "assetId": "v6-clinic-acne-rosacea",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m3",
+            "assetId": "v6-clinic-laser-dermatologico",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m4",
+            "assetId": "v6-clinic-cancer-piel",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m5",
+            "assetId": "v6-clinic-home-remote-handoff",
+            "approvedAt": "2026-03-13T00:00:00.000Z",
+            "approvedBy": "codex_home_hub_refresh",
+            "revision": 2
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m6",
+            "assetId": "v6-clinic-bioestimuladores-colageno",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.hero",
+            "assetId": "v6-clinic-hub-editorial-map",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.featured.0",
+            "assetId": "v6-clinic-hub-clinical-ladder",
+            "approvedAt": "2026-03-13T00:00:00.000Z",
+            "approvedBy": "codex_home_hub_refresh",
+            "revision": 2
+        },
+        {
+            "slotId": "hub.featured.1",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.featured.2",
+            "assetId": "v6-clinic-hub-remote-entry",
+            "approvedAt": "2026-03-13T00:00:00.000Z",
+            "approvedBy": "codex_home_hub_refresh",
+            "revision": 2
+        },
+        {
+            "slotId": "hub.sections.clinical-core.cards.diagnostico-integral",
+            "assetId": "v6-clinic-diagnostico-integral",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.sections.clinical-core.cards.acne-rosacea",
+            "assetId": "v6-clinic-acne-rosacea",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.sections.clinical-core.cards.cancer-piel",
+            "assetId": "v6-clinic-cancer-piel",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.sections.procedures.cards.laser-dermatologico",
+            "assetId": "v6-clinic-laser-dermatologico",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.sections.procedures.cards.peeling-quimico",
+            "assetId": "v6-clinic-peeling-quimico",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.sections.procedures.cards.bioestimuladores-colageno",
+            "assetId": "v6-clinic-bioestimuladores-colageno",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.sections.extended.cards.dermatologia-pediatrica",
+            "assetId": "v6-clinic-statement-family-support",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.sections.extended.cards.piel-cabello-unas",
+            "assetId": "v6-clinic-home-followup",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.sections.extended.cards.telemedicine",
+            "assetId": "v6-clinic-telemedicine-review",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.initiatives.0",
+            "assetId": "v6-clinic-home-followup-review",
+            "approvedAt": "2026-03-13T00:00:00.000Z",
+            "approvedBy": "codex_home_hub_refresh",
+            "revision": 2
+        },
+        {
+            "slotId": "hub.initiatives.1",
+            "assetId": "v6-clinic-acne-rosacea",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.initiatives.2",
+            "assetId": "v6-clinic-statement-family-support",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.initiatives.3",
+            "assetId": "v6-clinic-cancer-piel",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.initiatives.4",
+            "assetId": "v6-clinic-clinic-environment",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.initiatives.5",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.initiatives.6",
+            "assetId": "v6-clinic-legal-governance",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "hub.initiatives.7",
+            "assetId": "v6-clinic-hub-care-handoff",
+            "approvedAt": "2026-03-13T00:00:00.000Z",
+            "approvedBy": "codex_home_hub_refresh",
+            "revision": 2
+        },
+        {
+            "slotId": "telemedicine.hero",
+            "assetId": "v6-clinic-telemedicine-intake",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "telemedicine.statement",
+            "assetId": "v6-clinic-telemedicine-review",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "telemedicine.initiatives.0",
+            "assetId": "v6-clinic-telemedicine-review",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "telemedicine.initiatives.1",
+            "assetId": "v6-clinic-home-followup",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "telemedicine.initiatives.2",
+            "assetId": "v6-clinic-clinic-environment",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "telemedicine.initiatives.3",
+            "assetId": "v6-clinic-legal-governance",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.statement",
+            "assetId": "v6-clinic-legal-governance",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.pages.terminos.hero",
+            "assetId": "v6-clinic-legal-governance",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.pages.privacidad.hero",
+            "assetId": "v6-clinic-clinic-environment",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.pages.cookies.hero",
+            "assetId": "v6-clinic-telemedicine-review",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.pages.aviso-medico.hero",
+            "assetId": "v6-clinic-statement-clinical-direction",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.indexCards.terminos",
+            "assetId": "v6-clinic-legal-governance",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.indexCards.privacidad",
+            "assetId": "v6-clinic-clinic-environment",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.indexCards.cookies",
+            "assetId": "v6-clinic-telemedicine-review",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "legal.indexCards.aviso-medico",
+            "assetId": "v6-clinic-statement-clinical-direction",
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration",
+            "revision": 1
+        },
+        {
+            "slotId": "service.diagnostico-integral.hero",
+            "assetId": "v6-clinic-diagnostico-integral",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.diagnostico-integral.statement",
+            "assetId": "v6-clinic-statement-clinical-direction",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.acne-rosacea.hero",
+            "assetId": "v6-clinic-acne-rosacea",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.acne-rosacea.statement",
+            "assetId": "v6-clinic-statement-clinical-direction",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.verrugas.hero",
+            "assetId": "v6-clinic-verrugas",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.verrugas.statement",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.granitos-brazos-piernas.hero",
+            "assetId": "v6-clinic-granitos-brazos-piernas",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.granitos-brazos-piernas.statement",
+            "assetId": "v6-clinic-statement-clinical-direction",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.cicatrices.hero",
+            "assetId": "v6-clinic-cicatrices",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.cicatrices.statement",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.cancer-piel.hero",
+            "assetId": "v6-clinic-cancer-piel",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.cancer-piel.statement",
+            "assetId": "v6-clinic-statement-clinical-direction",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.peeling-quimico.hero",
+            "assetId": "v6-clinic-peeling-quimico",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.peeling-quimico.statement",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.mesoterapia.hero",
+            "assetId": "v6-clinic-mesoterapia",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.mesoterapia.statement",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.laser-dermatologico.hero",
+            "assetId": "v6-clinic-laser-dermatologico",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.laser-dermatologico.statement",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.botox.hero",
+            "assetId": "v6-clinic-botox",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.botox.statement",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.bioestimuladores-colageno.hero",
+            "assetId": "v6-clinic-bioestimuladores-colageno",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.bioestimuladores-colageno.statement",
+            "assetId": "v6-clinic-statement-procedure-guidance",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.piel-cabello-unas.hero",
+            "assetId": "v6-clinic-piel-cabello-unas",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.piel-cabello-unas.statement",
+            "assetId": "v6-clinic-statement-clinical-direction",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.dermatologia-pediatrica.hero",
+            "assetId": "v6-clinic-dermatologia-pediatrica",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        },
+        {
+            "slotId": "service.dermatologia-pediatrica.statement",
+            "assetId": "v6-clinic-statement-family-support",
+            "revision": 1,
+            "approvedAt": "2026-03-12T00:00:00.000Z",
+            "approvedBy": "seed_migration"
+        }
+    ]
 }

@@ -52,7 +52,8 @@ const a = (
     identityPolicy,
     backdrop,
     background,
-    frames
+    frames,
+    options = {}
 ) => ({
     id,
     kind,
@@ -61,6 +62,7 @@ const a = (
     backdrop,
     background,
     frames,
+    ...options,
 });
 
 const ASSET_DEFS = [
@@ -91,6 +93,59 @@ const ASSET_DEFS = [
         ]
     ),
     a(
+        'v6-clinic-home-diagnostic-brief',
+        'card',
+        'real_photo',
+        'generic',
+        ['#eef4fa', '#dde8f2', '#c4d5e7'],
+        ['consultation', 'xMidYMid slice', 0.17],
+        [
+            ['consultation', 0.05, 0.08, 0.56, 0.8, 32],
+            ['diagnostic', 0.67, 0.18, 0.23, 0.5, 24],
+        ],
+        {
+            altEs: 'Consulta dermatologica inicial con mapa claro de hallazgos y prioridades',
+            altEn: 'Initial dermatology visit with a clear map of findings and priorities',
+            editorialTags: ['clinical_direction', 'diagnosis', 'consultation'],
+        }
+    ),
+    a(
+        'v6-clinic-home-followup-review',
+        'card',
+        'real_photo',
+        'generic',
+        ['#eef4fa', '#dde8f2', '#c7d7e8'],
+        ['diagnostic', 'xMidYMid slice', 0.18],
+        [
+            ['diagnostic', 0.05, 0.08, 0.56, 0.8, 32],
+            ['consultation', 0.66, 0.16, 0.24, 0.34, 22],
+            ['clinic', 0.66, 0.56, 0.24, 0.16, 20],
+        ],
+        {
+            altEs: 'Seguimiento dermatologico con revision comparativa y ajustes medicos',
+            altEn: 'Dermatology follow-up with comparative review and medical adjustments',
+            editorialTags: ['follow_up', 'comparison', 'care_review'],
+        }
+    ),
+    a(
+        'v6-clinic-home-remote-handoff',
+        'card',
+        'real_photo',
+        'generic',
+        ['#eef4fa', '#dce7f1', '#c3d4e6'],
+        ['telemedicine', 'xMidYMid slice', 0.17],
+        [
+            ['telemedicine', 0.05, 0.08, 0.56, 0.8, 32],
+            ['clinic', 0.67, 0.18, 0.23, 0.3, 22],
+            ['consultation', 0.67, 0.56, 0.23, 0.14, 18],
+        ],
+        {
+            altEs: 'Teledermatologia con criterio para pasar a consulta presencial',
+            altEn: 'Teledermatology with clear criteria for moving into clinic',
+            editorialTags: ['telemedicine', 'handoff', 'clinical_transition'],
+        }
+    ),
+    a(
         'v6-clinic-team-roundtable',
         'card',
         'real_photo',
@@ -114,6 +169,60 @@ const ASSET_DEFS = [
             ['clinic', 0.36, 0.08, 0.28, 0.8, 32],
             ['telemedicine', 0.68, 0.18, 0.28, 0.62, 28],
         ]
+    ),
+    a(
+        'v6-clinic-hub-clinical-ladder',
+        'card',
+        'real_photo',
+        'generic',
+        ['#eef4fa', '#dde7f1', '#c5d5e6'],
+        ['clinic', 'xMidYMid slice', 0.16],
+        [
+            ['diagnostic', 0.05, 0.08, 0.56, 0.8, 32],
+            ['consultation', 0.67, 0.18, 0.23, 0.18, 20],
+            ['treatment', 0.67, 0.44, 0.23, 0.24, 22],
+        ],
+        {
+            altEs: 'Ruta dermatologica para evaluar, confirmar y decidir el siguiente paso',
+            altEn: 'Dermatology route to assess, confirm, and decide the next step',
+            editorialTags: ['clinical_direction', 'decisioning', 'care_route'],
+        }
+    ),
+    a(
+        'v6-clinic-hub-remote-entry',
+        'card',
+        'real_photo',
+        'generic',
+        ['#eef4fa', '#dde8f2', '#c5d6e7'],
+        ['telemedicine', 'xMidYMid slice', 0.17],
+        [
+            ['telemedicine', 0.05, 0.08, 0.9, 0.56, 32],
+            ['diagnostic', 0.06, 0.68, 0.28, 0.18, 20],
+            ['clinic', 0.38, 0.68, 0.24, 0.18, 20],
+        ],
+        {
+            altEs: 'Entrada remota dermatologica con triage y lectura inicial',
+            altEn: 'Remote dermatology entry with triage and initial review',
+            editorialTags: ['telemedicine', 'intake', 'remote_entry'],
+        }
+    ),
+    a(
+        'v6-clinic-hub-care-handoff',
+        'card',
+        'real_photo',
+        'generic',
+        ['#eef4fa', '#dde7f1', '#c6d5e6'],
+        ['clinic', 'xMidYMid slice', 0.16],
+        [
+            ['consultation', 0.05, 0.08, 0.9, 0.56, 32],
+            ['telemedicine', 0.06, 0.68, 0.28, 0.18, 20],
+            ['diagnostic', 0.38, 0.68, 0.24, 0.18, 20],
+        ],
+        {
+            altEs: 'Transicion coordinada entre teledermatologia, consulta y seguimiento',
+            altEn: 'Coordinated transition across teledermatology, clinic review, and follow-up',
+            editorialTags: ['telemedicine', 'handoff', 'continuity'],
+        }
     ),
     a(
         'v6-clinic-clinic-environment',
@@ -386,8 +495,19 @@ const altMap = new Map(
     )
 );
 const ASSETS = ASSET_DEFS.map((asset) => {
-    const copy = altMap.get(asset.id);
-    if (!copy) throw new Error(`Missing alt copy for ${asset.id}`);
+    const inlineCopy =
+        typeof asset.altEs === 'string' &&
+        asset.altEs.trim() &&
+        typeof asset.altEn === 'string' &&
+        asset.altEn.trim()
+            ? {
+                  altEs: asset.altEs.trim(),
+                  altEn: asset.altEn.trim(),
+              }
+            : null;
+    const copy = altMap.get(asset.id) || inlineCopy;
+    if (!copy?.altEs || !copy?.altEn)
+        throw new Error(`Missing alt copy for ${asset.id}`);
     return { ...asset, altEs: copy.altEs, altEn: copy.altEn };
 });
 
@@ -599,6 +719,22 @@ function readExistingManifest() {
 
 function defaultManifestMetadata(asset) {
     const editorialTag = asset.id.replace(/^v6-clinic-/, '');
+    const defaultAllowedSlotRoles =
+        asset.kind === 'portrait'
+            ? ['profile_portrait']
+            : asset.kind === 'wide'
+              ? ['page_hero', 'seo_hero', 'initiative_card']
+              : [
+                    'hero_slide',
+                    'editorial_card',
+                    'matrix_card',
+                    'featured_card',
+                    'hub_card',
+                    'initiative_card',
+                    'statement_band',
+                    'index_card',
+                    'page_hero',
+                ];
     return {
         status: 'approved',
         sourceType:
@@ -609,24 +745,16 @@ function defaultManifestMetadata(asset) {
                   : 'real_photo',
         publicWebSafe: true,
         orientation: asset.kind === 'portrait' ? 'portrait' : 'landscape',
-        editorialTags: [editorialTag, asset.kind].filter(Boolean),
+        editorialTags:
+            Array.isArray(asset.editorialTags) && asset.editorialTags.length
+                ? asset.editorialTags
+                : [editorialTag, asset.kind].filter(Boolean),
         allowedSlotRoles:
-            asset.kind === 'portrait'
-                ? ['profile_portrait']
-                : asset.kind === 'wide'
-                  ? ['page_hero', 'seo_hero', 'initiative_card']
-                  : [
-                        'hero_slide',
-                        'editorial_card',
-                        'matrix_card',
-                        'featured_card',
-                        'hub_card',
-                        'initiative_card',
-                        'statement_band',
-                        'index_card',
-                        'page_hero',
-                    ],
-        tone: 'ink',
+            Array.isArray(asset.allowedSlotRoles) &&
+            asset.allowedSlotRoles.length
+                ? asset.allowedSlotRoles
+                : defaultAllowedSlotRoles,
+        tone: asset.tone || 'ink',
         localeAlt: {
             es: asset.altEs,
             en: asset.altEn,
@@ -648,7 +776,7 @@ function buildManifest() {
         )
     );
     return {
-        version: '2026.03-v6-photoreal-rebuild',
+        version: '2026.03-v6-photoreal-home-hub-r2',
         updated_at: new Date().toISOString().slice(0, 10),
         assets: ASSETS.map((asset) => {
             const existing = existingAssets.get(asset.id) || {};
@@ -674,7 +802,7 @@ function buildManifest() {
                 alt_es: asset.altEs,
                 alt_en: asset.altEn,
                 status: existing.status || defaults.status,
-                sourceType: existing.sourceType || defaults.sourceType,
+                sourceType: defaults.sourceType,
                 publicWebSafe:
                     typeof existing.publicWebSafe === 'boolean'
                         ? existing.publicWebSafe
@@ -698,10 +826,8 @@ function buildManifest() {
                     en: existingLocaleAlt.en || asset.altEn,
                 },
                 generation: {
-                    ...defaults.generation,
                     ...existingGeneration,
-                    source:
-                        existingGeneration.source || defaults.generation.source,
+                    ...defaults.generation,
                 },
             };
         }),

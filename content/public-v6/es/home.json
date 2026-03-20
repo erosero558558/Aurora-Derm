@@ -48,9 +48,9 @@
                 "category": "Seguimiento",
                 "title": "El seguimiento evita arrancar de cero en cada control.",
                 "description": "Comparamos cambios, afinamos indicaciones y dejamos claro que sigue para que usted no salga de consulta con dudas sueltas.",
-                "image": "/images/optimized/v6-clinic-home-followup.webp",
-                "srcset": "/images/optimized/v6-clinic-home-followup-400.webp 400w, /images/optimized/v6-clinic-home-followup-640.webp 640w, /images/optimized/v6-clinic-home-followup-800.webp 800w, /images/optimized/v6-clinic-home-followup-900.webp 900w, /images/optimized/v6-clinic-home-followup-1200.webp 1200w, /images/optimized/v6-clinic-home-followup.webp 1400w",
-                "alt": "Seguimiento dermatologico con comparacion de avance y ajustes",
+                "image": "/images/optimized/v6-clinic-home-followup-review.webp",
+                "srcset": "/images/optimized/v6-clinic-home-followup-review-400.webp 400w, /images/optimized/v6-clinic-home-followup-review-640.webp 640w, /images/optimized/v6-clinic-home-followup-review-800.webp 800w, /images/optimized/v6-clinic-home-followup-review-900.webp 900w, /images/optimized/v6-clinic-home-followup-review-1200.webp 1200w, /images/optimized/v6-clinic-home-followup-review.webp 1400w",
+                "alt": "Seguimiento dermatologico con revision comparativa y ajustes medicos",
                 "href": "/es/servicios/piel-cabello-unas/"
             },
             {
@@ -89,9 +89,9 @@
                 "title": "Empiece con una lectura completa",
                 "copy": "Cuando se mezclan sintomas o todo empezo hace poco, esta consulta ordena prioridades, riesgo y siguiente paso sin hacerle adivinar.",
                 "href": "/es/servicios/diagnostico-integral/",
-                "image": "/images/optimized/v6-clinic-statement-clinical-direction.webp",
-                "alt": "Direccion clinica dermatologica con lectura estructurada",
-                "srcset": "/images/optimized/v6-clinic-statement-clinical-direction-400.webp 400w, /images/optimized/v6-clinic-statement-clinical-direction-640.webp 640w, /images/optimized/v6-clinic-statement-clinical-direction-800.webp 800w, /images/optimized/v6-clinic-statement-clinical-direction-900.webp 900w, /images/optimized/v6-clinic-statement-clinical-direction-1200.webp 1200w, /images/optimized/v6-clinic-statement-clinical-direction.webp 1400w"
+                "image": "/images/optimized/v6-clinic-home-diagnostic-brief.webp",
+                "alt": "Consulta dermatologica inicial con mapa claro de hallazgos y prioridades",
+                "srcset": "/images/optimized/v6-clinic-home-diagnostic-brief-400.webp 400w, /images/optimized/v6-clinic-home-diagnostic-brief-640.webp 640w, /images/optimized/v6-clinic-home-diagnostic-brief-800.webp 800w, /images/optimized/v6-clinic-home-diagnostic-brief-900.webp 900w, /images/optimized/v6-clinic-home-diagnostic-brief-1200.webp 1200w, /images/optimized/v6-clinic-home-diagnostic-brief.webp 1400w"
             },
             {
                 "id": "c2",
@@ -195,13 +195,13 @@
             },
             {
                 "id": "m5",
-                "category": "Tecnologia",
-                "title": "Laser dermatologico",
-                "copy": "El laser se elige por fototipo, objetivo y respuesta de su piel, con ajustes en cada sesion.",
-                "href": "/es/servicios/laser-dermatologico/",
-                "image": "/images/optimized/v6-clinic-laser-dermatologico.webp",
-                "alt": "Plataforma laser dermatologica con parametros controlados",
-                "srcset": "/images/optimized/v6-clinic-laser-dermatologico-400.webp 400w, /images/optimized/v6-clinic-laser-dermatologico-640.webp 640w, /images/optimized/v6-clinic-laser-dermatologico-800.webp 800w, /images/optimized/v6-clinic-laser-dermatologico-900.webp 900w, /images/optimized/v6-clinic-laser-dermatologico-1200.webp 1200w, /images/optimized/v6-clinic-laser-dermatologico.webp 1400w"
+                "category": "Teledermatologia",
+                "title": "Teledermatologia y paso a consulta",
+                "copy": "La orientacion remota ayuda a decidir cuando basta seguir a distancia y cuando vale la pena verle pronto en Quito.",
+                "href": "/es/telemedicina/",
+                "image": "/images/optimized/v6-clinic-home-remote-handoff.webp",
+                "alt": "Teledermatologia con criterio para pasar a consulta presencial",
+                "srcset": "/images/optimized/v6-clinic-home-remote-handoff-400.webp 400w, /images/optimized/v6-clinic-home-remote-handoff-640.webp 640w, /images/optimized/v6-clinic-home-remote-handoff-800.webp 800w, /images/optimized/v6-clinic-home-remote-handoff-900.webp 900w, /images/optimized/v6-clinic-home-remote-handoff-1200.webp 1200w, /images/optimized/v6-clinic-home-remote-handoff.webp 1400w"
             },
             {
                 "id": "m6",

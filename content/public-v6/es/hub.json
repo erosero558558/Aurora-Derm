@@ -41,8 +41,8 @@
         {
             "category": "Diagnostico",
             "title": "Diagnostico integral",
-            "copy": "La puerta correcta si necesita una primera lectura completa, una consulta presencial y un plan entendible desde el inicio.",
-            "image": "/images/optimized/v6-clinic-diagnostico-integral.webp",
+            "copy": "Una primera lectura completa para ordenar prioridades y salir de la consulta con un plan claro.",
+            "image": "/images/optimized/v6-clinic-hub-clinical-ladder.webp",
             "href": "/es/servicios/diagnostico-integral/"
         },
         {
@@ -55,8 +55,8 @@
         {
             "category": "Teledermatologia",
             "title": "Teledermatologia con paso a consulta bien cuidado",
-            "copy": "La puerta correcta si quiere avanzar hoy y decidir con claridad cuando remoto basta y cuando conviene venir a consulta en Quito.",
-            "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
+            "copy": "La atencion remota ayuda a decidir si basta seguir a distancia o si conviene verle pronto en el consultorio.",
+            "image": "/images/optimized/v6-clinic-hub-remote-entry.webp",
             "href": "/es/telemedicina/"
         }
     ],
@@ -158,9 +158,9 @@
     "initiatives": [
         {
             "category": "Seguimiento",
-            "title": "Documente cambios comparables",
-            "copy": "Fotos tomadas con luz y distancia parecidas ayudan a decidir si esta ruta esta funcionando o si conviene moverla.",
-            "image": "/images/optimized/v6-clinic-home-followup.webp",
+            "title": "Fotos clinicas comparables",
+            "copy": "Comparamos imagenes tomadas en condiciones parecidas para leer cambios con mas precision.",
+            "image": "/images/optimized/v6-clinic-home-followup-review.webp",
             "href": "/es/servicios/diagnostico-integral/"
         },
         {
@@ -207,9 +207,9 @@
         },
         {
             "category": "Teledermatologia",
-            "title": "Use remoto para decidir el siguiente movimiento",
-            "copy": "La atencion a distancia sirve para sostener seguimiento y tambien para confirmar cuando ya toca consulta presencial.",
-            "image": "/images/optimized/v6-clinic-hub-editorial-map.webp",
+            "title": "Paso a consulta a tiempo",
+            "copy": "La atencion remota mantiene senales claras para pasar al consultorio cuando hace falta.",
+            "image": "/images/optimized/v6-clinic-hub-care-handoff.webp",
             "href": "/es/telemedicina/"
         }
     ],

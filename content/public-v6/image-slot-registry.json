@@ -1,1272 +1,1272 @@
 {
-  "version": "2026.03-v1-brand-surface-slots",
-  "updated_at": "2026-03-12",
-  "slots": [
-    {
-      "slotId": "home.hero.slides.s1",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "hero_slide",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "clinical_direction",
-        "diagnosis"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.hero.slides.s2",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "hero_slide",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "procedure_guidance",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.hero.slides.s3",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "hero_slide",
-      "currentAssetId": "v6-clinic-telemedicine-intake",
-      "fallbackAssetId": "v6-clinic-telemedicine-intake",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "intake"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.hero.slides.s4",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "hero_slide",
-      "currentAssetId": "v6-clinic-home-followup",
-      "fallbackAssetId": "v6-clinic-home-followup",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "follow_up",
-        "comparison"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.hero.slides.s5",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "hero_slide",
-      "currentAssetId": "v6-clinic-team-roundtable",
-      "fallbackAssetId": "v6-clinic-team-roundtable",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "team",
-        "editorial"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.editorial.cards.c1",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "editorial_card",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinical_direction"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.editorial.cards.c2",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "editorial_card",
-      "currentAssetId": "v6-clinic-acne-rosacea",
-      "fallbackAssetId": "v6-clinic-acne-rosacea",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "inflammation"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.editorial.cards.c3",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "editorial_card",
-      "currentAssetId": "v6-clinic-laser-dermatologico",
-      "fallbackAssetId": "v6-clinic-laser-dermatologico",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "technology",
-        "laser"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.editorial.cards.c4",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "editorial_card",
-      "currentAssetId": "v6-clinic-telemedicine-review",
-      "fallbackAssetId": "v6-clinic-telemedicine-review",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "review"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.editorial.cards.c5",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "editorial_card",
-      "currentAssetId": "v6-clinic-dermatologia-pediatrica",
-      "fallbackAssetId": "v6-clinic-dermatologia-pediatrica",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "pediatric",
-        "family_support"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.editorial.cards.c6",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "editorial_card",
-      "currentAssetId": "v6-clinic-home-followup",
-      "fallbackAssetId": "v6-clinic-home-followup",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "follow_up"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m1",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "matrix_card",
-      "currentAssetId": "v6-clinic-diagnostico-integral",
-      "fallbackAssetId": "v6-clinic-diagnostico-integral",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "diagnosis"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m2",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "matrix_card",
-      "currentAssetId": "v6-clinic-acne-rosacea",
-      "fallbackAssetId": "v6-clinic-acne-rosacea",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "inflammation"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m3",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "matrix_card",
-      "currentAssetId": "v6-clinic-laser-dermatologico",
-      "fallbackAssetId": "v6-clinic-laser-dermatologico",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "laser"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m4",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "matrix_card",
-      "currentAssetId": "v6-clinic-cancer-piel",
-      "fallbackAssetId": "v6-clinic-cancer-piel",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "screening",
-        "lesion_review"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m5",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "matrix_card",
-      "currentAssetId": "v6-clinic-telemedicine-intake",
-      "fallbackAssetId": "v6-clinic-telemedicine-intake",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "intake"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "home.corporateMatrix.cards.m6",
-      "surface": "home",
-      "pageKey": "home",
-      "slotRole": "matrix_card",
-      "currentAssetId": "v6-clinic-bioestimuladores-colageno",
-      "fallbackAssetId": "v6-clinic-bioestimuladores-colageno",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "rejuvenation",
-        "collagen_support"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.hero",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-hub-editorial-map",
-      "fallbackAssetId": "v6-clinic-hub-editorial-map",
-      "allowedAssetKinds": [
-        "wide"
-      ],
-      "requiredTags": [
-        "hub",
-        "editorial_map"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.featured.0",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "featured_card",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinical_direction"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.featured.1",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "featured_card",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.featured.2",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "featured_card",
-      "currentAssetId": "v6-clinic-telemedicine-intake",
-      "fallbackAssetId": "v6-clinic-telemedicine-intake",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "intake"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.clinical-core.cards.diagnostico-integral",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-diagnostico-integral",
-      "fallbackAssetId": "v6-clinic-diagnostico-integral",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "diagnosis"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.clinical-core.cards.acne-rosacea",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-acne-rosacea",
-      "fallbackAssetId": "v6-clinic-acne-rosacea",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "inflammation"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.clinical-core.cards.cancer-piel",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-cancer-piel",
-      "fallbackAssetId": "v6-clinic-cancer-piel",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "screening"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.procedures.cards.laser-dermatologico",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-laser-dermatologico",
-      "fallbackAssetId": "v6-clinic-laser-dermatologico",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "laser",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.procedures.cards.peeling-quimico",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-peeling-quimico",
-      "fallbackAssetId": "v6-clinic-peeling-quimico",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "peel",
-        "renewal"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.procedures.cards.bioestimuladores-colageno",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-bioestimuladores-colageno",
-      "fallbackAssetId": "v6-clinic-bioestimuladores-colageno",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "collagen_support",
-        "rejuvenation"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.extended.cards.dermatologia-pediatrica",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-statement-family-support",
-      "fallbackAssetId": "v6-clinic-statement-family-support",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "family_support",
-        "pediatric"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.extended.cards.piel-cabello-unas",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-home-followup",
-      "fallbackAssetId": "v6-clinic-home-followup",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "follow_up",
-        "integral_route"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.sections.extended.cards.telemedicine",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "hub_card",
-      "currentAssetId": "v6-clinic-telemedicine-review",
-      "fallbackAssetId": "v6-clinic-telemedicine-review",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "review"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.initiatives.0",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-home-followup",
-      "fallbackAssetId": "v6-clinic-home-followup",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "follow_up"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.initiatives.1",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-acne-rosacea",
-      "fallbackAssetId": "v6-clinic-acne-rosacea",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "inflammation"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.initiatives.2",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-statement-family-support",
-      "fallbackAssetId": "v6-clinic-statement-family-support",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "family_support"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.initiatives.3",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-cancer-piel",
-      "fallbackAssetId": "v6-clinic-cancer-piel",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "screening"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.initiatives.4",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-clinic-environment",
-      "fallbackAssetId": "v6-clinic-clinic-environment",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinic_environment",
-        "technology_support"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.initiatives.5",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.initiatives.6",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-legal-governance",
-      "fallbackAssetId": "v6-clinic-legal-governance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "legal",
-        "consent"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "hub.initiatives.7",
-      "surface": "hub",
-      "pageKey": "hub",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-hub-editorial-map",
-      "fallbackAssetId": "v6-clinic-hub-editorial-map",
-      "allowedAssetKinds": [
-        "wide",
-        "card"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "editorial_map"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "telemedicine.hero",
-      "surface": "telemedicine",
-      "pageKey": "telemedicine",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-telemedicine-intake",
-      "fallbackAssetId": "v6-clinic-telemedicine-intake",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "intake"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "telemedicine.statement",
-      "surface": "telemedicine",
-      "pageKey": "telemedicine",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-telemedicine-review",
-      "fallbackAssetId": "v6-clinic-telemedicine-review",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "review"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "telemedicine.initiatives.0",
-      "surface": "telemedicine",
-      "pageKey": "telemedicine",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-telemedicine-review",
-      "fallbackAssetId": "v6-clinic-telemedicine-review",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "telemedicine",
-        "review"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "telemedicine.initiatives.1",
-      "surface": "telemedicine",
-      "pageKey": "telemedicine",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-home-followup",
-      "fallbackAssetId": "v6-clinic-home-followup",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "follow_up"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "telemedicine.initiatives.2",
-      "surface": "telemedicine",
-      "pageKey": "telemedicine",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-clinic-environment",
-      "fallbackAssetId": "v6-clinic-clinic-environment",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinic_environment"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "telemedicine.initiatives.3",
-      "surface": "telemedicine",
-      "pageKey": "telemedicine",
-      "slotRole": "initiative_card",
-      "currentAssetId": "v6-clinic-legal-governance",
-      "fallbackAssetId": "v6-clinic-legal-governance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "hybrid_model",
-        "legal"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.statement",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-legal-governance",
-      "fallbackAssetId": "v6-clinic-legal-governance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "legal",
-        "consent"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.pages.terminos.hero",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-legal-governance",
-      "fallbackAssetId": "v6-clinic-legal-governance",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "legal",
-        "governance"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.pages.privacidad.hero",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-clinic-environment",
-      "fallbackAssetId": "v6-clinic-clinic-environment",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "privacy",
-        "clinic_environment"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.pages.cookies.hero",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-telemedicine-review",
-      "fallbackAssetId": "v6-clinic-telemedicine-review",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "digital_use",
-        "review"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.pages.aviso-medico.hero",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "medical_notice",
-        "clinical_direction"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.indexCards.terminos",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "index_card",
-      "currentAssetId": "v6-clinic-legal-governance",
-      "fallbackAssetId": "v6-clinic-legal-governance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "legal"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.indexCards.privacidad",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "index_card",
-      "currentAssetId": "v6-clinic-clinic-environment",
-      "fallbackAssetId": "v6-clinic-clinic-environment",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "privacy"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.indexCards.cookies",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "index_card",
-      "currentAssetId": "v6-clinic-telemedicine-review",
-      "fallbackAssetId": "v6-clinic-telemedicine-review",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "digital_use"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "legal.indexCards.aviso-medico",
-      "surface": "legal",
-      "pageKey": "legal",
-      "slotRole": "index_card",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "medical_notice"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.diagnostico-integral.hero",
-      "surface": "service",
-      "pageKey": "service.diagnostico-integral",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-diagnostico-integral",
-      "fallbackAssetId": "v6-clinic-diagnostico-integral",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "diagnosis",
-        "first_visit"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.diagnostico-integral.statement",
-      "surface": "service",
-      "pageKey": "service.diagnostico-integral",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinical_direction",
-        "diagnosis"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.acne-rosacea.hero",
-      "surface": "service",
-      "pageKey": "service.acne-rosacea",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-acne-rosacea",
-      "fallbackAssetId": "v6-clinic-acne-rosacea",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "inflammation",
-        "acne"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.acne-rosacea.statement",
-      "surface": "service",
-      "pageKey": "service.acne-rosacea",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinical_direction",
-        "diagnosis"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.verrugas.hero",
-      "surface": "service",
-      "pageKey": "service.verrugas",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-verrugas",
-      "fallbackAssetId": "v6-clinic-verrugas",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "localized_lesions",
-        "precision_procedure"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.verrugas.statement",
-      "surface": "service",
-      "pageKey": "service.verrugas",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.granitos-brazos-piernas.hero",
-      "surface": "service",
-      "pageKey": "service.granitos-brazos-piernas",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-granitos-brazos-piernas",
-      "fallbackAssetId": "v6-clinic-granitos-brazos-piernas",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "texture",
-        "barrier_care"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.granitos-brazos-piernas.statement",
-      "surface": "service",
-      "pageKey": "service.granitos-brazos-piernas",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinical_direction",
-        "diagnosis"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.cicatrices.hero",
-      "surface": "service",
-      "pageKey": "service.cicatrices",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-cicatrices",
-      "fallbackAssetId": "v6-clinic-cicatrices",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "scars",
-        "repair"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.cicatrices.statement",
-      "surface": "service",
-      "pageKey": "service.cicatrices",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.cancer-piel.hero",
-      "surface": "service",
-      "pageKey": "service.cancer-piel",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-cancer-piel",
-      "fallbackAssetId": "v6-clinic-cancer-piel",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "screening",
-        "lesion_review"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.cancer-piel.statement",
-      "surface": "service",
-      "pageKey": "service.cancer-piel",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinical_direction",
-        "diagnosis"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.peeling-quimico.hero",
-      "surface": "service",
-      "pageKey": "service.peeling-quimico",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-peeling-quimico",
-      "fallbackAssetId": "v6-clinic-peeling-quimico",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "peel",
-        "renewal"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.peeling-quimico.statement",
-      "surface": "service",
-      "pageKey": "service.peeling-quimico",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.mesoterapia.hero",
-      "surface": "service",
-      "pageKey": "service.mesoterapia",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-mesoterapia",
-      "fallbackAssetId": "v6-clinic-mesoterapia",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "mesotherapy",
-        "hydration"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.mesoterapia.statement",
-      "surface": "service",
-      "pageKey": "service.mesoterapia",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.laser-dermatologico.hero",
-      "surface": "service",
-      "pageKey": "service.laser-dermatologico",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-laser-dermatologico",
-      "fallbackAssetId": "v6-clinic-laser-dermatologico",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "laser",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.laser-dermatologico.statement",
-      "surface": "service",
-      "pageKey": "service.laser-dermatologico",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.botox.hero",
-      "surface": "service",
-      "pageKey": "service.botox",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-botox",
-      "fallbackAssetId": "v6-clinic-botox",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "botox",
-        "facial_harmony"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.botox.statement",
-      "surface": "service",
-      "pageKey": "service.botox",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.bioestimuladores-colageno.hero",
-      "surface": "service",
-      "pageKey": "service.bioestimuladores-colageno",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-bioestimuladores-colageno",
-      "fallbackAssetId": "v6-clinic-bioestimuladores-colageno",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "rejuvenation",
-        "collagen_support"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.bioestimuladores-colageno.statement",
-      "surface": "service",
-      "pageKey": "service.bioestimuladores-colageno",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-procedure-guidance",
-      "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "procedure_guidance",
-        "technology"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.piel-cabello-unas.hero",
-      "surface": "service",
-      "pageKey": "service.piel-cabello-unas",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-piel-cabello-unas",
-      "fallbackAssetId": "v6-clinic-piel-cabello-unas",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "integral_route",
-        "skin_hair_nails"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.piel-cabello-unas.statement",
-      "surface": "service",
-      "pageKey": "service.piel-cabello-unas",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-clinical-direction",
-      "fallbackAssetId": "v6-clinic-statement-clinical-direction",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "clinical_direction",
-        "diagnosis"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.dermatologia-pediatrica.hero",
-      "surface": "service",
-      "pageKey": "service.dermatologia-pediatrica",
-      "slotRole": "page_hero",
-      "currentAssetId": "v6-clinic-dermatologia-pediatrica",
-      "fallbackAssetId": "v6-clinic-dermatologia-pediatrica",
-      "allowedAssetKinds": [
-        "card",
-        "wide"
-      ],
-      "requiredTags": [
-        "pediatric",
-        "family_support"
-      ],
-      "localeMode": "shared"
-    },
-    {
-      "slotId": "service.dermatologia-pediatrica.statement",
-      "surface": "service",
-      "pageKey": "service.dermatologia-pediatrica",
-      "slotRole": "statement_band",
-      "currentAssetId": "v6-clinic-statement-family-support",
-      "fallbackAssetId": "v6-clinic-statement-family-support",
-      "allowedAssetKinds": [
-        "card"
-      ],
-      "requiredTags": [
-        "family_support",
-        "pediatric"
-      ],
-      "localeMode": "shared"
-    }
-  ]
+    "version": "2026.03-v2-brand-surface-slots",
+    "updated_at": "2026-03-13",
+    "slots": [
+        {
+            "slotId": "home.hero.slides.s1",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "hero_slide",
+            "currentAssetId": "v6-clinic-statement-clinical-direction",
+            "fallbackAssetId": "v6-clinic-statement-clinical-direction",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "clinical_direction",
+                "diagnosis"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.hero.slides.s2",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "hero_slide",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "procedure_guidance",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.hero.slides.s3",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "hero_slide",
+            "currentAssetId": "v6-clinic-telemedicine-intake",
+            "fallbackAssetId": "v6-clinic-telemedicine-intake",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "intake"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.hero.slides.s4",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "hero_slide",
+            "currentAssetId": "v6-clinic-home-followup",
+            "fallbackAssetId": "v6-clinic-home-followup",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "follow_up",
+                "comparison"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.hero.slides.s5",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "hero_slide",
+            "currentAssetId": "v6-clinic-team-roundtable",
+            "fallbackAssetId": "v6-clinic-team-roundtable",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "team",
+                "editorial"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.editorial.cards.c1",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "editorial_card",
+            "currentAssetId": "v6-clinic-home-diagnostic-brief",
+            "fallbackAssetId": "v6-clinic-home-diagnostic-brief",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinical_direction"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.editorial.cards.c2",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "editorial_card",
+            "currentAssetId": "v6-clinic-acne-rosacea",
+            "fallbackAssetId": "v6-clinic-acne-rosacea",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "inflammation"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.editorial.cards.c3",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "editorial_card",
+            "currentAssetId": "v6-clinic-laser-dermatologico",
+            "fallbackAssetId": "v6-clinic-laser-dermatologico",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "technology",
+                "laser"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.editorial.cards.c4",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "editorial_card",
+            "currentAssetId": "v6-clinic-telemedicine-review",
+            "fallbackAssetId": "v6-clinic-telemedicine-review",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "review"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.editorial.cards.c5",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "editorial_card",
+            "currentAssetId": "v6-clinic-dermatologia-pediatrica",
+            "fallbackAssetId": "v6-clinic-dermatologia-pediatrica",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "pediatric",
+                "family_support"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.editorial.cards.c6",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "editorial_card",
+            "currentAssetId": "v6-clinic-home-followup-review",
+            "fallbackAssetId": "v6-clinic-home-followup-review",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "follow_up"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m1",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "matrix_card",
+            "currentAssetId": "v6-clinic-diagnostico-integral",
+            "fallbackAssetId": "v6-clinic-diagnostico-integral",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "diagnosis"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m2",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "matrix_card",
+            "currentAssetId": "v6-clinic-acne-rosacea",
+            "fallbackAssetId": "v6-clinic-acne-rosacea",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "inflammation"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m3",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "matrix_card",
+            "currentAssetId": "v6-clinic-laser-dermatologico",
+            "fallbackAssetId": "v6-clinic-laser-dermatologico",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "laser"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m4",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "matrix_card",
+            "currentAssetId": "v6-clinic-cancer-piel",
+            "fallbackAssetId": "v6-clinic-cancer-piel",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "screening",
+                "lesion_review"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m5",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "matrix_card",
+            "currentAssetId": "v6-clinic-home-remote-handoff",
+            "fallbackAssetId": "v6-clinic-home-remote-handoff",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "intake"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "home.corporateMatrix.cards.m6",
+            "surface": "home",
+            "pageKey": "home",
+            "slotRole": "matrix_card",
+            "currentAssetId": "v6-clinic-bioestimuladores-colageno",
+            "fallbackAssetId": "v6-clinic-bioestimuladores-colageno",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "rejuvenation",
+                "collagen_support"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.hero",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-hub-editorial-map",
+            "fallbackAssetId": "v6-clinic-hub-editorial-map",
+            "allowedAssetKinds": [
+                "wide"
+            ],
+            "requiredTags": [
+                "hub",
+                "editorial_map"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.featured.0",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "featured_card",
+            "currentAssetId": "v6-clinic-hub-clinical-ladder",
+            "fallbackAssetId": "v6-clinic-hub-clinical-ladder",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinical_direction"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.featured.1",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "featured_card",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.featured.2",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "featured_card",
+            "currentAssetId": "v6-clinic-hub-remote-entry",
+            "fallbackAssetId": "v6-clinic-hub-remote-entry",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "intake"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.clinical-core.cards.diagnostico-integral",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-diagnostico-integral",
+            "fallbackAssetId": "v6-clinic-diagnostico-integral",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "diagnosis"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.clinical-core.cards.acne-rosacea",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-acne-rosacea",
+            "fallbackAssetId": "v6-clinic-acne-rosacea",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "inflammation"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.clinical-core.cards.cancer-piel",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-cancer-piel",
+            "fallbackAssetId": "v6-clinic-cancer-piel",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "screening"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.procedures.cards.laser-dermatologico",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-laser-dermatologico",
+            "fallbackAssetId": "v6-clinic-laser-dermatologico",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "laser",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.procedures.cards.peeling-quimico",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-peeling-quimico",
+            "fallbackAssetId": "v6-clinic-peeling-quimico",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "peel",
+                "renewal"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.procedures.cards.bioestimuladores-colageno",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-bioestimuladores-colageno",
+            "fallbackAssetId": "v6-clinic-bioestimuladores-colageno",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "collagen_support",
+                "rejuvenation"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.extended.cards.dermatologia-pediatrica",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-statement-family-support",
+            "fallbackAssetId": "v6-clinic-statement-family-support",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "family_support",
+                "pediatric"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.extended.cards.piel-cabello-unas",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-home-followup",
+            "fallbackAssetId": "v6-clinic-home-followup",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "follow_up",
+                "integral_route"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.sections.extended.cards.telemedicine",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "hub_card",
+            "currentAssetId": "v6-clinic-telemedicine-review",
+            "fallbackAssetId": "v6-clinic-telemedicine-review",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "review"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.initiatives.0",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-home-followup-review",
+            "fallbackAssetId": "v6-clinic-home-followup-review",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "follow_up"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.initiatives.1",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-acne-rosacea",
+            "fallbackAssetId": "v6-clinic-acne-rosacea",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "inflammation"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.initiatives.2",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-statement-family-support",
+            "fallbackAssetId": "v6-clinic-statement-family-support",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "family_support"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.initiatives.3",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-cancer-piel",
+            "fallbackAssetId": "v6-clinic-cancer-piel",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "screening"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.initiatives.4",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-clinic-environment",
+            "fallbackAssetId": "v6-clinic-clinic-environment",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinic_environment",
+                "technology_support"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.initiatives.5",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.initiatives.6",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-legal-governance",
+            "fallbackAssetId": "v6-clinic-legal-governance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "legal",
+                "consent"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "hub.initiatives.7",
+            "surface": "hub",
+            "pageKey": "hub",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-hub-care-handoff",
+            "fallbackAssetId": "v6-clinic-hub-care-handoff",
+            "allowedAssetKinds": [
+                "wide",
+                "card"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "editorial_map"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "telemedicine.hero",
+            "surface": "telemedicine",
+            "pageKey": "telemedicine",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-telemedicine-intake",
+            "fallbackAssetId": "v6-clinic-telemedicine-intake",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "intake"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "telemedicine.statement",
+            "surface": "telemedicine",
+            "pageKey": "telemedicine",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-telemedicine-review",
+            "fallbackAssetId": "v6-clinic-telemedicine-review",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "review"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "telemedicine.initiatives.0",
+            "surface": "telemedicine",
+            "pageKey": "telemedicine",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-telemedicine-review",
+            "fallbackAssetId": "v6-clinic-telemedicine-review",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "telemedicine",
+                "review"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "telemedicine.initiatives.1",
+            "surface": "telemedicine",
+            "pageKey": "telemedicine",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-home-followup",
+            "fallbackAssetId": "v6-clinic-home-followup",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "follow_up"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "telemedicine.initiatives.2",
+            "surface": "telemedicine",
+            "pageKey": "telemedicine",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-clinic-environment",
+            "fallbackAssetId": "v6-clinic-clinic-environment",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinic_environment"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "telemedicine.initiatives.3",
+            "surface": "telemedicine",
+            "pageKey": "telemedicine",
+            "slotRole": "initiative_card",
+            "currentAssetId": "v6-clinic-legal-governance",
+            "fallbackAssetId": "v6-clinic-legal-governance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "hybrid_model",
+                "legal"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.statement",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-legal-governance",
+            "fallbackAssetId": "v6-clinic-legal-governance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "legal",
+                "consent"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.pages.terminos.hero",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-legal-governance",
+            "fallbackAssetId": "v6-clinic-legal-governance",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "legal",
+                "governance"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.pages.privacidad.hero",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-clinic-environment",
+            "fallbackAssetId": "v6-clinic-clinic-environment",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "privacy",
+                "clinic_environment"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.pages.cookies.hero",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-telemedicine-review",
+            "fallbackAssetId": "v6-clinic-telemedicine-review",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "digital_use",
+                "review"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.pages.aviso-medico.hero",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-statement-clinical-direction",
+            "fallbackAssetId": "v6-clinic-statement-clinical-direction",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "medical_notice",
+                "clinical_direction"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.indexCards.terminos",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "index_card",
+            "currentAssetId": "v6-clinic-legal-governance",
+            "fallbackAssetId": "v6-clinic-legal-governance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "legal"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.indexCards.privacidad",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "index_card",
+            "currentAssetId": "v6-clinic-clinic-environment",
+            "fallbackAssetId": "v6-clinic-clinic-environment",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "privacy"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.indexCards.cookies",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "index_card",
+            "currentAssetId": "v6-clinic-telemedicine-review",
+            "fallbackAssetId": "v6-clinic-telemedicine-review",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "digital_use"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "legal.indexCards.aviso-medico",
+            "surface": "legal",
+            "pageKey": "legal",
+            "slotRole": "index_card",
+            "currentAssetId": "v6-clinic-statement-clinical-direction",
+            "fallbackAssetId": "v6-clinic-statement-clinical-direction",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "medical_notice"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.diagnostico-integral.hero",
+            "surface": "service",
+            "pageKey": "service.diagnostico-integral",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-diagnostico-integral",
+            "fallbackAssetId": "v6-clinic-diagnostico-integral",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "diagnosis",
+                "first_visit"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.diagnostico-integral.statement",
+            "surface": "service",
+            "pageKey": "service.diagnostico-integral",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-clinical-direction",
+            "fallbackAssetId": "v6-clinic-statement-clinical-direction",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinical_direction",
+                "diagnosis"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.acne-rosacea.hero",
+            "surface": "service",
+            "pageKey": "service.acne-rosacea",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-acne-rosacea",
+            "fallbackAssetId": "v6-clinic-acne-rosacea",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "inflammation",
+                "acne"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.acne-rosacea.statement",
+            "surface": "service",
+            "pageKey": "service.acne-rosacea",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-clinical-direction",
+            "fallbackAssetId": "v6-clinic-statement-clinical-direction",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinical_direction",
+                "diagnosis"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.verrugas.hero",
+            "surface": "service",
+            "pageKey": "service.verrugas",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-verrugas",
+            "fallbackAssetId": "v6-clinic-verrugas",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "localized_lesions",
+                "precision_procedure"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.verrugas.statement",
+            "surface": "service",
+            "pageKey": "service.verrugas",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.granitos-brazos-piernas.hero",
+            "surface": "service",
+            "pageKey": "service.granitos-brazos-piernas",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-granitos-brazos-piernas",
+            "fallbackAssetId": "v6-clinic-granitos-brazos-piernas",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "texture",
+                "barrier_care"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.granitos-brazos-piernas.statement",
+            "surface": "service",
+            "pageKey": "service.granitos-brazos-piernas",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-clinical-direction",
+            "fallbackAssetId": "v6-clinic-statement-clinical-direction",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinical_direction",
+                "diagnosis"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.cicatrices.hero",
+            "surface": "service",
+            "pageKey": "service.cicatrices",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-cicatrices",
+            "fallbackAssetId": "v6-clinic-cicatrices",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "scars",
+                "repair"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.cicatrices.statement",
+            "surface": "service",
+            "pageKey": "service.cicatrices",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.cancer-piel.hero",
+            "surface": "service",
+            "pageKey": "service.cancer-piel",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-cancer-piel",
+            "fallbackAssetId": "v6-clinic-cancer-piel",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "screening",
+                "lesion_review"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.cancer-piel.statement",
+            "surface": "service",
+            "pageKey": "service.cancer-piel",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-clinical-direction",
+            "fallbackAssetId": "v6-clinic-statement-clinical-direction",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinical_direction",
+                "diagnosis"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.peeling-quimico.hero",
+            "surface": "service",
+            "pageKey": "service.peeling-quimico",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-peeling-quimico",
+            "fallbackAssetId": "v6-clinic-peeling-quimico",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "peel",
+                "renewal"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.peeling-quimico.statement",
+            "surface": "service",
+            "pageKey": "service.peeling-quimico",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.mesoterapia.hero",
+            "surface": "service",
+            "pageKey": "service.mesoterapia",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-mesoterapia",
+            "fallbackAssetId": "v6-clinic-mesoterapia",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "mesotherapy",
+                "hydration"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.mesoterapia.statement",
+            "surface": "service",
+            "pageKey": "service.mesoterapia",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.laser-dermatologico.hero",
+            "surface": "service",
+            "pageKey": "service.laser-dermatologico",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-laser-dermatologico",
+            "fallbackAssetId": "v6-clinic-laser-dermatologico",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "laser",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.laser-dermatologico.statement",
+            "surface": "service",
+            "pageKey": "service.laser-dermatologico",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.botox.hero",
+            "surface": "service",
+            "pageKey": "service.botox",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-botox",
+            "fallbackAssetId": "v6-clinic-botox",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "botox",
+                "facial_harmony"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.botox.statement",
+            "surface": "service",
+            "pageKey": "service.botox",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.bioestimuladores-colageno.hero",
+            "surface": "service",
+            "pageKey": "service.bioestimuladores-colageno",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-bioestimuladores-colageno",
+            "fallbackAssetId": "v6-clinic-bioestimuladores-colageno",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "rejuvenation",
+                "collagen_support"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.bioestimuladores-colageno.statement",
+            "surface": "service",
+            "pageKey": "service.bioestimuladores-colageno",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-procedure-guidance",
+            "fallbackAssetId": "v6-clinic-statement-procedure-guidance",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "procedure_guidance",
+                "technology"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.piel-cabello-unas.hero",
+            "surface": "service",
+            "pageKey": "service.piel-cabello-unas",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-piel-cabello-unas",
+            "fallbackAssetId": "v6-clinic-piel-cabello-unas",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "integral_route",
+                "skin_hair_nails"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.piel-cabello-unas.statement",
+            "surface": "service",
+            "pageKey": "service.piel-cabello-unas",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-clinical-direction",
+            "fallbackAssetId": "v6-clinic-statement-clinical-direction",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "clinical_direction",
+                "diagnosis"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.dermatologia-pediatrica.hero",
+            "surface": "service",
+            "pageKey": "service.dermatologia-pediatrica",
+            "slotRole": "page_hero",
+            "currentAssetId": "v6-clinic-dermatologia-pediatrica",
+            "fallbackAssetId": "v6-clinic-dermatologia-pediatrica",
+            "allowedAssetKinds": [
+                "card",
+                "wide"
+            ],
+            "requiredTags": [
+                "pediatric",
+                "family_support"
+            ],
+            "localeMode": "shared"
+        },
+        {
+            "slotId": "service.dermatologia-pediatrica.statement",
+            "surface": "service",
+            "pageKey": "service.dermatologia-pediatrica",
+            "slotRole": "statement_band",
+            "currentAssetId": "v6-clinic-statement-family-support",
+            "fallbackAssetId": "v6-clinic-statement-family-support",
+            "allowedAssetKinds": [
+                "card"
+            ],
+            "requiredTags": [
+                "family_support",
+                "pediatric"
+            ],
+            "localeMode": "shared"
+        }
+    ]
 }

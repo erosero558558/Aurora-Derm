@@ -41,8 +41,8 @@
         {
             "category": "Diagnosis",
             "title": "Comprehensive diagnosis",
-            "copy": "The right door when you need a full first read, an in-clinic consultation, and a plan you can understand from the start.",
-            "image": "/images/optimized/v6-clinic-diagnostico-integral.webp",
+            "copy": "A complete first read that sets priorities and leaves you with a clear plan after the first visit.",
+            "image": "/images/optimized/v6-clinic-hub-clinical-ladder.webp",
             "href": "/en/services/diagnostico-integral/"
         },
         {
@@ -55,8 +55,8 @@
         {
             "category": "Teledermatology",
             "title": "Teledermatology with a careful clinic handoff",
-            "copy": "The right door when you want to move today and decide clearly when remote care is enough and when clinic in Quito matters more.",
-            "image": "/images/optimized/v6-clinic-telemedicine-intake.webp",
+            "copy": "Remote care helps decide whether follow-up at a distance is enough or if it makes sense to see you in clinic soon.",
+            "image": "/images/optimized/v6-clinic-hub-remote-entry.webp",
             "href": "/en/telemedicine/"
         }
     ],
@@ -158,9 +158,9 @@
     "initiatives": [
         {
             "category": "Follow-up",
-            "title": "Document comparable change",
-            "copy": "Photos taken with similar light and distance help us decide whether this route is working or should shift.",
-            "image": "/images/optimized/v6-clinic-home-followup.webp",
+            "title": "Comparable clinical photos",
+            "copy": "Images taken under similar conditions help us read change with more precision.",
+            "image": "/images/optimized/v6-clinic-home-followup-review.webp",
             "href": "/en/services/diagnostico-integral/"
         },
         {
@@ -207,9 +207,9 @@
         },
         {
             "category": "Teledermatology",
-            "title": "Use remote care to decide the next move",
-            "copy": "Teledermatology can sustain follow-up and also confirm when it is time to move in-clinic.",
-            "image": "/images/optimized/v6-clinic-hub-editorial-map.webp",
+            "title": "Clinic handoff on time",
+            "copy": "Remote care keeps clear signals for moving into clinic when it is needed.",
+            "image": "/images/optimized/v6-clinic-hub-care-handoff.webp",
             "href": "/en/telemedicine/"
         }
     ],

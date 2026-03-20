@@ -660,8 +660,14 @@ test('public V6 manifest includes the relaunch image family', () => {
     );
     const requiredIds = [
         'v6-clinic-home-followup',
+        'v6-clinic-home-diagnostic-brief',
+        'v6-clinic-home-followup-review',
+        'v6-clinic-home-remote-handoff',
         'v6-clinic-team-roundtable',
         'v6-clinic-hub-editorial-map',
+        'v6-clinic-hub-clinical-ladder',
+        'v6-clinic-hub-remote-entry',
+        'v6-clinic-hub-care-handoff',
         'v6-clinic-telemedicine-intake',
         'v6-clinic-telemedicine-review',
         'v6-clinic-legal-governance',
@@ -702,6 +708,20 @@ test('public V6 manifest marks photo provenance and ships raster masters for eve
             validIdentityPolicies.has(asset.identityPolicy),
             true,
             `${asset.id} must declare identityPolicy`
+        );
+        assert.equal(
+            asset.generation?.strategy,
+            'photo_first_composite',
+            `${asset.id} must declare the photo-first composite generation strategy`
+        );
+        assert.equal(
+            asset.sourceType,
+            asset.sourceKind === 'ai_photoreal'
+                ? 'ai_generated'
+                : asset.identityPolicy === 'staff_real'
+                  ? 'staff_photo'
+                  : 'real_photo',
+            `${asset.id} must keep sourceType aligned with sourceKind and identityPolicy`
         );
         assert.ok(
             findRasterMaster(asset.id),

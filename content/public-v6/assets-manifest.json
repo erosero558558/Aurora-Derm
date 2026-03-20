@@ -1,5 +1,5 @@
 {
-    "version": "2026.03-v6-photoreal-rebuild",
+    "version": "2026.03-v6-photoreal-home-hub-r2",
     "updated_at": "2026-03-13",
     "assets": [
         {
@@ -11,7 +11,7 @@
             "alt_es": "Panoramica editorial del entorno clinico dermatologico",
             "alt_en": "Editorial panorama of the dermatology clinical environment",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -30,7 +30,7 @@
                 "en": "Editorial panorama of the dermatology clinical environment"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -47,7 +47,7 @@
             "alt_es": "Seguimiento dermatologico con comparacion de avance y ajustes",
             "alt_en": "Dermatology follow-up with progress comparison and adjustments",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -68,13 +68,139 @@
                 "en": "Dermatology follow-up with progress comparison and adjustments"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
             },
             "sourceKind": "real_photo",
             "identityPolicy": "generic"
+        },
+        {
+            "id": "v6-clinic-home-diagnostic-brief",
+            "kind": "card",
+            "sourceKind": "real_photo",
+            "identityPolicy": "generic",
+            "src": "/images/optimized/v6-clinic-home-diagnostic-brief.webp",
+            "srcset": "/images/optimized/v6-clinic-home-diagnostic-brief-400.webp 400w, /images/optimized/v6-clinic-home-diagnostic-brief-640.webp 640w, /images/optimized/v6-clinic-home-diagnostic-brief-800.webp 800w, /images/optimized/v6-clinic-home-diagnostic-brief-900.webp 900w, /images/optimized/v6-clinic-home-diagnostic-brief-1200.webp 1200w, /images/optimized/v6-clinic-home-diagnostic-brief.webp 1400w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Consulta dermatologica inicial con mapa claro de hallazgos y prioridades",
+            "alt_en": "Initial dermatology visit with a clear map of findings and priorities",
+            "status": "approved",
+            "sourceType": "real_photo",
+            "publicWebSafe": true,
+            "orientation": "landscape",
+            "editorialTags": [
+                "clinical_direction",
+                "diagnosis",
+                "consultation"
+            ],
+            "allowedSlotRoles": [
+                "hero_slide",
+                "editorial_card",
+                "matrix_card",
+                "featured_card",
+                "hub_card",
+                "initiative_card",
+                "statement_band",
+                "index_card",
+                "page_hero"
+            ],
+            "tone": "ink",
+            "localeAlt": {
+                "es": "Consulta dermatologica inicial con mapa claro de hallazgos y prioridades",
+                "en": "Initial dermatology visit with a clear map of findings and priorities"
+            },
+            "generation": {
+                "strategy": "photo_first_composite",
+                "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
+                "promptPack": "docs/public-v6-image-refresh.md",
+                "reviewState": "approved"
+            }
+        },
+        {
+            "id": "v6-clinic-home-followup-review",
+            "kind": "card",
+            "sourceKind": "real_photo",
+            "identityPolicy": "generic",
+            "src": "/images/optimized/v6-clinic-home-followup-review.webp",
+            "srcset": "/images/optimized/v6-clinic-home-followup-review-400.webp 400w, /images/optimized/v6-clinic-home-followup-review-640.webp 640w, /images/optimized/v6-clinic-home-followup-review-800.webp 800w, /images/optimized/v6-clinic-home-followup-review-900.webp 900w, /images/optimized/v6-clinic-home-followup-review-1200.webp 1200w, /images/optimized/v6-clinic-home-followup-review.webp 1400w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Seguimiento dermatologico con revision comparativa y ajustes medicos",
+            "alt_en": "Dermatology follow-up with comparative review and medical adjustments",
+            "status": "approved",
+            "sourceType": "real_photo",
+            "publicWebSafe": true,
+            "orientation": "landscape",
+            "editorialTags": [
+                "follow_up",
+                "comparison",
+                "care_review"
+            ],
+            "allowedSlotRoles": [
+                "hero_slide",
+                "editorial_card",
+                "matrix_card",
+                "featured_card",
+                "hub_card",
+                "initiative_card",
+                "statement_band",
+                "index_card",
+                "page_hero"
+            ],
+            "tone": "ink",
+            "localeAlt": {
+                "es": "Seguimiento dermatologico con revision comparativa y ajustes medicos",
+                "en": "Dermatology follow-up with comparative review and medical adjustments"
+            },
+            "generation": {
+                "strategy": "photo_first_composite",
+                "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
+                "promptPack": "docs/public-v6-image-refresh.md",
+                "reviewState": "approved"
+            }
+        },
+        {
+            "id": "v6-clinic-home-remote-handoff",
+            "kind": "card",
+            "sourceKind": "real_photo",
+            "identityPolicy": "generic",
+            "src": "/images/optimized/v6-clinic-home-remote-handoff.webp",
+            "srcset": "/images/optimized/v6-clinic-home-remote-handoff-400.webp 400w, /images/optimized/v6-clinic-home-remote-handoff-640.webp 640w, /images/optimized/v6-clinic-home-remote-handoff-800.webp 800w, /images/optimized/v6-clinic-home-remote-handoff-900.webp 900w, /images/optimized/v6-clinic-home-remote-handoff-1200.webp 1200w, /images/optimized/v6-clinic-home-remote-handoff.webp 1400w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Teledermatologia con criterio para pasar a consulta presencial",
+            "alt_en": "Teledermatology with clear criteria for moving into clinic",
+            "status": "approved",
+            "sourceType": "real_photo",
+            "publicWebSafe": true,
+            "orientation": "landscape",
+            "editorialTags": [
+                "telemedicine",
+                "handoff",
+                "clinical_transition"
+            ],
+            "allowedSlotRoles": [
+                "hero_slide",
+                "editorial_card",
+                "matrix_card",
+                "featured_card",
+                "hub_card",
+                "initiative_card",
+                "statement_band",
+                "index_card",
+                "page_hero"
+            ],
+            "tone": "ink",
+            "localeAlt": {
+                "es": "Teledermatologia con criterio para pasar a consulta presencial",
+                "en": "Teledermatology with clear criteria for moving into clinic"
+            },
+            "generation": {
+                "strategy": "photo_first_composite",
+                "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
+                "promptPack": "docs/public-v6-image-refresh.md",
+                "reviewState": "approved"
+            }
         },
         {
             "id": "v6-clinic-team-roundtable",
@@ -85,7 +211,7 @@
             "alt_es": "Equipo dermatologico revisando decisiones de forma conjunta",
             "alt_en": "Dermatology team reviewing decisions together",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "staff_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -104,7 +230,7 @@
                 "en": "Dermatology team reviewing decisions together"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -121,7 +247,7 @@
             "alt_es": "Mapa editorial de rutas dermatologicas y decisiones clinicas",
             "alt_en": "Editorial map of dermatology routes and clinical decisions",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -139,13 +265,139 @@
                 "en": "Editorial map of dermatology routes and clinical decisions"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
             },
             "sourceKind": "real_photo",
             "identityPolicy": "generic"
+        },
+        {
+            "id": "v6-clinic-hub-clinical-ladder",
+            "kind": "card",
+            "sourceKind": "real_photo",
+            "identityPolicy": "generic",
+            "src": "/images/optimized/v6-clinic-hub-clinical-ladder.webp",
+            "srcset": "/images/optimized/v6-clinic-hub-clinical-ladder-400.webp 400w, /images/optimized/v6-clinic-hub-clinical-ladder-640.webp 640w, /images/optimized/v6-clinic-hub-clinical-ladder-800.webp 800w, /images/optimized/v6-clinic-hub-clinical-ladder-900.webp 900w, /images/optimized/v6-clinic-hub-clinical-ladder-1200.webp 1200w, /images/optimized/v6-clinic-hub-clinical-ladder.webp 1400w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Ruta dermatologica para evaluar, confirmar y decidir el siguiente paso",
+            "alt_en": "Dermatology route to assess, confirm, and decide the next step",
+            "status": "approved",
+            "sourceType": "real_photo",
+            "publicWebSafe": true,
+            "orientation": "landscape",
+            "editorialTags": [
+                "clinical_direction",
+                "decisioning",
+                "care_route"
+            ],
+            "allowedSlotRoles": [
+                "hero_slide",
+                "editorial_card",
+                "matrix_card",
+                "featured_card",
+                "hub_card",
+                "initiative_card",
+                "statement_band",
+                "index_card",
+                "page_hero"
+            ],
+            "tone": "ink",
+            "localeAlt": {
+                "es": "Ruta dermatologica para evaluar, confirmar y decidir el siguiente paso",
+                "en": "Dermatology route to assess, confirm, and decide the next step"
+            },
+            "generation": {
+                "strategy": "photo_first_composite",
+                "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
+                "promptPack": "docs/public-v6-image-refresh.md",
+                "reviewState": "approved"
+            }
+        },
+        {
+            "id": "v6-clinic-hub-remote-entry",
+            "kind": "card",
+            "sourceKind": "real_photo",
+            "identityPolicy": "generic",
+            "src": "/images/optimized/v6-clinic-hub-remote-entry.webp",
+            "srcset": "/images/optimized/v6-clinic-hub-remote-entry-400.webp 400w, /images/optimized/v6-clinic-hub-remote-entry-640.webp 640w, /images/optimized/v6-clinic-hub-remote-entry-800.webp 800w, /images/optimized/v6-clinic-hub-remote-entry-900.webp 900w, /images/optimized/v6-clinic-hub-remote-entry-1200.webp 1200w, /images/optimized/v6-clinic-hub-remote-entry.webp 1400w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Entrada remota dermatologica con triage y lectura inicial",
+            "alt_en": "Remote dermatology entry with triage and initial review",
+            "status": "approved",
+            "sourceType": "real_photo",
+            "publicWebSafe": true,
+            "orientation": "landscape",
+            "editorialTags": [
+                "telemedicine",
+                "intake",
+                "remote_entry"
+            ],
+            "allowedSlotRoles": [
+                "hero_slide",
+                "editorial_card",
+                "matrix_card",
+                "featured_card",
+                "hub_card",
+                "initiative_card",
+                "statement_band",
+                "index_card",
+                "page_hero"
+            ],
+            "tone": "ink",
+            "localeAlt": {
+                "es": "Entrada remota dermatologica con triage y lectura inicial",
+                "en": "Remote dermatology entry with triage and initial review"
+            },
+            "generation": {
+                "strategy": "photo_first_composite",
+                "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
+                "promptPack": "docs/public-v6-image-refresh.md",
+                "reviewState": "approved"
+            }
+        },
+        {
+            "id": "v6-clinic-hub-care-handoff",
+            "kind": "card",
+            "sourceKind": "real_photo",
+            "identityPolicy": "generic",
+            "src": "/images/optimized/v6-clinic-hub-care-handoff.webp",
+            "srcset": "/images/optimized/v6-clinic-hub-care-handoff-400.webp 400w, /images/optimized/v6-clinic-hub-care-handoff-640.webp 640w, /images/optimized/v6-clinic-hub-care-handoff-800.webp 800w, /images/optimized/v6-clinic-hub-care-handoff-900.webp 900w, /images/optimized/v6-clinic-hub-care-handoff-1200.webp 1200w, /images/optimized/v6-clinic-hub-care-handoff.webp 1400w",
+            "sizes": "(max-width: 900px) 100vw, 33vw",
+            "alt_es": "Transicion coordinada entre teledermatologia, consulta y seguimiento",
+            "alt_en": "Coordinated transition across teledermatology, clinic review, and follow-up",
+            "status": "approved",
+            "sourceType": "real_photo",
+            "publicWebSafe": true,
+            "orientation": "landscape",
+            "editorialTags": [
+                "telemedicine",
+                "handoff",
+                "continuity"
+            ],
+            "allowedSlotRoles": [
+                "hero_slide",
+                "editorial_card",
+                "matrix_card",
+                "featured_card",
+                "hub_card",
+                "initiative_card",
+                "statement_band",
+                "index_card",
+                "page_hero"
+            ],
+            "tone": "ink",
+            "localeAlt": {
+                "es": "Transicion coordinada entre teledermatologia, consulta y seguimiento",
+                "en": "Coordinated transition across teledermatology, clinic review, and follow-up"
+            },
+            "generation": {
+                "strategy": "photo_first_composite",
+                "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
+                "promptPack": "docs/public-v6-image-refresh.md",
+                "reviewState": "approved"
+            }
         },
         {
             "id": "v6-clinic-clinic-environment",
@@ -156,7 +408,7 @@
             "alt_es": "Consultorio dermatologico preparado para una evaluacion tranquila",
             "alt_en": "Dermatology clinic prepared for a calm evaluation",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -176,7 +428,7 @@
                 "en": "Dermatology clinic prepared for a calm evaluation"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -193,7 +445,7 @@
             "alt_es": "Acompanamiento clinico con explicacion y consentimiento claro",
             "alt_en": "Clinical guidance with clear explanation and consent",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "staff_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -212,7 +464,7 @@
                 "en": "Clinical guidance with clear explanation and consent"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -229,7 +481,7 @@
             "alt_es": "Inicio de teledermatologia con contexto clinico e imagenes",
             "alt_en": "Teledermatology intake with clinical context and imaging",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -249,7 +501,7 @@
                 "en": "Teledermatology intake with clinical context and imaging"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -266,7 +518,7 @@
             "alt_es": "Revision dermatologica remota con seguimiento y ajuste",
             "alt_en": "Remote dermatology review with follow-up and adjustment",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -288,7 +540,7 @@
                 "en": "Remote dermatology review with follow-up and adjustment"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -305,7 +557,7 @@
             "alt_es": "Privacidad, consentimiento y reglas del sitio en un marco claro",
             "alt_en": "Privacy, consent, and site rules framed with clarity",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -326,7 +578,7 @@
                 "en": "Privacy, consent, and site rules framed with clarity"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -343,7 +595,7 @@
             "alt_es": "Direccion clinica dermatologica con lectura estructurada",
             "alt_en": "Clinical dermatology direction with a structured read",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "staff_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -365,7 +617,7 @@
                 "en": "Clinical dermatology direction with a structured read"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -382,7 +634,7 @@
             "alt_es": "Guia dermatologica para procedimientos indicados",
             "alt_en": "Dermatology guidance for indicated procedures",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -404,7 +656,7 @@
                 "en": "Dermatology guidance for indicated procedures"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -421,7 +673,7 @@
             "alt_es": "Acompanamiento dermatologico familiar y seguimiento compartido",
             "alt_en": "Family dermatology support and shared follow-up",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "staff_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -440,7 +692,7 @@
                 "en": "Family dermatology support and shared follow-up"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -457,7 +709,7 @@
             "alt_es": "Consulta dermatologica integral con lectura inicial estructurada",
             "alt_en": "Comprehensive dermatology consultation with structured first review",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -476,7 +728,7 @@
                 "en": "Comprehensive dermatology consultation with structured first review"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -514,7 +766,7 @@
                 "en": "Dermatology follow-up for inflammation and skin sensitivity"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -531,7 +783,7 @@
             "alt_es": "Procedimiento dermatologico de precision para lesiones localizadas",
             "alt_en": "Precision dermatology procedure for localized lesions",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -549,7 +801,7 @@
                 "en": "Precision dermatology procedure for localized lesions"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -566,7 +818,7 @@
             "alt_es": "Evaluacion de textura cutanea y control de barrera",
             "alt_en": "Skin texture evaluation and barrier care control",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -584,7 +836,7 @@
                 "en": "Skin texture evaluation and barrier care control"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -601,7 +853,7 @@
             "alt_es": "Ruta dermatologica para relieve, tono y reparacion visible",
             "alt_en": "Dermatology route for visible texture, tone, and repair",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -619,7 +871,7 @@
                 "en": "Dermatology route for visible texture, tone, and repair"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -636,7 +888,7 @@
             "alt_es": "Dermatoscopia y lectura de lesiones con criterios de alarma",
             "alt_en": "Dermatoscopy and lesion review with warning criteria",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -656,7 +908,7 @@
                 "en": "Dermatoscopy and lesion review with warning criteria"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -673,7 +925,7 @@
             "alt_es": "Preparacion dermatologica para renovacion cutanea controlada",
             "alt_en": "Dermatology preparation for controlled skin renewal",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -691,7 +943,7 @@
                 "en": "Dermatology preparation for controlled skin renewal"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -708,7 +960,7 @@
             "alt_es": "Protocolo dermoestetico de soporte e hidratacion profunda",
             "alt_en": "Dermoaesthetic protocol for deep support and hydration",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -726,7 +978,7 @@
                 "en": "Dermoaesthetic protocol for deep support and hydration"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -743,7 +995,7 @@
             "alt_es": "Plataforma laser dermatologica con parametros controlados",
             "alt_en": "Dermatology laser platform with controlled settings",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -763,7 +1015,7 @@
                 "en": "Dermatology laser platform with controlled settings"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -780,7 +1032,7 @@
             "alt_es": "Evaluacion de armonia facial con criterio dermatologico",
             "alt_en": "Facial harmony evaluation with dermatology judgment",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "real_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -798,7 +1050,7 @@
                 "en": "Facial harmony evaluation with dermatology judgment"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -834,7 +1086,7 @@
                 "en": "Firmness and skin quality support with a medical approach"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -869,7 +1121,7 @@
                 "en": "Integrated skin, hair, and nails route with coordinated review"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -886,7 +1138,7 @@
             "alt_es": "Consulta dermatologica pediatrica con acompanamiento familiar",
             "alt_en": "Pediatric dermatology consultation with family support",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "staff_photo",
             "publicWebSafe": true,
             "orientation": "landscape",
             "editorialTags": [
@@ -905,7 +1157,7 @@
                 "en": "Pediatric dermatology consultation with family support"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -922,7 +1174,7 @@
             "alt_es": "Direccion clinica dermatologica",
             "alt_en": "Clinical dermatology leadership",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "staff_photo",
             "publicWebSafe": true,
             "orientation": "portrait",
             "editorialTags": [
@@ -938,7 +1190,7 @@
                 "en": "Clinical dermatology leadership"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
@@ -955,7 +1207,7 @@
             "alt_es": "Direccion de estetica medica dermatologica",
             "alt_en": "Medical aesthetics dermatology leadership",
             "status": "approved",
-            "sourceType": "ai_generated",
+            "sourceType": "staff_photo",
             "publicWebSafe": true,
             "orientation": "portrait",
             "editorialTags": [
@@ -971,7 +1223,7 @@
                 "en": "Medical aesthetics dermatology leadership"
             },
             "generation": {
-                "strategy": "local_editorial_illustration",
+                "strategy": "photo_first_composite",
                 "source": "src/apps/astro/scripts/generate-public-v6-image-set.mjs",
                 "promptPack": "docs/public-v6-image-refresh.md",
                 "reviewState": "approved"
