@@ -211,6 +211,12 @@ test('weekly-kpi workflow expone outputs normalizados para semaforo general y SL
         'weekly_cycle_status',
         'weekly_cycle_reason',
         'weekly_cycle_last_critical_generated_at',
+        'recovery_cycle_id',
+        'recovery_cycle_status',
+        'recovery_cycle_freeze_active',
+        'recovery_cycle_allowed_slice',
+        'recovery_cycle_weekly_ready',
+        'recovery_cycle_pilot_recommendation_eligible',
         'report_generated_at_utc',
         'report_age_hours',
         'report_stale',
@@ -231,6 +237,29 @@ test('weekly-kpi workflow expone outputs normalizados para semaforo general y SL
                 raw.includes(`core.setOutput('${outputKey}'`),
             true,
             `falta output normalizado general/SLA: ${outputKey}`
+        );
+    }
+});
+
+test('weekly-kpi workflow publica recovery cycle en el step summary', () => {
+    const { raw } = loadWorkflow();
+    const requiredSnippets = [
+        'steps.report.outputs.recovery_cycle_id',
+        'steps.report.outputs.recovery_cycle_status',
+        'steps.report.outputs.recovery_cycle_freeze_active',
+        'steps.report.outputs.recovery_cycle_allowed_slice',
+        'steps.report.outputs.recovery_cycle_weekly_ready',
+        'steps.report.outputs.recovery_cycle_pilot_recommendation_eligible',
+        'recovery_cycle_id: ',
+        'recovery_cycle_status: ',
+        'recovery_cycle_allowed_slice: ',
+    ];
+
+    for (const snippet of requiredSnippets) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta wiring de recovery cycle en weekly-kpi-report.yml: ${snippet}`
         );
     }
 });

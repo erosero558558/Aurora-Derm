@@ -78,6 +78,30 @@ test('weekly report script publica weeklyCycle en markdown y JSON', () => {
     }
 });
 
+test('weekly report script publica recoveryCycle en markdown y JSON', () => {
+    const raw = loadScript();
+    const requiredSnippets = [
+        '## Recovery Cycle',
+        '$recoveryCycleState = [pscustomobject]@{',
+        "Id = 'flow-os-recovery-2026-03-21'",
+        "AllowedSlice = 'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy'",
+        "DailyRitualCommand = 'npm run flow-os:recovery:daily'",
+        'PilotRecommendationEligible = [bool]($weeklyCycleReady -and $warningCountsCritical -eq 0)',
+        '# $recoveryCyclePayload = [ordered]@{}',
+        '# $reportPayload.recoveryCycle = $recoveryCyclePayload',
+        '-RecoveryCycleState $recoveryCycleState',
+        'recovery_cycle_status=$($recoveryCycleState.Status)',
+    ];
+
+    for (const snippet of requiredSnippets) {
+        assert.equal(
+            raw.includes(snippet),
+            true,
+            `falta snippet de salida recoveryCycle: ${snippet}`
+        );
+    }
+});
+
 test('weekly report script soporta fail opcional por ciclo no listo', () => {
     const raw = loadScript();
     const requiredSnippets = [

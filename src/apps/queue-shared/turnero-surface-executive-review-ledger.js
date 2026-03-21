@@ -4,7 +4,7 @@ import {
     removeClinicScopedStorageValue,
 } from './clinic-storage.js';
 import {
-    normalizeTurneroSurfaceExecutiveReviewSurfaceKey,
+    resolveTurneroSurfaceExecutiveReviewSurfaceProfileKey,
     resolveTurneroSurfaceExecutiveReviewScope,
 } from './turnero-surface-executive-review-snapshot.js';
 
@@ -31,9 +31,15 @@ function asArray(value) {
 function normalizeStatus(value) {
     const normalized = toString(value, 'watch').toLowerCase();
     if (
-        ['watch', 'ready', 'approved', 'closed', 'done', 'blocked', 'draft'].includes(
-            normalized
-        )
+        [
+            'watch',
+            'ready',
+            'approved',
+            'closed',
+            'done',
+            'blocked',
+            'draft',
+        ].includes(normalized)
     ) {
         return normalized === 'approved' ? 'ready' : normalized;
     }
@@ -93,8 +99,9 @@ function normalizeEntry(entry = {}, fallbackScope = 'regional') {
         id:
             toString(source.id) ||
             `exec-review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        scope: toString(source.scope, fallbackScope || 'regional') || 'regional',
-        surfaceKey: normalizeTurneroSurfaceExecutiveReviewSurfaceKey(
+        scope:
+            toString(source.scope, fallbackScope || 'regional') || 'regional',
+        surfaceKey: resolveTurneroSurfaceExecutiveReviewSurfaceProfileKey(
             source.surfaceKey || source.surface || 'surface'
         ),
         kind: normalizeKind(source.kind),
@@ -198,7 +205,10 @@ function writeScopeEntries(storageKey, clinicProfile, scope, entries) {
         return persistEnvelope(storageKey, clinicProfile, nextEnvelope);
     }
 
-    nextEnvelope.scopes[normalizedScope] = normalizedEntries.slice(0, MAX_HISTORY);
+    nextEnvelope.scopes[normalizedScope] = normalizedEntries.slice(
+        0,
+        MAX_HISTORY
+    );
     return persistEnvelope(storageKey, clinicProfile, nextEnvelope);
 }
 
@@ -211,10 +221,14 @@ export function createTurneroSurfaceExecutiveReviewLedger(
     return {
         list({ surfaceKey = '', kind = '', status = '' } = {}) {
             const normalizedSurfaceKey = toString(surfaceKey)
-                ? normalizeTurneroSurfaceExecutiveReviewSurfaceKey(surfaceKey)
+                ? resolveTurneroSurfaceExecutiveReviewSurfaceProfileKey(
+                      surfaceKey
+                  )
                 : '';
             const normalizedKind = normalizeKind(kind);
-            const normalizedStatus = normalizeStatus(status);
+            const normalizedStatus = toString(status)
+                ? normalizeStatus(status)
+                : '';
             return readScopeEntries(STORAGE_KEY, clinicProfile, normalizedScope)
                 .filter((entry) => {
                     if (
@@ -255,7 +269,9 @@ export function createTurneroSurfaceExecutiveReviewLedger(
         },
         clear({ surfaceKey = '' } = {}) {
             const normalizedSurfaceKey = toString(surfaceKey)
-                ? normalizeTurneroSurfaceExecutiveReviewSurfaceKey(surfaceKey)
+                ? resolveTurneroSurfaceExecutiveReviewSurfaceProfileKey(
+                      surfaceKey
+                  )
                 : '';
             if (!normalizedSurfaceKey) {
                 return writeScopeEntries(
