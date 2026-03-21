@@ -170,6 +170,9 @@ final class GatewayClient
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_MAXFILESIZE => 1572864,
         ]);
+        if (function_exists('app_curl_apply_tls_defaults')) {
+            app_curl_apply_tls_defaults($ch);
+        }
 
         $raw = curl_exec($ch);
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -249,6 +252,9 @@ final class GatewayClient
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
         ]);
+        if (function_exists('app_curl_apply_tls_defaults')) {
+            app_curl_apply_tls_defaults($ch);
+        }
         $raw = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);

@@ -755,10 +755,8 @@ function Invoke-EndpointCheck {
 
         $sw = [System.Diagnostics.Stopwatch]::StartNew()
         try {
-            $response = Invoke-WebRequest -Uri $Url -Method Get -TimeoutSec $TimeoutSec -UseBasicParsing -Headers @{
-                'Cache-Control' = 'no-cache'
-                'User-Agent' = $UserAgent
-            }
+            $headers = Get-DiagnosticsAuthHeaders -UserAgent $UserAgent
+            $response = Invoke-WebRequest -Uri $Url -Method Get -TimeoutSec $TimeoutSec -UseBasicParsing -Headers $headers
             $sw.Stop()
             return [pscustomobject]@{
                 Name = $Name

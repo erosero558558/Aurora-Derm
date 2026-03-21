@@ -167,6 +167,48 @@ function app_env(string $name, $default = false)
     return $default;
 }
 
+function app_ca_bundle_path(): string
+{
+    $raw = app_env('AURORADERM_CA_BUNDLE', '');
+    if (!is_string($raw)) {
+        return '';
+    }
+
+    $path = trim($raw);
+    if ($path === '' || !is_file($path)) {
+        return '';
+    }
+
+    return $path;
+}
+
+function app_curl_apply_tls_defaults($curlHandle): void
+{
+    if (!is_resource($curlHandle) && !is_object($curlHandle)) {
+        return;
+    }
+
+    $caBundlePath = app_ca_bundle_path();
+    if ($caBundlePath !== '') {
+        @curl_setopt($curlHandle, CURLOPT_CAINFO, $caBundlePath);
+    }
+}
+
+function app_stream_ssl_context_options(): array
+{
+    $options = [
+        'verify_peer' => true,
+        'verify_peer_name' => true,
+    ];
+
+    $caBundlePath = app_ca_bundle_path();
+    if ($caBundlePath !== '') {
+        $options['cafile'] = $caBundlePath;
+    }
+
+    return $options;
+}
+
 function app_bootstrap_env_aliases(): void
 {
     static $bootstrapped = false;

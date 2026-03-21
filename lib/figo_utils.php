@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/storage.php';
 
+function api_strip_utf8_bom(string $raw): string
+{
+    if (strncmp($raw, "\xEF\xBB\xBF", 3) === 0) {
+        return substr($raw, 3);
+    }
+
+    return $raw;
+}
+
 function api_resolve_figo_endpoint_for_health(): string
 {
     $envCandidates = [
@@ -44,6 +53,7 @@ function api_resolve_figo_endpoint_for_health(): string
         if (!is_string($raw) || trim($raw) === '') {
             continue;
         }
+        $raw = api_strip_utf8_bom($raw);
         $decoded = json_decode($raw, true);
         if (!is_array($decoded)) {
             continue;
@@ -173,6 +183,7 @@ function api_read_figo_config_with_meta(): array
         ];
     }
 
+    $raw = api_strip_utf8_bom($raw);
     $decoded = json_decode($raw, true);
     if (!is_array($decoded)) {
         return [

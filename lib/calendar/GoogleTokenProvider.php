@@ -341,6 +341,9 @@ class GoogleTokenProvider
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
                 curl_setopt($ch, CURLOPT_TIMEOUT_MS, $timeoutMs);
                 curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, min(3000, $timeoutMs));
+                if (function_exists('app_curl_apply_tls_defaults')) {
+                    app_curl_apply_tls_defaults($ch);
+                }
                 $rawBody = curl_exec($ch);
                 $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $curlError = curl_error($ch);
@@ -361,6 +364,9 @@ class GoogleTokenProvider
                 'timeout' => max(1, (int) ceil($timeoutMs / 1000)),
                 'ignore_errors' => true,
             ],
+            'ssl' => function_exists('app_stream_ssl_context_options')
+                ? app_stream_ssl_context_options()
+                : ['verify_peer' => true, 'verify_peer_name' => true],
         ]);
 
         $rawBody = @file_get_contents($url, false, $context);

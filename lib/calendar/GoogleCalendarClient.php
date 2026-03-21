@@ -346,6 +346,9 @@ class GoogleCalendarClient
                 if ($body !== '') {
                     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
                 }
+                if (function_exists('app_curl_apply_tls_defaults')) {
+                    app_curl_apply_tls_defaults($ch);
+                }
                 $responseBody = curl_exec($ch);
                 $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $curlError = curl_error($ch);
@@ -367,6 +370,9 @@ class GoogleCalendarClient
                 'timeout' => max(1, (int) ceil($this->timeoutMs / 1000)),
                 'ignore_errors' => true,
             ],
+            'ssl' => function_exists('app_stream_ssl_context_options')
+                ? app_stream_ssl_context_options()
+                : ['verify_peer' => true, 'verify_peer_name' => true],
         ]);
 
         $responseBody = @file_get_contents($url, false, $context);

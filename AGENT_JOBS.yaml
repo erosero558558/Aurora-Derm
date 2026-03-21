@@ -7,14 +7,14 @@ jobs:
     type: external_cron
     owner: codex_backend_ops
     environment: production
-    repo_path: /var/www/figo
+    repo_path: C:\dev\pielarmonia-clean-main
     branch: main
     schedule: "* * * * *"
-    command: /root/sync-pielarmonia.sh
-    wrapper_fallback: /var/www/figo/bin/deploy-public-v3-cron-sync.sh
-    lock_file: /tmp/sync-pielarmonia.lock
-    log_path: /var/log/sync-pielarmonia.log
-    status_path: /var/lib/pielarmonia/public-sync-status.json
+    command: powershell -NoProfile -ExecutionPolicy Bypass -File C:\ProgramData\Pielarmonia\hosting\runtime-main-sync.ps1 -MirrorRepoPath C:\dev\pielarmonia-clean-main -Quiet
+    wrapper_fallback: C:\ProgramData\Pielarmonia\hosting\runtime-main-sync.ps1
+    lock_file: C:\tmp\sync-pielarmonia.lock
+    log_path: C:\ProgramData\Pielarmonia\hosting\main-sync.runtime.log
+    status_path: C:\ProgramData\Pielarmonia\hosting\public-sync-status.json
     health_url: https://pielarmonia.com/api.php?resource=health
     expected_max_lag_seconds: 120
     source_of_truth: host_cron

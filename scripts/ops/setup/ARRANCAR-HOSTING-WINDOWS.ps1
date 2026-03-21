@@ -24,6 +24,7 @@ $runtimeRoot = [string]$runtimePaths.RuntimeRoot
 $logRoot = [string]$runtimePaths.LogsRoot
 $pidRoot = [string]$runtimePaths.PidRoot
 $mirrorEnvPath = Join-Path $repoRoot 'env.php'
+$mirrorEnvOverridePath = Join-Path $repoRoot 'data\runtime\hosting\env.runtime-overrides.inc.php'
 $caddyTemplatePath = [string]$runtimePaths.CaddyTemplatePath
 $caddyRuntimeConfigPath = [string]$runtimePaths.CaddyRuntimeConfigPath
 $caddyAccessLogPath = [string]$runtimePaths.CaddyAccessLogPath
@@ -190,13 +191,45 @@ function Sync-ExternalEnvFile {
 
     $sourceHash = Get-HostingFileSha256 -Path $SourcePath
     $destinationHash = Get-HostingFileSha256 -Path $DestinationPath
-    if ($sourceHash -eq $destinationHash) {
+    $copied = $false
+    if ($sourceHash -ne $destinationHash) {
+        Ensure-HostingParentDirectory -Path $DestinationPath
+        Copy-Item -LiteralPath $SourcePath -Destination $DestinationPath -Force
+        Write-Info ("env.php externo sincronizado: {0} -> {1}" -f $SourcePath, $DestinationPath)
+        $copied = $true
+    }
+
+    $overlayApplied = Apply-RuntimeEnvOverlay -DestinationPath $DestinationPath -OverridePath $mirrorEnvOverridePath
+    return ($copied -or $overlayApplied)
+}
+
+function Apply-RuntimeEnvOverlay {
+    param(
+        [string]$DestinationPath,
+        [string]$OverridePath
+    )
+
+    if (-not (Test-Path -LiteralPath $OverridePath -PathType Leaf)) {
         return $false
     }
 
-    Ensure-HostingParentDirectory -Path $DestinationPath
-    Copy-Item -LiteralPath $SourcePath -Destination $DestinationPath -Force
-    Write-Info ("env.php externo sincronizado: {0} -> {1}" -f $SourcePath, $DestinationPath)
+    $overrideRaw = Get-Content -LiteralPath $OverridePath -Raw -ErrorAction Stop
+    if ([string]::IsNullOrWhiteSpace($overrideRaw)) {
+        return $false
+    }
+
+    $destinationRaw = ''
+    if (Test-Path -LiteralPath $DestinationPath -PathType Leaf) {
+        $destinationRaw = Get-Content -LiteralPath $DestinationPath -Raw -ErrorAction Stop
+    }
+
+    $normalizedOverride = $overrideRaw.Trim()
+    if (-not [string]::IsNullOrWhiteSpace($destinationRaw) -and $destinationRaw.Contains($normalizedOverride)) {
+        return $false
+    }
+
+    Add-Content -LiteralPath $DestinationPath -Value ([Environment]::NewLine + $normalizedOverride + [Environment]::NewLine) -Encoding ASCII
+    Write-Info ("env runtime overlay aplicado: {0}" -f $OverridePath)
     return $true
 }
 

@@ -38,6 +38,7 @@ $commonHttpPath = Join-Path $repoRoot 'bin/powershell/Common.Http.ps1'
 $openClawAuthDiagnosticScriptPath = Join-Path $repoRoot 'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1'
 $turneroClinicProfileScriptPath = Join-Path $repoRoot 'bin/turnero-clinic-profile.js'
 . $commonHttpPath
+$diagnosticsAuthConfiguration = Get-DiagnosticsAuthConfiguration
 
 function Test-BooleanLike {
     param(
@@ -469,6 +470,15 @@ foreach ($c in $checks) {
         }
 
         if (-not $handledBlockedCalendar) {
+            if (
+                $r.Name -eq 'health-diagnostics' -and
+                $r.StatusCode -eq 403 -and
+                [string]::IsNullOrWhiteSpace([string]$diagnosticsAuthConfiguration.Token)
+            ) {
+                $failures += '[FAIL] monitor_secret_missing: health-diagnostics protegido y no existe token local para autenticar el monitor'
+                continue
+            }
+
             $failures += "[FAIL] $($r.Name): status=$($r.StatusCode) error=$($r.Error)"
         }
         continue

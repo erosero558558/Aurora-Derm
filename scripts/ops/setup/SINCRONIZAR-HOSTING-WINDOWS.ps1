@@ -40,6 +40,7 @@ $resolvedOperatorUserProfile = if ([string]::IsNullOrWhiteSpace($OperatorUserPro
     [System.IO.Path]::GetFullPath($OperatorUserProfile)
 }
 $mirrorEnvPath = Join-Path $mirrorRepoPathResolved 'env.php'
+$mirrorEnvOverridePath = Join-Path $mirrorRepoPathResolved 'data\runtime\hosting\env.runtime-overrides.inc.php'
 $mirrorStartScriptPath = Join-Path $mirrorRepoPathResolved 'scripts\ops\setup\ARRANCAR-HOSTING-WINDOWS.ps1'
 $lockPath = $statusPathResolved + '.lock'
 $lockInfoPath = Get-HostingLockInfoPath -LockDirectoryPath $lockPath
@@ -74,7 +75,8 @@ $optionalGeneratedFiles = @(
     'admin.js',
     'js\booking-calendar.js',
     'js\queue-kiosk.js',
-    'js\queue-display.js'
+    'js\queue-display.js',
+    'js\queue-operator.js'
 )
 
 function Write-Info {
@@ -93,6 +95,36 @@ function Write-Status {
 
     $Payload.timestamp = [DateTimeOffset]::Now.ToString('o')
     Write-HostingJsonFile -Path $statusPathResolved -Payload $Payload
+}
+
+function Apply-MirrorEnvRuntimeOverlay {
+    param(
+        [string]$DestinationPath,
+        [string]$OverridePath
+    )
+
+    if (-not (Test-Path -LiteralPath $OverridePath -PathType Leaf)) {
+        return $false
+    }
+
+    $overrideRaw = Get-Content -LiteralPath $OverridePath -Raw -ErrorAction Stop
+    if ([string]::IsNullOrWhiteSpace($overrideRaw)) {
+        return $false
+    }
+
+    $destinationRaw = ''
+    if (Test-Path -LiteralPath $DestinationPath -PathType Leaf) {
+        $destinationRaw = Get-Content -LiteralPath $DestinationPath -Raw -ErrorAction Stop
+    }
+
+    $normalizedOverride = $overrideRaw.Trim()
+    if (-not [string]::IsNullOrWhiteSpace($destinationRaw) -and $destinationRaw.Contains($normalizedOverride)) {
+        return $false
+    }
+
+    Add-Content -LiteralPath $DestinationPath -Value ([Environment]::NewLine + $normalizedOverride + [Environment]::NewLine) -Encoding ASCII
+    Write-Info ("Aplicado overlay runtime env: {0}" -f $OverridePath)
+    return $true
 }
 
 function Invoke-Git {
@@ -327,10 +359,39 @@ function Resolve-DesiredCommit {
 }
 
 function Test-PublishedGeneratedArtifactsReady {
-    param([string]$RepoPath)
+    param(
+        [string]$RepoPath,
+        [string]$GeneratedRootPath = ''
+    )
 
+    $directoriesToCheck = New-Object 'System.Collections.Generic.List[string]'
     foreach ($relativePath in $requiredGeneratedDirectories) {
+        $directoriesToCheck.Add([string]$relativePath) | Out-Null
+    }
+
+    $filesToCheck = New-Object 'System.Collections.Generic.List[string]'
+    $hasGeneratedRoot = -not [string]::IsNullOrWhiteSpace($GeneratedRootPath) -and (Test-Path -LiteralPath $GeneratedRootPath -PathType Container)
+
+    foreach ($relativePath in $optionalGeneratedDirectories) {
+        if ((-not $hasGeneratedRoot) -or (Test-Path -LiteralPath (Join-Path $GeneratedRootPath $relativePath) -PathType Container)) {
+            $directoriesToCheck.Add([string]$relativePath) | Out-Null
+        }
+    }
+
+    foreach ($relativePath in $optionalGeneratedFiles) {
+        if ((-not $hasGeneratedRoot) -or (Test-Path -LiteralPath (Join-Path $GeneratedRootPath $relativePath) -PathType Leaf)) {
+            $filesToCheck.Add([string]$relativePath) | Out-Null
+        }
+    }
+
+    foreach ($relativePath in $directoriesToCheck) {
         if (-not (Test-Path -LiteralPath (Join-Path $RepoPath $relativePath) -PathType Container)) {
+            return $false
+        }
+    }
+
+    foreach ($relativePath in $filesToCheck) {
+        if (-not (Test-Path -LiteralPath (Join-Path $RepoPath $relativePath) -PathType Leaf)) {
             return $false
         }
     }
@@ -345,6 +406,20 @@ function Remove-PublishedGeneratedArtifacts {
         $targetPath = Join-Path $RepoPath $relativePath
         if (Test-Path -LiteralPath $targetPath) {
             Remove-Item -LiteralPath $targetPath -Recurse -Force -ErrorAction Stop
+        }
+    }
+
+    foreach ($relativePath in $optionalGeneratedDirectories) {
+        $targetPath = Join-Path $RepoPath $relativePath
+        if (Test-Path -LiteralPath $targetPath) {
+            Remove-Item -LiteralPath $targetPath -Recurse -Force -ErrorAction Stop
+        }
+    }
+
+    foreach ($relativePath in $optionalGeneratedFiles) {
+        $targetPath = Join-Path $RepoPath $relativePath
+        if (Test-Path -LiteralPath $targetPath) {
+            Remove-Item -LiteralPath $targetPath -Force -ErrorAction Stop
         }
     }
 }
@@ -437,26 +512,70 @@ function Invoke-PublicBuildAndPublish {
 
     Push-Location $RepoPath
     try {
-        $buildResult = Invoke-HostingCommandWithOutput `
-            -FilePath $npmExe `
-            -Arguments @('run', 'build:public:v6', '--', '--report', $publicBuildReportPath) `
-            -TimeoutSeconds $publicBuildTimeoutSeconds `
-            -HeartbeatPath $statusPathResolved `
-            -Label 'build:public:v6'
-        if ($buildResult.TimedOut -eq $true) {
-            throw 'public_build_timeout'
-        }
-        if ($buildResult.ExitCode -ne 0) {
-            if (-not [string]::IsNullOrWhiteSpace($buildResult.Output)) {
-                Write-Info $buildResult.Output.Trim()
+        $buildSteps = @(
+            @{ Label = 'content:public-v4:validate'; Arguments = @('run', 'content:public-v4:validate') },
+            @{ Label = 'content:public-v5:validate'; Arguments = @('run', 'content:public-v5:validate') },
+            @{ Label = 'build:turnero:runtime'; Arguments = @('run', 'build:turnero:runtime') },
+            @{ Label = 'check:turnero:runtime'; Arguments = @('run', 'check:turnero:runtime') },
+            @{ Label = 'chunks:public:prune'; Arguments = @('run', 'chunks:public:prune') },
+            @{ Label = 'sync:runtime:compat:versions'; Arguments = @('run', 'sync:runtime:compat:versions') },
+            @{ Label = 'chunks:admin:prune'; Arguments = @('run', 'chunks:admin:prune') },
+            @{ Label = 'content:public:v6:validate'; Arguments = @('run', 'content:public:v6:validate') },
+            @{ Label = 'build:public:v6'; Arguments = @('run', 'build:public:v6', '--', '--report', $publicBuildReportPath) }
+        )
+
+        foreach ($step in $buildSteps) {
+            $buildResult = Invoke-HostingCommandWithOutput `
+                -FilePath $npmExe `
+                -Arguments $step.Arguments `
+                -TimeoutSeconds $publicBuildTimeoutSeconds `
+                -HeartbeatPath $statusPathResolved `
+                -Label ([string]$step.Label)
+            if ($buildResult.TimedOut -eq $true) {
+                Write-Info ("public build timeout en {0}" -f $step.Label)
+                throw 'public_build_timeout'
             }
-            throw 'public_build_failed'
+            if ($buildResult.ExitCode -ne 0) {
+                if (-not [string]::IsNullOrWhiteSpace($buildResult.Output)) {
+                    Write-Info $buildResult.Output.Trim()
+                }
+                Write-Info ("public build failed en {0}" -f $step.Label)
+                throw 'public_build_failed'
+            }
         }
     } finally {
         Pop-Location
     }
 
     Publish-PublicGeneratedArtifacts -RepoPath $RepoPath -GeneratedRootPath $generatedSiteRootPath
+
+    Push-Location $RepoPath
+    try {
+        foreach ($step in @(
+            @{ Label = 'check:public:v6:artifacts'; Arguments = @('run', 'check:public:v6:artifacts') },
+            @{ Label = 'check:public:runtime:artifacts'; Arguments = @('run', 'check:public:runtime:artifacts') }
+        )) {
+            $checkResult = Invoke-HostingCommandWithOutput `
+                -FilePath $npmExe `
+                -Arguments $step.Arguments `
+                -TimeoutSeconds $validationTimeoutSeconds `
+                -HeartbeatPath $statusPathResolved `
+                -Label ([string]$step.Label)
+            if ($checkResult.TimedOut -eq $true) {
+                Write-Info ("public validation timeout en {0}" -f $step.Label)
+                throw 'public_build_timeout'
+            }
+            if ($checkResult.ExitCode -ne 0) {
+                if (-not [string]::IsNullOrWhiteSpace($checkResult.Output)) {
+                    Write-Info $checkResult.Output.Trim()
+                }
+                Write-Info ("public validation failed en {0}" -f $step.Label)
+                throw 'public_build_failed'
+            }
+        }
+    } finally {
+        Pop-Location
+    }
 }
 
 function Invoke-StartMirrorStack {
@@ -887,6 +1006,7 @@ try {
     }
 
     Copy-Item -LiteralPath $externalEnvPathResolved -Destination $mirrorEnvPath -Force
+    Apply-MirrorEnvRuntimeOverlay -DestinationPath $mirrorEnvPath -OverridePath $mirrorEnvOverridePath | Out-Null
 
     $status.current_commit = Get-GitHeadSafe -RepoPath $mirrorRepoPathResolved
     $status.current_head = $status.current_commit
@@ -894,7 +1014,7 @@ try {
 
     $mirrorEnvHashAfter = Get-HostingFileSha256 -Path $mirrorEnvPath
     $status.env_changed = ($mirrorEnvHashBefore -ne $mirrorEnvHashAfter) -or ($externalEnvHash -ne $mirrorEnvHashBefore)
-    $status.public_artifacts_ok = Test-PublishedGeneratedArtifactsReady -RepoPath $mirrorRepoPathResolved
+    $status.public_artifacts_ok = Test-PublishedGeneratedArtifactsReady -RepoPath $mirrorRepoPathResolved -GeneratedRootPath $generatedSiteRootPath
     $status.public_build_required = $status.cloned -or $status.head_changed -or (-not $status.public_artifacts_ok)
     $status.public_build_report_path = $publicBuildReportPath
 
@@ -902,7 +1022,7 @@ try {
         Set-SyncPhase -CurrentStatus $status -State 'building_public' -DeployState 'build_public' -TimeoutSeconds $publicBuildTimeoutSeconds
         Invoke-PublicBuildAndPublish -RepoPath $mirrorRepoPathResolved
         $status.public_build_ran = $true
-        $status.public_artifacts_ok = Test-PublishedGeneratedArtifactsReady -RepoPath $mirrorRepoPathResolved
+        $status.public_artifacts_ok = Test-PublishedGeneratedArtifactsReady -RepoPath $mirrorRepoPathResolved -GeneratedRootPath $generatedSiteRootPath
         if (-not $status.public_artifacts_ok) {
             throw 'public_artifacts_missing_after_publish'
         }
