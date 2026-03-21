@@ -16,6 +16,36 @@ $action = strtolower(trim((string) ($_GET['action'] ?? 'status')));
 const ADMIN_LOGIN_ACTION = 'admin-login';
 const ADMIN_LOGIN_FAIL_ACTION = 'admin-login-failed';
 
+function admin_auth_is_loopback_request(): bool
+{
+    $remoteAddr = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    if (in_array($remoteAddr, ['127.0.0.1', '::1'], true)) {
+        return true;
+    }
+
+    $host = strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? '')));
+    return str_starts_with($host, '127.0.0.1') || str_starts_with($host, '[::1]');
+}
+
+function admin_auth_require_loopback_request(string $action): void
+{
+    if (admin_auth_is_loopback_request()) {
+        return;
+    }
+
+    audit_log_event('admin.local_only_denied', [
+        'action' => $action,
+        'remoteAddr' => (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+        'host' => (string) ($_SERVER['HTTP_HOST'] ?? ''),
+    ]);
+
+    json_response([
+        'ok' => false,
+        'error' => 'Esta operacion solo puede iniciarse desde el mismo host.',
+        'code' => 'loopback_required',
+    ], 403);
+}
+
 function admin_auth_fallbacks_payload(): array
 {
     if (function_exists('internal_console_auth_fallbacks_payload')) {
@@ -96,6 +126,10 @@ if ($method === 'GET' && $action === 'callback') {
     OperatorAuthController::callback();
 }
 
+if ($method === 'GET' && $action === 'oauth-callback') {
+    OperatorAuthController::oauthCallback();
+}
+
 if ($method === 'GET' && $action === 'status') {
     if ($prefersOpenClawAuth && operator_auth_is_enabled()) {
         if (legacy_admin_is_authenticated()) {
@@ -140,6 +174,17 @@ if ($method === 'GET' && $action === 'status') {
 if ($method === 'POST' && $action === 'start') {
     require_rate_limit('operator-auth-start', 12, 300);
     OperatorAuthController::start();
+}
+
+if ($method === 'POST' && $action === 'calendar-token-start') {
+    admin_auth_require_loopback_request($action);
+    require_rate_limit('calendar-oauth-reauth-start', 4, 600);
+    OperatorAuthController::calendarTokenStart();
+}
+
+if ($method === 'GET' && $action === 'calendar-token-status') {
+    admin_auth_require_loopback_request($action);
+    OperatorAuthController::calendarTokenStatus();
 }
 
 if ($method === 'POST' && $action === 'login') {

@@ -306,6 +306,73 @@ function operator_auth_callback_url(): string
     return operator_auth_server_base_url() . '/admin-auth.php?action=callback';
 }
 
+function operator_auth_google_env_value(string $primaryName, string $legacyName = ''): string
+{
+    $candidates = [$primaryName];
+    if (trim($legacyName) !== '') {
+        $candidates[] = $legacyName;
+    }
+
+    foreach ($candidates as $candidate) {
+        $raw = getenv($candidate);
+        if (is_string($raw) && trim($raw) !== '') {
+            return trim($raw);
+        }
+    }
+
+    return '';
+}
+
+function operator_auth_google_client_id(): string
+{
+    return operator_auth_google_env_value('PIELARMONIA_GOOGLE_OAUTH_CLIENT_ID', 'AURORADERM_GOOGLE_OAUTH_CLIENT_ID');
+}
+
+function operator_auth_google_client_secret(): string
+{
+    return operator_auth_google_env_value('PIELARMONIA_GOOGLE_OAUTH_CLIENT_SECRET', 'AURORADERM_GOOGLE_OAUTH_CLIENT_SECRET');
+}
+
+function operator_auth_google_redirect_uri(): string
+{
+    $redirectUri = operator_auth_google_env_value('PIELARMONIA_GOOGLE_OAUTH_REDIRECT_URI', 'AURORADERM_GOOGLE_OAUTH_REDIRECT_URI');
+    if ($redirectUri !== '') {
+        return $redirectUri;
+    }
+
+    return operator_auth_server_base_url() . '/admin-auth.php?action=oauth-callback';
+}
+
+function operator_auth_google_authorize_url(): string
+{
+    $url = operator_auth_google_env_value('PIELARMONIA_GOOGLE_OAUTH_AUTH_BASE_URL', 'AURORADERM_GOOGLE_OAUTH_AUTH_BASE_URL');
+    if ($url !== '') {
+        return $url;
+    }
+
+    return 'https://accounts.google.com/o/oauth2/v2/auth';
+}
+
+function operator_auth_google_token_url(): string
+{
+    $url = operator_auth_google_env_value('PIELARMONIA_GOOGLE_OAUTH_TOKEN_URL', 'AURORADERM_GOOGLE_OAUTH_TOKEN_URL');
+    if ($url !== '') {
+        return $url;
+    }
+
+    return 'https://oauth2.googleapis.com/token';
+}
+
+function operator_auth_google_tokeninfo_url(): string
+{
+    $url = operator_auth_google_env_value('PIELARMONIA_GOOGLE_OAUTH_TOKENINFO_URL', 'AURORADERM_GOOGLE_OAUTH_TOKENINFO_URL');
+    if ($url !== '') {
+        return $url;
+    }
+
+    return 'https://oauth2.googleapis.com/tokeninfo';
+}
+
 function operator_auth_broker_authorize_url(): string
 {
     $raw = getenv('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL');
@@ -1546,6 +1613,9 @@ function operator_auth_broker_request(string $method, string $url, array $option
         CURLOPT_TIMEOUT => 15,
         CURLOPT_CONNECTTIMEOUT => 5,
     ]);
+    if (function_exists('app_curl_apply_tls_defaults')) {
+        app_curl_apply_tls_defaults($ch);
+    }
 
     if ($body !== null) {
         curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
@@ -1566,6 +1636,92 @@ function operator_auth_broker_request(string $method, string $url, array $option
         'body' => $bodyText,
         'error' => $curlError,
     ];
+}
+
+function operator_auth_google_exchange_code(array $challenge, string $code): array
+{
+    $response = operator_auth_broker_request('POST', operator_auth_google_token_url(), [
+        'form' => [
+            'client_id' => operator_auth_google_client_id(),
+            'client_secret' => operator_auth_google_client_secret(),
+            'code' => $code,
+            'grant_type' => 'authorization_code',
+            'redirect_uri' => operator_auth_google_redirect_uri(),
+            'code_verifier' => (string) ($challenge['pkceVerifier'] ?? ''),
+        ],
+    ]);
+
+    return [
+        'ok' => (bool) ($response['ok'] ?? false),
+        'status' => (int) ($response['status'] ?? 0),
+        'body' => is_array($response['json'] ?? null) ? $response['json'] : [],
+        'raw' => (string) ($response['body'] ?? ''),
+        'error' => (string) ($response['error'] ?? ''),
+    ];
+}
+
+function operator_auth_google_validate_id_token(string $idToken): array
+{
+    $separator = str_contains(operator_auth_google_tokeninfo_url(), '?') ? '&' : '?';
+    $response = operator_auth_broker_request(
+        'GET',
+        operator_auth_google_tokeninfo_url() . $separator . http_build_query(['id_token' => $idToken])
+    );
+
+    return [
+        'ok' => (bool) ($response['ok'] ?? false),
+        'status' => (int) ($response['status'] ?? 0),
+        'body' => is_array($response['json'] ?? null) ? $response['json'] : [],
+        'raw' => (string) ($response['body'] ?? ''),
+        'error' => (string) ($response['error'] ?? ''),
+    ];
+}
+
+function operator_auth_google_callback_document(
+    string $title,
+    string $message,
+    string $tone = 'info',
+    string $redirectUrl = ''
+): string {
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+    $safeTone = preg_replace('/[^a-z_-]/i', '', $tone) ?: 'info';
+    $safeRedirectUrl = htmlspecialchars($redirectUrl, ENT_QUOTES, 'UTF-8');
+    $hasRedirect = $safeRedirectUrl !== '';
+    $delaySeconds = $safeTone === 'success' ? 1 : 2;
+    $redirectMeta = $hasRedirect
+        ? '<meta http-equiv="refresh" content="' . $delaySeconds . ';url=' . $safeRedirectUrl . '">'
+        : '';
+    $redirectCopy = $hasRedirect
+        ? '<p class="callback-redirect">Volveras al panel automaticamente. Si no sucede, usa el boton.</p>'
+        : '';
+    $redirectAction = $hasRedirect
+        ? '<p class="callback-actions"><a class="callback-link" href="' . $safeRedirectUrl . '">Volver al panel</a></p>'
+        : '';
+    $redirectScript = $hasRedirect
+        ? '<script>window.setTimeout(function(){window.location.replace("'
+            . $safeRedirectUrl
+            . '");},'
+            . ($delaySeconds * 1000)
+            . ');</script>'
+        : '';
+
+    return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+        . $redirectMeta
+        . '<title>'
+        . $safeTitle
+        . '</title><style>body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f6f3ec;color:#14202b;margin:0;padding:32px}main{max-width:560px;margin:6vh auto;background:#fff;border:1px solid #d9d3c5;border-radius:20px;padding:28px 24px;box-shadow:0 14px 36px rgba(20,32,43,.08)}h1{margin:0 0 12px;font-size:1.4rem}p{margin:0;line-height:1.5}.callback-redirect{margin-top:14px;color:#5f6b75}.callback-actions{margin-top:18px}.callback-link{display:inline-flex;align-items:center;justify-content:center;padding:12px 16px;border-radius:999px;background:#14202b;color:#fff;text-decoration:none;font-weight:600}.tone-success h1{color:#0b6b43}.tone-danger h1{color:#9a2c23}.tone-warning h1{color:#8d5e00}</style></head><body><main class="tone-'
+        . $safeTone
+        . '"><h1>'
+        . $safeTitle
+        . '</h1><p>'
+        . $safeMessage
+        . '</p>'
+        . $redirectCopy
+        . $redirectAction
+        . '</main>'
+        . $redirectScript
+        . '</body></html>';
 }
 
 function operator_auth_broker_identity_from_payload(array $payload): array

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../lib/calendar/CalendarOAuthReauth.php';
+
 class OperatorAuthController
 {
     public static function start(array $context = []): void
@@ -69,5 +71,49 @@ class OperatorAuthController
 
         header('Location: ' . $location, true, 302);
         exit();
+    }
+
+    public static function oauthCallback(array $context = []): void
+    {
+        $result = CalendarOAuthReauth::completeCallback($_GET);
+        if (!is_array($result)) {
+            http_response_code(400);
+            header('Content-Type: text/html; charset=utf-8');
+            echo operator_auth_google_callback_document(
+                'Callback invalido',
+                'No se encontro un challenge activo para esta reautorizacion.',
+                'warning',
+                rtrim(operator_auth_server_base_url(), '/') . '/admin.html?calendarReauth=missing'
+            );
+            exit();
+        }
+
+        $status = (int) ($result['status'] ?? 500);
+        $title = (string) ($result['title'] ?? 'Autenticacion del administrador');
+        $message = (string) ($result['message'] ?? 'No se pudo completar la autenticacion.');
+        $tone = (string) ($result['tone'] ?? 'info');
+        $redirectUrl = (string) ($result['redirectUrl'] ?? (rtrim(operator_auth_server_base_url(), '/') . '/admin.html'));
+
+        http_response_code($status);
+        header('Content-Type: text/html; charset=utf-8');
+        echo operator_auth_google_callback_document($title, $message, $tone, $redirectUrl);
+        exit();
+    }
+
+    public static function calendarTokenStart(array $context = []): void
+    {
+        $payload = CalendarOAuthReauth::create();
+        $status = (($payload['ok'] ?? false) === true) ? 202 : 503;
+        json_response($payload, $status);
+    }
+
+    public static function calendarTokenStatus(array $context = []): void
+    {
+        $challengeId = trim((string) ($_GET['challengeId'] ?? ''));
+        $payload = CalendarOAuthReauth::statusPayload($challengeId);
+        $status = (($payload['ok'] ?? false) === true)
+            ? 200
+            : (($payload['status'] ?? '') === 'calendar_oauth_reauth_not_found' ? 404 : 400);
+        json_response($payload, $status);
     }
 }
