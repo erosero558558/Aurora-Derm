@@ -59,15 +59,17 @@ $arrancarTimeoutSeconds = 90
 $validationTimeoutSeconds = 45
 $npmInstallTimeoutSeconds = 1800
 $publicBuildTimeoutSeconds = 600
-$publishedGeneratedDirectories = @(
+$requiredGeneratedDirectories = @(
     'es',
     'en',
-    '_astro',
+    '_astro'
+)
+$optionalGeneratedDirectories = @(
     'js\chunks',
     'js\engines',
     'js\admin-chunks'
 )
-$publishedGeneratedFiles = @(
+$optionalGeneratedFiles = @(
     'script.js',
     'admin.js',
     'js\booking-calendar.js',
@@ -327,14 +329,8 @@ function Resolve-DesiredCommit {
 function Test-PublishedGeneratedArtifactsReady {
     param([string]$RepoPath)
 
-    foreach ($relativePath in $publishedGeneratedDirectories) {
+    foreach ($relativePath in $requiredGeneratedDirectories) {
         if (-not (Test-Path -LiteralPath (Join-Path $RepoPath $relativePath) -PathType Container)) {
-            return $false
-        }
-    }
-
-    foreach ($relativePath in $publishedGeneratedFiles) {
-        if (-not (Test-Path -LiteralPath (Join-Path $RepoPath $relativePath) -PathType Leaf)) {
             return $false
         }
     }
@@ -345,7 +341,7 @@ function Test-PublishedGeneratedArtifactsReady {
 function Remove-PublishedGeneratedArtifacts {
     param([string]$RepoPath)
 
-    foreach ($relativePath in ($publishedGeneratedDirectories + $publishedGeneratedFiles)) {
+    foreach ($relativePath in $requiredGeneratedDirectories) {
         $targetPath = Join-Path $RepoPath $relativePath
         if (Test-Path -LiteralPath $targetPath) {
             Remove-Item -LiteralPath $targetPath -Recurse -Force -ErrorAction Stop
@@ -363,31 +359,37 @@ function Publish-PublicGeneratedArtifacts {
         throw "No existe .generated/site-root para publicar: $GeneratedRootPath"
     }
 
-    foreach ($relativePath in $publishedGeneratedDirectories) {
+    foreach ($relativePath in $requiredGeneratedDirectories) {
         $sourcePath = Join-Path $GeneratedRootPath $relativePath
         if (-not (Test-Path -LiteralPath $sourcePath -PathType Container)) {
             throw "Falta directorio generado requerido: $relativePath"
         }
     }
 
-    foreach ($relativePath in $publishedGeneratedFiles) {
-        $sourcePath = Join-Path $GeneratedRootPath $relativePath
-        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
-            throw "Falta archivo generado requerido: $relativePath"
-        }
-    }
-
     Remove-PublishedGeneratedArtifacts -RepoPath $RepoPath
 
-    foreach ($relativePath in $publishedGeneratedDirectories) {
+    foreach ($relativePath in $requiredGeneratedDirectories) {
         $sourcePath = Join-Path $GeneratedRootPath $relativePath
         $targetPath = Join-Path $RepoPath $relativePath
         Ensure-HostingParentDirectory -Path $targetPath
         Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Recurse -Force
     }
 
-    foreach ($relativePath in $publishedGeneratedFiles) {
+    foreach ($relativePath in $optionalGeneratedDirectories) {
         $sourcePath = Join-Path $GeneratedRootPath $relativePath
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Container)) {
+            continue
+        }
+        $targetPath = Join-Path $RepoPath $relativePath
+        Ensure-HostingParentDirectory -Path $targetPath
+        Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Recurse -Force
+    }
+
+    foreach ($relativePath in $optionalGeneratedFiles) {
+        $sourcePath = Join-Path $GeneratedRootPath $relativePath
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+            continue
+        }
         $targetPath = Join-Path $RepoPath $relativePath
         Ensure-HostingParentDirectory -Path $targetPath
         Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Force
