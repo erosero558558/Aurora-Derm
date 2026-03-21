@@ -136,7 +136,7 @@ export function mountTurneroSurfaceSuccessBanner(target, input = {}) {
 
     const { snapshot, gate, readout } = resolveSuccessReadout(input);
     root.hidden = false;
-    root.className = 'turnero-surface-ops__banner turnero-surface-success-banner';
+    root.className = 'turnero-surface-ops__banner-host';
     root.dataset.state = normalizeBannerState(gate.band);
     root.dataset.band = toString(gate.band, 'degraded');
     root.dataset.decision = toString(

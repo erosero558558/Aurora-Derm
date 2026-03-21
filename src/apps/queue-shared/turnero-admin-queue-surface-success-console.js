@@ -4,6 +4,7 @@ import { createTurneroSurfaceSuccessOwnerStore } from './turnero-surface-success
 import { buildTurneroSurfaceSuccessPack } from './turnero-surface-success-pack.js';
 import { buildTurneroSurfaceSuccessSnapshot } from './turnero-surface-success-snapshot.js';
 import { mountTurneroSurfaceSuccessBanner } from './turnero-surface-success-banner.js';
+import { ensureTurneroSurfaceOpsStyles } from './turnero-surface-checkpoint-chip.js';
 import {
     asObject,
     copyTextToClipboard,
@@ -417,6 +418,10 @@ function buildDownloadPayload(state) {
     };
 }
 
+function updateBrief(state) {
+    return state.brief || '';
+}
+
 function readValue(root, selector, fallback = '') {
     const field = root.querySelector(selector);
     return field && 'value' in field
@@ -810,7 +815,7 @@ export function mountTurneroAdminQueueSurfaceSuccessConsole(
     const ownerStore = createTurneroSurfaceSuccessOwnerStore(scope, clinicProfile);
     const controller = buildController(input, ledgerStore, ownerStore);
 
-    controller.root.className = 'turnero-admin-queue-surface-success-console';
+    controller.root.className = 'turnero-admin-queue-surface-success-console-host';
     host.replaceChildren(controller.root);
     controller.refresh();
 

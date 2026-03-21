@@ -150,6 +150,7 @@ test('success pack and console html expose customer success metadata', async () 
     const consoleModule = await importRepoModule(
         'src/apps/queue-shared/turnero-admin-queue-surface-success-console.js'
     );
+    const { buildTurneroAdminQueueSurfaceSuccessConsoleHtml } = consoleModule;
 
     const pack = packModule.buildTurneroSurfaceSuccessPack({
         surfaceKey: 'sala-turnos',
@@ -188,56 +189,60 @@ test('success pack and console html expose customer success metadata', async () 
         ],
     });
 
-    const html =
-        consoleModule.buildTurneroAdminQueueSurfaceSuccessConsoleHtml({
-            scope: 'regional',
-            clinicProfile: CLINIC_PROFILE,
-            snapshots: [
-                {
-                    label: 'Turnero Operador',
-                    surfaceKey: 'operator-turnos',
-                    runtimeState: 'ready',
-                    truth: 'watch',
-                    adoptionState: 'watch',
-                    incidentRateBand: 'low',
-                    feedbackState: 'good',
-                    successOwner: 'ops-lead',
-                    followupWindow: 'mensual',
-                    checklist: { summary: { all: 4, pass: 3, fail: 1 } },
-                },
-                {
-                    label: 'Turnero Kiosco',
-                    surfaceKey: 'kiosco-turnos',
-                    runtimeState: 'ready',
-                    truth: 'watch',
-                    adoptionState: 'watch',
-                    incidentRateBand: 'medium',
-                    feedbackState: 'mixed',
-                    successOwner: '',
-                    followupWindow: '',
-                    checklist: { summary: { all: 4, pass: 2, fail: 2 } },
-                },
-                {
-                    label: 'Turnero Sala TV',
-                    surfaceKey: 'sala-turnos',
-                    runtimeState: 'ready',
-                    truth: 'aligned',
-                    adoptionState: 'ready',
-                    incidentRateBand: 'low',
-                    feedbackState: 'good',
-                    successOwner: 'ops-display',
-                    followupWindow: 'mensual',
-                    checklist: { summary: { all: 4, pass: 3, fail: 1 } },
-                },
-            ],
-            checklist: {
-                summary: {
-                    all: 6,
-                    pass: 4,
-                    fail: 2,
-                },
+    assert.equal(
+        typeof buildTurneroAdminQueueSurfaceSuccessConsoleHtml,
+        'function'
+    );
+
+    const html = buildTurneroAdminQueueSurfaceSuccessConsoleHtml({
+        scope: 'regional',
+        clinicProfile: CLINIC_PROFILE,
+        snapshots: [
+            {
+                label: 'Turnero Operador',
+                surfaceKey: 'operator-turnos',
+                runtimeState: 'ready',
+                truth: 'watch',
+                adoptionState: 'watch',
+                incidentRateBand: 'low',
+                feedbackState: 'good',
+                successOwner: 'ops-lead',
+                followupWindow: 'mensual',
+                checklist: { summary: { all: 4, pass: 3, fail: 1 } },
             },
-        });
+            {
+                label: 'Turnero Kiosco',
+                surfaceKey: 'kiosco-turnos',
+                runtimeState: 'ready',
+                truth: 'watch',
+                adoptionState: 'watch',
+                incidentRateBand: 'medium',
+                feedbackState: 'mixed',
+                successOwner: '',
+                followupWindow: '',
+                checklist: { summary: { all: 4, pass: 2, fail: 2 } },
+            },
+            {
+                label: 'Turnero Sala TV',
+                surfaceKey: 'sala-turnos',
+                runtimeState: 'ready',
+                truth: 'aligned',
+                adoptionState: 'ready',
+                incidentRateBand: 'low',
+                feedbackState: 'good',
+                successOwner: 'ops-display',
+                followupWindow: 'mensual',
+                checklist: { summary: { all: 4, pass: 3, fail: 1 } },
+            },
+        ],
+        checklist: {
+            summary: {
+                all: 6,
+                pass: 4,
+                fail: 2,
+            },
+        },
+    });
 
     assert.equal(pack.gate.band, 'ready');
     assert.equal(pack.readout.chips.length, 3);

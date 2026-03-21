@@ -790,7 +790,7 @@ test.describe('Sala turnos display', () => {
         ).toBeVisible();
         await expect(
             page.locator(
-                '[data-turnero-display-surface-service-handover="true"] [data-role="banner"]'
+                '[data-turnero-display-surface-service-handover="true"] .turnero-surface-service-handover-banner'
             )
         ).toContainText('Display surface service handover');
         await expect(
@@ -800,6 +800,31 @@ test.describe('Sala turnos display', () => {
         ).toHaveCount(3);
         await expect(
             page.locator('[data-turnero-display-surface-service-handover="true"]')
+        ).toHaveAttribute('data-state', 'ready');
+        await expect(
+            page.locator('[data-turnero-display-surface-onboarding="true"]')
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '[data-turnero-display-surface-onboarding="true"] .turnero-surface-onboarding-banner'
+            )
+        ).toHaveCount(0);
+        await expect(
+            page.locator(
+                '[data-turnero-display-surface-onboarding="true"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
+        await expect(
+            page.locator('[data-turnero-display-surface-onboarding="true"]')
+        ).toContainText('kickoff');
+        await expect(
+            page.locator('[data-turnero-display-surface-onboarding="true"]')
+        ).toContainText('onboarding');
+        await expect(
+            page.locator('[data-turnero-display-surface-onboarding="true"]')
+        ).toContainText('score');
+        await expect(
+            page.locator('[data-turnero-display-surface-onboarding="true"]')
         ).toHaveAttribute('data-state', 'ready');
     });
 });

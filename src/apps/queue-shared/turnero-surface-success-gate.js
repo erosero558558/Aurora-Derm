@@ -23,12 +23,16 @@ function toNumber(value) {
 }
 
 function normalizeChecklistSummary(checklist) {
-    const summary =
-        checklist && typeof checklist === 'object' ? checklist.summary : null;
+    const source =
+        checklist && typeof checklist === 'object'
+            ? checklist.summary && typeof checklist.summary === 'object'
+                ? checklist.summary
+                : checklist
+            : null;
     return {
-        all: Math.max(0, toNumber(summary?.all)),
-        pass: Math.max(0, toNumber(summary?.pass)),
-        fail: Math.max(0, toNumber(summary?.fail)),
+        all: Math.max(0, toNumber(source?.all)),
+        pass: Math.max(0, toNumber(source?.pass)),
+        fail: Math.max(0, toNumber(source?.fail)),
     };
 }
 

@@ -16365,6 +16365,44 @@ test.describe('Admin turnero sala', () => {
             'data-state',
             'blocked'
         );
+        const onboardingConsoleHost = page.locator(
+            '#queueSurfaceTelemetry #queueSurfaceOnboardingConsoleHost'
+        );
+        await expect(onboardingConsoleHost).toBeVisible();
+        await expect(onboardingConsoleHost).toContainText(
+            'Surface Customer Onboarding'
+        );
+        await expect(onboardingConsoleHost).toContainText('Copy brief');
+        await expect(onboardingConsoleHost).toContainText('Download JSON');
+        await expect(onboardingConsoleHost).toContainText(
+            'Add onboarding item'
+        );
+        await expect(onboardingConsoleHost).toContainText('Add owner');
+        await expect(
+            onboardingConsoleHost.locator(
+                '.turnero-admin-queue-surface-onboarding-console__surface'
+            )
+        ).toHaveCount(3);
+        await expect(onboardingConsoleHost).toHaveAttribute(
+            'data-state',
+            'blocked'
+        );
+        const packageConsoleHost = page.locator(
+            '#queueSurfaceTelemetry #queueSurfacePackageConsoleHost'
+        );
+        await expect(packageConsoleHost).toBeVisible();
+        await expect(packageConsoleHost).toContainText(
+            'Surface Package Standardization'
+        );
+        await expect(packageConsoleHost).toContainText('Copy brief');
+        await expect(packageConsoleHost).toContainText('Download JSON');
+        await expect(packageConsoleHost).toContainText('Add entry');
+        await expect(packageConsoleHost).toContainText('Add owner');
+        await expect(
+            packageConsoleHost.locator(
+                '.turnero-admin-queue-surface-package-console__surface'
+            )
+        ).toHaveCount(3);
         await expect(
             page.locator(
                 '#queueSurfaceSyncConsoleHost .turnero-admin-queue-surface-sync-console__handoff-item'

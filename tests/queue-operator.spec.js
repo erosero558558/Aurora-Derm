@@ -1712,7 +1712,7 @@ test.describe('Turnero Operador', () => {
         ).toBeVisible();
         await expect(
             page.locator(
-                '[data-turnero-operator-surface-service-handover="true"] [data-role="banner"]'
+                '[data-turnero-operator-surface-service-handover="true"] .turnero-surface-service-handover-banner'
             )
         ).toContainText('Operator surface service handover');
         await expect(
@@ -1722,6 +1722,31 @@ test.describe('Turnero Operador', () => {
         ).toHaveCount(3);
         await expect(
             page.locator('[data-turnero-operator-surface-service-handover="true"]')
+        ).toHaveAttribute('data-state', 'watch');
+        await expect(
+            page.locator('[data-turnero-operator-surface-onboarding="true"]')
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '[data-turnero-operator-surface-onboarding="true"] .turnero-surface-onboarding-banner'
+            )
+        ).toContainText('Operator surface onboarding');
+        await expect(
+            page.locator(
+                '[data-turnero-operator-surface-onboarding="true"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
+        await expect(
+            page.locator('[data-turnero-operator-surface-onboarding="true"]')
+        ).toContainText('kickoff');
+        await expect(
+            page.locator('[data-turnero-operator-surface-onboarding="true"]')
+        ).toContainText('onboarding');
+        await expect(
+            page.locator('[data-turnero-operator-surface-onboarding="true"]')
+        ).toContainText('score');
+        await expect(
+            page.locator('[data-turnero-operator-surface-onboarding="true"]')
         ).toHaveAttribute('data-state', 'watch');
     });
 });
