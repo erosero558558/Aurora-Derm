@@ -27,34 +27,185 @@ function Parse-JsonBody {
     }
 }
 
-function Get-DiagnosticsAuthHeaders {
+if ($null -eq $script:DiagnosticsAuthConfiguration) {
+    $script:DiagnosticsAuthConfiguration = $null
+}
+if ($null -eq $script:DiagnosticsEnvPhpCache) {
+    $script:DiagnosticsEnvPhpCache = @{}
+}
+
+function Get-DiagnosticsEnvCandidatePaths {
+    $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..') -ErrorAction SilentlyContinue
+    $paths = @(
+        'C:\ProgramData\Pielarmonia\hosting\env.php'
+        if ($null -ne $repoRoot) { Join-Path $repoRoot 'env.php' }
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+
+    return @($paths | Select-Object -Unique)
+}
+
+function Read-DiagnosticsEnvPhpValues {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return @{}
+    }
+
+    $resolvedPath = try {
+        [System.IO.Path]::GetFullPath($Path)
+    } catch {
+        $Path
+    }
+
+    if ($script:DiagnosticsEnvPhpCache.ContainsKey($resolvedPath)) {
+        return $script:DiagnosticsEnvPhpCache[$resolvedPath]
+    }
+
+    $values = @{}
+    if (Test-Path -LiteralPath $resolvedPath) {
+        try {
+            $raw = Get-Content -LiteralPath $resolvedPath -Raw -ErrorAction Stop
+            foreach ($match in ([regex]::Matches($raw, "putenv\(\s*['""](?<pair>[^'""]+)['""]\s*\)"))) {
+                $pair = [string]$match.Groups['pair'].Value
+                if ([string]::IsNullOrWhiteSpace($pair)) {
+                    continue
+                }
+
+                $separatorIndex = $pair.IndexOf('=')
+                if ($separatorIndex -le 0) {
+                    continue
+                }
+
+                $name = $pair.Substring(0, $separatorIndex).Trim()
+                $value = $pair.Substring($separatorIndex + 1)
+                if ([string]::IsNullOrWhiteSpace($name)) {
+                    continue
+                }
+
+                $values[$name] = $value
+            }
+        } catch {
+            $values = @{}
+        }
+    }
+
+    $script:DiagnosticsEnvPhpCache[$resolvedPath] = $values
+    return $values
+}
+
+function Get-DiagnosticsEnvPhpFirstNonEmpty {
     param(
-        [string]$UserAgent = 'AuroraDermHttp/1.0'
+        [string[]]$Names,
+        [string[]]$Paths = @()
     )
 
-    $headers = @{
-        'Cache-Control' = 'no-cache'
-        'User-Agent' = $UserAgent
+    foreach ($path in @($Paths)) {
+        $values = Read-DiagnosticsEnvPhpValues -Path $path
+        foreach ($name in @($Names)) {
+            if ([string]::IsNullOrWhiteSpace([string]$name)) {
+                continue
+            }
+
+            $candidate = [string]$values[$name]
+            if (-not [string]::IsNullOrWhiteSpace($candidate)) {
+                return [PSCustomObject]@{
+                    Value = $candidate
+                    Name = $name
+                    Path = $path
+                }
+            }
+        }
     }
 
+    return [PSCustomObject]@{
+        Value = ''
+        Name = ''
+        Path = ''
+    }
+}
+
+function Get-DiagnosticsAuthConfiguration {
+    if ($null -ne $script:DiagnosticsAuthConfiguration) {
+        return $script:DiagnosticsAuthConfiguration
+    }
+
+    $paths = Get-DiagnosticsEnvCandidatePaths
     $token = [string]$env:AURORADERM_DIAGNOSTICS_ACCESS_TOKEN
+    $tokenSource = if (-not [string]::IsNullOrWhiteSpace($token)) {
+        'process_env'
+    } else {
+        ''
+    }
+    $tokenPath = ''
+
     if ([string]::IsNullOrWhiteSpace($token)) {
         $token = [string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN
+        if (-not [string]::IsNullOrWhiteSpace($token)) {
+            $tokenSource = 'process_env'
+        }
     }
+
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        $envPhpToken = Get-DiagnosticsEnvPhpFirstNonEmpty `
+            -Names @(
+                'AURORADERM_DIAGNOSTICS_ACCESS_TOKEN',
+                'PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN',
+                'AURORADERM_CRON_SECRET',
+                'PIELARMONIA_CRON_SECRET'
+            ) `
+            -Paths $paths
+        $token = [string]$envPhpToken.Value
+        if (-not [string]::IsNullOrWhiteSpace($token)) {
+            $tokenSource = 'env_php'
+            $tokenPath = [string]$envPhpToken.Path
+            if ([string]::IsNullOrWhiteSpace([string]$env:AURORADERM_DIAGNOSTICS_ACCESS_TOKEN)) {
+                $env:AURORADERM_DIAGNOSTICS_ACCESS_TOKEN = $token
+            }
+            if ([string]::IsNullOrWhiteSpace([string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN)) {
+                $env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN = $token
+            }
+        }
+    }
+
     if ([string]::IsNullOrWhiteSpace($token)) {
         $token = [string]$env:AURORADERM_CRON_SECRET
+        if (-not [string]::IsNullOrWhiteSpace($token)) {
+            $tokenSource = 'process_env_cron_secret'
+        }
     }
     if ([string]::IsNullOrWhiteSpace($token)) {
         $token = [string]$env:PIELARMONIA_CRON_SECRET
+        if (-not [string]::IsNullOrWhiteSpace($token)) {
+            $tokenSource = 'process_env_cron_secret'
+        }
     }
-
-    if ([string]::IsNullOrWhiteSpace($token)) {
-        return $headers
+    if (-not [string]::IsNullOrWhiteSpace($token)) {
+        if ([string]::IsNullOrWhiteSpace([string]$env:AURORADERM_CRON_SECRET)) {
+            $env:AURORADERM_CRON_SECRET = $token
+        }
+        if ([string]::IsNullOrWhiteSpace([string]$env:PIELARMONIA_CRON_SECRET)) {
+            $env:PIELARMONIA_CRON_SECRET = $token
+        }
     }
 
     $headerName = [string]$env:AURORADERM_DIAGNOSTICS_ACCESS_TOKEN_HEADER
     if ([string]::IsNullOrWhiteSpace($headerName)) {
         $headerName = [string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_HEADER
+    }
+    if ([string]::IsNullOrWhiteSpace($headerName)) {
+        $envPhpHeader = Get-DiagnosticsEnvPhpFirstNonEmpty `
+            -Names @(
+                'AURORADERM_DIAGNOSTICS_ACCESS_TOKEN_HEADER',
+                'PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_HEADER'
+            ) `
+            -Paths $paths
+        $headerName = [string]$envPhpHeader.Value
+        if (-not [string]::IsNullOrWhiteSpace($headerName)) {
+            $env:AURORADERM_DIAGNOSTICS_ACCESS_TOKEN_HEADER = $headerName
+            if ([string]::IsNullOrWhiteSpace([string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_HEADER)) {
+                $env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_HEADER = $headerName
+            }
+        }
     }
     if ([string]::IsNullOrWhiteSpace($headerName)) {
         $headerName = 'Authorization'
@@ -65,8 +216,58 @@ function Get-DiagnosticsAuthHeaders {
         $prefix = [string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX
     }
     if ([string]::IsNullOrWhiteSpace($prefix)) {
+        $envPhpPrefix = Get-DiagnosticsEnvPhpFirstNonEmpty `
+            -Names @(
+                'AURORADERM_DIAGNOSTICS_ACCESS_TOKEN_PREFIX',
+                'PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX'
+            ) `
+            -Paths $paths
+        $prefix = [string]$envPhpPrefix.Value
+        if (-not [string]::IsNullOrWhiteSpace($prefix)) {
+            $env:AURORADERM_DIAGNOSTICS_ACCESS_TOKEN_PREFIX = $prefix
+            if ([string]::IsNullOrWhiteSpace([string]$env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX)) {
+                $env:PIELARMONIA_DIAGNOSTICS_ACCESS_TOKEN_PREFIX = $prefix
+            }
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($prefix)) {
         $prefix = 'Bearer'
     }
+
+    $script:DiagnosticsAuthConfiguration = [PSCustomObject]@{
+        Token = $token
+        HeaderName = $headerName
+        Prefix = $prefix
+        Source = $tokenSource
+        EnvPath = $tokenPath
+    }
+
+    return $script:DiagnosticsAuthConfiguration
+}
+
+function Initialize-DiagnosticsAuthEnvironment {
+    $null = Get-DiagnosticsAuthConfiguration
+}
+
+function Get-DiagnosticsAuthHeaders {
+    param(
+        [string]$UserAgent = 'AuroraDermHttp/1.0'
+    )
+
+    $headers = @{
+        'Cache-Control' = 'no-cache'
+        'User-Agent' = $UserAgent
+    }
+
+    $configuration = Get-DiagnosticsAuthConfiguration
+    $token = [string]$configuration.Token
+
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        return $headers
+    }
+
+    $headerName = [string]$configuration.HeaderName
+    $prefix = [string]$configuration.Prefix
 
     $headers[$headerName] = if ([string]::IsNullOrWhiteSpace($prefix)) {
         $token
@@ -76,6 +277,8 @@ function Get-DiagnosticsAuthHeaders {
 
     return $headers
 }
+
+Initialize-DiagnosticsAuthEnvironment
 
 function Get-ResponseContentString {
     param(
