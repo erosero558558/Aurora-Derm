@@ -51,8 +51,13 @@ if ([string]::IsNullOrWhiteSpace($npmExe)) {
 }
 $generatedSiteRootPath = Join-Path $mirrorRepoPathResolved '.generated\site-root'
 $publicBuildReportPath = Join-Path $runtimePaths.RuntimeRoot 'public-v6-build-report.json'
+$astroBinaryCandidates = @(
+    'node_modules\.bin\astro.cmd',
+    'node_modules\.bin\astro'
+)
 $arrancarTimeoutSeconds = 90
 $validationTimeoutSeconds = 45
+$npmInstallTimeoutSeconds = 1800
 $publicBuildTimeoutSeconds = 600
 $publishedGeneratedDirectories = @(
     'es',
@@ -391,6 +396,37 @@ function Publish-PublicGeneratedArtifacts {
 
 function Invoke-PublicBuildAndPublish {
     param([string]$RepoPath)
+
+    $hasAstroBinary = $false
+    foreach ($relativePath in $astroBinaryCandidates) {
+        if (Test-Path -LiteralPath (Join-Path $RepoPath $relativePath) -PathType Leaf) {
+            $hasAstroBinary = $true
+            break
+        }
+    }
+
+    if (-not $hasAstroBinary) {
+        Push-Location $RepoPath
+        try {
+            $installResult = Invoke-HostingCommandWithOutput `
+                -FilePath $npmExe `
+                -Arguments @('ci') `
+                -TimeoutSeconds $npmInstallTimeoutSeconds `
+                -HeartbeatPath $statusPathResolved `
+                -Label 'npm ci'
+            if ($installResult.TimedOut -eq $true) {
+                throw 'public_deps_install_timeout'
+            }
+            if ($installResult.ExitCode -ne 0) {
+                if (-not [string]::IsNullOrWhiteSpace($installResult.Output)) {
+                    Write-Info $installResult.Output.Trim()
+                }
+                throw 'public_deps_install_failed'
+            }
+        } finally {
+            Pop-Location
+        }
+    }
 
     Ensure-HostingParentDirectory -Path $publicBuildReportPath
     if (Test-Path -LiteralPath $publicBuildReportPath) {
@@ -1000,11 +1036,16 @@ try {
         $status.deploy_state = 'restart_timeout'
         $status.last_failure_reason = 'sync_restart_timeout'
         $status.timed_out = $true
+    } elseif ([string]::Equals($status.error, 'public_deps_install_timeout', [System.StringComparison]::OrdinalIgnoreCase)) {
+        $status.deploy_state = 'build_public_timeout'
+        $status.last_failure_reason = 'public_deps_install_timeout'
+        $status.timed_out = $true
     } elseif ([string]::Equals($status.error, 'public_build_timeout', [System.StringComparison]::OrdinalIgnoreCase)) {
         $status.deploy_state = 'build_public_timeout'
         $status.last_failure_reason = 'public_build_timeout'
         $status.timed_out = $true
     } elseif (
+        [string]::Equals($status.error, 'public_deps_install_failed', [System.StringComparison]::OrdinalIgnoreCase) -or
         [string]::Equals($status.error, 'public_build_failed', [System.StringComparison]::OrdinalIgnoreCase) -or
         [string]::Equals($status.error, 'public_artifacts_missing_after_publish', [System.StringComparison]::OrdinalIgnoreCase)
     ) {
