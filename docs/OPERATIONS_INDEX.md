@@ -2,6 +2,14 @@
 
 Guia corta para encontrar el flujo correcto sin navegar todo `package.json`.
 
+Marco canonico:
+
+- `Flow OS` = plataforma
+- `Aurora Derm` = marca/operacion actual
+- `AURORADERM_*` = configuracion canonica
+- `PIELARMONIA_*` = compatibilidad transitoria con fallback explicito
+- `https://pielarmonia.com` = host publico vivo en esta ola
+
 El material historico y los one-offs desplazados desde la raiz viven en
 `docs/archive/root-history/` y `scripts/archive/`.
 Los scripts operativos activos viven en `scripts/ops/**`; los `.ps1` de raiz
@@ -147,7 +155,7 @@ Notas:
 - `js/admin-runtime.js` existe solo como alias de compatibilidad.
 - `legacy` y `sony_v2` no forman parte del runtime operativo.
 - Implementacion operativa canonica: `scripts/ops/admin/**`
-- Si `PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt`, levantar el helper del operador con `npm run openclaw:auth:start`.
+- Si `AURORADERM_OPERATOR_AUTH_MODE=openclaw_chatgpt`, levantar el helper del operador con `npm run openclaw:auth:start`. Los aliases `PIELARMONIA_*` siguen disponibles de forma transitoria.
 - `npm run gate:admin:rollout` ya cubre `tests/admin-openclaw-login.spec.js` para no dejar el login OpenClaw fuera del gate.
 - `npm run gate:admin:rollout:openclaw` endurece el gate para exigir `operator-auth-status` en modo OpenClaw configurado.
 - `npm run diagnose:admin:openclaw-auth:rollout` inspecciona `operator-auth-status` y la fachada `admin-auth.php?action=status` para devolver `diagnosis` + `nextAction` del rollout remoto.
@@ -177,7 +185,8 @@ Notas:
 
 - Este es el carril canonico del piloto web por clínica; valida `clinic-profile`, `verify-remote`, `publicSync` y las superficies `admin/operator/kiosk/display`.
 - No arrastra `desktop-updates`, `app-downloads` ni instaladores como blocker de salida.
-- Si el host remoto sigue `unverified` en `public_main_sync`, tratarlo como blocker único del corte y no reabrir scope lateral.
+- Si el host remoto sigue `unverified` en `public_main_sync` o ya responde `health_http_*`, tratarlo como blocker unico del corte y no reabrir scope lateral.
+- Si `operator-auth-status`, `admin-auth.php?action=status` o el `health` publico devuelven `5xx`, congelar scope y recuperar backend/auth antes de tocar mas UI.
 
 ### 4. Operar Turnero nativo
 

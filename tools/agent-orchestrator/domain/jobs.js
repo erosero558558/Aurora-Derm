@@ -22,6 +22,41 @@ function normalizeStringArray(value) {
     return value.map((item) => String(item || '').trim()).filter(Boolean);
 }
 
+function stripLeadingUtf8Bom(value) {
+    return String(value || '').replace(/^\uFEFF/, '');
+}
+
+function safeJsonParseText(value) {
+    try {
+        return JSON.parse(stripLeadingUtf8Bom(value));
+    } catch (_error) {
+        return null;
+    }
+}
+
+function summarizeHttpFailureDetail(rawText) {
+    const normalized = stripLeadingUtf8Bom(rawText).trim();
+    if (!normalized) return '';
+
+    const parsed = safeJsonParseText(normalized);
+    if (parsed && typeof parsed === 'object') {
+        const directDetail = [
+            parsed.detail,
+            parsed.error,
+            parsed.message,
+            parsed.status,
+            parsed.reason,
+        ]
+            .map((item) => String(item || '').trim())
+            .find(Boolean);
+        if (directDetail) {
+            return directDetail;
+        }
+    }
+
+    return normalized.replace(/\s+/g, ' ').slice(0, 180);
+}
+
 function hasDirtyPathEvidence(snapshot = {}) {
     const dirtyPathsCount =
         parseOptionalInteger(
@@ -413,6 +448,60 @@ function normalizeSnapshotFromHealthMissingPublicSync(job, payload = {}) {
     return finalizeSnapshot(snapshot);
 }
 
+function normalizeSnapshotFromHealthHttpFailure(
+    job,
+    response = {},
+    rawText = ''
+) {
+    const checkedAt = new Date().toISOString();
+    const httpStatus = parseOptionalInteger(response.status);
+    const failureReason = httpStatus
+        ? `health_http_${httpStatus}`
+        : 'health_http_error';
+    const detail = summarizeHttpFailureDetail(rawText);
+
+    const snapshot = {
+        key: job.key,
+        job_id: String(job.job_id || '').trim(),
+        enabled: job.enabled,
+        type: job.type,
+        source_of_truth: job.source_of_truth,
+        verification_source: 'health_url',
+        verified: false,
+        configured: true,
+        healthy: false,
+        state: 'failed',
+        age_seconds: computeAgeSeconds(checkedAt),
+        expected_max_lag_seconds: Number(job.expected_max_lag_seconds || 0),
+        deployed_commit: '',
+        checked_at: checkedAt,
+        last_success_at: '',
+        last_error_at: checkedAt,
+        last_error_message: failureReason,
+        repo_path: String(job.repo_path || '').trim(),
+        branch: String(job.branch || '').trim(),
+        status_path: String(job.status_path || '').trim(),
+        log_path: String(job.log_path || '').trim(),
+        lock_file: String(job.lock_file || '').trim(),
+        current_head: '',
+        remote_head: '',
+        duration_ms: null,
+        dirty_paths_count: 0,
+        dirty_paths_sample: [],
+        dirty_paths: [],
+        head_drift: false,
+        telemetry_gap: false,
+        details: {
+            http_status: httpStatus,
+            http_status_text: String(response.statusText || '').trim(),
+            response_detail: detail,
+        },
+        failure_reason: failureReason,
+    };
+
+    return finalizeSnapshot(snapshot);
+}
+
 async function resolveJobSnapshot(jobRaw, deps = {}) {
     const job = normalizeRegistryJob(jobRaw);
     const {
@@ -479,6 +568,19 @@ async function resolveJobSnapshot(jobRaw, deps = {}) {
                     payload
                 );
             }
+            let rawText = '';
+            if (typeof response?.text === 'function') {
+                try {
+                    rawText = await response.text();
+                } catch (_error) {
+                    rawText = '';
+                }
+            }
+            return normalizeSnapshotFromHealthHttpFailure(
+                job,
+                response,
+                rawText
+            );
         } catch {
             // Fall through to registry-only mode.
         }

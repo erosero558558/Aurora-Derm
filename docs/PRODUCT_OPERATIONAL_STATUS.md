@@ -3,13 +3,24 @@
 Fuente canonica para el semaforo operativo del producto.
 `ESTADO_PRODUCTO_OPERATIVO.md` en la raiz queda solo como shim compatible.
 
-Actualizado: 2026-03-17
+Actualizado: 2026-03-21
 
 ## Semaforo Producto
 
-- Estado actual: `GREEN`
-- Fuente: `gate:prod:fast` + health/smoke en produccion.
+- Estado actual: `RED`
+- Fuente diaria: `verification/runtime/prod-readiness-summary.md` + `verification/last-deploy-verify.json`
+- Fuente de contrato operativo: `gate:prod:fast` + health/smoke en produccion.
 - Agenda real: `calendarSource=google`, `calendarMode=live`.
+- Bloqueadores activos conocidos al `2026-03-21`:
+    - `operator-auth-status` y `admin-auth.php?action=status` responden `HTTP 502`.
+    - `health`, `availability`, `booked-slots`, `figo-chat.php` y `figo-backend.php` fallan en verificaciones remotas del corte piloto.
+    - `public_main_sync` sigue sin verificacion host-side concluyente y los workflows criticos del release continúan en `failure` o `skipped`.
+
+## Regla de salida a piloto
+
+- No recomendar piloto externo mientras `production_stability` o `release_readiness` sigan en `RED`.
+- Si `verification/runtime/prod-readiness-summary.md` contradice este documento, prevalece la evidencia mas reciente.
+- Mientras backend/auth/readiness sigan en rojo, congelar scope en `admin v3 + queue/turnero + auth/readiness/deploy` y no abrir `expansion`, `renewal` ni `executive review`.
 
 ## Semaforo Agentes (referencial, no bloquea ciclo diurno)
 

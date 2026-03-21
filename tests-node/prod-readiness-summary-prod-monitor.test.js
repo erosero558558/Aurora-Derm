@@ -116,6 +116,29 @@ process.stdout.write('[]');
     chmodSync(ghShPath, 0o755);
 }
 
+function installFakeOrchestrator(dir, payload) {
+    const scriptPath = join(dir, 'agent-orchestrator.js');
+    const script = `#!/usr/bin/env node
+'use strict';
+
+const args = process.argv.slice(2);
+if (
+  args[0] === 'jobs' &&
+  args[1] === 'verify' &&
+  args[2] === 'public_main_sync' &&
+  args.includes('--json')
+) {
+  process.stdout.write(${JSON.stringify(JSON.stringify(payload, null, 2))});
+  process.exit(0);
+}
+
+process.stderr.write('Unsupported command');
+process.exit(1);
+`;
+    writeFileSync(scriptPath, script, 'utf8');
+    chmodSync(scriptPath, 0o755);
+}
+
 test('prod-readiness-summary consume evidencia local de prod-monitor', () => {
     const dir = createFixtureDir();
     const prodMonitorPath = join(
@@ -153,6 +176,149 @@ test('prod-readiness-summary consume evidencia local de prod-monitor', () => {
         const markdown = readFileSync(mdOut, 'utf8');
         assert.match(markdown, /## Production Monitor Evidence/);
         assert.match(markdown, /- status: ok/);
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test('prod-readiness-summary eleva public_main_sync health_http_502 como accion bloqueante', () => {
+    const dir = createFixtureDir();
+    const prodMonitorPath = join(
+        dir,
+        'verification',
+        'runtime',
+        'prod-monitor-last.json'
+    );
+    const jsonOut = join(dir, 'verification', 'runtime', 'prod-readiness.json');
+    const mdOut = join(dir, 'verification', 'runtime', 'prod-readiness.md');
+
+    try {
+        writeProdMonitorReport(prodMonitorPath);
+        installFakeOrchestrator(dir, {
+            ok: false,
+            job: {
+                key: 'public_main_sync',
+                configured: true,
+                verified: false,
+                healthy: false,
+                state: 'failed',
+                verification_source: 'health_url',
+                failure_reason: 'health_http_502',
+                last_error_message: 'health_http_502',
+                details: {
+                    http_status: 502,
+                    response_detail: 'Bad Gateway',
+                },
+            },
+        });
+
+        const result = spawnSync(
+            process.execPath,
+            [
+                join(dir, 'bin', 'prod-readiness-summary.js'),
+                `--json-out=${jsonOut}`,
+                `--md-out=${mdOut}`,
+            ],
+            {
+                cwd: dir,
+                encoding: 'utf8',
+            }
+        );
+
+        assert.equal(result.status, 0, result.stderr || result.stdout);
+
+        const summary = JSON.parse(readFileSync(jsonOut, 'utf8'));
+        assert.equal(summary.publicMainSyncEvidence.ok, false);
+        assert.equal(
+            summary.publicMainSyncEvidence.failureReason,
+            'health_http_502'
+        );
+        assert.equal(summary.publicMainSyncEvidence.httpStatus, 502);
+        assert.equal(
+            summary.productionStability.reasons.includes(
+                'public_main_sync:health_http_502'
+            ),
+            true
+        );
+        const action = summary.suggestedActions.items.find(
+            (item) => item.id === 'ACT-P0-PUBLIC-MAIN-SYNC'
+        );
+        assert.ok(action);
+        assert.equal(action.blocking, true);
+        assert.match(action.reason, /HTTP 502/);
+
+        const markdown = readFileSync(mdOut, 'utf8');
+        assert.match(markdown, /## Public Main Sync Evidence/);
+        assert.match(markdown, /- failure_reason: health_http_502/);
+        assert.match(markdown, /- http_status: 502/);
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test('prod-readiness-summary tolera BOM en prod-monitor-last.json local', () => {
+    const dir = createFixtureDir();
+    const prodMonitorPath = join(
+        dir,
+        'verification',
+        'runtime',
+        'prod-monitor-last.json'
+    );
+    const jsonOut = join(dir, 'verification', 'runtime', 'prod-readiness.json');
+    const mdOut = join(dir, 'verification', 'runtime', 'prod-readiness.md');
+
+    try {
+        const payload = {
+            version: 1,
+            generatedAt: '2026-03-14T00:00:00.000Z',
+            domain: 'https://pielarmonia.com',
+            ok: false,
+            status: 'failed',
+            failureCount: 1,
+            warningCount: 0,
+            failures: ['health-diagnostics unavailable'],
+            warnings: [],
+            checks: {
+                health: { status: 'failed' },
+                publicSync: { status: 'failed' },
+            },
+            workflow: {
+                publicSyncRecovery: { status: 'failed' },
+            },
+            summary: {
+                headline: 'Backend still red.',
+            },
+        };
+        writeFileSync(
+            prodMonitorPath,
+            `\uFEFF${JSON.stringify(payload, null, 2)}\n`,
+            'utf8'
+        );
+
+        const result = spawnSync(
+            process.execPath,
+            [
+                join(dir, 'bin', 'prod-readiness-summary.js'),
+                `--json-out=${jsonOut}`,
+                `--md-out=${mdOut}`,
+            ],
+            {
+                cwd: dir,
+                encoding: 'utf8',
+            }
+        );
+
+        assert.equal(result.status, 0, result.stderr || result.stdout);
+
+        const summary = JSON.parse(readFileSync(jsonOut, 'utf8'));
+        assert.equal(summary.prodMonitorEvidence.source, 'local');
+        assert.equal(summary.prodMonitorEvidence.ok, false);
+        assert.equal(summary.prodMonitorEvidence.status, 'failed');
+        assert.equal(summary.prodMonitorEvidence.error, null);
+
+        const markdown = readFileSync(mdOut, 'utf8');
+        assert.match(markdown, /## Production Monitor Evidence/);
+        assert.match(markdown, /- status: failed/);
     } finally {
         rmSync(dir, { recursive: true, force: true });
     }

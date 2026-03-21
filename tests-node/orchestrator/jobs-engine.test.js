@@ -346,6 +346,42 @@ test('jobs-engine distingue health publico stale cuando falta checks.publicSync'
     assert.equal(snapshot.state, 'stale');
 });
 
+test('jobs-engine clasifica HTTP 502 del health publico como fallo health_url accionable', async () => {
+    const snapshot = await jobs.resolveJobSnapshot(
+        {
+            key: 'public_main_sync',
+            job_id: '8d31e299-7e57-4959-80b5-aaa2d73e9674',
+            health_url: 'https://pielarmonia.com/api.php?resource=health',
+            repo_path: '/var/www/figo',
+            branch: 'main',
+            expected_max_lag_seconds: 120,
+        },
+        {
+            existsSync: () => false,
+            readFileSync: () => '',
+            fetchImpl: async () => ({
+                ok: false,
+                status: 502,
+                statusText: 'Bad Gateway',
+                text: async () =>
+                    JSON.stringify({
+                        error: 'upstream_unavailable',
+                    }),
+            }),
+        }
+    );
+
+    assert.equal(snapshot.verification_source, 'health_url');
+    assert.equal(snapshot.verified, false);
+    assert.equal(snapshot.healthy, false);
+    assert.equal(snapshot.state, 'failed');
+    assert.equal(snapshot.failure_reason, 'health_http_502');
+    assert.equal(snapshot.last_error_message, 'health_http_502');
+    assert.equal(snapshot.telemetry_gap, false);
+    assert.equal(snapshot.details.http_status, 502);
+    assert.equal(snapshot.details.response_detail, 'upstream_unavailable');
+});
+
 test('jobs-engine registry_only fallback y summary mantienen contrato estable', async () => {
     const snapshot = await jobs.resolveJobSnapshot(
         {

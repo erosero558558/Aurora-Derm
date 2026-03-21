@@ -207,6 +207,7 @@ only when repair returns the host to `ready` or `not_required`.
 Triage the canonical `publicSync` signals before touching the host:
 
 - `verificationSource=health_url` with `failureReason=health_missing_public_sync` means the host answered `health`, but it is still serving a stale public contract without `checks.publicSync`. Fix that rollout before classifying the incident as repo drift.
+- `verificationSource=health_url` with `failureReason=health_http_502` or another `health_http_*` means the public `health` route answered with an HTTP failure. Treat that first as backend/edge rollout breakage and recover the route before debugging repo drift or cron internals.
 - `verificationSource=registry_only` with `failureReason=unverified` means `node agent-orchestrator.js jobs verify public_main_sync --json` could only confirm the registry entry and could not fetch live host telemetry. Treat that first as missing or unreachable runtime evidence from `health` / `health-diagnostics` or the VPS status file, not as repo drift.
 - `failureReason=working_tree_dirty` is the canonical first-pass classification for tracked repo drift on the VPS.
 - `headDrift=true` means `currentHead` and `remoteHead` diverge, so the host repo is behind or detached from the intended `main` commit.

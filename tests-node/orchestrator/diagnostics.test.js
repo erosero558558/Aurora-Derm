@@ -410,6 +410,44 @@ test('diagnostics prioriza failed sobre unconfigured cuando existe snapshot veri
     assert.deepEqual(codes, ['warn.jobs.public_main_sync_failed']);
 });
 
+test('diagnostics clasifica health_http_502 de public_main_sync con accion y metadatos accionables', () => {
+    const list = diagnostics.buildWarnFirstDiagnostics({
+        source: 'status',
+        policy: JOB_POLICY,
+        jobsSnapshot: [
+            {
+                key: 'public_main_sync',
+                configured: true,
+                verified: false,
+                healthy: false,
+                state: 'failed',
+                verification_source: 'health_url',
+                age_seconds: 45,
+                expected_max_lag_seconds: 120,
+                last_error_message: 'health_http_502',
+                failure_reason: 'health_http_502',
+                details: {
+                    http_status: 502,
+                    response_detail: 'Bad Gateway',
+                },
+            },
+        ],
+    });
+
+    assert.deepEqual(list.map((item) => item.code).sort(), [
+        'warn.jobs.public_main_sync_failed',
+    ]);
+
+    const failed = list[0];
+    assert.match(failed.message, /reason=health_http_502/);
+    assert.match(failed.message, /action=recover_public_health_route/);
+    assert.match(failed.message, /http_status=502/);
+    assert.equal(failed.meta.failure_reason, 'health_http_502');
+    assert.equal(failed.meta.http_status, 502);
+    assert.equal(failed.meta.response_detail, 'Bad Gateway');
+    assert.equal(failed.meta.recovery_action, 'recover_public_health_route');
+});
+
 test('diagnostics agrega warning de publish live pendiente por lane', () => {
     const list = diagnostics.buildWarnFirstDiagnostics({
         source: 'status',

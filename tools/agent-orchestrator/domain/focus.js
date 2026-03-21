@@ -392,6 +392,43 @@ function evaluateRuntimeRequiredCheck(check, runtimeVerification) {
     };
 }
 
+function hasActionableJobRequiredCheck(job = {}) {
+    if (!job || typeof job !== 'object') {
+        return false;
+    }
+    if (job.verified !== false) {
+        return true;
+    }
+    if (job.configured === false) {
+        return false;
+    }
+    return Boolean(
+        String(job.failure_reason || job.last_error_message || '').trim() ||
+        String(job.state || '').trim() === 'failed'
+    );
+}
+
+function getJobRequiredCheckNextAction(job = {}) {
+    const failureReason = String(
+        job.failure_reason || job.last_error_message || ''
+    ).trim();
+    if (/^health_http_\d+$/i.test(failureReason)) {
+        return 'revisar /api.php?resource=health y recuperar backend/origen del host publico';
+    }
+    if (failureReason === 'health_missing_public_sync') {
+        return 'desplegar el contrato actualizado de /api.php?resource=health con checks.publicSync';
+    }
+    if (
+        failureReason === 'unverified' &&
+        String(job.verification_source || '')
+            .trim()
+            .toLowerCase() === 'registry_only'
+    ) {
+        return 'restaurar evidencia host-side de public_main_sync desde health_url antes de seguir cerrando el corte';
+    }
+    return '';
+}
+
 function evaluateRequiredChecks(focus, options = {}) {
     const checks = normalizeArray(focus?.required_checks, { lowerCase: true })
         .map((token) => parseRequiredCheckToken(token))
@@ -412,7 +449,7 @@ function evaluateRequiredChecks(focus, options = {}) {
                         .trim()
                         .toLowerCase() === check.target
             );
-            if (!job || job.verified === false) {
+            if (!job || !hasActionableJobRequiredCheck(job)) {
                 return {
                     ...check,
                     state: 'unverified',
@@ -421,11 +458,19 @@ function evaluateRequiredChecks(focus, options = {}) {
                 };
             }
             if (!job.healthy) {
+                const failureReason = String(
+                    job.failure_reason || job.last_error_message || ''
+                ).trim();
+                const nextAction = getJobRequiredCheckNextAction(job);
                 return {
                     ...check,
                     state: 'red',
                     ok: false,
-                    message: `job ${check.target} unhealthy`,
+                    ...(failureReason ? { reason: failureReason } : {}),
+                    ...(nextAction ? { next_action: nextAction } : {}),
+                    message: failureReason
+                        ? `job ${check.target} unhealthy: ${failureReason}`
+                        : `job ${check.target} unhealthy`,
                 };
             }
             return {

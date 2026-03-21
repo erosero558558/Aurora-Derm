@@ -57,9 +57,13 @@ function ensureDirForFile(filePath) {
     mkdirSync(dirname(filePath), { recursive: true });
 }
 
+function stripLeadingUtf8Bom(value) {
+    return String(value || '').replace(/^\uFEFF/, '');
+}
+
 function safeJsonParse(text, fallback = null) {
     try {
-        return JSON.parse(String(text || ''));
+        return JSON.parse(stripLeadingUtf8Bom(text));
     } catch (_error) {
         return fallback;
     }
@@ -125,6 +129,54 @@ function runGhJson(args, { allowFailure = true } = {}) {
         ...response,
         json: response.ok ? safeJsonParse(response.stdout, null) : null,
     };
+}
+
+function runNodeJsonScript(
+    scriptRelativePath,
+    args,
+    { allowFailure = true } = {}
+) {
+    const scriptPath = resolve(ROOT, scriptRelativePath);
+    const commandLabel = `node ${scriptRelativePath} ${args.join(' ')}`.trim();
+    if (!existsSync(scriptPath)) {
+        return {
+            available: false,
+            ok: false,
+            exitCode: 1,
+            command: commandLabel,
+            stdout: '',
+            stderr: '',
+            json: null,
+            error: `No existe ${scriptRelativePath} en ${ROOT}`,
+        };
+    }
+
+    const result = spawnSync(process.execPath, [scriptPath, ...args], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        windowsHide: true,
+    });
+    const stdout = String(result.stdout || '');
+    const stderr = String(result.stderr || '');
+    const ok = result.status === 0;
+    const response = {
+        available: true,
+        ok,
+        exitCode: typeof result.status === 'number' ? result.status : 1,
+        command: commandLabel,
+        stdout,
+        stderr,
+        json: safeJsonParse(stdout, null),
+        error:
+            ok || allowFailure
+                ? null
+                : `node fallo (${result.status}): ${stderr || stdout || 'sin detalle'}`,
+    };
+
+    if (!ok && !allowFailure) {
+        throw new Error(response.error);
+    }
+    return response;
 }
 
 function toIso(value) {
@@ -1114,7 +1166,9 @@ function parseProdMonitorEvidencePayload(payload, meta = {}) {
 function readProdMonitorEvidenceFromFile(filePath, meta = {}) {
     let payload;
     try {
-        payload = JSON.parse(readFileSync(filePath, 'utf8'));
+        payload = JSON.parse(
+            stripLeadingUtf8Bom(readFileSync(filePath, 'utf8'))
+        );
     } catch (error) {
         return {
             found: true,
@@ -1244,6 +1298,136 @@ function readProdMonitorEvidencePreferred({ localPath, prodMonitorRun }) {
         fallbackAttempted: true,
         fallbackFromRemoteError: remoteReport.error || null,
     };
+}
+
+function normalizePublicMainSyncEvidence(payload, meta = {}) {
+    const job =
+        payload && typeof payload.job === 'object' && payload.job
+            ? payload.job
+            : null;
+    const details =
+        job && typeof job.details === 'object' && job.details
+            ? job.details
+            : {};
+    const httpStatus = Number.parseInt(details.http_status, 10);
+    return {
+        available: true,
+        found: Boolean(job),
+        source: meta.source || 'agent_orchestrator',
+        path: meta.path || null,
+        command: meta.command || null,
+        error: null,
+        ok: payload?.ok === true,
+        state: job?.state || (payload?.ok === true ? 'ok' : 'unknown'),
+        verificationSource: job?.verification_source || null,
+        failureReason:
+            String(
+                job?.failure_reason || job?.last_error_message || ''
+            ).trim() || null,
+        lastErrorMessage: String(job?.last_error_message || '').trim() || null,
+        configured: Boolean(job?.configured),
+        verified: Boolean(job?.verified),
+        healthy: Boolean(job?.healthy),
+        operationallyHealthy: Boolean(job?.operationally_healthy),
+        repoHygieneIssue: Boolean(job?.repo_hygiene_issue),
+        headDrift: Boolean(job?.head_drift),
+        telemetryGap: Boolean(job?.telemetry_gap),
+        httpStatus:
+            Number.isFinite(httpStatus) && httpStatus > 0 ? httpStatus : null,
+        responseDetail: String(details.response_detail || '').trim() || null,
+        job,
+    };
+}
+
+function readPublicMainSyncEvidence() {
+    const path = resolve(ROOT, 'agent-orchestrator.js');
+    const response = runNodeJsonScript(
+        'agent-orchestrator.js',
+        ['jobs', 'verify', 'public_main_sync', '--json'],
+        { allowFailure: true }
+    );
+    if (!response.available) {
+        return {
+            available: false,
+            found: false,
+            source: 'agent_orchestrator',
+            path,
+            command: response.command,
+            error: response.error,
+        };
+    }
+    if (response.json && typeof response.json === 'object') {
+        return normalizePublicMainSyncEvidence(response.json, {
+            source: 'agent_orchestrator',
+            path,
+            command: response.command,
+        });
+    }
+    if (!response.ok) {
+        return {
+            available: true,
+            found: false,
+            source: 'agent_orchestrator',
+            path,
+            command: response.command,
+            error:
+                response.stderr ||
+                response.stdout ||
+                `agent-orchestrator exit ${response.exitCode}`,
+        };
+    }
+    return {
+        available: true,
+        found: false,
+        source: 'agent_orchestrator',
+        path,
+        command: response.command,
+        error: 'No se pudo parsear JSON de public_main_sync',
+    };
+}
+
+function getPublicMainSyncFailureToken(evidence) {
+    return String(
+        evidence?.failureReason ||
+            evidence?.lastErrorMessage ||
+            evidence?.state ||
+            'unknown'
+    ).trim();
+}
+
+function isPublicMainSyncBlocking(evidence) {
+    if (!evidence?.available || !evidence?.found || evidence?.error) {
+        return false;
+    }
+    if (evidence.ok === true) {
+        return false;
+    }
+    if (evidence.repoHygieneIssue && evidence.operationallyHealthy) {
+        return false;
+    }
+    return true;
+}
+
+function describePublicMainSyncFailure(evidence) {
+    const failureToken = getPublicMainSyncFailureToken(evidence);
+    if (/^health_http_\d+$/i.test(failureToken)) {
+        return `public_main_sync verifico host via ${
+            evidence.verificationSource || 'unknown'
+        } pero /api.php?resource=health devolvio HTTP ${
+            evidence.httpStatus || 'error'
+        }`;
+    }
+    if (failureToken === 'health_missing_public_sync') {
+        return 'public_main_sync alcanzo el health publico pero falta checks.publicSync en la respuesta live';
+    }
+    if (
+        failureToken === 'unverified' &&
+        String(evidence?.verificationSource || '').toLowerCase() ===
+            'registry_only'
+    ) {
+        return 'public_main_sync sigue en registry_only/unverified y todavia no deja evidencia host-side desde health_url';
+    }
+    return `public_main_sync sigue unhealthy (${failureToken || 'unknown'})`;
 }
 
 function fetchRecentRepositoryRuns(branch, limit = 100) {
@@ -1545,6 +1729,7 @@ function computeProductionStability({
     weeklyKpiHistory,
     sentryEvidence,
     prodMonitorEvidence,
+    publicMainSyncEvidence,
 }) {
     const criticalWorkflowKeys = ['ci', 'postDeployGate', 'deployHosting'];
     const reasons = [];
@@ -1642,6 +1827,26 @@ function computeProductionStability({
         }
     } else if (prodMonitorEvidence?.error) {
         advisories.push(`prod_monitor:error(${prodMonitorEvidence.error})`);
+    }
+
+    if (publicMainSyncEvidence?.found && !publicMainSyncEvidence.error) {
+        advisories.push(
+            `public_main_sync:${
+                publicMainSyncEvidence.ok
+                    ? 'ok'
+                    : getPublicMainSyncFailureToken(publicMainSyncEvidence)
+            }`
+        );
+        if (isPublicMainSyncBlocking(publicMainSyncEvidence)) {
+            signal = 'RED';
+            reasons.push(
+                `public_main_sync:${getPublicMainSyncFailureToken(publicMainSyncEvidence)}`
+            );
+        }
+    } else if (publicMainSyncEvidence?.error) {
+        advisories.push(
+            `public_main_sync:error(${publicMainSyncEvidence.error})`
+        );
     }
 
     return {
@@ -1881,6 +2086,7 @@ function computeSuggestedActions({
     executionEfficiency,
     sentryEvidence,
     prodMonitorEvidence,
+    publicMainSyncEvidence,
 }) {
     const actions = [];
     const workflowLabels = {
@@ -1911,6 +2117,19 @@ function computeSuggestedActions({
             reason: `${openProdAlerts.count} issue(s) [ALERTA PROD] siguen abiertos`,
             command: "gh issue list --state open --search '[ALERTA PROD]'",
             url: openProdAlerts.issues[0]?.url || null,
+        });
+    }
+
+    if (isPublicMainSyncBlocking(publicMainSyncEvidence)) {
+        pushAction({
+            id: 'ACT-P0-PUBLIC-MAIN-SYNC',
+            priority: 'P0',
+            blocking: true,
+            title: 'Recuperar verificacion host-side de public_main_sync',
+            reason: describePublicMainSyncFailure(publicMainSyncEvidence),
+            command:
+                'node agent-orchestrator.js jobs verify public_main_sync --json',
+            url: null,
         });
     }
 
@@ -2611,6 +2830,85 @@ function toMarkdown(summary) {
     }
     lines.push('');
 
+    lines.push('## Public Main Sync Evidence');
+    lines.push('');
+    if (
+        !summary.publicMainSyncEvidence ||
+        !summary.publicMainSyncEvidence.available
+    ) {
+        lines.push('- status: unavailable');
+        lines.push(
+            `- source: ${summary.publicMainSyncEvidence?.source || 'agent_orchestrator'}`
+        );
+        if (summary.publicMainSyncEvidence?.error) {
+            lines.push(`- error: ${summary.publicMainSyncEvidence.error}`);
+        }
+    } else if (!summary.publicMainSyncEvidence.found) {
+        lines.push('- status: not_found');
+        lines.push(
+            `- source: ${summary.publicMainSyncEvidence.source || 'agent_orchestrator'}`
+        );
+        if (summary.publicMainSyncEvidence.error) {
+            lines.push(`- error: ${summary.publicMainSyncEvidence.error}`);
+        }
+    } else {
+        lines.push(
+            `- source: ${summary.publicMainSyncEvidence.source || 'agent_orchestrator'}`
+        );
+        lines.push(
+            `- ok: ${summary.publicMainSyncEvidence.ok ? 'true' : 'false'}`
+        );
+        lines.push(`- state: ${summary.publicMainSyncEvidence.state || 'n/a'}`);
+        lines.push(
+            `- verification_source: ${
+                summary.publicMainSyncEvidence.verificationSource || 'n/a'
+            }`
+        );
+        lines.push(
+            `- failure_reason: ${
+                summary.publicMainSyncEvidence.failureReason || 'none'
+            }`
+        );
+        lines.push(
+            `- operationally_healthy: ${
+                summary.publicMainSyncEvidence.operationallyHealthy
+                    ? 'true'
+                    : 'false'
+            }`
+        );
+        lines.push(
+            `- repo_hygiene_issue: ${
+                summary.publicMainSyncEvidence.repoHygieneIssue
+                    ? 'true'
+                    : 'false'
+            }`
+        );
+        lines.push(
+            `- head_drift: ${
+                summary.publicMainSyncEvidence.headDrift ? 'true' : 'false'
+            }`
+        );
+        lines.push(
+            `- telemetry_gap: ${
+                summary.publicMainSyncEvidence.telemetryGap ? 'true' : 'false'
+            }`
+        );
+        if (summary.publicMainSyncEvidence.httpStatus) {
+            lines.push(
+                `- http_status: ${summary.publicMainSyncEvidence.httpStatus}`
+            );
+        }
+        if (summary.publicMainSyncEvidence.responseDetail) {
+            lines.push(
+                `- response_detail: ${summary.publicMainSyncEvidence.responseDetail}`
+            );
+        }
+        if (summary.publicMainSyncEvidence.command) {
+            lines.push(`- command: ${summary.publicMainSyncEvidence.command}`);
+        }
+    }
+    lines.push('');
+
     lines.push('## Pending Real (Plan Maestro)');
     lines.push('');
     for (const item of summary.planMasterProgress.pending) {
@@ -2819,6 +3117,7 @@ function main() {
         localPath: DEFAULT_PROD_MONITOR_JSON_OUT,
         prodMonitorRun: workflows.prodMonitor,
     });
+    const publicMainSyncEvidence = readPublicMainSyncEvidence();
     const productionStability = computeProductionStability({
         workflows,
         openProdAlerts,
@@ -2826,6 +3125,7 @@ function main() {
         weeklyKpiHistory,
         sentryEvidence,
         prodMonitorEvidence,
+        publicMainSyncEvidence,
     });
     const planMasterProgress = computePlanMasterProgress({
         workflows,
@@ -2849,6 +3149,7 @@ function main() {
         executionEfficiency,
         sentryEvidence,
         prodMonitorEvidence,
+        publicMainSyncEvidence,
     });
     const releaseReadiness = computeReleaseReadiness({
         productionStability,
@@ -2877,6 +3178,7 @@ function main() {
         weeklyLocalReport,
         sentryEvidence,
         prodMonitorEvidence,
+        publicMainSyncEvidence,
         paths: {
             jsonOut,
             mdOut,

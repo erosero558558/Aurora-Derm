@@ -225,16 +225,65 @@ function getPublicSyncWarnState(
     return { enabled: false, severity: 'warning' };
 }
 
+function getPublicSyncDetails(job = {}) {
+    if (job && typeof job.details === 'object' && job.details) {
+        return job.details;
+    }
+    return {};
+}
+
+function getPublicSyncHttpStatus(job = {}) {
+    const httpStatus = Number.parseInt(
+        getPublicSyncDetails(job).http_status,
+        10
+    );
+    return Number.isFinite(httpStatus) && httpStatus > 0 ? httpStatus : null;
+}
+
+function getPublicSyncResponseDetail(job = {}) {
+    return String(getPublicSyncDetails(job).response_detail || '').trim();
+}
+
+function getPublicSyncRecoveryAction(job = {}) {
+    const failureReason = String(job.failure_reason || '').trim();
+    if (failureReason === 'health_missing_public_sync') {
+        return 'deploy_health_public_sync_rollout';
+    }
+    if (/^health_http_\d+$/i.test(failureReason)) {
+        return 'recover_public_health_route';
+    }
+    return '';
+}
+
+function hasPublicSyncActionableSnapshot(job = {}) {
+    if (!job || typeof job !== 'object') {
+        return false;
+    }
+    if (job.verified !== false) {
+        return true;
+    }
+    if (job.configured === false) {
+        return false;
+    }
+    return Boolean(
+        String(job.failure_reason || job.last_error_message || '').trim() ||
+        String(job.state || '').trim() === 'failed'
+    );
+}
+
 function buildPublicSyncDiagnosticMeta(job = {}) {
     return {
         failure_reason: String(job.failure_reason || ''),
         last_error_message: String(job.last_error_message || ''),
         verification_source: String(job.verification_source || ''),
+        recovery_action: getPublicSyncRecoveryAction(job),
         state: String(job.state || ''),
         operationally_healthy: Boolean(job.operationally_healthy),
         repo_hygiene_issue: Boolean(job.repo_hygiene_issue),
         head_drift: Boolean(job.head_drift),
         telemetry_gap: Boolean(job.telemetry_gap),
+        http_status: getPublicSyncHttpStatus(job),
+        response_detail: getPublicSyncResponseDetail(job),
         current_head: String(job.current_head || ''),
         remote_head: String(job.remote_head || ''),
         dirty_paths_count: Number.isFinite(Number(job.dirty_paths_count))
@@ -252,11 +301,16 @@ function buildPublicSyncFailureMessage(job = {}) {
         `source=${job.verification_source || 'unknown'}`,
     ];
     const failureReason = String(job.failure_reason || '').trim();
+    const recoveryAction = getPublicSyncRecoveryAction(job);
+    const httpStatus = getPublicSyncHttpStatus(job);
     if (failureReason) {
         parts.push(`reason=${failureReason}`);
-        if (failureReason === 'health_missing_public_sync') {
-            parts.push('action=deploy_health_public_sync_rollout');
-        }
+    }
+    if (recoveryAction) {
+        parts.push(`action=${recoveryAction}`);
+    }
+    if (httpStatus) {
+        parts.push(`http_status=${httpStatus}`);
     }
     if (job.head_drift) {
         parts.push('head_drift=true');
@@ -751,7 +805,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         hasJobsSnapshot &&
         publicSyncJob &&
         warnPolicyEnabled(warnPolicyMap, 'public_main_sync_stale') &&
-        publicSyncJob.verified !== false &&
+        hasPublicSyncActionableSnapshot(publicSyncJob) &&
         publicSyncJob.age_seconds !== null &&
         publicSyncJob.age_seconds >
             Number(publicSyncJob.expected_max_lag_seconds || 0)
@@ -772,7 +826,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         hasJobsSnapshot &&
         publicSyncJob &&
         warnPolicyEnabled(warnPolicyMap, 'public_main_sync_failed') &&
-        publicSyncJob.verified !== false &&
+        hasPublicSyncActionableSnapshot(publicSyncJob) &&
         !publicSyncJob.healthy
     ) {
         diagnostics.push(
@@ -797,7 +851,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         hasJobsSnapshot &&
         publicSyncJob &&
         repoHygieneWarning.enabled &&
-        publicSyncJob.verified !== false &&
+        hasPublicSyncActionableSnapshot(publicSyncJob) &&
         publicSyncJob.repo_hygiene_issue
     ) {
         diagnostics.push(
@@ -819,7 +873,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         hasJobsSnapshot &&
         publicSyncJob &&
         headDriftWarning.enabled &&
-        publicSyncJob.verified !== false &&
+        hasPublicSyncActionableSnapshot(publicSyncJob) &&
         !publicSyncJob.healthy &&
         publicSyncJob.head_drift
     ) {
@@ -842,7 +896,7 @@ function buildWarnFirstDiagnostics(input = {}) {
         hasJobsSnapshot &&
         publicSyncJob &&
         telemetryGapWarning.enabled &&
-        publicSyncJob.verified !== false &&
+        hasPublicSyncActionableSnapshot(publicSyncJob) &&
         !publicSyncJob.healthy &&
         publicSyncJob.telemetry_gap
     ) {

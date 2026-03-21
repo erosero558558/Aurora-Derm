@@ -19,7 +19,11 @@ function readRepoFile(relativePath) {
     return readFileSync(resolve(REPO_ROOT, relativePath), 'utf8');
 }
 
-function archivedFileExistsOrIsIndexed(archiveRelativePath, indexRaw, entryName) {
+function archivedFileExistsOrIsIndexed(
+    archiveRelativePath,
+    indexRaw,
+    entryName
+) {
     return (
         existsSync(resolve(REPO_ROOT, archiveRelativePath)) ||
         indexRaw.includes(`\`${entryName}\``)
@@ -1016,6 +1020,13 @@ test('docs canonicos de ops preservan contratos clave del runtime actual', () =>
         productStatus.includes('gate:prod:fast'),
         true,
         'docs/PRODUCT_OPERATIONAL_STATUS.md debe usar gate:prod:fast como fuente'
+    );
+    assert.equal(
+        productStatus.includes(
+            'verification/runtime/prod-readiness-summary.md'
+        ),
+        true,
+        'docs/PRODUCT_OPERATIONAL_STATUS.md debe enlazar la evidencia runtime mas reciente'
     );
     assert.equal(
         productStatus.includes('calendarSource=google'),

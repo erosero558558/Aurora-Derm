@@ -73,9 +73,10 @@ Para local QA:
 - la suite `admin-openclaw-login` pasa como parte del gate cuando el shell usa el contrato OpenClaw
 - las suites Playwright se ejecutan contra el `-Domain` solicitado via `TEST_BASE_URL`
 - `gate:admin:rollout:openclaw` endurece el gate para exigir `operator-auth-status` con `mode=openclaw_chatgpt`, `configured=true` y perfil `web_broker` sano cuando ese transporte es el activo
-- si `operator-auth-status` falla o sigue en 503, el gate consulta `admin-auth.php?action=status` para distinguir entre contrato OpenClaw valido, fachada legacy o edge roto
+- si `operator-auth-status` falla o sigue en `503/502`, el gate consulta `admin-auth.php?action=status` para distinguir entre contrato OpenClaw valido, fachada legacy o edge roto
 - `diagnose:admin:openclaw-auth:rollout` devuelve `diagnosis` y `nextAction` para separar rapido si el entorno esta en `facade_only_rollout`, `admin_auth_legacy_facade`, `openclaw_not_configured`, `operator_auth_edge_failure` o `openclaw_ready`
 - `smoke:admin:openclaw-auth:live:node` valida el flujo real `start -> redirectUrl -> callback -> shared session admin/turnero -> logout`
+- cualquier `5xx` en `operator-auth-status` o `admin-auth.php?action=status` bloquea el piloto operativo aunque la shell `admin.html` siga cargando
 
 ## Rollback
 
