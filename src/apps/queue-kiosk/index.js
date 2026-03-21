@@ -613,7 +613,6 @@ function applyKioskClinicProfile(profile) {
         getKioskConsultorioLabel(1),
         getKioskConsultorioLabel(2),
     ].join(' · ');
-    const releaseMode = getTurneroClinicReleaseMode(profile);
     document.title = `Kiosco de Turnos | ${clinicName}`;
 
     const welcomeBrand = document.querySelector('#kioskWelcomeScreen strong');
@@ -628,11 +627,7 @@ function applyKioskClinicProfile(profile) {
 
     const clinicMeta = getById('kioskClinicMeta');
     if (clinicMeta instanceof HTMLElement) {
-        clinicMeta.textContent = [
-            clinicId,
-            clinicCity || clinicShortName,
-            `releaseMode ${releaseMode}`,
-        ]
+        clinicMeta.textContent = [clinicId, clinicCity || clinicShortName]
             .filter(Boolean)
             .join(' · ');
     }
@@ -678,8 +673,6 @@ function buildKioskHeartbeatPayload() {
     const profileSource = String(
         state.clinicProfile?.runtime_meta?.source || 'remote'
     ).trim();
-    const releaseMode = getTurneroClinicReleaseMode(state.clinicProfile);
-    const readiness = getTurneroClinicReadiness(state.clinicProfile);
     const assistantHeartbeat = buildAssistantHeartbeatMetrics();
     const surfaceSyncPack =
         state.surfaceSyncPack || buildKioskSurfaceSyncPack();
@@ -717,15 +710,6 @@ function buildKioskHeartbeatPayload() {
         networkOnline: navigator.onLine !== false,
         lastEvent: printerPrinted ? 'printer_ok' : 'heartbeat',
         lastEventAt: printer?.at || new Date().toISOString(),
-        clinicId,
-        clinicName,
-        profileSource,
-        profileFingerprint,
-        releaseMode,
-        readinessState: String(readiness.state || ''),
-        surfaceContractState: String(surfaceContract.state || ''),
-        surfaceRouteExpected: String(surfaceContract.expectedRoute || ''),
-        surfaceRouteCurrent: String(surfaceContract.currentRoute || ''),
         details: {
             connection: connectionState,
             pendingOffline: pendingCount,
@@ -737,9 +721,6 @@ function buildKioskHeartbeatPayload() {
             clinicName,
             profileSource,
             profileFingerprint,
-            releaseMode,
-            readinessState: String(readiness.state || ''),
-            readinessSummary: String(readiness.summary || ''),
             surfaceContractState: String(surfaceContract.state || ''),
             surfaceRouteExpected: String(surfaceContract.expectedRoute || ''),
             surfaceRouteCurrent: String(surfaceContract.currentRoute || ''),

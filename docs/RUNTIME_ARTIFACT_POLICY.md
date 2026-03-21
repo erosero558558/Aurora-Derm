@@ -97,8 +97,11 @@ Generated runtime outputs:
 - `admin.js`
 - `js/admin-chunks/**`
 
-These outputs are staged in `.generated/site-root/`. The compatibility/support
-layer remains authored from the repo root:
+These outputs are staged in `.generated/site-root/` first. The published copy
+served by `admin.html` remains available from the repo root (`admin.js` plus
+`js/admin-chunks/**`), but it is still treated as generated output: regenerate
+it from the stage root and do not hand-edit it. The compatibility/support layer
+remains authored from the repo root:
 
 - `js/admin-preboot-shortcuts.js`
 - `js/admin-runtime.js`
@@ -109,6 +112,37 @@ Canonical validators:
 - `npm run test:admin:runtime-smoke`
 - `npm run gate:admin:rollout`
 - `npm run check:runtime:artifacts`
+
+## Turnero Web Runtime Family
+
+Authored source:
+
+- `src/apps/queue-kiosk/index.js`
+- `src/apps/queue-display/index.js`
+- `src/apps/queue-operator/index.js`
+- `src/apps/queue-shared/**`
+- `src/apps/admin-v3/**` for shared queue/auth modules consumed by these shells
+
+Generated and published runtime outputs:
+
+- `.generated/site-root/js/queue-kiosk.js`
+- `.generated/site-root/js/queue-display.js`
+- `js/queue-kiosk.js`
+- `js/queue-display.js`
+
+Compatibility/authored support layer:
+
+- `js/queue-operator.js`
+
+`js/queue-kiosk.js` and `js/queue-display.js` are published copies mirrored
+from `.generated/site-root/`; they are committed for hosting parity, but they
+remain outputs and must be regenerated instead of edited manually.
+
+Canonical validators:
+
+- `npm run build:turnero:runtime`
+- `npm run check:turnero:runtime`
+- `npm run test:turnero:web-pilot:ui`
 
 ## Lint And Ownership Policy
 

@@ -19,16 +19,29 @@ const GENERATED_RUNTIME_FILES = [
     'js/queue-kiosk.js',
     'js/queue-display.js',
 ];
+const PUBLISHED_ROOT_RUNTIME_DIRECTORIES = ['js/admin-chunks'];
+const PUBLISHED_ROOT_RUNTIME_FILES = [
+    'admin.js',
+    'js/queue-kiosk.js',
+    'js/queue-display.js',
+];
 const LEGACY_GENERATED_ROOT_DIRECTORIES = [
     ...GENERATED_PUBLIC_ENTRIES,
-    ...GENERATED_RUNTIME_DIRECTORIES,
+    'js/chunks',
+    'js/engines',
 ];
-const LEGACY_GENERATED_ROOT_FILES = [...GENERATED_RUNTIME_FILES];
+const LEGACY_GENERATED_ROOT_FILES = ['script.js', 'js/booking-calendar.js'];
 const LEGACY_GENERATED_ROOT_IGNORE_PATTERNS = [
-    ...LEGACY_GENERATED_ROOT_DIRECTORIES.map((relativePath) =>
+    ...[
+        ...LEGACY_GENERATED_ROOT_DIRECTORIES,
+        ...PUBLISHED_ROOT_RUNTIME_DIRECTORIES,
+    ].map((relativePath) =>
         `${normalizeRelativePath(relativePath)}/`
     ),
-    ...LEGACY_GENERATED_ROOT_FILES.map((relativePath) =>
+    ...[
+        ...LEGACY_GENERATED_ROOT_FILES,
+        ...PUBLISHED_ROOT_RUNTIME_FILES,
+    ].map((relativePath) =>
         normalizeRelativePath(relativePath)
     ),
 ];
@@ -94,6 +107,8 @@ module.exports = {
     GENERATED_PUBLIC_ENTRIES,
     GENERATED_RUNTIME_DIRECTORIES,
     GENERATED_RUNTIME_FILES,
+    PUBLISHED_ROOT_RUNTIME_DIRECTORIES,
+    PUBLISHED_ROOT_RUNTIME_FILES,
     LEGACY_GENERATED_ROOT_DIRECTORIES,
     LEGACY_GENERATED_ROOT_FILES,
     LEGACY_GENERATED_ROOT_IGNORE_PATTERNS,

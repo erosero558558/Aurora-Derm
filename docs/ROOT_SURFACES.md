@@ -31,6 +31,9 @@ por que.
 
 - `PLAN_MAESTRO_2026_STATUS.md`: snapshot historico; sigue visible en raiz
   porque runbooks activos lo citan como evidencia y contexto.
+- `CHANGES_SUMMARY.md`: snapshot puntual del foundation patch de `Flow OS`;
+  se preserva en raiz como evidencia historica mientras no exista un archivo
+  canonico equivalente en `docs/archive/root-history/**`.
 - `CLAUDE.md`: guia de rol para Claude; `AGENTS.md` manda si hay conflicto.
 - `JULES_TASKS.md` y `KIMI_TASKS.md`: tombstones historicos preservados por
   politica y excluidos del carril activo.
@@ -61,23 +64,27 @@ Los `.js` que siguen en raiz deben caer en una de estas categorias:
 Lista aprobada actual:
 
 - `sw.js`: service worker con scope de raiz.
+- `admin.js`: bundle publicado que `admin.html` sirve desde raiz; se regenera
+  desde `.generated/site-root/admin.js` y no se edita a mano.
 - `agent-orchestrator.js`: CLI canonica de gobernanza y board.
 - `eslint.config.js`: config de ESLint descubierta por el tooling.
 - `playwright.config.js`: config de Playwright descubierta por el tooling.
 
-Los bundles generados del runtime publicado ya no forman parte de la frontera
-activa de JS en raiz. El contrato stageado vive en:
+Los bundles generados del runtime publicado no son fuente primaria de autoria.
+El contrato stageado vive en:
 
 - `.generated/site-root/script.js`
 - `.generated/site-root/admin.js`
 - `.generated/site-root/js/chunks/**`
 - `.generated/site-root/js/admin-chunks/**`
 
-Los shims de raiz existen solo para compatibilidad humana; runtime, tooling y
-deploy consumen docs canonicos y el stage root `.generated/site-root/`, no
-copias root legacy como fuente primaria de autoria. La frontera source-vs-output
+Cuando hosting o shells publicados exigen una copia servida desde raiz o
+`js/**`, esa copia se sincroniza desde `.generated/site-root/` y sigue
+tratandose como output publicado, no como fuente primaria de autoria.
+Runtime, tooling y deploy consumen docs canonicos y el stage root
+`.generated/site-root/` como referencia de build. La frontera source-vs-output
 vive en `docs/RUNTIME_ARTIFACT_POLICY.md`, y la salida segura para sacar las
-copias legacy del indice es
+copias legacy del indice sigue siendo
 `npm run legacy:generated-root:status|check|apply`.
 
 ## Superficies HTML permitidas en raiz

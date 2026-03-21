@@ -439,7 +439,6 @@ function applyDisplayClinicProfile(profile) {
         getTurneroConsultorioLabel(profile, 1, { short: true }),
         getTurneroConsultorioLabel(profile, 2, { short: true }),
     ].join(' / ');
-    const releaseMode = getTurneroClinicReleaseMode(profile);
     document.title = `Sala de Espera | ${clinicName}`;
 
     const brandNode = document.querySelector('.display-brand strong');
@@ -454,11 +453,7 @@ function applyDisplayClinicProfile(profile) {
 
     const clinicMeta = getById('displayClinicMeta');
     if (clinicMeta instanceof HTMLElement) {
-        clinicMeta.textContent = [
-            clinicId,
-            clinicCity || clinicShortName,
-            `releaseMode ${releaseMode}`,
-        ]
+        clinicMeta.textContent = [clinicId, clinicCity || clinicShortName]
             .filter(Boolean)
             .join(' · ');
     }
@@ -611,15 +606,6 @@ function buildDisplayHeartbeatPayload() {
             state.lastBellAt > 0
                 ? new Date(state.lastBellAt).toISOString()
                 : new Date().toISOString(),
-        clinicId,
-        clinicName,
-        profileSource,
-        profileFingerprint,
-        releaseMode,
-        readinessState: String(readiness.state || ''),
-        surfaceContractState: String(surfaceContract.state || ''),
-        surfaceRouteExpected: String(surfaceContract.expectedRoute || ''),
-        surfaceRouteCurrent: String(surfaceContract.currentRoute || ''),
         details: {
             connection: connectionState,
             bellMuted: Boolean(state.bellMuted),
@@ -630,9 +616,6 @@ function buildDisplayHeartbeatPayload() {
             clinicName,
             profileSource,
             profileFingerprint,
-            releaseMode,
-            readinessState: String(readiness.state || ''),
-            readinessSummary: String(readiness.summary || ''),
             surfaceContractState: String(surfaceContract.state || ''),
             surfaceRouteExpected: String(surfaceContract.expectedRoute || ''),
             surfaceRouteCurrent: String(surfaceContract.currentRoute || ''),

@@ -11,14 +11,14 @@ import { bindFrameHooks } from '../ui/dom.js';
 import { hydrateAppointmentPreferences } from '../sections/appointments.js';
 import { hydrateCallbacksPreferences } from '../sections/callbacks.js';
 import { hydrateAvailabilityPreferences } from '../sections/availability.js';
+import { initPushModule } from '../shared/modules/push.js';
+import { focusAgentPrompt } from '../shared/modules/agent.js';
 import {
     applyQueueRuntimeDefaults,
     initQueueAutoRefresh,
     queueNumpadAction,
     toggleQueueHelpPanel,
 } from '../shared/modules/queue.js';
-import { initPushModule } from '../shared/modules/push.js';
-import { focusAgentPrompt } from '../shared/modules/agent.js';
 import {
     bootAuthenticatedUi,
     handleLoginSubmit,

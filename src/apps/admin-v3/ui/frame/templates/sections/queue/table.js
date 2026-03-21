@@ -48,17 +48,15 @@ export function renderQueueTableShell() {
         <div class="table-scroll">
             <table class="sony-table queue-admin-table">
                 <thead>
-                    <tr>
-                        <th>Sel</th>
-                        <th>Ticket</th>
-                        <th>Tipo</th>
-                        <th>Estado</th>
-                        <th>Consultorio</th>
-                        <th>Espera</th>
-                        <th>Acciones</th>
-                    </tr>
+                    <tr><th>Turno</th><th>Estado</th><th>Box</th><th>Acción</th></tr>
                 </thead>
-                <tbody id="queueTableBody"></tbody>
+                <tbody id="queueTableBody">
+                    <tr>
+                        <td colspan="4" class="empty-cell">
+                            Sin turnos en cola.
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 

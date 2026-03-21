@@ -5,9 +5,7 @@ import {
 } from '../../../sections/appointments.js';
 import { setCallbacksFilter } from '../../../sections/callbacks.js';
 import { openClinicalHistorySession } from '../../../sections/clinical-history.js';
-import { getState } from '../../../shared/core/store.js';
 import {
-    callNextForConsultorio,
     clearQueueSearch,
     setQueueFilter,
 } from '../../../shared/modules/queue.js';
@@ -92,22 +90,6 @@ const QUICK_ACTIONS = {
     queue_section: async () => {
         await openQueueWithFilter('all');
     },
-    queue_waiting: async () => {
-        await openQueueWithFilter('waiting');
-    },
-    queue_called: async () => {
-        await openQueueWithFilter('called');
-    },
-    queue_no_show: async () => {
-        await openQueueWithFilter('no_show');
-    },
-    queue_all: async () => {
-        await openQueueWithFilter('all');
-    },
-    queue_call_next: async () => {
-        await navigateToSection('queue');
-        await callNextForConsultorio(getState().queue.stationConsultorio);
-    },
 };
 
 export async function runQuickAction(action) {
@@ -176,7 +158,7 @@ export function parseQuickCommand(value) {
     if (
         command.includes('turnero') ||
         command.includes('cola') ||
-        command.includes('queue')
+        command === 'queue'
     ) {
         return 'queue_sla_risk';
     }

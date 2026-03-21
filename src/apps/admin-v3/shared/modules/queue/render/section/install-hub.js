@@ -4983,18 +4983,33 @@ function renderSurfaceTelemetry(manifest, detectedPlatform) {
     }
 }
 
-function getQueueSyncHealth() {
+function resolveQueueSyncReferenceMs() {
     const state = getState();
     const { queueMeta } = getQueueSource();
+    const queueUpdatedAtMs = Date.parse(
+        String(queueMeta?.updatedAt || queueMeta?.updated_at || '')
+    );
+    if (Number.isFinite(queueUpdatedAtMs) && queueUpdatedAtMs > 0) {
+        return queueUpdatedAtMs;
+    }
+
+    const uiRefreshMs = Number(state.ui?.lastRefreshAt || 0);
+    const autoRefreshMs = Number(state.ui?.queueAutoRefresh?.lastSuccessAt || 0);
+
+    return Math.max(uiRefreshMs, autoRefreshMs);
+}
+
+function getQueueSyncHealth() {
+    const state = getState();
     const syncMode = String(state.queue?.syncMode || 'live')
         .trim()
         .toLowerCase();
     const fallbackPartial = Boolean(state.queue?.fallbackPartial);
-    const updatedAt = String(queueMeta?.updatedAt || '').trim();
-    const updatedAtMs = updatedAt ? Date.parse(updatedAt) : NaN;
-    const ageSec = Number.isFinite(updatedAtMs)
-        ? Math.max(0, Math.round((Date.now() - updatedAtMs) / 1000))
+    const referenceMs = resolveQueueSyncReferenceMs();
+    const ageSec = referenceMs
+        ? Math.max(0, Math.round((Date.now() - referenceMs) / 1000))
         : null;
+    const referenceAt = referenceMs > 0 ? new Date(referenceMs).toISOString() : '';
 
     if (syncMode === 'fallback' || fallbackPartial) {
         return {
@@ -5008,6 +5023,8 @@ function getQueueSyncHealth() {
                 'Mantén un solo operador activo por estación para evitar confusión mientras dura el respaldo.',
                 'Si la TV sigue mostrando llamados, no la cierres; prioriza estabilidad sobre reinstalar.',
             ],
+            ageSec,
+            referenceAt,
         };
     }
 
@@ -5023,6 +5040,8 @@ function getQueueSyncHealth() {
                 'Si Operador ya estaba abierto, valida un llamado de prueba antes de seguir atendiendo.',
                 'Si el retraso persiste, opera desde las rutas web preparadas mientras revisas red local.',
             ],
+            ageSec,
+            referenceAt,
         };
     }
 
@@ -5037,6 +5056,8 @@ function getQueueSyncHealth() {
             'Si notas un retraso mayor a un minuto, refresca antes de tocar instalación o hardware.',
             'En una caída puntual, prioriza abrir la ruta preparada del equipo antes de reiniciar dispositivos.',
         ],
+        ageSec,
+        referenceAt,
     };
 }
 
@@ -5047,10 +5068,12 @@ function buildQueueSyncAlert() {
     }
 
     const { queueMeta } = getQueueSource();
-    const updatedAtMs = Date.parse(String(queueMeta?.updatedAt || ''));
-    const ageLabel = Number.isFinite(updatedAtMs)
+    const referenceMs = Date.parse(
+        String(syncHealth.referenceAt || queueMeta?.updatedAt || '')
+    );
+    const ageLabel = Number.isFinite(referenceMs)
         ? `Ultima cola actualizada hace ${formatHeartbeatAge(
-              Math.max(0, Math.round((Date.now() - updatedAtMs) / 1000))
+              Math.max(0, Math.round((Date.now() - referenceMs) / 1000))
           )}`
         : 'Sin marca reciente de cola';
 

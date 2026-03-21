@@ -6,10 +6,12 @@ export function buildQueueSyncAlert(deps) {
     }
 
     const { queueMeta } = getQueueSource();
-    const updatedAtMs = Date.parse(String(queueMeta?.updatedAt || ''));
-    const ageLabel = Number.isFinite(updatedAtMs)
+    const referenceMs = Date.parse(
+        String(syncHealth.referenceAt || queueMeta?.updatedAt || '')
+    );
+    const ageLabel = Number.isFinite(referenceMs)
         ? `Ultima cola actualizada hace ${formatHeartbeatAge(
-              Math.max(0, Math.round((Date.now() - updatedAtMs) / 1000))
+              Math.max(0, Math.round((Date.now() - referenceMs) / 1000))
           )}`
         : 'Sin marca reciente de cola';
 

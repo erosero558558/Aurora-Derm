@@ -3,6 +3,20 @@ import { setText } from '../../../../ui/render.js';
 
 let lastWatchdogBucket = '';
 
+function resolveQueueSyncReferenceMs(state, queueMeta) {
+    const queueUpdatedAtMs = toMillis(
+        queueMeta?.updatedAt || queueMeta?.updated_at
+    );
+    if (queueUpdatedAtMs > 0) {
+        return queueUpdatedAtMs;
+    }
+
+    const uiRefreshMs = Number(state.ui?.lastRefreshAt || 0);
+    const autoRefreshMs = Number(state.ui?.queueAutoRefresh?.lastSuccessAt || 0);
+
+    return Math.max(uiRefreshMs, autoRefreshMs);
+}
+
 export function renderQueueSyncMeta(state, queueMeta, appendActivity) {
     const syncNode = document.getElementById('queueSyncStatus');
 
@@ -14,15 +28,12 @@ export function renderQueueSyncMeta(state, queueMeta, appendActivity) {
         return;
     }
 
-    const updatedAt = String(queueMeta.updatedAt || '').trim();
-    if (!updatedAt) {
+    const referenceMs = resolveQueueSyncReferenceMs(state, queueMeta);
+    if (!referenceMs) {
         return;
     }
 
-    const ageSec = Math.max(
-        0,
-        Math.round((Date.now() - toMillis(updatedAt)) / 1000)
-    );
+    const ageSec = Math.max(0, Math.round((Date.now() - referenceMs) / 1000));
     const stale = ageSec >= 60;
     const assistancePending = Math.max(
         0,

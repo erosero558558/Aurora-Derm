@@ -264,7 +264,7 @@ test('legacy generated root cleanup reporta tracked paths y dirty legacy root', 
 
         const status = collectStatus(root);
         assert.equal(status.trackedPaths.includes('script.js'), true);
-        assert.equal(status.trackedPaths.includes('admin.js'), true);
+        assert.equal(status.trackedPaths.includes('admin.js'), false);
         assert.equal(status.trackedPaths.includes('es/index.html'), true);
         assert.equal(
             status.trackedPaths.includes('js/chunks/shell-fixture.js'),
@@ -285,6 +285,10 @@ test('legacy generated root cleanup reporta tracked paths y dirty legacy root', 
         assert.equal(
             status.trackedSummary.filesPresent.includes('script.js'),
             true
+        );
+        assert.equal(
+            status.trackedSummary.filesPresent.includes('admin.js'),
+            false
         );
         assert.equal(status.ignoreCoverage.ok, true);
         assert.deepEqual(
@@ -349,7 +353,7 @@ test('legacy generated root cleanup apply saca del indice sin borrar el worktree
 
         assert.equal(result.command, 'apply');
         assert.equal(result.ok, true);
-        assert.equal(result.removedCount >= 5, true);
+        assert.equal(result.removedCount >= 4, true);
         assert.deepEqual(result.trackedPaths, []);
         assert.equal(
             result.preservedWorkingTreePaths.includes('script.js'),
@@ -361,6 +365,10 @@ test('legacy generated root cleanup apply saca del indice sin borrar el worktree
         );
         assert.equal(fs.existsSync(path.join(root, 'script.js')), true);
         assert.equal(fs.existsSync(path.join(root, 'es', 'index.html')), true);
+        assert.equal(
+            runGit(root, ['ls-files', '--', 'admin.js']).stdout.trim(),
+            'admin.js'
+        );
         assert.equal(
             runGit(root, [
                 'ls-files',

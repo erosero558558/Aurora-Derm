@@ -368,6 +368,7 @@ test('frontera de markdowns en raiz queda explicita y limitada', () => {
     const expectedRootMarkdown = [
         'AGENTS.md',
         'CALENDAR-CUTOVER.md',
+        'CHANGES_SUMMARY.md',
         'CHECKLIST-PRUEBAS-PRODUCCION.md',
         'CLAUDE.md',
         'CONTRIBUTING.md',
@@ -397,6 +398,7 @@ test('frontera de markdowns en raiz queda explicita y limitada', () => {
         'CLAUDE.md',
         'JULES_TASKS.md',
         'KIMI_TASKS.md',
+        'CHANGES_SUMMARY.md',
         'SERVIDOR-LOCAL.md',
         'docs/LOCAL_SERVER.md',
         'docs/archive/root-history/**',
@@ -428,6 +430,7 @@ test('frontera de js en raiz queda explicita y limitada', () => {
         .filter((entry) => entry.endsWith('.js'))
         .sort();
     const expectedRootJs = [
+        'admin.js',
         'agent-orchestrator.js',
         'eslint.config.js',
         'playwright.config.js',
@@ -442,6 +445,7 @@ test('frontera de js en raiz queda explicita y limitada', () => {
 
     for (const entry of [
         'sw.js',
+        'admin.js',
         'agent-orchestrator.js',
         'eslint.config.js',
         'playwright.config.js',

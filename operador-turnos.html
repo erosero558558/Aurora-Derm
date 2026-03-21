@@ -57,7 +57,6 @@
             class="turnero-surface-runtime-host"
             data-turnero-surface-runtime-bootstrap
         ></section>
-
         <div id="operatorLoginView" class="queue-operator-login-shell">
             <div class="queue-operator-login-stage">
                 <section class="queue-operator-login-card">
@@ -82,11 +81,11 @@
                         data-state="neutral"
                     >
                         <strong id="operatorLoginStatusTitle">
-                            PIN operativo
+                            Acceso protegido
                         </strong>
                         <p id="operatorLoginStatusMessage">
-                            Ingresa el PIN de la clínica para abrir la consola
-                            operativa del turnero.
+                            Inicia sesión para abrir la consola operativa del
+                            turnero.
                         </p>
                     </div>
 
@@ -95,8 +94,8 @@
                             <div class="admin-login-field">
                                 <span>OpenClaw / ChatGPT</span>
                                 <p id="operatorOpenClawSummary">
-                                    Continua con OpenClaw para validar la sesion del
-                                    turnero con helper local o broker web.
+                                    Abre OpenClaw para validar la sesion del turnero
+                                    sin usar una clave local.
                                 </p>
                             </div>
 
@@ -117,8 +116,8 @@
                                 id="operatorOpenClawHelperMeta"
                                 class="admin-login-support-copy"
                             >
-                                Si el transporte usa helper local, podras abrir el
-                                enlace manual o generar un challenge nuevo.
+                                Si la ventana no aparece, usa el enlace manual o
+                                genera un challenge nuevo.
                             </p>
                             <p
                                 id="operatorOpenClawManualRow"
@@ -144,14 +143,13 @@
 
                         <div id="operatorLegacyLoginFields">
                             <label class="admin-login-field" for="operatorPassword">
-                                <span>PIN de operador</span>
+                                <span>Contraseña</span>
                                 <input
                                     id="operatorPassword"
                                     type="password"
                                     required
-                                    placeholder="Ingresa el PIN de la clínica"
-                                    inputmode="numeric"
-                                    autocomplete="one-time-code"
+                                    placeholder="Ingresa tu clave"
+                                    autocomplete="current-password"
                                 />
                             </label>
 
@@ -632,7 +630,7 @@
         </dialog>
 
         <script
-            src="js/queue-operator.js?v=queue-operator-20260315-openclaw-failclosed1"
+            src="js/queue-operator.js?v=queue-operator-20260320-mainpublish1"
             type="module"
         ></script>
     </body>
