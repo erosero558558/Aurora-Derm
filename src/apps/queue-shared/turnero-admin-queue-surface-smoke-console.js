@@ -650,7 +650,7 @@ export function mountTurneroAdminQueueSurfaceSmokeConsole(target, input = {}) {
     };
 
     host.innerHTML = renderConsole(controller.state);
-    controller.root = host.firstElementChild || host;
+    controller.root = host;
     controller.handoffStore = controller.state.handoffStore;
     bindConsoleActions(controller.root, controller);
 

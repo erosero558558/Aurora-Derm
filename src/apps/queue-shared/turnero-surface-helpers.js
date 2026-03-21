@@ -110,6 +110,10 @@ async function copyTextToClipboard(text) {
     return false;
 }
 
+async function copyToClipboardSafe(text) {
+    return copyTextToClipboard(text);
+}
+
 function downloadJsonSnapshot(filename, payload) {
     if (
         typeof document === 'undefined' ||
@@ -146,6 +150,7 @@ function downloadJsonSnapshot(filename, payload) {
 
 export {
     asObject,
+    copyToClipboardSafe,
     copyTextToClipboard,
     downloadJsonSnapshot,
     escapeHtml,
