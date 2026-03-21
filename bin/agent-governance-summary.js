@@ -287,12 +287,20 @@ function computeExecutionState({
 }) {
     const blockedTasks = Number(status?.totals?.byStatus?.blocked ?? 0);
     const focus = status?.focus || {};
+    const structuralFocusErrors = Array.isArray(focus.blocking_errors)
+        ? focus.blocking_errors
+        : [];
     const externalBlockerTaskIds = Array.isArray(focus.external_blocker_task_ids)
         ? focus.external_blocker_task_ids
         : [];
     const acknowledgedExternalBlocker =
         Boolean(focus.acknowledged_external_blocker) ||
         externalBlockerTaskIds.length > 0;
+    const pendingRequiredChecks = Boolean(
+        Array.isArray(focus.required_checks) &&
+            focus.required_checks.length > 0 &&
+            focus.required_checks_ok === false
+    );
     const reasons = [];
 
     if (Array.isArray(blockers) && blockers.length > 0) {
@@ -300,6 +308,9 @@ function computeExecutionState({
     }
     if (diagnosticsSummary.errors_count > 0) {
         reasons.push(`diagnostics_error:${diagnosticsSummary.errors_count}`);
+    }
+    if (structuralFocusErrors.length > 0) {
+        reasons.push(`focus_blocking_errors:${structuralFocusErrors.join(',')}`);
     }
     if (acknowledgedExternalBlocker) {
         reasons.push(
@@ -314,11 +325,11 @@ function computeExecutionState({
         state = 'BLOCKED';
     } else if (
         diagnosticsSummary.warnings_count > 0 ||
-        focus.required_checks_ok === false ||
+        pendingRequiredChecks ||
         focus.support_only === true
     ) {
         state = 'DEGRADED';
-        if (focus.required_checks_ok === false) {
+        if (pendingRequiredChecks) {
             reasons.push('required_checks_pending');
         }
         if (focus.support_only === true) {

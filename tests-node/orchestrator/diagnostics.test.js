@@ -34,6 +34,7 @@ const POLICY = {
                 enabled: true,
                 severity: 'warning',
             },
+            support_only_active: { enabled: true, severity: 'warning' },
             decision_overdue: { enabled: true, severity: 'warning' },
             rework_without_reason: { enabled: true, severity: 'warning' },
         },
@@ -114,6 +115,7 @@ test('diagnostics buildWarnFirstDiagnostics genera warnings policy-driven', () =
         'warn.metrics.baseline_missing',
         'warn.policy.unknown_keys',
     ]);
+    assert.equal(list.every((item) => typeof item.scope === 'string'), true);
 });
 
 test('diagnostics buildWarnFirstDiagnostics agrega señales de foco compartido', () => {
@@ -324,6 +326,57 @@ test('diagnostics preserva required_check runtime por surface en warnings del fo
     assert.ok(diag);
     assert.match(diag.message, /runtime:operator_auth=unverified/);
     assert.equal(diag.meta.checks[0].id, 'runtime:operator_auth');
+    assert.equal(diag.scope, 'release');
+});
+
+test('diagnostics agrega support_only_active como warning operacional', () => {
+    const list = diagnostics.buildWarnFirstDiagnostics({
+        source: 'status',
+        policy: POLICY,
+        focusSummary: {
+            configured: {
+                id: 'FOCUS-2026-03-admin-operativo-cut-1',
+                required_checks: ['job:public_main_sync'],
+            },
+            active_tasks_total: 2,
+            support_tasks_total: 2,
+            forward_tasks_total: 0,
+            support_only: true,
+            idle: false,
+            missing_focus_task_ids: [],
+            outside_next_step_task_ids: [],
+            invalid_slice_task_ids: [],
+            too_many_active_slices: false,
+            required_checks: [
+                {
+                    id: 'job:public_main_sync',
+                    state: 'green',
+                    ok: true,
+                },
+            ],
+            decisions: {
+                overdue: 0,
+                overdue_ids: [],
+            },
+            rework_without_reason_task_ids: [],
+        },
+        jobsSnapshot: [
+            {
+                key: 'public_main_sync',
+                configured: true,
+                verified: true,
+                healthy: true,
+            },
+        ],
+        activeStatuses: ACTIVE_STATUSES,
+    });
+
+    const diag = list.find(
+        (item) => item.code === 'warn.focus.support_only_active'
+    );
+    assert.ok(diag);
+    assert.equal(diag.scope, 'operational');
+    assert.match(diag.message, /solo tiene trabajo support/i);
 });
 
 test('diagnostics reutiliza focusSummary live cuando se provee explicitamente', () => {

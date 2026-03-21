@@ -454,3 +454,30 @@ test('close codex CDX limpia CODEX_ACTIVE y commitea plan+board+evidence', async
     assert.match(publishEvents, /"task_id":"CDX-001"/);
     assert.match(publishEvents, /"sync_transport":"sync-main-safe"/);
 });
+
+test('close falla si required checks del foco no estan verdes', async (t) => {
+    const fixture = createGitFixture('CDX-001');
+    t.after(() => cleanupFixture(fixture.root));
+    fixture.ctx.buildLiveFocusSummary = async () => ({
+        summary: {
+            required_checks: [
+                {
+                    id: 'runtime:operator_auth',
+                    state: 'red',
+                    ok: false,
+                    reason: 'auth_mode_mismatch',
+                },
+            ],
+        },
+    });
+
+    await assert.rejects(
+        () => handleCloseCommand(fixture.ctx),
+        (error) => {
+            assert.equal(error.error_code, 'required_check_unverified');
+            assert.match(error.message, /close requiere required checks en verde/i);
+            assert.match(error.message, /runtime:operator_auth=red/i);
+            return true;
+        }
+    );
+});

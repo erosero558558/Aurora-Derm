@@ -2112,6 +2112,79 @@ tasks:
     );
 });
 
+test('focus status expone progreso support_only y release_ready=false cuando el foco no tiene forward work', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer();
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: boardForBoardSyncFixture(`
+  - id: CDX-011
+    title: "Support-only focus task"
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    risk: medium
+    scope: docs
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+${CODEX_MODEL_ROUTING_FIELDS}
+    files: ["docs/runbook.md"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-frontend-admin-operativo
+    strategy_role: support
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: admin_queue_pilot_cut
+    integration_slice: governance_evidence
+    work_type: support
+    expected_outcome: "Support-only delivery"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+    const nowIso = new Date().toISOString();
+    writePublicSyncJobsFixture(dir, {
+        state: 'success',
+        checked_at: nowIso,
+        last_success_at: nowIso,
+        last_error_at: '',
+        last_error_message: '',
+        deployed_commit: 'abc1234',
+        current_head: 'abc1234',
+        remote_head: 'abc1234',
+    });
+
+    const result = await runCliWithEnvAsync(
+        dir,
+        ['focus', 'status', '--json'],
+        {
+            OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+        }
+    );
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.ok, true);
+    assert.equal(json.focus.forward_tasks_total, 0);
+    assert.equal(json.focus.support_tasks_total, 1);
+    assert.equal(json.focus.support_only, true);
+    assert.equal(json.focus.release_ready, false);
+});
+
 test('surfaces de gobernanza reutilizan el mismo focusSummary live para public_main_sync y operator_auth', async (t) => {
     const dir = createFixtureDir();
     const runtimeServer = await startRuntimeFixtureServer({
@@ -2465,6 +2538,70 @@ tasks:
     assert.deepEqual(json.structural_errors, []);
 });
 
+test('focus check solo endurece required checks con --enforce-required-checks', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForBoardSyncFixture(
+            `
+  - id: AG-010
+    title: "Aligned active task"
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    risk: medium
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+${CODEX_MODEL_ROUTING_FIELDS}
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: primary
+    files: ["controllers/AdminController.php"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: admin_queue_pilot_cut
+    integration_slice: backend_readiness
+    work_type: forward
+    expected_outcome: "Aligned backend slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+`,
+            activeAdminStrategyYaml().replace(
+                'focus_required_checks: ["job:public_main_sync", "runtime:openclaw_chatgpt"]',
+                'focus_required_checks: ["job:public_main_sync"]'
+            )
+        ),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+
+    let result = runCli(dir, ['focus', 'check', '--json']);
+    let json = parseJsonStdout(result);
+    assert.equal(json.ok, true);
+    assert.deepEqual(json.structural_errors, []);
+
+    result = runCli(
+        dir,
+        ['focus', 'check', '--enforce-required-checks', '--json'],
+        1
+    );
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, false);
+    assert.equal(json.enforce_required_checks, true);
+    assert.ok(json.structural_errors.includes('required_check_unverified'));
+});
+
 test('board sync check detecta tareas ready en paso futuro y leases activos stale', (t) => {
     const dir = createFixtureDir();
     t.after(() => cleanupFixtureDir(dir));
@@ -2776,8 +2913,8 @@ test('focus advance normaliza cola future-ready antes de escribir el nuevo next_
     updated_at: ${DATE}
 `,
             activeAdminStrategyYaml().replace(
-                'focus_required_checks: ["job:public_main_sync", "runtime:openclaw_chatgpt"]',
-                'focus_required_checks: ["job:public_main_sync"]'
+            'focus_required_checks: ["job:public_main_sync", "runtime:openclaw_chatgpt"]',
+            'focus_required_checks: ["job:public_main_sync"]'
             )
         ),
         handoffs: baseHandoffs(),
@@ -3284,6 +3421,32 @@ test('task start --release-publish fija el preset de excepcion formal de release
     assert.equal(json.task.focus_step, 'admin_queue_pilot_cut');
     assert.equal(json.task.integration_slice, 'governance_evidence');
     assert.equal(json.task.work_type, 'evidence');
+});
+
+test('task start --release-publish falla si required checks del foco no estan verdes', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForReleasePublishFixture().replace(
+            'focus_required_checks: ["job:public_main_sync", "runtime:openclaw_chatgpt"]',
+            'focus_required_checks: ["job:public_main_sync"]'
+        ),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+
+    const result = runCli(
+        dir,
+        ['task', 'start', 'AG-256', '--release-publish', '--json'],
+        1
+    );
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.ok, false);
+    assert.equal(json.error_code, 'required_check_unverified');
+    assert.match(json.error, /task start --release-publish requiere required checks en verde/i);
+    assert.match(json.error, /job:public_main_sync=unverified/i);
 });
 
 test('task start --release-publish acepta soporte acotado para frontend-public sin abrir cross-lane', (t) => {

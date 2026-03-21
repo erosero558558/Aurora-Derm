@@ -240,7 +240,11 @@
                 "enabled": true
             },
             "required_check_unverified": {
-                "severity": "error",
+                "severity": "warning",
+                "enabled": true
+            },
+            "support_only_active": {
+                "severity": "warning",
                 "enabled": true
             },
             "decision_overdue": {

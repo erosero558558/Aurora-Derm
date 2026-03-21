@@ -2010,6 +2010,7 @@ async function cmdPublish(args) {
         parseBoard,
         ensureTask,
         buildFocusSummary,
+        buildLiveFocusSummary,
         parseDecisions,
         parseJobs,
         buildJobsSnapshot: loadJobsSnapshot,

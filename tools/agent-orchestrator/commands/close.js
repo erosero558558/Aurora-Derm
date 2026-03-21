@@ -95,6 +95,10 @@ async function handleCloseCommand(ctx) {
         parseJobs,
         buildJobsSnapshot,
         findJobSnapshot,
+        buildFocusSummary,
+        buildLiveFocusSummary,
+        parseDecisions,
+        verifyOpenClawRuntime,
         rootPath,
         publishEventsPath,
         writeCodexActiveBlock,
@@ -148,6 +152,55 @@ async function handleCloseCommand(ctx) {
         typeof loadModelUsageLedger === 'function'
             ? loadModelUsageLedger()
             : [];
+    const isCodexTask =
+        String(task.executor || '')
+            .trim()
+            .toLowerCase() === 'codex';
+
+    if (isCodexTask) {
+        let focusSummary = null;
+        if (typeof buildLiveFocusSummary === 'function') {
+            focusSummary = (
+                await buildLiveFocusSummary(board, { now: new Date() })
+            )?.summary;
+        } else if (typeof buildFocusSummary === 'function') {
+            const decisionsData =
+                typeof parseDecisions === 'function'
+                    ? parseDecisions()
+                    : { decisions: [] };
+            const jobsSnapshot =
+                typeof buildJobsSnapshot === 'function' &&
+                typeof parseJobs === 'function'
+                    ? await buildJobsSnapshot(parseJobs())
+                    : [];
+            const initialFocusSummary = buildFocusSummary(board, {
+                decisionsData,
+                jobsSnapshot,
+                now: new Date(),
+            });
+            const runtimeVerification =
+                Array.isArray(initialFocusSummary?.configured?.required_checks) &&
+                initialFocusSummary.configured.required_checks.some((item) =>
+                    String(item || '')
+                        .trim()
+                        .toLowerCase()
+                        .startsWith('runtime:')
+                ) &&
+                typeof verifyOpenClawRuntime === 'function'
+                    ? await verifyOpenClawRuntime()
+                    : null;
+            focusSummary = buildFocusSummary(board, {
+                decisionsData,
+                jobsSnapshot,
+                runtimeVerification,
+                now: new Date(),
+            });
+        }
+        publishCommandHandlers.assertReleaseRequiredChecks(
+            focusSummary,
+            'close'
+        );
+    }
 
     if (task.cross_domain) {
         const handoffData =
@@ -177,10 +230,6 @@ async function handleCloseCommand(ctx) {
         toRelativeRepoPath(evidencePath)
     );
     board.policy.updated_at = currentDate();
-    const isCodexTask =
-        String(task.executor || '')
-            .trim()
-            .toLowerCase() === 'codex';
     let publishResult = null;
     if (isCodexTask) {
         if (

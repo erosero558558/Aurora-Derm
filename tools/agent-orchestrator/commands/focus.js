@@ -191,7 +191,8 @@ function applyFocusOverrides(strategy, flags = {}) {
     return strategy;
 }
 
-function getStructuralFocusErrors(board, summary) {
+function getStructuralFocusErrors(board, summary, options = {}) {
+    const { enforceRequiredChecks = false } = options;
     const errors = Array.isArray(summary?.blocking_errors)
         ? [...summary.blocking_errors]
         : [];
@@ -224,6 +225,13 @@ function getStructuralFocusErrors(board, summary) {
         ) {
             errors.push('closed_focus_without_required_checks');
         }
+    }
+    if (
+        enforceRequiredChecks &&
+        Array.isArray(summary?.required_checks) &&
+        summary.required_checks.some((item) => item.ok !== true)
+    ) {
+        errors.push('required_check_unverified');
     }
     return Array.from(new Set(errors));
 }
@@ -282,7 +290,7 @@ async function handleFocusCommand(ctx) {
         )
     ) {
         throw new Error(
-            'Uso: node agent-orchestrator.js focus <status|set-active|advance|close|check> [--expect-rev N] [--json]'
+            'Uso: node agent-orchestrator.js focus <status|set-active|advance|close|check> [--expect-rev N] [--enforce-required-checks] [--json]'
         );
     }
 
@@ -316,13 +324,19 @@ async function handleFocusCommand(ctx) {
     }
 
     if (subcommand === 'check') {
-        const errors = getStructuralFocusErrors(board, summary);
+        const enforceRequiredChecks = Boolean(
+            flags['enforce-required-checks'] || flags.enforce_required_checks
+        );
+        const errors = getStructuralFocusErrors(board, summary, {
+            enforceRequiredChecks,
+        });
         const payload = {
             version: 1,
             ok: errors.length === 0,
             command: 'focus',
             action: 'check',
             focus: summary,
+            enforce_required_checks: enforceRequiredChecks,
             structural_errors: errors,
             warnings: Array.isArray(summary?.warnings) ? summary.warnings : [],
         };

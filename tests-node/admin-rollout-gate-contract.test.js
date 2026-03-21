@@ -424,15 +424,34 @@ test('package.json expone gate endurecido para rollout OpenClaw del admin', () =
     );
 });
 
-test('package.json endurece agent:gate con chunks admin y board doctor strict antes de la suite larga', () => {
+test('package.json mueve el preflight de chunks admin a agent:test y deja agent:gate como carril diario local', () => {
     const packageJson = loadFile(PACKAGE_JSON_PATH);
 
     assert.equal(
         packageJson.includes(
-            '"agent:gate": "npm run chunks:admin:check && node agent-orchestrator.js board doctor --strict --json && npm run agent:test'
+            '"agent:test": "npm run chunks:admin:check && node --test'
         ),
         true,
-        'agent:gate debe fallar temprano por drift admin y por errores semanticos del board'
+        'agent:test debe fallar temprano por drift admin antes de la suite larga'
+    );
+    assert.equal(
+        packageJson.includes(
+            '"agent:gate": "node agent-orchestrator.js board doctor --strict --json && npm run agent:test'
+        ),
+        true,
+        'agent:gate debe quedarse como carril diario/local sin duplicar el preflight de chunks'
+    );
+});
+
+test('package.json expone agent:gate:release para el carril duro de cierre/publicacion', () => {
+    const packageJson = loadFile(PACKAGE_JSON_PATH);
+
+    assert.equal(
+        packageJson.includes(
+            '"agent:gate:release": "npm run agent:gate && node agent-orchestrator.js focus check --enforce-required-checks --json && node agent-orchestrator.js jobs verify public_main_sync --json && node agent-orchestrator.js runtime verify openclaw_chatgpt --json"'
+        ),
+        true,
+        'agent:gate:release debe endurecer focus, jobs verify y runtime verify para release'
     );
 });
 

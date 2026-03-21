@@ -2,6 +2,7 @@
 
 const terminalEvidence = require('../domain/evidence');
 const domainStrategy = require('../domain/strategy');
+const publishCommandHandlers = require('./publish');
 
 async function handleTaskCommand(ctx) {
     const {
@@ -9,6 +10,7 @@ async function handleTaskCommand(ctx) {
         parseFlags,
         parseBoard,
         parseHandoffs,
+        buildLiveFocusSummary,
         parseCsvList,
         detectDefaultOwner,
         ACTIVE_STATUSES,
@@ -188,7 +190,8 @@ async function handleTaskCommand(ctx) {
     }
 
     if (normalizedSubcommand === 'start') {
-        handleTaskStart({
+        await handleTaskStart({
+            buildLiveFocusSummary,
             flags,
             wantsJson,
             taskId,
@@ -878,8 +881,9 @@ function handleTaskClaim(ctx) {
     }
 }
 
-function handleTaskStart(ctx) {
+async function handleTaskStart(ctx) {
     const {
+        buildLiveFocusSummary,
         flags,
         wantsJson,
         taskId,
@@ -993,6 +997,15 @@ function handleTaskStart(ctx) {
     if (releasePublish) {
         applyReleasePublishPreset(task);
         applyReleasePublishStrategyDefaults(board, task);
+        if (typeof buildLiveFocusSummary === 'function') {
+            const focusData = await buildLiveFocusSummary(board, {
+                now: new Date(),
+            });
+            publishCommandHandlers.assertReleaseRequiredChecks(
+                focusData?.summary,
+                'task start --release-publish'
+            );
+        }
     }
     applyBlockedReasonOverride(task, flags, 'task start');
     if (isRetiredExecutor(task.executor, RETIRED_TASK_EXECUTORS)) {
@@ -1015,6 +1028,15 @@ function handleTaskStart(ctx) {
                 taskId,
                 blockingConflicts
             )}`
+        );
+    }
+    if (releasePublish && typeof buildLiveFocusSummary === 'function') {
+        const focusData = await buildLiveFocusSummary(board, {
+            now: new Date(),
+        });
+        publishCommandHandlers.assertReleaseRequiredChecks(
+            focusData?.summary,
+            'task start --release-publish'
         );
     }
 

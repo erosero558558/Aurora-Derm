@@ -96,14 +96,17 @@ function readRuntimeArtifact(relativePath) {
 }
 
 function listTrackedRepoPaths() {
-    return execFileSync('git', ['ls-files', '-z'], {
-        cwd: REPO_ROOT,
-        encoding: 'utf8',
-    })
-        .split('\0')
-        .map((entry) => entry.trim())
-        .filter(Boolean)
-        .sort();
+    return Array.from(
+        new Set(
+            execFileSync('git', ['ls-files', '-z'], {
+                cwd: REPO_ROOT,
+                encoding: 'utf8',
+            })
+                .split('\0')
+                .map((entry) => entry.trim())
+                .filter(Boolean)
+        )
+    ).sort();
 }
 
 function listTrackedRootFiles() {
@@ -299,9 +302,9 @@ test('runbooks y deploy docs activos evitan mojibake comun', () => {
         'RUNBOOKS debe conservar benchmark:local'
     );
     assert.equal(
-        deployGuide.includes('AURORADERM_EMAIL_FROM'),
+        deployGuide.includes('PIELARMONIA_EMAIL_FROM'),
         true,
-        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe conservar AURORADERM_EMAIL_FROM'
+        'docs/DEPLOY_HOSTING_PLAYBOOK.md debe conservar PIELARMONIA_EMAIL_FROM'
     );
     assert.equal(
         deployGuide.includes('FIGO_TELEGRAM_BOT_TOKEN'),
@@ -1006,7 +1009,7 @@ test('docs canonicos de ops preservan contratos clave del runtime actual', () =>
     );
 
     assert.equal(
-        calendarCutover.includes('AURORADERM_AVAILABILITY_SOURCE=google'),
+        calendarCutover.includes('PIELARMONIA_AVAILABILITY_SOURCE=google'),
         true,
         'docs/CALENDAR_CUTOVER.md debe fijar source=google para el corte'
     );
@@ -1084,8 +1087,8 @@ test('operations index agrupa comandos canonicos de web, admin, prod y gobernanz
 test('leadops doc fija env vars y comandos canonicos del worker OpenClaw', () => {
     const raw = readRepoFile('docs/LEADOPS_OPENCLAW.md');
     const requiredEntries = [
-        'AURORADERM_LEADOPS_MACHINE_TOKEN',
-        'AURORADERM_LEADOPS_SERVER_BASE_URL',
+        'PIELARMONIA_LEADOPS_MACHINE_TOKEN',
+        'PIELARMONIA_LEADOPS_SERVER_BASE_URL',
         'OPENCLAW_GATEWAY_ENDPOINT',
         'OPENCLAW_GATEWAY_MODEL',
         'npm run leadops:worker',
@@ -2087,7 +2090,7 @@ test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan 
         'tests/pentest_p0.php no debe depender de admin123'
     );
     assert.equal(
-        pentestP0.includes('AURORADERM_ADMIN_PASSWORD no definido'),
+        pentestP0.includes('PIELARMONIA_ADMIN_PASSWORD no definido'),
         true,
         'tests/pentest_p0.php debe saltar CSRF si falta la password admin'
     );
@@ -2104,7 +2107,7 @@ test('docs locales y pentests apuntan al host canonico 127.0.0.1:8011 o aceptan 
         'tests/penetration_test.php no debe depender de admin123'
     );
     assert.equal(
-        penetration.includes('AURORADERM_ADMIN_PASSWORD no definido'),
+        penetration.includes('PIELARMONIA_ADMIN_PASSWORD no definido'),
         true,
         'tests/penetration_test.php debe saltar CSRF si falta la password admin'
     );

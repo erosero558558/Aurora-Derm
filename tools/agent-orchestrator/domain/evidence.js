@@ -81,9 +81,7 @@ function analyzeTerminalTaskEvidence(task, options = {}, deps = {}) {
         reason = 'missing_expected_file';
     } else if (!refsAligned) {
         reason = 'noncanonical_ref';
-    } else if (
-        isReconstructedEvidencePath(expectedPath, { fileExists, fileRead })
-    ) {
+    } else if (isReconstructedEvidencePath(expectedPath, { fileExists, fileRead })) {
         reason = 'reconstructed_evidence';
     }
 

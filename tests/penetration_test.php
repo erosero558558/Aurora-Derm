@@ -3,7 +3,7 @@
 $serverBaseUrl = rtrim(getenv('TEST_BASE_URL') ?: 'http://127.0.0.1:8011', '/');
 $baseUrl = $serverBaseUrl . '/api.php';
 $authUrl = $serverBaseUrl . '/admin-auth.php';
-$adminPassword = trim((string) (getenv('AURORADERM_ADMIN_PASSWORD') ?: getenv('PIELARMONIA_ADMIN_PASSWORD') ?: ''));
+$adminPassword = trim((string) (getenv('PIELARMONIA_ADMIN_PASSWORD') ?: ''));
 
 function request($url, $method = 'GET', $data = [], $headers = [], $cookies = [])
 {
@@ -149,7 +149,7 @@ if ($res['code'] === 401) {
 }
 
 if ($adminPassword === '') {
-    echo "[WARN] AURORADERM_ADMIN_PASSWORD no definido. El alias PIELARMONIA_* sigue disponible temporalmente. Skipping CSRF test.\n";
+    echo "[WARN] PIELARMONIA_ADMIN_PASSWORD no definido. Skipping CSRF test.\n";
 } else {
     $authStatus = fetch_admin_auth_status($authUrl);
     if (($authStatus['mode'] ?? '') !== 'legacy_password') {

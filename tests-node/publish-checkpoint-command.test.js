@@ -441,6 +441,48 @@ test('publish checkpoint release-publish exige marcador explicito en summary', a
     }
 });
 
+test('publish checkpoint falla si required checks del foco no estan verdes', async () => {
+    const root = createRepoFixture();
+    try {
+        writeFileSync(
+            join(root, 'docs', 'in-scope.md'),
+            '# updated scope\n',
+            'utf8'
+        );
+        const ctx = buildPublishContext(root, {
+            buildLiveFocusSummary: async () => ({
+                summary: {
+                    configured: {
+                        id: 'FOCUS-2026-03-admin-operativo-cut-1',
+                        next_step: 'admin_queue_pilot_cut',
+                    },
+                    active: null,
+                    required_checks: [
+                        {
+                            id: 'job:public_main_sync',
+                            state: 'unverified',
+                            ok: false,
+                            reason: 'missing_snapshot',
+                        },
+                    ],
+                },
+            }),
+        });
+
+        await assert.rejects(
+            () => handlePublishCommand(ctx),
+            (error) => {
+                assert.equal(error.error_code, 'required_check_unverified');
+                assert.match(error.message, /publish checkpoint requiere required checks en verde/i);
+                assert.match(error.message, /job:public_main_sync=unverified/i);
+                return true;
+            }
+        );
+    } finally {
+        cleanupRepoFixture(root);
+    }
+});
+
 test('publish checkpoint bloquea legacy generated root trackeado fuera de scope', async () => {
     const root = createRepoFixture();
     try {

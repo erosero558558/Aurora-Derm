@@ -279,6 +279,37 @@ function hasRuntimeRequiredCheck(summary = {}) {
         : false;
 }
 
+function listPendingRequiredChecks(summary = {}) {
+    return Array.isArray(summary?.required_checks)
+        ? summary.required_checks.filter((item) => item?.ok !== true)
+        : [];
+}
+
+function formatPendingRequiredChecks(summary = {}) {
+    return listPendingRequiredChecks(summary)
+        .map((item) => {
+            const reason = String(item?.reason || '').trim();
+            return reason
+                ? `${item.id}=${item.state}(${reason})`
+                : `${item.id}=${item.state}`;
+        })
+        .join(', ');
+}
+
+function assertReleaseRequiredChecks(summary = {}, actionLabel = 'release') {
+    const pendingChecks = listPendingRequiredChecks(summary);
+    if (pendingChecks.length === 0) {
+        return;
+    }
+    const error = new Error(
+        `${actionLabel} requiere required checks en verde: ${formatPendingRequiredChecks(summary)}`
+    );
+    error.code = 'required_check_unverified';
+    error.error_code = 'required_check_unverified';
+    error.required_checks = pendingChecks;
+    throw error;
+}
+
 function buildAllowedPatterns(taskId, task = {}) {
     return [
         ...(Array.isArray(task.files) ? task.files : []),
@@ -730,6 +761,7 @@ async function handlePublishCommand(ctx) {
         parseBoard,
         ensureTask,
         buildFocusSummary,
+        buildLiveFocusSummary,
         parseDecisions,
         parseJobs,
         buildJobsSnapshot,
@@ -785,7 +817,11 @@ async function handlePublishCommand(ctx) {
         allowedStatuses: ['in_progress', 'review'],
     });
     let focusSummary = null;
-    if (typeof buildFocusSummary === 'function') {
+    if (typeof buildLiveFocusSummary === 'function') {
+        focusSummary = (
+            await buildLiveFocusSummary(board, { now: new Date() })
+        )?.summary;
+    } else if (typeof buildFocusSummary === 'function') {
         const decisionsData =
             typeof parseDecisions === 'function'
                 ? parseDecisions()
@@ -811,43 +847,44 @@ async function handlePublishCommand(ctx) {
             runtimeVerification,
             now: new Date(),
         });
-        if (focusSummary?.active) {
-            const focusId = String(focusSummary.active.id || '').trim();
-            const focusStep = String(
-                focusSummary.active.next_step || ''
-            ).trim();
-            if (String(task.focus_id || '').trim() !== focusId) {
-                const error = new Error(
-                    `publish checkpoint requiere task alineada al foco activo (${focusId})`
-                );
-                error.code = 'publish_checkpoint_outside_focus';
-                error.error_code = 'publish_checkpoint_outside_focus';
-                throw error;
-            }
-            if (String(task.focus_step || '').trim() !== focusStep) {
-                const error = new Error(
-                    `publish checkpoint requiere focus_step=${focusStep || 'n/a'}`
-                );
-                error.code = 'publish_checkpoint_outside_focus';
-                error.error_code = 'publish_checkpoint_outside_focus';
-                throw error;
-            }
-            const normalizedSummary = summary.toLowerCase();
-            if (
-                !isReleaseException &&
-                focusId &&
-                focusStep &&
-                !normalizedSummary.includes(focusId.toLowerCase()) &&
-                !normalizedSummary.includes(focusStep.toLowerCase())
-            ) {
-                const error = new Error(
-                    'publish checkpoint requiere --summary alineado a focus_id o focus_next_step'
-                );
-                error.code = 'publish_checkpoint_outside_focus';
-                error.error_code = 'publish_checkpoint_outside_focus';
-                throw error;
-            }
+    }
+    if (focusSummary?.active) {
+        const focusId = String(focusSummary.active.id || '').trim();
+        const focusStep = String(focusSummary.active.next_step || '').trim();
+        if (String(task.focus_id || '').trim() !== focusId) {
+            const error = new Error(
+                `publish checkpoint requiere task alineada al foco activo (${focusId})`
+            );
+            error.code = 'publish_checkpoint_outside_focus';
+            error.error_code = 'publish_checkpoint_outside_focus';
+            throw error;
         }
+        if (String(task.focus_step || '').trim() !== focusStep) {
+            const error = new Error(
+                `publish checkpoint requiere focus_step=${focusStep || 'n/a'}`
+            );
+            error.code = 'publish_checkpoint_outside_focus';
+            error.error_code = 'publish_checkpoint_outside_focus';
+            throw error;
+        }
+        const normalizedSummary = summary.toLowerCase();
+        if (
+            !isReleaseException &&
+            focusId &&
+            focusStep &&
+            !normalizedSummary.includes(focusId.toLowerCase()) &&
+            !normalizedSummary.includes(focusStep.toLowerCase())
+        ) {
+            const error = new Error(
+                'publish checkpoint requiere --summary alineado a focus_id o focus_next_step'
+            );
+            error.code = 'publish_checkpoint_outside_focus';
+            error.error_code = 'publish_checkpoint_outside_focus';
+            throw error;
+        }
+    }
+    if (focusSummary) {
+        assertReleaseRequiredChecks(focusSummary, 'publish checkpoint');
     }
     if (isReleaseException && !summaryHasReleasePublishMarker(summary)) {
         const error = new Error(
@@ -914,6 +951,8 @@ module.exports = {
     buildAllowedPatterns,
     buildClosePublishSummary,
     diagnosePublishWorkspace,
+    assertReleaseRequiredChecks,
+    formatPendingRequiredChecks,
     finalizePreparedPublish,
     handlePublishCommand,
     runPublishPreflight,

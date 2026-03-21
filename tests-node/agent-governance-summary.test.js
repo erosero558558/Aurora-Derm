@@ -319,6 +319,137 @@ decisions:
     );
 }
 
+function writeFixtureFilesWithStrategyTasks(
+    dir,
+    tasksYaml,
+    { requiredChecks = ['job:public_main_sync', 'runtime:openclaw_chatgpt'] } = {}
+) {
+    const taskLines = String(tasksYaml || '')
+        .replace(/^\s*\n|\n\s*$/g, '')
+        .split('\n');
+    const commonIndent = taskLines
+        .filter((line) => line.trim())
+        .reduce((minIndent, line) => {
+            const indent = (line.match(/^(\s*)/) || [''])[0].length;
+            return minIndent === null ? indent : Math.min(minIndent, indent);
+        }, null);
+    const tasksBlock = taskLines
+        .map((line) => {
+            if (!line.trim()) return '';
+            const normalizedLine =
+                commonIndent && commonIndent > 0
+                    ? line.slice(commonIndent)
+                    : line;
+            return `  ${normalizedLine}`;
+        })
+        .join('\n');
+    const checksYaml = Array.isArray(requiredChecks)
+        ? requiredChecks.map((value) => `"${String(value)}"`).join(', ')
+        : '"job:public_main_sync"';
+    const board = `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  updated_at: ${DATE}
+strategy:
+  active:
+    id: STRAT-2026-03-admin-operativo
+    title: "Admin operativo"
+    objective: "Cerrar admin operativo"
+    owner: ernesto
+    status: active
+    started_at: "2026-03-14"
+    review_due_at: "2026-03-21"
+    exit_criteria: ["uno"]
+    success_signal: "demo"
+    focus_id: "FOCUS-2026-03-admin-operativo-cut-1"
+    focus_title: "Admin operativo demostrable"
+    focus_summary: "Corte comun"
+    focus_status: active
+    focus_proof: "Demo comun"
+    focus_steps: ["admin_queue_pilot_cut", "pilot_readiness_evidence"]
+    focus_next_step: "admin_queue_pilot_cut"
+    focus_required_checks: [${checksYaml}]
+    focus_non_goals: ["rediseno_publico"]
+    focus_owner: "ernesto"
+    focus_review_due_at: "2026-03-21"
+    focus_evidence_ref: ""
+    focus_max_active_slices: 3
+    subfronts:
+      - codex_instance: codex_frontend
+        subfront_id: SF-frontend-admin-operativo
+        title: "Admin UX"
+        allowed_scopes: ["frontend-admin", "queue"]
+        support_only_scopes: ["docs"]
+        blocked_scopes: ["payments"]
+      - codex_instance: codex_backend_ops
+        subfront_id: SF-backend-admin-operativo
+        title: "Backend soporte"
+        allowed_scopes: ["auth", "backend", "readiness", "gates"]
+        support_only_scopes: ["tests"]
+        blocked_scopes: ["frontend-public"]
+      - codex_instance: codex_transversal
+        subfront_id: SF-transversal-admin-operativo
+        title: "Runtime soporte"
+        allowed_scopes: []
+        support_only_scopes: ["openclaw_runtime", "tooling"]
+        blocked_scopes: ["backend"]
+tasks:
+${tasksBlock}
+`;
+
+    const handoffs = `
+version: 1
+handoffs: []
+`;
+
+    const plan = `
+# Plan Maestro Codex 2026 (Fixture)
+
+<!-- CODEX_STRATEGY_ACTIVE
+id: STRAT-2026-03-admin-operativo
+title: "Admin operativo"
+status: active
+owner: ernesto
+objective: "Cerrar admin operativo"
+started_at: "2026-03-14"
+review_due_at: "2026-03-21"
+success_signal: "demo"
+subfront_ids: ["SF-frontend-admin-operativo", "SF-backend-admin-operativo", "SF-transversal-admin-operativo"]
+updated_at: ${DATE}
+-->
+
+Relacion con Operativo 2026:
+- Fixture.
+`;
+
+    writeFileSync(join(dir, 'AGENT_BOARD.yaml'), `${board.trim()}\n`, 'utf8');
+    writeFileSync(
+        join(dir, 'AGENT_HANDOFFS.yaml'),
+        `${handoffs.trim()}\n`,
+        'utf8'
+    );
+    writeFileSync(
+        join(dir, 'PLAN_MAESTRO_CODEX_2026.md'),
+        `${plan.trim()}\n`,
+        'utf8'
+    );
+    writeFileSync(
+        join(dir, 'AGENT_DECISIONS.yaml'),
+        `version: 1
+policy:
+  owner_model: human_supervisor
+  revision: 1
+  updated_at: "2026-03-14"
+decisions: []
+`,
+        'utf8'
+    );
+    mkdirSync(join(dir, 'verification', 'agent-runs'), { recursive: true });
+}
+
 function writePublicSyncJobsFixture(dir) {
     const runtimeDir = join(dir, 'runtime');
     const statusPath = join(runtimeDir, 'public-sync-status.json');
@@ -478,13 +609,22 @@ Relacion con Operativo 2026:
 }
 
 function runSummary(dir, args = [], envPatch = null) {
+    const env = {
+        ...process.env,
+    };
+    delete env.OPENCLAW_RUNTIME_BASE_URL;
+    delete env.PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL;
+    delete env.PIELARMONIA_LEADOPS_SERVER_BASE_URL;
+    if (envPatch && typeof envPatch === 'object') {
+        Object.assign(env, envPatch);
+    }
     const result = spawnSync(
         process.execPath,
         [SUMMARY_SCRIPT, '--root', dir, ...args],
         {
             cwd: REPO_ROOT,
             encoding: 'utf8',
-            env: envPatch ? { ...process.env, ...envPatch } : process.env,
+            env,
         }
     );
     if (result.error) throw result.error;
@@ -492,13 +632,22 @@ function runSummary(dir, args = [], envPatch = null) {
 }
 
 function runSummaryAsync(dir, args = [], envPatch = null) {
+    const env = {
+        ...process.env,
+    };
+    delete env.OPENCLAW_RUNTIME_BASE_URL;
+    delete env.PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL;
+    delete env.PIELARMONIA_LEADOPS_SERVER_BASE_URL;
+    if (envPatch && typeof envPatch === 'object') {
+        Object.assign(env, envPatch);
+    }
     return new Promise((resolvePromise, rejectPromise) => {
         const child = spawn(
             process.execPath,
             [SUMMARY_SCRIPT, '--root', dir, ...args],
             {
                 cwd: REPO_ROOT,
-                env: envPatch ? { ...process.env, ...envPatch } : process.env,
+                env,
                 stdio: ['ignore', 'pipe', 'pipe'],
             }
         );
@@ -784,7 +933,7 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.match(writtenMd, /Domain signal:\s+`GREEN`/);
     assert.match(writtenMd, /Score salud dominios \(priority\):/);
     assert.match(writtenMd, /Regresiones dominio GREEN->RED:/);
-    assert.match(writtenMd, /Razones:\s+`required_checks_pending`/);
+    assert.match(writtenMd, /Razones:\s+`warnings:\d+`/);
     assert.match(writtenMd, /Razones dominio:\s+`stable`/);
     assert.match(writtenMd, /Politicas:\s+strict=PASS/);
     assert.match(writtenMd, /Diagnostics warn-first:/);
@@ -798,6 +947,135 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.match(writtenMd, /Evidence: aligned=/);
     assert.match(writtenMd, /Warn-first Diagnostics/);
     assert.match(writtenMd, /\[GREEN\].*jules|\[GREEN\].*codex/);
+});
+
+test('agent-governance-summary deduplica required_check_unverified y agrega sources[]', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+    writeFixtureFilesWithStrategyTasks(
+        dir,
+        `
+  - id: AG-010
+    title: "Forward fixture"
+    owner: ernesto
+    executor: ci
+    status: in_progress
+    risk: medium
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["controllers/AdminController.php"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: primary
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: admin_queue_pilot_cut
+    integration_slice: backend_readiness
+    work_type: forward
+    expected_outcome: "Forward delivery"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+`,
+        {
+            requiredChecks: ['job:public_main_sync'],
+        }
+    );
+
+    const result = runSummary(dir, ['--format', 'json']);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const parsed = JSON.parse(result.stdout);
+    const matches = parsed.diagnostics.filter(
+        (item) => item.code === 'warn.focus.required_check_unverified'
+    );
+
+    assert.equal(matches.length, 1);
+    assert.equal(matches[0].scope, 'release');
+    assert.equal(Array.isArray(matches[0].sources), true);
+    assert.equal(matches[0].sources.includes('status'), true);
+    assert.equal(matches[0].sources.some((value) => /board/i.test(value)), true);
+});
+
+test('agent-governance-summary marca support_only, release_ready=false y blocker externo reconocido', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer();
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+    writeFixtureFilesWithStrategyTasks(
+        dir,
+        `
+  - id: AG-020
+    title: "Support-only fixture"
+    owner: ernesto
+    executor: ci
+    status: blocked
+    risk: medium
+    scope: docs
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["docs/runbook.md"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-frontend-admin-operativo
+    strategy_role: support
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: admin_queue_pilot_cut
+    integration_slice: governance_evidence
+    work_type: support
+    expected_outcome: "Support only"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    blocked_reason: "host_502_publicsync_operator_auth_and_no_host_access"
+`,
+        {
+            requiredChecks: [
+                'job:public_main_sync',
+                'runtime:openclaw_chatgpt',
+            ],
+        }
+    );
+    writePublicSyncJobsFixture(dir);
+
+    const result = await runSummaryAsync(
+        dir,
+        ['--format', 'json'],
+        {
+            OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+        }
+    );
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const parsed = JSON.parse(result.stdout);
+    const supportOnlyDiag = parsed.diagnostics.find(
+        (item) => item.code === 'warn.focus.support_only_active'
+    );
+
+    assert.equal(parsed.status.focus.support_only, true);
+    assert.equal(parsed.status.focus.release_ready, false);
+    assert.equal(parsed.overall.execution_state, 'BLOCKED');
+    assert.equal(parsed.overall.acknowledged_external_blocker, true);
+    assert.deepEqual(parsed.overall.external_blocker_task_ids, ['AG-020']);
+    assert.ok(supportOnlyDiag);
+    assert.equal(supportOnlyDiag.scope, 'operational');
 });
 
 test('agent-governance-summary mantiene contrato JSON minimo estable', (t) => {

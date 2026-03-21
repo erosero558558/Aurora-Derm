@@ -637,9 +637,7 @@ function buildFocusSummary(board, options = {}) {
 
     for (const task of activeTasks) {
         const taskId = String(task.id || '');
-        const taskStatus = String(task.status || '')
-            .trim()
-            .toLowerCase();
+        const taskStatus = String(task.status || '').trim().toLowerCase();
         const workType = String(task.work_type || '')
             .trim()
             .toLowerCase();
