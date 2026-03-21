@@ -4,18 +4,10 @@ export function renderLoginPanel() {
     return `
         <section class="admin-v3-login__panel">
             <div class="admin-v3-login__panel-head">
-                <p class="sony-kicker" id="adminLoginStepEyebrow">Admin interno</p>
-                <h2 id="adminLoginStepTitle">Entre al panel operativo</h2>
+                <p class="sony-kicker" id="adminLoginStepEyebrow">Ingreso interno</p>
+                <h2 id="adminLoginRouteTitle">Acceso de consultorio</h2>
                 <p id="adminLoginStepSummary">
-                    Aqui solo se resuelve el acceso. El estado operativo se revisa adentro, despues de iniciar sesion.
-                </p>
-            </div>
-
-            <div class="admin-login-route-card">
-                <p class="sony-kicker" id="adminLoginRouteEyebrow">Via activa</p>
-                <strong id="adminLoginRouteTitle">OpenClaw en este equipo</strong>
-                <p id="adminLoginRouteMessage">
-                    El operador entra desde este laptop. Al continuar, OpenClaw abre el helper local y confirma la identidad con un codigo temporal.
+                    Validando si este entorno esta listo para operar con OpenClaw y datos clinicos.
                 </p>
             </div>
 
@@ -24,9 +16,9 @@ export function renderLoginPanel() {
                 class="admin-login-status-card admin-login-alert"
                 data-state="neutral"
             >
-                <strong id="adminLoginStatusTitle">Estado del acceso</strong>
+                <strong id="adminLoginStatusTitle">Readiness del consultorio</strong>
                 <p id="adminLoginStatusMessage">
-                    Todavia no hay un intento en curso. Usa la via recomendada para abrir el admin.
+                    El panel comprueba acceso OpenClaw y estado clinico antes de abrir la operacion.
                 </p>
             </div>
 
@@ -45,18 +37,18 @@ export function renderLoginPanel() {
                 </div>
                 <div id="openclawLoginStage" class="admin-openclaw-stage is-hidden" aria-live="polite">
                     <div class="admin-openclaw-stage__intro">
-                        <strong id="adminOpenClawIntroTitle">Entrada en este equipo</strong>
+                        <strong id="adminOpenClawIntroTitle">Sesion local OpenClaw</strong>
                         <p id="adminOpenClawIntroMessage">
-                            Esta ruta abre OpenClaw en este mismo equipo para confirmar la identidad del operador.
+                            Este panel puede delegar la identidad del operador a OpenClaw en este mismo laptop.
                         </p>
                     </div>
                     <div id="adminOpenClawChallengeCard" class="admin-openclaw-challenge is-hidden">
                         <div class="admin-openclaw-challenge__head">
-                            <span class="admin-openclaw-challenge__eyebrow">Codigo temporal</span>
+                            <span class="admin-openclaw-challenge__eyebrow">Codigo manual</span>
                             <strong id="adminOpenClawManualCode">-</strong>
                         </div>
                         <p id="adminOpenClawChallengeMeta">
-                            Si este equipo usa helper local, el codigo activo aparecera aqui.
+                            El helper local mostrara aqui el challenge activo cuando inicies el flujo.
                         </p>
                         <div class="admin-openclaw-challenge__actions">
                             <a
@@ -66,13 +58,13 @@ export function renderLoginPanel() {
                                 target="_blank"
                                 rel="noopener"
                             >
-                                Abrir helper otra vez
+                                Abrir helper local
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="admin-login-actions">
-                    <button id="loginBtn" type="submit">Continuar con OpenClaw</button>
+                    <button id="loginBtn" type="submit">Ingresar</button>
                     <button
                         id="loginReset2FABtn"
                         type="button"
@@ -89,7 +81,7 @@ export function renderLoginPanel() {
                         class="admin-login-inline-link is-hidden"
                         data-action="show-login-fallback"
                     >
-                        Abrir contingencia
+                        Usar clave de contingencia
                     </button>
                     <button
                         id="loginPrimaryToggleBtn"
@@ -100,21 +92,16 @@ export function renderLoginPanel() {
                         Volver a OpenClaw
                     </button>
                 </div>
-            </form>
-
-            <div class="admin-login-next-step">
-                <strong>Siguiente paso</strong>
                 <p id="adminLoginSupportCopy" class="admin-login-support-copy">
-                    Presiona el boton principal para abrir OpenClaw en este equipo. Cuando salga el codigo temporal, confirmalo en el helper local y vuelve a esta pantalla.
+                    Esta tarjeta se adapta al modo de autenticacion y al gate clinico del backend.
                 </p>
-            </div>
-
-            <p
-                id="adminLoginContingencyCopy"
-                class="admin-login-support-copy admin-login-support-copy-secondary is-hidden"
-            >
-                Si este equipo falla y el backend habilita contingencia, podras entrar con clave + 2FA.
-            </p>
+                <p
+                    id="adminLoginContingencyCopy"
+                    class="admin-login-support-copy admin-login-support-copy-secondary is-hidden"
+                >
+                    OpenClaw es el acceso principal del operador local.
+                </p>
+            </form>
 
             ${renderThemeSwitcher('login-theme-bar')}
         </section>

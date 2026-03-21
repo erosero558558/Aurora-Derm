@@ -242,6 +242,74 @@ test.describe('Admin OpenClaw login', () => {
         );
     });
 
+    test('volver desde contingencia a un Google pendiente reutiliza el redirect web sin crear otro start', async ({
+        page,
+    }) => {
+        await installBasicAdminApiMocks(page, {
+            healthPayload: {
+                status: 'ok',
+            },
+        });
+        const authMock = await installOpenClawAdminAuthMock(page, {
+            transport: 'web_broker',
+            fallbackAvailable: true,
+            pendingStatusCallsAfterStart: 2,
+            webBroker: {
+                redirectUrl:
+                    'https://broker.example.test/authorize?state=admin-web-broker-fallback-resume',
+            },
+        });
+        let brokerVisits = 0;
+        await page.route('https://broker.example.test/**', async (route) => {
+            brokerVisits += 1;
+            const targetPath =
+                brokerVisits === 1
+                    ? '/admin.html?resume=web_broker_pending'
+                    : '/admin.html?callback=web_broker_success';
+            await route.fulfill({
+                status: 200,
+                contentType: 'text/html; charset=utf-8',
+                body: `<!doctype html><meta charset="utf-8"><script>
+const referrer = String(document.referrer || '');
+const base = referrer ? new URL(referrer).origin : window.location.origin;
+window.location.replace(new URL(${JSON.stringify(targetPath)}, base).toString());
+</script>`,
+            });
+        });
+
+        await page.goto('/admin.html');
+        await page.locator('#loginBtn').click();
+
+        await expect(page.locator('#adminLoginStatusTitle')).toHaveText(
+            'Acceso web pendiente'
+        );
+        await expect(page.locator('#loginFallbackToggleBtn')).toBeVisible();
+        await expect.poll(() => authMock.getStartCount()).toBe(1);
+
+        await page.locator('#loginFallbackToggleBtn').click();
+
+        await expect(page.locator('#legacyLoginStage')).toBeVisible();
+        await expect(page.locator('#openclawLoginStage')).toBeHidden();
+        await expect(page.locator('#loginPrimaryToggleBtn')).toBeVisible();
+
+        await page.locator('#loginPrimaryToggleBtn').click();
+
+        await expect(page.locator('#openclawLoginStage')).toBeVisible();
+        await expect(page.locator('#adminLoginStatusTitle')).toHaveText(
+            'Acceso web pendiente'
+        );
+        await expect(page.locator('#loginBtn')).toHaveText('Retomar OpenClaw');
+
+        await page.locator('#loginBtn').click();
+
+        await expect(page.locator('#adminDashboard')).toBeVisible();
+        await expect(page.locator('#adminSessionState')).toHaveText(
+            'Sesion activa'
+        );
+        await expect.poll(() => authMock.getStartCount()).toBe(1);
+        await expect.poll(() => brokerVisits).toBe(2);
+    });
+
     test('web broker redirige en la misma pestana y vuelve autenticado sin helper local', async ({
         page,
     }) => {

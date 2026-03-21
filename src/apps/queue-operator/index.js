@@ -124,6 +124,38 @@ let operatorAuthPollPromise = null;
 let lastOperatorGuardToastAt = 0;
 let lastOperatorGuardToastKey = '';
 
+function initOperatorOpsTheme() {
+    if (
+        window.PielOpsTheme &&
+        typeof window.PielOpsTheme.initAutoOpsTheme === 'function'
+    ) {
+        return window.PielOpsTheme.initAutoOpsTheme({
+            surface: 'operator',
+            family: 'command',
+            mode: 'system',
+        });
+    }
+
+    const tone = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches
+        ? 'dark'
+        : 'light';
+    document.documentElement.setAttribute('data-theme-mode', 'system');
+    document.documentElement.setAttribute('data-theme', tone);
+    document.documentElement.setAttribute('data-ops-tone', tone);
+    document.documentElement.setAttribute('data-ops-family', 'command');
+    if (document.body instanceof HTMLElement) {
+        document.body.setAttribute('data-ops-tone', tone);
+        document.body.setAttribute('data-ops-family', 'command');
+    }
+
+    return {
+        surface: 'operator',
+        family: 'command',
+        mode: 'system',
+        tone,
+    };
+}
+
 function createEmptyNumpadValidationState() {
     return {
         bindingFingerprint: '',
@@ -1759,8 +1791,8 @@ function formatOperatorChallengeExpiry(challenge) {
     });
 }
 
-function getOperatorAuthTransport(auth) {
-    const raw = String(auth?.transport || '')
+function normalizeOperatorTransport(value, fallback = '') {
+    const raw = String(value || '')
         .trim()
         .toLowerCase();
     if (raw === 'web_broker') {
@@ -1769,64 +1801,84 @@ function getOperatorAuthTransport(auth) {
     if (raw === 'local_helper') {
         return 'local_helper';
     }
-    return '';
+    return fallback;
+}
+
+function readOperatorAuthError(auth) {
+    return String(auth?.lastError || auth?.error || '').trim();
+}
+
+function openOperatorWebBrokerFlow(redirectUrl) {
+    const url = String(redirectUrl || '').trim();
+    if (!url) {
+        return false;
+    }
+
+    try {
+        window.location.replace(url);
+        return true;
+    } catch (_error) {
+        return false;
+    }
 }
 
 function resolveOperatorAuthCopy(auth) {
-    const status = String(auth?.status || 'anonymous').trim();
+    const status = String(auth?.status || 'anonymous')
+        .trim()
+        .toLowerCase();
     const helperOpened = auth?.helperUrlOpened === true;
-    const transport = getOperatorAuthTransport(auth);
-    const expiresAt = formatOperatorChallengeExpiry(
-        transport === 'web_broker'
-            ? {
-                  expiresAt:
-                      auth?.attemptExpiresAt || auth?.challenge?.expiresAt,
-              }
-            : auth?.challenge
+    const expiresAt = formatOperatorChallengeExpiry(auth?.challenge);
+    const transport = normalizeOperatorTransport(
+        auth?.transport,
+        normalizeOperatorTransport(auth?.openClawSnapshot?.transport, '')
     );
+    const lastError = readOperatorAuthError(auth);
 
     switch (status) {
         case 'pending':
+            if (transport === 'web_broker') {
+                return {
+                    tone: 'warning',
+                    title: 'Continua con OpenClaw',
+                    message:
+                        lastError ||
+                        'Tu acceso web con Google sigue pendiente. Continúa con OpenClaw en esta misma pantalla para terminar el ingreso del turnero.',
+                    summary:
+                        'El broker retomará la misma sesión web del operador sin crear otro inicio.',
+                    primaryLabel: 'Continuar con OpenClaw',
+                    helperMeta: expiresAt
+                        ? `El acceso web actual expira a las ${expiresAt}.`
+                        : 'El acceso web actual seguirá activo por unos minutos.',
+                    showRetry: false,
+                    showLinkHint: false,
+                };
+            }
             return {
                 tone: 'warning',
-                title:
-                    transport === 'web_broker'
-                        ? 'Continua con OpenClaw'
-                        : 'Esperando confirmacion en OpenClaw',
+                title: 'Esperando confirmación en OpenClaw',
                 message:
-                    transport === 'web_broker'
-                        ? 'Tu intento web sigue activo. Puedes retomar el login de OpenClaw desde esta misma pantalla y el turnero se autenticara al volver.'
-                        : 'Completa el login de ChatGPT/OpenAI en la ventana abierta y el turnero se autenticara automaticamente.',
+                    'Completa el login de Google en la ventana abierta y el turnero se autenticará automáticamente.',
                 summary:
-                    'La misma sesion quedara disponible para operar el turnero sin usar clave local.',
-                primaryLabel:
-                    transport === 'web_broker'
-                        ? 'Continuar con OpenClaw'
-                        : 'Volver a abrir OpenClaw',
-                helperMeta:
-                    transport === 'web_broker'
-                        ? expiresAt
-                            ? `Este intento web vence a las ${expiresAt}.`
-                            : 'El navegador te llevara al broker web de OpenClaw.'
-                        : expiresAt
-                          ? `El challenge actual expira a las ${expiresAt}.`
-                          : 'El challenge actual seguira activo por unos minutos.',
+                    'La misma sesión quedará disponible para operar el turnero sin usar clave local.',
+                primaryLabel: 'Volver a abrir OpenClaw',
+                helperMeta: expiresAt
+                    ? `El challenge actual expira a las ${expiresAt}.`
+                    : 'El challenge actual seguirá activo por unos minutos.',
                 showRetry: true,
-                showLinkHint:
-                    transport === 'web_broker' ? false : !helperOpened,
+                showLinkHint: !helperOpened,
             };
         case 'openclaw_no_logueado':
             return {
                 tone: 'warning',
-                title: 'OpenClaw necesita tu sesion',
+                title: 'OpenClaw necesita tu sesión',
                 message:
-                    auth?.error ||
-                    'OpenClaw no encontro un perfil OAuth valido en este equipo.',
+                    lastError ||
+                    'OpenClaw no encontró un perfil OAuth válido en este equipo.',
                 summary:
-                    'Inicia sesion en OpenClaw con tu perfil autorizado y luego genera un nuevo enlace.',
+                    'Inicia sesión en OpenClaw con tu perfil autorizado y luego genera un nuevo enlace.',
                 primaryLabel: 'Abrir OpenClaw',
                 helperMeta:
-                    'Cuando OpenClaw tenga sesion activa, el siguiente challenge deberia autenticarse sin pedir clave.',
+                    'Cuando OpenClaw tenga sesión activa, el siguiente challenge debería autenticarse sin pedir clave.',
                 showRetry: true,
                 showLinkHint: true,
             };
@@ -1835,8 +1887,8 @@ function resolveOperatorAuthCopy(auth) {
                 tone: 'danger',
                 title: 'No se pudo completar el bridge',
                 message:
-                    auth?.error ||
-                    'El helper local de OpenClaw no respondio desde este equipo.',
+                    lastError ||
+                    'El helper local de OpenClaw no respondió desde este equipo.',
                 summary:
                     'Verifica que el bridge local siga vivo antes de volver a generar el challenge.',
                 primaryLabel: 'Abrir OpenClaw',
@@ -1848,10 +1900,10 @@ function resolveOperatorAuthCopy(auth) {
         case 'challenge_expirado':
             return {
                 tone: 'warning',
-                title: 'El enlace expiro',
+                title: 'El enlace expiró',
                 message:
-                    auth?.error ||
-                    'El challenge de OpenClaw expiro antes de completar la autenticacion.',
+                    lastError ||
+                    'El challenge de OpenClaw expiró antes de completar la autenticación.',
                 summary:
                     'Genera un nuevo enlace y termina el login sin cerrar esta pantalla.',
                 primaryLabel: 'Abrir OpenClaw',
@@ -1865,87 +1917,28 @@ function resolveOperatorAuthCopy(auth) {
                 tone: 'danger',
                 title: 'Email no autorizado',
                 message:
-                    auth?.error ||
-                    'La cuenta autenticada en OpenClaw no esta autorizada para operar este turnero.',
+                    lastError ||
+                    'La cuenta autenticada en OpenClaw no está autorizada para operar este turnero.',
                 summary:
-                    'Cierra esa sesion en OpenClaw y vuelve a intentar con un correo permitido.',
+                    'Cierra esa sesión en OpenClaw y vuelve a intentar con un correo permitido.',
                 primaryLabel: 'Abrir OpenClaw',
                 helperMeta:
-                    'El proximo intento usara un challenge nuevo para otro perfil.',
+                    'El próximo intento usará un challenge nuevo para otro perfil.',
                 showRetry: true,
-                showLinkHint: transport === 'local_helper',
-            };
-        case 'cancelled':
-            return {
-                tone: 'warning',
-                title: 'Login cancelado',
-                message:
-                    auth?.error ||
-                    'Cancelaste el login web de OpenClaw antes de volver al turnero.',
-                summary:
-                    'Puedes iniciar un intento nuevo en esta misma pantalla.',
-                primaryLabel: 'Continuar con OpenClaw',
-                helperMeta:
-                    'El siguiente intento abrira otra vez el broker web de OpenClaw.',
-                showRetry: true,
-                showLinkHint: false,
-            };
-        case 'invalid_state':
-            return {
-                tone: 'warning',
-                title: 'Intento expirado',
-                message:
-                    auth?.error ||
-                    'El intento web ya no es valido. Genera uno nuevo para seguir.',
-                summary:
-                    'El broker no pudo retomar la sesion previa del turnero.',
-                primaryLabel: 'Reintentar',
-                helperMeta:
-                    'Se generara una redireccion nueva para este equipo.',
-                showRetry: true,
-                showLinkHint: false,
-            };
-        case 'broker_unavailable':
-            return {
-                tone: 'danger',
-                title: 'Broker no disponible',
-                message:
-                    auth?.error ||
-                    'OpenClaw no respondio a tiempo durante el login web.',
-                summary:
-                    'Espera un momento y vuelve a intentarlo desde esta misma pantalla.',
-                primaryLabel: 'Reintentar',
-                helperMeta:
-                    'No hace falta helper local para este modo; solo reconectar con el broker.',
-                showRetry: true,
-                showLinkHint: false,
-            };
-        case 'code_exchange_failed':
-            return {
-                tone: 'danger',
-                title: 'Codigo no validado',
-                message:
-                    auth?.error ||
-                    'No se pudo intercambiar el codigo devuelto por OpenClaw.',
-                summary:
-                    'Inicia un nuevo intento para que OpenClaw emita otro codigo.',
-                primaryLabel: 'Reintentar',
-                helperMeta: 'Se hara una nueva redireccion al broker web.',
-                showRetry: true,
-                showLinkHint: false,
+                showLinkHint: true,
             };
         case 'identity_missing':
             return {
                 tone: 'danger',
                 title: 'Identidad incompleta',
                 message:
-                    auth?.error ||
-                    'OpenClaw no devolvio una identidad utilizable para este turnero.',
+                    lastError ||
+                    'OpenClaw no devolvió una identidad utilizable para este turnero.',
                 summary:
-                    'Repite el login con una cuenta que publique email valido.',
+                    'Usa una cuenta que publique email valido para este turnero antes de reintentar.',
                 primaryLabel: 'Reintentar',
                 helperMeta:
-                    'El siguiente intento pedira otra vez la identidad al broker.',
+                    'El siguiente intento pedira otra vez la identidad en el broker web.',
                 showRetry: true,
                 showLinkHint: false,
             };
@@ -1954,13 +1947,13 @@ function resolveOperatorAuthCopy(auth) {
                 tone: 'danger',
                 title: 'Email no verificado',
                 message:
-                    auth?.error ||
-                    'OpenClaw autentico la cuenta, pero no confirmo un email verificado para este turnero.',
+                    lastError ||
+                    'OpenClaw autenticó la cuenta, pero no confirmó un email verificado para este turnero.',
                 summary:
-                    'Usa una cuenta con email verificado o corrige la configuracion del broker antes de reintentar.',
+                    'Vuelve a entrar con una cuenta con email verificado para continuar.',
                 primaryLabel: 'Reintentar',
                 helperMeta:
-                    'El siguiente intento repetira la validacion fuerte del broker web.',
+                    'Este acceso exige la validacion fuerte del broker web antes de dejarte continuar.',
                 showRetry: true,
                 showLinkHint: false,
             };
@@ -1969,75 +1962,129 @@ function resolveOperatorAuthCopy(auth) {
                 tone: 'danger',
                 title: 'Identidad no confiable',
                 message:
-                    auth?.error ||
-                    'No se pudieron validar los claims firmados que OpenClaw devolvio para este acceso.',
+                    lastError ||
+                    'No se pudieron validar los claims firmados que OpenClaw devolvió para este acceso.',
                 summary:
-                    'Inicia un intento nuevo o revisa la configuracion OIDC del broker si el error persiste.',
+                    'Revisa la configuracion OIDC del broker antes de volver a intentarlo.',
                 primaryLabel: 'Reintentar',
                 helperMeta:
-                    'El siguiente intento pedira otra vez el id_token firmado y su cruce con userinfo.',
+                    'El siguiente intento exigirá un id_token firmado válido para este equipo.',
                 showRetry: true,
                 showLinkHint: false,
             };
-        case 'operator_auth_not_configured':
+        case 'cancelled':
             return {
-                tone: 'danger',
-                title: 'OpenClaw no esta configurado',
+                tone: 'warning',
+                title: 'Login cancelado',
                 message:
-                    auth?.error ||
-                    (transport === 'web_broker'
-                        ? 'Falta configuracion del broker web para completar el acceso.'
-                        : 'Falta configuracion del bridge local para completar el acceso.'),
+                    lastError ||
+                    'Cancelaste el login web de OpenClaw antes de volver al turnero.',
                 summary:
-                    'Corrige la configuracion antes de volver a generar un enlace.',
+                    'Puedes lanzar un intento nuevo en esta misma pantalla cuando quieras.',
+                primaryLabel: 'Continuar con OpenClaw',
+                helperMeta:
+                    'La próxima vez volveremos a abrir otra vez el broker web para terminar el acceso.',
+                showRetry: true,
+                showLinkHint: false,
+            };
+        case 'invalid_state':
+            return {
+                tone: 'warning',
+                title: 'Intento expirado',
+                message:
+                    lastError ||
+                    'El intento web ya no es válido. Genera uno nuevo para seguir.',
+                summary:
+                    'Este equipo no pudo retomar la sesion previa, asi que necesitara un intento nuevo.',
                 primaryLabel: 'Reintentar',
                 helperMeta:
-                    'Cuando la configuracion vuelva a estar disponible, podras crear un challenge nuevo.',
+                    'El siguiente click emitira una redireccion nueva para este equipo.',
+                showRetry: true,
+                showLinkHint: false,
+            };
+        case 'broker_unavailable':
+            return {
+                tone: 'danger',
+                title: 'Broker no disponible',
+                message:
+                    lastError ||
+                    'OpenClaw no respondió a tiempo durante el login web.',
+                summary:
+                    'Si vuelve a pasar, vuelve a intentarlo desde esta misma pantalla cuando el broker responda otra vez.',
+                primaryLabel: 'Reintentar',
+                helperMeta:
+                    'No hace falta helper local para reabrir el broker web.',
+                showRetry: true,
+                showLinkHint: false,
+            };
+        case 'code_exchange_failed':
+            return {
+                tone: 'danger',
+                title: 'Codigo no validado',
+                message:
+                    lastError ||
+                    'No se pudo intercambiar el código devuelto por OpenClaw.',
+                summary:
+                    'Necesitamos que Google emita otro codigo para este equipo antes de continuar.',
+                primaryLabel: 'Reintentar',
+                helperMeta:
+                    'El siguiente click abrira una nueva redireccion al broker web.',
                 showRetry: true,
                 showLinkHint: false,
             };
         case 'transport_misconfigured':
             return {
                 tone: 'danger',
-                title: 'Runtime de OpenClaw desalineado',
+                title: 'Runtime desalineado',
                 message:
-                    auth?.error ||
-                    'El backend respondio sin un transport valido para este login. Bloqueamos el helper local para evitar abrir localhost por error.',
+                    lastError ||
+                    'El runtime devolvió un estado OpenClaw sin transport válido.',
                 summary:
-                    'Actualiza el runtime o corrige la configuracion de auth antes de reintentar.',
-                primaryLabel: 'Revisar runtime',
+                    'Corrige el runtime del broker para que publique un transport válido antes de seguir.',
+                primaryLabel: 'Reintentar',
                 helperMeta:
-                    'Este entorno solo puede continuar cuando el backend publique transport=web_broker o transport=local_helper.',
+                    'Necesitamos transport=web_broker o local_helper para volver a emitir el acceso.',
+                showRetry: true,
+                showLinkHint: false,
+            };
+        case 'operator_auth_not_configured':
+            return {
+                tone: 'danger',
+                title: 'OpenClaw no está configurado',
+                message:
+                    lastError ||
+                    'Falta configuración del bridge local para completar el acceso.',
+                summary:
+                    'Corrige la configuración antes de volver a generar un enlace.',
+                primaryLabel: 'Reintentar',
+                helperMeta:
+                    'Cuando la configuración vuelva a estar disponible, podrás crear un challenge nuevo.',
                 showRetry: true,
                 showLinkHint: false,
             };
         default:
             return {
                 tone: 'neutral',
-                title: 'PIN operativo',
+                title: 'PIN operativo y Google',
                 message:
-                    transport === 'web_broker'
-                        ? 'Continua con OpenClaw para validar la sesion del turnero desde cualquier computadora.'
-                        : transport === 'local_helper'
-                          ? 'Abre OpenClaw para validar la sesion del turnero sin usar una clave local.'
-                          : 'El runtime debe publicar un transport valido antes de iniciar sesion con OpenClaw.',
+                    'Usa Google en OpenClaw para validar la sesión del turnero sin pedir una clave local en este equipo.',
                 summary:
-                    'La sesion quedara compartida con el panel administrativo.',
+                    'La sesión quedará compartida con el panel administrativo y el modo operativo seguirá listo para reingresar.',
                 primaryLabel: 'Abrir OpenClaw',
                 helperMeta:
-                    transport === 'web_broker'
-                        ? 'El navegador te redirigira al broker web de OpenClaw en esta misma pestana.'
-                        : transport === 'local_helper'
-                          ? 'Si el navegador bloquea la ventana, podras usar el enlace manual.'
-                          : 'No se abrira localhost mientras falte un transport valido.',
-                showRetry: transport === '',
-                showLinkHint: transport === 'local_helper',
+                    'Si el navegador bloquea la ventana, podrás usar el enlace manual.',
+                showRetry: false,
+                showLinkHint: true,
             };
     }
 }
 
 function syncOperatorLoginSurface(auth = getState().auth) {
     const operatorMode = isOperatorAuthMode(auth);
+    const transport = normalizeOperatorTransport(
+        auth?.transport,
+        normalizeOperatorTransport(auth?.openClawSnapshot?.transport, '')
+    );
     const openButton = getById('operatorOpenClawBtn');
     const retryButton = getById('operatorOpenClawRetryBtn');
     const summaryNode = getById('operatorOpenClawSummary');
@@ -2052,12 +2099,10 @@ function syncOperatorLoginSurface(auth = getState().auth) {
     if (!operatorMode) {
         setLoginStatus(
             auth.requires2FA ? 'warning' : 'neutral',
-            auth.requires2FA ? 'Código requerido' : 'PIN operativo',
+            auth.requires2FA ? 'Código 2FA requerido' : 'Acceso protegido',
             auth.requires2FA
-                ? 'El PIN fue validado. Ingresa ahora el código solicitado.'
-                : auth.configured
-                  ? 'Ingresa el PIN de la clínica para abrir la consola operativa del turnero.'
-                  : 'Pide a admin que configure el PIN operativo antes de usar esta consola.'
+                ? 'La contraseña fue validada. Ingresa ahora el código de seis dígitos.'
+                : 'Inicia sesión para abrir la consola operativa del turnero.'
         );
         return;
     }
@@ -2067,15 +2112,9 @@ function syncOperatorLoginSurface(auth = getState().auth) {
 
     const copy = resolveOperatorAuthCopy(auth);
     const challenge = auth?.challenge || null;
-    const transport = getOperatorAuthTransport(auth);
-    const helperUrl =
-        transport === 'local_helper'
-            ? String(challenge?.helperUrl || '').trim()
-            : '';
-    const manualValue =
-        transport === 'local_helper'
-            ? String(challenge?.manualCode || '').trim()
-            : '';
+    const helperUrl = String(challenge?.helperUrl || '').trim();
+    const manualValue = String(challenge?.manualCode || '').trim();
+    const supportsLocalHelperFallback = transport === 'local_helper';
 
     setLoginStatus(copy.tone, copy.title, copy.message);
 
@@ -2096,18 +2135,10 @@ function syncOperatorLoginSurface(auth = getState().auth) {
         helperLink.href = helperUrl || '#';
     }
     if (helperLinkRow instanceof HTMLElement) {
-        helperLinkRow.classList.toggle(
-            'is-hidden',
-            transport !== 'local_helper' ||
-                (helperUrl === '' && !copy.showLinkHint)
-        );
-        if (
-            transport === 'local_helper' &&
-            helperUrl === '' &&
-            copy.showLinkHint
-        ) {
-            helperLinkRow.classList.remove('is-hidden');
-        }
+        const showHelperLinkRow =
+            supportsLocalHelperFallback &&
+            (helperUrl !== '' || copy.showLinkHint);
+        helperLinkRow.classList.toggle('is-hidden', !showHelperLinkRow);
     }
     if (manualCode) {
         manualCode.textContent = manualValue;
@@ -2115,7 +2146,7 @@ function syncOperatorLoginSurface(auth = getState().auth) {
     if (manualRow instanceof HTMLElement) {
         manualRow.classList.toggle(
             'is-hidden',
-            transport !== 'local_helper' || manualValue === ''
+            !supportsLocalHelperFallback || manualValue === ''
         );
     }
 }
@@ -2143,11 +2174,7 @@ function setSubmitting(submitting) {
             openClawButton.dataset.idleLabel || 'Abrir OpenClaw'
         );
         openClawButton.disabled = submitting;
-        openClawButton.textContent = submitting
-            ? getOperatorAuthTransport(getState().auth) === 'web_broker'
-                ? 'Redirigiendo...'
-                : 'Preparando...'
-            : idleLabel;
+        openClawButton.textContent = submitting ? 'Preparando...' : idleLabel;
     }
     if (retryClawButton instanceof HTMLButtonElement) {
         retryClawButton.disabled = submitting;
@@ -3131,11 +3158,19 @@ async function bootAuthenticatedSurface(showToast = false) {
 function ensureOperatorAuthPolling() {
     const auth = getState().auth;
     if (
+        normalizeOperatorTransport(
+            auth?.transport,
+            normalizeOperatorTransport(auth?.openClawSnapshot?.transport, '')
+        ) === 'web_broker'
+    ) {
+        return operatorAuthPollPromise;
+    }
+
+    if (
         operatorAuthPollPromise ||
         !isOperatorAuthMode(auth) ||
         auth.authenticated ||
-        String(auth.status || '') !== 'pending' ||
-        getOperatorAuthTransport(auth) !== 'local_helper'
+        String(auth.status || '') !== 'pending'
     ) {
         return operatorAuthPollPromise;
     }
@@ -3173,28 +3208,48 @@ function ensureOperatorAuthPolling() {
 
 async function startOperatorAuthFlow(forceNew = false) {
     try {
-        const reusableRedirectUrl = !forceNew
-            ? getReusableOpenClawRedirectUrl(getState().auth)
-            : '';
-        if (reusableRedirectUrl) {
-            setSubmitting(true);
-            setLoginStatus(
-                'neutral',
-                'Retomando OpenClaw',
-                'Volviendo al broker web de OpenClaw para completar el acceso pendiente del turnero.'
-            );
-            window.location.assign(reusableRedirectUrl);
-            return getState().auth;
+        const currentAuth = getState().auth;
+        const currentStatus = String(currentAuth?.status || '')
+            .trim()
+            .toLowerCase();
+        const currentTransport = normalizeOperatorTransport(
+            currentAuth?.transport,
+            normalizeOperatorTransport(
+                currentAuth?.openClawSnapshot?.transport,
+                ''
+            )
+        );
+        const reusableRedirectUrl = getReusableOpenClawRedirectUrl(currentAuth);
+
+        if (
+            !forceNew &&
+            isOperatorAuthMode(currentAuth) &&
+            currentStatus === 'pending' &&
+            currentTransport === 'web_broker' &&
+            reusableRedirectUrl
+        ) {
+            syncOperatorLoginSurface(currentAuth);
+            if (!openOperatorWebBrokerFlow(reusableRedirectUrl)) {
+                createToast(
+                    'No se pudo retomar el acceso web de OpenClaw desde esta pestaña',
+                    'error'
+                );
+            }
+            return currentAuth;
         }
 
         setSubmitting(true);
-        const webBroker =
-            getOperatorAuthTransport(getState().auth) === 'web_broker';
         setLoginStatus(
             'neutral',
-            forceNew ? 'Generando nuevo enlace' : 'Abriendo OpenClaw',
-            webBroker
-                ? 'Preparando la redireccion web para validar la sesion del turnero.'
+            currentTransport === 'web_broker'
+                ? forceNew
+                    ? 'Generando nuevo acceso web'
+                    : 'Abriendo OpenClaw'
+                : forceNew
+                  ? 'Generando nuevo enlace'
+                  : 'Abriendo OpenClaw',
+            currentTransport === 'web_broker'
+                ? 'Preparando el acceso web con Google para validar la sesión del turnero.'
                 : 'Preparando el challenge local para validar la sesion del turnero.'
         );
 
@@ -3209,31 +3264,45 @@ async function startOperatorAuthFlow(forceNew = false) {
             return snapshot;
         }
 
-        if (getOperatorAuthTransport(snapshot) === 'web_broker') {
-            if (!snapshot.redirectUrl) {
-                throw new Error(
-                    'OpenClaw no devolvio una URL valida para continuar el login web.'
+        const snapshotStatus = String(snapshot.status || '')
+            .trim()
+            .toLowerCase();
+        const snapshotTransport = normalizeOperatorTransport(
+            snapshot?.transport,
+            normalizeOperatorTransport(
+                snapshot?.openClawSnapshot?.transport,
+                ''
+            )
+        );
+
+        if (snapshotStatus === 'pending') {
+            if (snapshotTransport === 'web_broker') {
+                const redirectUrl = getReusableOpenClawRedirectUrl(snapshot);
+                if (redirectUrl && openOperatorWebBrokerFlow(redirectUrl)) {
+                    return snapshot;
+                }
+                createToast(
+                    redirectUrl
+                        ? 'Continúa con Google desde esta misma pestaña'
+                        : 'El acceso web quedó listo para retomarse desde esta misma pantalla',
+                    redirectUrl ? 'info' : 'warning'
                 );
+                return snapshot;
             }
 
-            window.location.assign(snapshot.redirectUrl);
-            return snapshot;
-        }
-
-        if (String(snapshot.status || '') === 'pending') {
             createToast(
                 snapshot.helperUrlOpened
                     ? 'OpenClaw listo para confirmar'
                     : 'Usa el enlace manual de OpenClaw si la ventana no se abrió',
-                snapshot.helperUrlOpened ? 'info' : 'warning',
-                snapshot.helperUrlOpened ? undefined : { sticky: true }
+                snapshot.helperUrlOpened ? 'info' : 'warning'
             );
             void ensureOperatorAuthPolling();
             return snapshot;
         }
 
         createToast(
-            snapshot.error || 'No se pudo iniciar el flujo OpenClaw',
+            readOperatorAuthError(snapshot) ||
+                'No se pudo iniciar el flujo OpenClaw',
             'warning'
         );
         return snapshot;
@@ -3563,6 +3632,7 @@ function attachVisibilityRefresh() {
 }
 
 async function boot() {
+    initOperatorOpsTheme();
     applyQueueRuntimeDefaults();
     operatorRuntime.queueAdapter = resolveOperatorQueueAdapter(
         getDesktopBridge(),

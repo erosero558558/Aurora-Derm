@@ -1,0 +1,76 @@
+name: Agent Daily Pulse
+
+on:
+    schedule:
+        # Diario 06:15 America/Bogota (11:15 UTC)
+        - cron: '15 11 * * *'
+    workflow_dispatch:
+
+concurrency:
+    group: agent-daily-pulse-${{ github.ref }}
+    cancel-in-progress: false
+
+permissions:
+    contents: write
+
+jobs:
+    daily-pulse:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Intake -> score -> stale
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  node agent-orchestrator.js intake --strict
+                  node agent-orchestrator.js score
+                  node agent-orchestrator.js stale --strict
+
+            - name: Daily Ops Pulse
+              run: node bin/agent-daily-pulse.js --profile ci --apply
+
+            - name: Commit state changes
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  if git diff --quiet -- AGENT_BOARD.yaml AGENT_SIGNALS.yaml verification; then
+                    echo "No daily pulse changes to commit."
+                    exit 0
+                  fi
+
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add AGENT_BOARD.yaml AGENT_SIGNALS.yaml verification
+                  git commit -m "chore(agents): daily ops pulse [skip ci]" || {
+                    echo "No changes to commit after staging."
+                    exit 0
+                  }
+                  if ! node bin/sync-main-safe.js --remote origin --branch "${GITHUB_REF_NAME}" --max-sync-attempts 3 --json; then
+                    echo "::warning::Daily ops pulse sync failed after retries; skipping push. Next run will reconcile."
+                    exit 0
+                  fi
+
+            - name: Upload daily pulse artifact
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: agent-daily-pulse
+                  path: |
+                      verification/daily-ops/
+                      verification/agent-daily-pulse-history.json
+                      verification/agent-board-events.jsonl
+                  if-no-files-found: warn
+                  retention-days: 30

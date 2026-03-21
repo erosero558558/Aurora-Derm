@@ -835,7 +835,9 @@ function getEntryScopeDisposition(entry) {
         return SCOPE_DISPOSITION_NONE;
     }
 
-    const disposition = String(entry?.scope_disposition || '').trim();
+    const disposition = String(
+        entry?.scope_disposition ?? entry?.scopeDisposition ?? ''
+    ).trim();
     if (
         [
             SCOPE_DISPOSITION_IN_SCOPE,
@@ -1891,7 +1893,7 @@ function getEntryStrategyDisposition(entry) {
     }
 
     const disposition = String(
-        entry?.strategy_disposition || entry?.strategyDisposition || ''
+        entry?.strategy_disposition ?? entry?.strategyDisposition ?? ''
     ).trim();
     if (
         [
@@ -1917,7 +1919,7 @@ function getEntryLaneDisposition(entry) {
     }
 
     const disposition = String(
-        entry?.lane_disposition || entry?.laneDisposition || ''
+        entry?.lane_disposition ?? entry?.laneDisposition ?? ''
     ).trim();
     if (
         [

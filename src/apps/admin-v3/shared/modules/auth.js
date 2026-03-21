@@ -53,19 +53,6 @@ function normalizeRecommendedMode(payload, fallback = 'legacy_password') {
     );
 }
 
-function normalizeTransport(value, fallback = '') {
-    const raw = String(value || '')
-        .trim()
-        .toLowerCase();
-    if (raw === 'web_broker') {
-        return 'web_broker';
-    }
-    if (raw === 'local_helper') {
-        return 'local_helper';
-    }
-    return fallback;
-}
-
 const DEFAULT_LEGACY_FALLBACK = Object.freeze({
     enabled: false,
     configured: false,
@@ -110,6 +97,19 @@ function normalizeFallbacks(fallbacks, previousFallbacks = null) {
 
 function hasLegacyFallbackAvailable(auth = getState().auth) {
     return auth?.fallbacks?.legacy_password?.available === true;
+}
+
+function normalizeTransport(value, fallback = '') {
+    const raw = String(value || '')
+        .trim()
+        .toLowerCase();
+    if (raw === 'web_broker') {
+        return 'web_broker';
+    }
+    if (raw === 'local_helper') {
+        return 'local_helper';
+    }
+    return fallback;
 }
 
 function normalizeChallenge(challenge) {
@@ -164,35 +164,65 @@ function buildOpenClawSnapshot(
     return {
         status: String(status || 'anonymous').trim() || 'anonymous',
         challenge: normalizeChallenge(challenge),
-        transport: normalizeTransport(transport, ''),
+        transport: normalizeTransport(transport),
         redirectUrl: String(redirectUrl || '').trim(),
         expiresAt: String(expiresAt || '').trim(),
         lastError: String(lastError || '').trim(),
     };
 }
 
-function currentReturnTo() {
-    if (typeof window === 'undefined' || !window.location) {
-        return '/admin.html';
-    }
-
-    const path = String(window.location.pathname || '').trim() || '/admin.html';
-    const search = String(window.location.search || '').trim();
-    return `${path}${search}`;
+function getPersistedOpenClawChallenge(auth = getState().auth) {
+    return (
+        normalizeChallenge(auth?.challenge) ||
+        normalizeChallenge(auth?.openClawSnapshot?.challenge)
+    );
 }
 
-function isAttemptExpired(expiresAt) {
-    const normalized = String(expiresAt || '').trim();
-    if (!normalized) {
-        return false;
+function inferOpenClawTransport(payload = {}, currentAuth = getState().auth) {
+    const explicitTransport = normalizeTransport(payload?.transport, '');
+    const status = String(payload?.status || '')
+        .trim()
+        .toLowerCase();
+    if (explicitTransport) {
+        return explicitTransport;
     }
 
-    const parsed = Date.parse(normalized);
-    if (Number.isNaN(parsed)) {
-        return false;
+    if (status === 'transport_misconfigured') {
+        return '';
     }
 
-    return parsed <= Date.now();
+    const persistedChallenge = getPersistedOpenClawChallenge(currentAuth);
+    const nextChallenge =
+        normalizeChallenge(payload?.challenge) || persistedChallenge;
+    const redirectUrl = String(
+        payload?.redirectUrl ||
+            currentAuth?.redirectUrl ||
+            currentAuth?.openClawSnapshot?.redirectUrl ||
+            ''
+    ).trim();
+    const previousTransport = normalizeTransport(
+        currentAuth?.transport,
+        normalizeTransport(currentAuth?.openClawSnapshot?.transport, '')
+    );
+    const mode = normalizeAuthMode(
+        payload,
+        previousTransport || 'legacy_password'
+    );
+    const recommendedMode = normalizeRecommendedMode(payload, mode);
+
+    if (redirectUrl) {
+        return 'web_broker';
+    }
+
+    if (nextChallenge) {
+        return 'local_helper';
+    }
+
+    if (mode === 'openclaw_chatgpt' || recommendedMode === 'openclaw_chatgpt') {
+        return previousTransport || 'local_helper';
+    }
+
+    return previousTransport;
 }
 
 export function getVisibleOpenClawState(auth = getState().auth) {
@@ -306,52 +336,47 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     const currentAuth = getState().auth;
     const transport =
         mode === 'openclaw_chatgpt'
-            ? normalizeTransport(payload?.transport, '')
+            ? inferOpenClawTransport(payload, currentAuth)
             : '';
-    const transportMisconfigured =
-        mode === 'openclaw_chatgpt' && !authenticated && transport === '';
-    const csrfToken = String(
-        payload?.csrfToken ||
-            (authenticated ? '' : currentAuth.csrfToken || '')
-    );
+    const csrfToken = authenticated ? String(payload?.csrfToken || '') : '';
     const status = String(
-        transportMisconfigured
-            ? payload?.status || 'transport_misconfigured'
-            : payload?.status || (authenticated ? 'autenticado' : 'anonymous')
+        payload?.status || (authenticated ? 'autenticado' : 'anonymous')
     ).trim();
     const fallbackPayload = normalizeFallbacks(
         payload?.fallbacks,
         currentAuth.fallbacks
     );
-    const payloadHasChallenge = Object.prototype.hasOwnProperty.call(
-        payload || {},
-        'challenge'
-    );
     const nextChallenge = normalizeChallenge(payload?.challenge);
     const challenge =
+        authenticated ||
+        mode !== 'openclaw_chatgpt' ||
         transport !== 'local_helper'
             ? null
-            : authenticated || mode !== 'openclaw_chatgpt'
-              ? null
-              : payloadHasChallenge
-                ? nextChallenge
-                : nextChallenge || currentAuth.challenge;
+            : nextChallenge || getPersistedOpenClawChallenge(currentAuth);
     const redirectUrl =
-        authenticated || mode !== 'openclaw_chatgpt'
+        authenticated ||
+        mode !== 'openclaw_chatgpt' ||
+        transport !== 'web_broker'
             ? ''
-            : String(payload?.redirectUrl || '').trim();
+            : String(
+                  payload?.redirectUrl ||
+                      currentAuth?.redirectUrl ||
+                      currentAuth?.openClawSnapshot?.redirectUrl ||
+                      ''
+              ).trim();
     const attemptExpiresAt =
         authenticated || mode !== 'openclaw_chatgpt'
             ? ''
-            : String(payload?.expiresAt || challenge?.expiresAt || '').trim();
+            : String(
+                  payload?.expiresAt ||
+                      challenge?.expiresAt ||
+                      currentAuth?.attemptExpiresAt ||
+                      currentAuth?.openClawSnapshot?.expiresAt ||
+                      ''
+              ).trim();
     const payloadError = authenticated
         ? ''
-        : transportMisconfigured
-          ? String(
-                payload?.error ||
-                    'El runtime devolvio un estado OpenClaw sin transport valido. Actualiza el entorno o vuelve a desplegar antes de iniciar sesion.'
-            ).trim()
-          : String(payload?.error || '').trim();
+        : String(payload?.error || '').trim();
     const openClawSnapshot =
         mode === 'openclaw_chatgpt'
             ? buildOpenClawSnapshot(
@@ -372,7 +397,6 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
               );
     const operator = normalizeOperator(payload?.operator);
     const configured =
-        !transportMisconfigured &&
         payload?.configured !== false &&
         status !== 'legacy_auth_not_configured' &&
         status !== 'operator_auth_not_configured';
@@ -464,33 +488,22 @@ export function isOperatorAuthMode(auth = getState().auth) {
     );
 }
 
-export function isOpenClawWebBrokerTransport(auth = getState().auth) {
-    return normalizeTransport(auth?.transport, '') === 'web_broker';
-}
-
 export function getReusableOpenClawRedirectUrl(auth = getState().auth) {
-    if (!isOpenClawWebBrokerTransport(auth)) {
-        return '';
+    if (
+        normalizeTransport(auth?.transport, '') === 'web_broker' &&
+        String(auth?.redirectUrl || '').trim()
+    ) {
+        return String(auth.redirectUrl).trim();
     }
 
     if (
-        String(auth?.status || '')
-            .trim()
-            .toLowerCase() !== 'pending'
+        normalizeTransport(auth?.openClawSnapshot?.transport, '') ===
+        'web_broker'
     ) {
-        return '';
+        return String(auth?.openClawSnapshot?.redirectUrl || '').trim();
     }
 
-    const redirectUrl = String(auth?.redirectUrl || '').trim();
-    if (!redirectUrl) {
-        return '';
-    }
-
-    if (isAttemptExpired(auth?.attemptExpiresAt)) {
-        return '';
-    }
-
-    return redirectUrl;
+    return '';
 }
 
 export function useLegacyFallbackLoginSurface() {
@@ -567,9 +580,7 @@ export async function checkAuthStatus() {
 export async function startOpenClawLogin() {
     const payload = await authRequest('start', {
         method: 'POST',
-        body: {
-            returnTo: currentReturnTo(),
-        },
+        body: {},
     });
 
     return applyAuthPayload(payload, 'openclaw_chatgpt');
@@ -581,18 +592,11 @@ export async function startOperatorAuth(options = {}) {
 
     const payload = await authRequest('start', {
         method: 'POST',
-        body: {
-            ...(forceNew ? { forceNew: true } : {}),
-            returnTo: currentReturnTo(),
-        },
+        body: forceNew ? { forceNew: true } : {},
     });
     applyAuthPayload(payload, 'openclaw_chatgpt');
 
-    const auth = getState().auth;
-    const helperUrl =
-        normalizeTransport(auth.transport, '') === 'local_helper'
-            ? String(auth.challenge?.helperUrl || '').trim()
-            : '';
+    const helperUrl = String(getState().auth.challenge?.helperUrl || '').trim();
     const helperUrlOpened = openHelper ? openHelperWindow(helperUrl) : false;
 
     updateState((state) => ({
@@ -623,8 +627,7 @@ export async function pollOperatorAuthStatus(options = {}) {
         if (
             snapshot.authenticated ||
             !isOperatorAuthMode(snapshot) ||
-            String(snapshot.status || '') !== 'pending' ||
-            normalizeTransport(snapshot.transport, '') !== 'local_helper'
+            String(snapshot.status || '') !== 'pending'
         ) {
             return snapshot;
         }

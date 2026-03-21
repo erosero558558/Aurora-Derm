@@ -18,8 +18,26 @@ const SCRIPT_PATH = resolve(
     'MONITOR-PRODUCCION.ps1'
 );
 
-function getPowerShellCommand() {
-    return process.platform === 'win32' ? 'powershell' : 'pwsh';
+function resolvePowerShellCommand() {
+    const candidates =
+        process.platform === 'win32'
+            ? ['powershell', 'powershell.exe', 'pwsh']
+            : ['pwsh', 'powershell'];
+
+    for (const candidate of candidates) {
+        const result = spawnSync(
+            candidate,
+            ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()'],
+            {
+                encoding: 'utf8',
+            }
+        );
+        if (result.status === 0) {
+            return candidate;
+        }
+    }
+
+    return '';
 }
 
 function listen(server) {
@@ -44,9 +62,11 @@ function closeServer(server) {
     });
 }
 
-test('MONITOR-PRODUCCION escribe JSON canonico aunque falle y mantiene exit code', async () => {
+test('MONITOR-PRODUCCION escribe JSON canonico aunque falle y mantiene exit code', async (t) => {
     const tempDir = mkdtempSync(join(tmpdir(), 'prod-monitor-report-'));
     const reportPath = join(tempDir, 'prod-monitor-last.json');
+    const powerShellCommand = resolvePowerShellCommand();
+    let serverStarted = false;
     const server = http.createServer((request, response) => {
         response.writeHead(503, { 'Content-Type': 'application/json' });
         response.end(
@@ -59,9 +79,14 @@ test('MONITOR-PRODUCCION escribe JSON canonico aunque falle y mantiene exit code
     });
 
     try {
+        if (!powerShellCommand) {
+            t.skip('PowerShell no disponible para validar MONITOR-PRODUCCION');
+            return;
+        }
         const port = await listen(server);
+        serverStarted = true;
         const result = spawnSync(
-            getPowerShellCommand(),
+            powerShellCommand,
             [
                 '-NoProfile',
                 '-ExecutionPolicy',
@@ -107,7 +132,9 @@ test('MONITOR-PRODUCCION escribe JSON canonico aunque falle y mantiene exit code
             'el reporte debe incluir checks normalizados'
         );
     } finally {
-        await closeServer(server);
+        if (serverStarted) {
+            await closeServer(server);
+        }
         rmSync(tempDir, { recursive: true, force: true });
     }
 });

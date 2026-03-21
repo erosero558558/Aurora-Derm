@@ -131,3 +131,13 @@ estan abiertos `Deploy Hosting transporte bloqueado desde GitHub Runner`,
 y `VERIFICAR-DESPLIEGUE.ps1` ahora lo tratan tambien como gate operativo, con
 la misma excepcion explicita `-AllowOpenGitHubDeployAlerts` cuando solo se
 necesita una corrida de observacion manual.
+
+Para el piloto web por clinica, el carril canonico del piloto web por clinica es:
+
+- `npm run verify:prod:turnero:web-pilot`
+- `npm run smoke:prod:turnero:web-pilot`
+- `npm run gate:prod:turnero:web-pilot`
+
+Ese carril convive con el lane nativo `turnero:operator:pilot`, que sigue
+siendo el gate del paquete desktop/operator cuando el release ampliado incluye
+superficies Windows y no solo el publish web.
