@@ -538,6 +538,7 @@ function ensureOperatorSurfaceReplicationPanel() {
     if (!host.className.includes('turnero-surface-ops__stack')) {
         host.className = `${host.className} turnero-surface-ops__stack`.trim();
     }
+    host.dataset.turneroOperatorSurfaceReplication = 'true';
 
     let bannerHost = host.querySelector('[data-role="banner"]');
     if (!(bannerHost instanceof HTMLElement)) {
