@@ -110,9 +110,11 @@ import { mountTurneroAdminQueueSurfaceCommercialConsole } from '../../../../../.
 import { mountTurneroAdminQueueSurfaceRenewalConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-renewal-console.js';
 import { mountTurneroAdminQueueSurfaceSupportConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-support-console.js';
 import { mountTurneroAdminQueueSurfacePackageConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-package-console.js';
+import { mountTurneroAdminQueueSurfaceExecutiveReviewConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-executive-review-console.js';
 import { mountTurneroAdminQueueSurfaceSuccessConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-success-console.js';
 import { mountTurneroAdminQueueSurfaceExpansionConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-expansion-console.js';
 import { buildTurneroSurfacePackageSnapshot } from '../../../../../../queue-shared/turnero-surface-package-snapshot.js';
+import { buildTurneroSurfaceExecutiveReviewSnapshot } from '../../../../../../queue-shared/turnero-surface-executive-review-snapshot.js';
 import { buildTurneroSurfaceExpansionSnapshot } from '../../../../../../queue-shared/turnero-surface-expansion-snapshot.js';
 import {
     getTurneroActiveClinicId as getTurneroClinicId,
@@ -207,6 +209,7 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueSurfaceExpansionConsoleHost',
     'queueSurfaceSupportConsoleHost',
     'queueSurfacePackageConsoleHost',
+    'queueSurfaceExecutiveReviewConsoleHost',
     'queueQuickTrays',
     'queueQuickConsole',
     'queuePlaybook',
@@ -4339,6 +4342,77 @@ function buildSurfacePackageConsolePacks() {
     ];
 }
 
+function buildSurfaceExecutiveReviewConsolePacks() {
+    const clinicProfile = getTurneroClinicProfile();
+    const scope = getQueueSurfaceRecoveryScope();
+    const now = new Date().toISOString();
+    return [
+        buildTurneroSurfaceExecutiveReviewSnapshot({
+            scope,
+            surfaceKey: 'operator',
+            surfaceLabel: 'Turnero Operador',
+            clinicProfile,
+            runtimeState: 'ready',
+            truth: 'watch',
+            portfolioBand: 'core',
+            priorityBand: 'p1',
+            decisionState: 'watch',
+            reviewWindow: 'mensual',
+            reviewOwner: 'ops-lead',
+            checklist: {
+                summary: {
+                    all: 4,
+                    pass: 3,
+                    fail: 1,
+                },
+            },
+            updatedAt: now,
+        }),
+        buildTurneroSurfaceExecutiveReviewSnapshot({
+            scope,
+            surfaceKey: 'kiosk',
+            surfaceLabel: 'Turnero Kiosco',
+            clinicProfile,
+            runtimeState: 'ready',
+            truth: 'watch',
+            portfolioBand: 'watch',
+            priorityBand: 'p2',
+            decisionState: 'pending',
+            reviewWindow: '',
+            reviewOwner: '',
+            checklist: {
+                summary: {
+                    all: 4,
+                    pass: 2,
+                    fail: 2,
+                },
+            },
+            updatedAt: now,
+        }),
+        buildTurneroSurfaceExecutiveReviewSnapshot({
+            scope,
+            surfaceKey: 'display',
+            surfaceLabel: 'Turnero Sala TV',
+            clinicProfile,
+            runtimeState: 'ready',
+            truth: 'aligned',
+            portfolioBand: 'core',
+            priorityBand: 'p1',
+            decisionState: 'approved',
+            reviewWindow: 'mensual',
+            reviewOwner: 'ops-display',
+            checklist: {
+                summary: {
+                    all: 4,
+                    pass: 3,
+                    fail: 1,
+                },
+            },
+            updatedAt: now,
+        }),
+    ];
+}
+
 function buildSurfaceReplicationConsolePacks() {
     const clinicProfile = getTurneroClinicProfile();
     return [
@@ -5492,6 +5566,7 @@ function renderSurfaceTelemetry(manifest, detectedPlatform) {
                 <div id="queueSurfaceSuccessConsoleHost" class="queue-surface-telemetry__sync-console-host" data-turnero-surface-success-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents" aria-live="polite"></div>
                 <div id="queueSurfaceExpansionConsoleHost" class="queue-surface-telemetry__sync-console-host" aria-live="polite"></div>
                 <div id="queueSurfaceSupportConsoleHost" class="queue-surface-telemetry__sync-console-host" aria-live="polite"></div>
+                <div id="queueSurfaceExecutiveReviewConsoleHost" class="queue-surface-telemetry__sync-console-host" data-turnero-surface-executive-review-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents" aria-live="polite"></div>
                 <div id="queueSurfacePackageConsoleHost" class="queue-surface-telemetry__sync-console-host" data-turnero-surface-package-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents" aria-live="polite"></div>
                 <div id="queueSurfaceTelemetryOptimizationHubHost" class="queue-surface-telemetry__optimization-host" aria-live="polite"></div>
             </section>
@@ -6288,6 +6363,7 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderQueueSurfaceExpansionConsole(manifest, detectedPlatform);
     renderQueueSurfaceSupportConsole(manifest, detectedPlatform);
     renderQueueSurfacePackageConsole(manifest, detectedPlatform);
+    renderQueueSurfaceExecutiveReviewConsole(manifest, detectedPlatform);
     renderQueueAssuranceControlPlane(manifest, detectedPlatform);
     renderQueueSafetyPrivacyCockpit(manifest, detectedPlatform);
     renderQueueReleaseServiceExcellenceAdoptionCloud(
@@ -23644,6 +23720,30 @@ function renderQueueSurfacePackageConsole(manifest, detectedPlatform) {
         scope: getQueueSurfaceRecoveryScope(),
         clinicProfile: getTurneroClinicProfile(),
         snapshots: buildSurfacePackageConsolePacks(),
+        checklist: {
+            summary: {
+                all: 6,
+                pass: 4,
+                fail: 2,
+            },
+        },
+        releaseManifest: manifest,
+        detectedPlatform,
+    });
+}
+
+function renderQueueSurfaceExecutiveReviewConsole(manifest, detectedPlatform) {
+    const root = document.getElementById(
+        'queueSurfaceExecutiveReviewConsoleHost'
+    );
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    return mountTurneroAdminQueueSurfaceExecutiveReviewConsole(root, {
+        scope: getQueueSurfaceRecoveryScope(),
+        clinicProfile: getTurneroClinicProfile(),
+        snapshots: buildSurfaceExecutiveReviewConsolePacks(),
         checklist: {
             summary: {
                 all: 6,

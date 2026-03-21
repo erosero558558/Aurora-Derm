@@ -52,6 +52,10 @@ import { buildTurneroSurfacePackagePack } from '../queue-shared/turnero-surface-
 import { mountTurneroSurfacePackageBanner } from '../queue-shared/turnero-surface-package-banner.js';
 import { createTurneroSurfacePackageLedger } from '../queue-shared/turnero-surface-package-ledger.js';
 import { createTurneroSurfacePackageOwnerStore } from '../queue-shared/turnero-surface-package-owner-store.js';
+import { buildTurneroSurfaceExecutiveReviewPack } from '../queue-shared/turnero-surface-executive-review-pack.js';
+import { mountTurneroSurfaceExecutiveReviewBanner } from '../queue-shared/turnero-surface-executive-review-banner.js';
+import { createTurneroSurfaceExecutiveReviewLedger } from '../queue-shared/turnero-surface-executive-review-ledger.js';
+import { createTurneroSurfaceExecutiveReviewOwnerStore } from '../queue-shared/turnero-surface-executive-review-owner-store.js';
 import { createTurneroSurfaceDeploymentTemplateLedger } from '../queue-shared/turnero-surface-deployment-template-ledger.js';
 import { buildTurneroSurfaceReplicationPack } from '../queue-shared/turnero-surface-replication-pack.js';
 import { buildTurneroSurfaceReplicationReadout } from '../queue-shared/turnero-surface-replication-readout.js';
@@ -181,6 +185,7 @@ const state = {
     surfaceAcceptancePack: null,
     surfaceSupportPack: null,
     surfacePackagePack: null,
+    surfaceExecutiveReviewPack: null,
     surfaceReplicationPack: null,
     surfaceRenewalPack: null,
     surfaceSuccessPack: null,
@@ -2168,6 +2173,7 @@ function renderKioskSurfacePackageState(inputState = state) {
         panel.bannerHost.replaceChildren();
         panel.chipsHost.replaceChildren();
         inputState.surfacePackagePack = null;
+        renderKioskSurfaceExecutiveReviewState(inputState);
         return null;
     }
 
@@ -2179,6 +2185,141 @@ function renderKioskSurfacePackageState(inputState = state) {
         pack,
         title: 'Kiosk surface package',
         eyebrow: 'Package gate',
+    });
+    panel.chipsHost.replaceChildren();
+    (Array.isArray(pack.readout?.checkpoints)
+        ? pack.readout.checkpoints
+        : []
+    ).forEach((chip) => {
+        const chipNode = document.createElement('span');
+        panel.chipsHost.appendChild(chipNode);
+        mountTurneroSurfaceCheckpointChip(chipNode, chip);
+    });
+    renderKioskSurfaceExecutiveReviewState(inputState);
+    return pack;
+}
+
+function getKioskSurfaceExecutiveReviewScope() {
+    return getKioskCommercialScope();
+}
+
+function buildKioskSurfaceExecutiveReviewPack(inputState = state) {
+    const scope = getKioskSurfaceExecutiveReviewScope();
+    const ledgerStore = createTurneroSurfaceExecutiveReviewLedger(
+        scope,
+        inputState.clinicProfile
+    );
+    const ownerStore = createTurneroSurfaceExecutiveReviewOwnerStore(
+        scope,
+        inputState.clinicProfile
+    );
+
+    return buildTurneroSurfaceExecutiveReviewPack({
+        surfaceKey: 'kiosk',
+        clinicProfile: inputState.clinicProfile,
+        scope,
+        runtimeState: 'ready',
+        truth: 'watch',
+        portfolioBand: 'watch',
+        priorityBand: 'p2',
+        decisionState: 'pending',
+        reviewWindow: '',
+        reviewOwner: '',
+        checklist: {
+            summary: {
+                all: 4,
+                pass: 2,
+                fail: 2,
+            },
+        },
+        ledger: ledgerStore.list({ surfaceKey: 'kiosk' }),
+        owners: ownerStore.list({ surfaceKey: 'kiosk' }),
+    });
+}
+
+function ensureKioskSurfaceExecutiveReviewPanel() {
+    const statusNode = getById('kioskProfileStatus');
+    if (!(statusNode instanceof HTMLElement)) {
+        return null;
+    }
+
+    let host = statusNode.parentElement?.querySelector(
+        '[data-turnero-kiosk-surface-executive-review="true"]'
+    );
+    if (!(host instanceof HTMLElement)) {
+        host = document.createElement('div');
+        host.dataset.turneroKioskSurfaceExecutiveReview = 'true';
+        host.className = 'turnero-surface-ops__stack';
+        const packageHost = statusNode.parentElement?.querySelector(
+            '[data-turnero-kiosk-surface-package="true"]'
+        );
+        if (packageHost instanceof HTMLElement) {
+            packageHost.insertAdjacentElement('afterend', host);
+        } else {
+            const acceptanceHost = statusNode.parentElement?.querySelector(
+                '[data-turnero-kiosk-surface-acceptance="true"]'
+            );
+            if (acceptanceHost instanceof HTMLElement) {
+                acceptanceHost.insertAdjacentElement('beforebegin', host);
+            } else {
+                const supportHost = statusNode.parentElement?.querySelector(
+                    '[data-turnero-kiosk-surface-support="true"]'
+                );
+                if (supportHost instanceof HTMLElement) {
+                    supportHost.insertAdjacentElement('afterend', host);
+                } else {
+                    statusNode.insertAdjacentElement('afterend', host);
+                }
+            }
+        }
+    }
+
+    let bannerHost = host.querySelector('[data-role="banner"]');
+    if (!(bannerHost instanceof HTMLElement)) {
+        bannerHost = document.createElement('div');
+        bannerHost.dataset.role = 'banner';
+        host.appendChild(bannerHost);
+    }
+
+    let chipsHost = host.querySelector('[data-role="chips"]');
+    if (!(chipsHost instanceof HTMLElement)) {
+        chipsHost = document.createElement('div');
+        chipsHost.dataset.role = 'chips';
+        chipsHost.className = 'turnero-surface-ops__chips';
+        host.appendChild(chipsHost);
+    }
+
+    return {
+        host,
+        bannerHost,
+        chipsHost,
+    };
+}
+
+function renderKioskSurfaceExecutiveReviewState(inputState = state) {
+    const panel = ensureKioskSurfaceExecutiveReviewPanel();
+    if (!panel) {
+        return null;
+    }
+
+    if (!inputState.clinicProfile) {
+        panel.host.hidden = true;
+        panel.bannerHost.replaceChildren();
+        panel.chipsHost.replaceChildren();
+        inputState.surfaceExecutiveReviewPack = null;
+        return null;
+    }
+
+    const pack = buildKioskSurfaceExecutiveReviewPack(inputState);
+    inputState.surfaceExecutiveReviewPack = pack;
+    panel.host.hidden = false;
+    panel.host.dataset.state = pack.gate.band;
+    panel.host.dataset.band = pack.gate.band;
+    panel.bannerHost.replaceChildren();
+    mountTurneroSurfaceExecutiveReviewBanner(panel.bannerHost, {
+        pack,
+        title: 'Kiosk surface executive review',
+        eyebrow: 'Executive review gate',
     });
     panel.chipsHost.replaceChildren();
     (Array.isArray(pack.readout?.checkpoints)

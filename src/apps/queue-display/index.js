@@ -56,6 +56,10 @@ import { buildTurneroSurfacePackagePack } from '../queue-shared/turnero-surface-
 import { mountTurneroSurfacePackageBanner } from '../queue-shared/turnero-surface-package-banner.js';
 import { createTurneroSurfacePackageLedger } from '../queue-shared/turnero-surface-package-ledger.js';
 import { createTurneroSurfacePackageOwnerStore } from '../queue-shared/turnero-surface-package-owner-store.js';
+import { buildTurneroSurfaceExecutiveReviewPack } from '../queue-shared/turnero-surface-executive-review-pack.js';
+import { mountTurneroSurfaceExecutiveReviewBanner } from '../queue-shared/turnero-surface-executive-review-banner.js';
+import { createTurneroSurfaceExecutiveReviewLedger } from '../queue-shared/turnero-surface-executive-review-ledger.js';
+import { createTurneroSurfaceExecutiveReviewOwnerStore } from '../queue-shared/turnero-surface-executive-review-owner-store.js';
 import { createTurneroSurfaceDeploymentTemplateLedger } from '../queue-shared/turnero-surface-deployment-template-ledger.js';
 import { buildTurneroSurfaceReplicationPack } from '../queue-shared/turnero-surface-replication-pack.js';
 import { buildTurneroSurfaceReplicationReadout } from '../queue-shared/turnero-surface-replication-readout.js';
@@ -154,6 +158,7 @@ const state = {
     surfaceAcceptancePack: null,
     surfaceSupportPack: null,
     surfacePackagePack: null,
+    surfaceExecutiveReviewPack: null,
     surfaceReplicationPack: null,
     surfaceRenewalPack: null,
     surfaceSuccessPack: null,
@@ -2050,6 +2055,7 @@ function renderDisplaySurfacePackageState(inputState) {
         panel.bannerHost.replaceChildren();
         panel.chipsHost.replaceChildren();
         resolvedInputState.surfacePackagePack = null;
+        renderDisplaySurfaceExecutiveReviewState(resolvedInputState);
         return null;
     }
 
@@ -2061,6 +2067,145 @@ function renderDisplaySurfacePackageState(inputState) {
         pack,
         title: 'Display surface package',
         eyebrow: 'Package gate',
+    });
+    panel.chipsHost.replaceChildren();
+    (Array.isArray(pack.readout?.checkpoints)
+        ? pack.readout.checkpoints
+        : []
+    ).forEach((chip) => {
+        const chipNode = document.createElement('span');
+        panel.chipsHost.appendChild(chipNode);
+        mountTurneroSurfaceCheckpointChip(chipNode, chip);
+    });
+    renderDisplaySurfaceExecutiveReviewState(resolvedInputState);
+    return pack;
+}
+
+function getDisplaySurfaceExecutiveReviewScope() {
+    return getDisplayCommercialScope();
+}
+
+function buildDisplaySurfaceExecutiveReviewPack(inputState) {
+    const resolvedInputState =
+        inputState && typeof inputState === 'object' ? inputState : state;
+    const scope = getDisplaySurfaceExecutiveReviewScope();
+    const ledgerStore = createTurneroSurfaceExecutiveReviewLedger(
+        scope,
+        resolvedInputState.clinicProfile
+    );
+    const ownerStore = createTurneroSurfaceExecutiveReviewOwnerStore(
+        scope,
+        resolvedInputState.clinicProfile
+    );
+
+    return buildTurneroSurfaceExecutiveReviewPack({
+        surfaceKey: 'display',
+        clinicProfile: resolvedInputState.clinicProfile,
+        scope,
+        runtimeState: 'ready',
+        truth: 'aligned',
+        portfolioBand: 'core',
+        priorityBand: 'p1',
+        decisionState: 'approved',
+        reviewWindow: 'mensual',
+        reviewOwner: 'ops-display',
+        checklist: {
+            summary: {
+                all: 4,
+                pass: 3,
+                fail: 1,
+            },
+        },
+        ledger: ledgerStore.list({ surfaceKey: 'display' }),
+        owners: ownerStore.list({ surfaceKey: 'display' }),
+    });
+}
+
+function ensureDisplaySurfaceExecutiveReviewPanel() {
+    const statusNode = getById('displayProfileStatus');
+    if (!(statusNode instanceof HTMLElement)) {
+        return null;
+    }
+
+    let host = statusNode.parentElement?.querySelector(
+        '[data-turnero-display-surface-executive-review="true"]'
+    );
+    if (!(host instanceof HTMLElement)) {
+        host = document.createElement('div');
+        host.dataset.turneroDisplaySurfaceExecutiveReview = 'true';
+        host.className = 'turnero-surface-ops__stack';
+        const packageHost = statusNode.parentElement?.querySelector(
+            '[data-turnero-display-surface-package="true"]'
+        );
+        if (packageHost instanceof HTMLElement) {
+            packageHost.insertAdjacentElement('afterend', host);
+        } else {
+            const acceptanceHost = statusNode.parentElement?.querySelector(
+                '[data-turnero-display-surface-acceptance="true"]'
+            );
+            if (acceptanceHost instanceof HTMLElement) {
+                acceptanceHost.insertAdjacentElement('beforebegin', host);
+            } else {
+                const supportHost = statusNode.parentElement?.querySelector(
+                    '[data-turnero-display-surface-support="true"]'
+                );
+                if (supportHost instanceof HTMLElement) {
+                    supportHost.insertAdjacentElement('afterend', host);
+                } else {
+                    statusNode.insertAdjacentElement('afterend', host);
+                }
+            }
+        }
+    }
+
+    let bannerHost = host.querySelector('[data-role="banner"]');
+    if (!(bannerHost instanceof HTMLElement)) {
+        bannerHost = document.createElement('div');
+        bannerHost.dataset.role = 'banner';
+        host.appendChild(bannerHost);
+    }
+
+    let chipsHost = host.querySelector('[data-role="chips"]');
+    if (!(chipsHost instanceof HTMLElement)) {
+        chipsHost = document.createElement('div');
+        chipsHost.dataset.role = 'chips';
+        chipsHost.className = 'turnero-surface-ops__chips';
+        host.appendChild(chipsHost);
+    }
+
+    return {
+        host,
+        bannerHost,
+        chipsHost,
+    };
+}
+
+function renderDisplaySurfaceExecutiveReviewState(inputState) {
+    const resolvedInputState =
+        inputState && typeof inputState === 'object' ? inputState : state;
+    const panel = ensureDisplaySurfaceExecutiveReviewPanel();
+    if (!panel) {
+        return null;
+    }
+
+    if (!resolvedInputState.clinicProfile) {
+        panel.host.hidden = true;
+        panel.bannerHost.replaceChildren();
+        panel.chipsHost.replaceChildren();
+        resolvedInputState.surfaceExecutiveReviewPack = null;
+        return null;
+    }
+
+    const pack = buildDisplaySurfaceExecutiveReviewPack(resolvedInputState);
+    resolvedInputState.surfaceExecutiveReviewPack = pack;
+    panel.host.hidden = false;
+    panel.host.dataset.state = pack.gate.band;
+    panel.host.dataset.band = pack.gate.band;
+    panel.bannerHost.replaceChildren();
+    mountTurneroSurfaceExecutiveReviewBanner(panel.bannerHost, {
+        pack,
+        title: 'Display surface executive review',
+        eyebrow: 'Executive review gate',
     });
     panel.chipsHost.replaceChildren();
     (Array.isArray(pack.readout?.checkpoints)

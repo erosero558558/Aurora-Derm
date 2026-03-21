@@ -15,6 +15,21 @@ Entrypoints estables:
 Los archivos de raiz se mantienen como wrappers compatibles para no romper
 `package.json`, workflows ni uso manual existente.
 
+## Ritual diario de recuperacion
+
+Mientras `docs/PRODUCT_OPERATIONAL_STATUS.md` siga en `RED`, el corte diario
+canonico es:
+
+- `npm run flow-os:recovery:daily`
+- `npm run gate:admin:rollout:openclaw:node`
+- `npm run verify:prod:turnero:web-pilot`
+- `npm run monitor:prod`
+
+`npm run flow-os:recovery:daily` deja
+`verification/runtime/flow-os-recovery-daily.json`, refresca
+`prod-readiness-summary` y vuelve a emitir el diagnostico OpenClaw para que el
+semaforo del ciclo no dependa de lectura manual.
+
 Hosting Windows canonico:
 
 - El origen Windows ya no debe servir desde el workspace de trabajo. El repo
@@ -141,4 +156,3 @@ Para el piloto web por clinica, el carril canonico del piloto web por clinica es
 Ese carril convive con el lane nativo `turnero:operator:pilot`, que sigue
 siendo el gate del paquete desktop/operator cuando el release ampliado incluye
 superficies Windows y no solo el publish web.
-

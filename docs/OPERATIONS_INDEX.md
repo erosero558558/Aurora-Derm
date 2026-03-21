@@ -31,6 +31,7 @@ Overrides:
 ## Fuentes de verdad
 
 - Publico V6: `docs/public-v6-canonical-source.md`
+- Recovery cycle: `docs/FLOW_OS_RECOVERY_PLAN.md`
 - Source vs output de runtime versionado: `docs/RUNTIME_ARTIFACT_POLICY.md`
 - Branch slicing para trabajo mixto: `docs/BRANCH_SLICING_GUARDRAILS.md`
 - Admin sony_v3: `docs/ADMIN-UI-ROLLOUT.md`
@@ -231,6 +232,7 @@ Usalos antes de tocar despliegue o si cambias comportamiento en agenda, funnel o
 
 Comandos:
 
+- `npm run flow-os:recovery:daily`
 - `npm run verify:prod`
 - `npm run verify:prod:fast`
 - `npm run smoke:prod`
@@ -251,6 +253,8 @@ Implementacion canonica:
 
 Notas:
 
+- `npm run flow-os:recovery:daily` es el corte diario canonico del ciclo `2026-03-21 -> 2026-04-20`: actualiza `prod-readiness-summary`, refresca el diagnostico OpenClaw y deja `verification/runtime/flow-os-recovery-daily.json`.
+- Mientras ese corte siga en `RED`, mantener freeze duro en `admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy` y no reabrir `expansion`, `renewal`, `executive review` ni trabajo multi-sede.
 - `npm run checklist:prod:public-sync:host` no ejecuta cambios remotos; imprime el checklist host-side canonico para revisar wrapper, `public-sync-status.json`, `health-diagnostics`, auth y cifrado en reposo antes de intervenir el VPS.
 - Entry point canonico: `scripts/ops/prod/CHECKLIST-HOST-PUBLIC-SYNC.ps1`
 - El weekly report de produccion vive en `verification/weekly/weekly-report-YYYYMMDD.{md,json}`.

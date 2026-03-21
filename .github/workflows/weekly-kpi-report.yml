@@ -368,6 +368,12 @@ jobs:
                     "weekly_cycle_status=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "weekly_cycle_reason=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "weekly_cycle_last_critical_generated_at=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "recovery_cycle_id=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "recovery_cycle_status=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "recovery_cycle_freeze_active=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "recovery_cycle_allowed_slice=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "recovery_cycle_weekly_ready=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                    "recovery_cycle_pilot_recommendation_eligible=n/a" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "warnings_critical_count_int=-1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "warnings_alert_data_valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                     "general_incident_required=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -478,6 +484,12 @@ jobs:
                   $weeklyCycleStatus = 'n/a'
                   $weeklyCycleReason = 'n/a'
                   $weeklyCycleLastCriticalGeneratedAt = 'n/a'
+                  $recoveryCycleId = 'n/a'
+                  $recoveryCycleStatus = 'n/a'
+                  $recoveryCycleFreezeActive = 'n/a'
+                  $recoveryCycleAllowedSlice = 'n/a'
+                  $recoveryCycleWeeklyReady = 'n/a'
+                  $recoveryCyclePilotRecommendationEligible = 'n/a'
                   $maxReportAgeHours = 36
                   $tmpMaxReportAgeHours = 0
                   if ([int]::TryParse([string]$env:REPORT_MAX_REPORT_AGE_HOURS, [ref]$tmpMaxReportAgeHours) -and $tmpMaxReportAgeHours -gt 0) {
@@ -528,6 +540,15 @@ jobs:
                       if ($null -ne $weeklyCycle.status) { $weeklyCycleStatus = [string]$weeklyCycle.status }
                       if ($null -ne $weeklyCycle.reason) { $weeklyCycleReason = [string]$weeklyCycle.reason }
                       if ($null -ne $weeklyCycle.lastCriticalGeneratedAt) { $weeklyCycleLastCriticalGeneratedAt = [string]$weeklyCycle.lastCriticalGeneratedAt }
+                    }
+                    $recoveryCycle = $payload.recoveryCycle
+                    if ($null -ne $recoveryCycle) {
+                      if ($null -ne $recoveryCycle.id) { $recoveryCycleId = [string]$recoveryCycle.id }
+                      if ($null -ne $recoveryCycle.status) { $recoveryCycleStatus = [string]$recoveryCycle.status }
+                      if ($null -ne $recoveryCycle.freezeActive) { $recoveryCycleFreezeActive = [string]$recoveryCycle.freezeActive }
+                      if ($null -ne $recoveryCycle.allowedSlice) { $recoveryCycleAllowedSlice = [string]$recoveryCycle.allowedSlice }
+                      if ($null -ne $recoveryCycle.weeklyReady) { $recoveryCycleWeeklyReady = [string]$recoveryCycle.weeklyReady }
+                      if ($null -ne $recoveryCycle.pilotRecommendationEligible) { $recoveryCyclePilotRecommendationEligible = [string]$recoveryCycle.pilotRecommendationEligible }
                     }
 
                     $retention = $payload.retention
@@ -640,6 +661,12 @@ jobs:
                     $weeklyCycleStatus = 'n/a'
                     $weeklyCycleReason = 'n/a'
                     $weeklyCycleLastCriticalGeneratedAt = 'n/a'
+                    $recoveryCycleId = 'n/a'
+                    $recoveryCycleStatus = 'n/a'
+                    $recoveryCycleFreezeActive = 'n/a'
+                    $recoveryCycleAllowedSlice = 'n/a'
+                    $recoveryCycleWeeklyReady = 'n/a'
+                    $recoveryCyclePilotRecommendationEligible = 'n/a'
                     $conversionViewBooking = 'n/a'
                     $conversionStartCheckout = 'n/a'
                     $conversionStartCheckoutRate = 'n/a'
@@ -717,6 +744,12 @@ jobs:
                   "weekly_cycle_status=$weeklyCycleStatus" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "weekly_cycle_reason=$weeklyCycleReason" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   "weekly_cycle_last_critical_generated_at=$weeklyCycleLastCriticalGeneratedAt" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "recovery_cycle_id=$recoveryCycleId" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "recovery_cycle_status=$recoveryCycleStatus" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "recovery_cycle_freeze_active=$recoveryCycleFreezeActive" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "recovery_cycle_allowed_slice=$recoveryCycleAllowedSlice" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "recovery_cycle_weekly_ready=$recoveryCycleWeeklyReady" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+                  "recovery_cycle_pilot_recommendation_eligible=$recoveryCyclePilotRecommendationEligible" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
                   $warningsCriticalCountInt = -1
                   $tmpWarningsCriticalCount = 0
                   if ([int]::TryParse([string]$warningsCriticalCount, [ref]$tmpWarningsCriticalCount)) {
@@ -1263,6 +1296,12 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- weekly_cycle_status: ``${{ steps.report.outputs.weekly_cycle_status }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- weekly_cycle_reason: ``${{ steps.report.outputs.weekly_cycle_reason }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- weekly_cycle_last_critical_generated_at: ``${{ steps.report.outputs.weekly_cycle_last_critical_generated_at }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- recovery_cycle_id: ``${{ steps.report.outputs.recovery_cycle_id }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- recovery_cycle_status: ``${{ steps.report.outputs.recovery_cycle_status }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- recovery_cycle_freeze_active: ``${{ steps.report.outputs.recovery_cycle_freeze_active }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- recovery_cycle_allowed_slice: ``${{ steps.report.outputs.recovery_cycle_allowed_slice }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- recovery_cycle_weekly_ready: ``${{ steps.report.outputs.recovery_cycle_weekly_ready }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- recovery_cycle_pilot_recommendation_eligible: ``${{ steps.report.outputs.recovery_cycle_pilot_recommendation_eligible }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- report_generated_at_utc: ``${{ steps.report.outputs.report_generated_at_utc }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- report_age_hours: ``${{ steps.report.outputs.report_age_hours }}``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- report_stale: ``${{ steps.report.outputs.report_stale }}``"

@@ -1355,13 +1355,49 @@ $weeklyCycleConsecutiveNoCritical = [int]$weeklyCycleState.WeeklyCycleConsecutiv
 $weeklyCycleReady = [bool]$weeklyCycleState.WeeklyCycleReady
 $weeklyCycleStatus = [string]$weeklyCycleState.WeeklyCycleStatus
 $weeklyCycleReason = [string]$weeklyCycleState.WeeklyCycleReason
+$recoveryCycleParkedFronts = @(
+    'superficies nativas nuevas',
+    'expansion LeadOps',
+    'ampliacion de estados',
+    'rediseno grande de la web publica',
+    'nuevas lineas comerciales',
+    'cualquier trabajo multi-sede'
+)
+$recoveryCycleParkedFrontsBlock = if ($recoveryCycleParkedFronts.Count -eq 0) {
+    '- parked_fronts: none'
+} else {
+    @(
+        '- parked_fronts:'
+        ($recoveryCycleParkedFronts | ForEach-Object { "  - $_" })
+    ) -join "`n"
+}
+$recoveryCycleState = [pscustomobject]@{
+    Id = 'flow-os-recovery-2026-03-21'
+    Status = 'active'
+    StartsAt = '2026-03-21'
+    EndsAt = '2026-04-20'
+    FreezeActive = $true
+    AllowedSlice = 'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy'
+    ParkedFronts = @($recoveryCycleParkedFronts)
+    ParkedFrontsBlock = $recoveryCycleParkedFrontsBlock
+    StatusDoc = 'docs/PRODUCT_OPERATIONAL_STATUS.md'
+    PlanDoc = 'docs/FLOW_OS_RECOVERY_PLAN.md'
+    DailyRitualCommand = 'npm run flow-os:recovery:daily'
+    WeeklyReady = [bool]$weeklyCycleReady
+    PilotRecommendationEligible = [bool]($weeklyCycleReady -and $warningCountsCritical -eq 0)
+}
+# ## Recovery Cycle
+# $recoveryCyclePayload = [ordered]@{}
+# $recoveryCyclePayload.allowedSlice = 'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy'
+# $reportPayload.recoveryCycle = $recoveryCyclePayload
 
 $null = Write-WeeklyReportArtifacts `
     -ReportMdPath $reportMdPath `
     -ReportJsonPath $reportJsonPath `
     -RetentionBaselinePath $retentionBaselinePath `
     -WarningsAnalysis $warningAnalysis `
-    -WeeklyCycleState $weeklyCycleState
+    -WeeklyCycleState $weeklyCycleState `
+    -RecoveryCycleState $recoveryCycleState
 
 Write-Host ''
 Write-Host "Reporte markdown: $reportMdPath"
@@ -1387,6 +1423,7 @@ Write-Host "leadops_configured=$leadOpsConfigured leadops_mode=$leadOpsMode lead
 Write-Host "leadops_first_contact_avg_minutes=$leadOpsFirstContactAvgMinutes leadops_first_contact_p95_minutes=$leadOpsFirstContactP95Minutes leadops_close_rate_pct=$leadOpsCloseRatePct leadops_close_from_contacted_rate_pct=$leadOpsCloseFromContactedRatePct leadops_ai_acceptance_rate_pct=$leadOpsAiAcceptanceRatePct"
 Write-Host "release_decision=$releaseDecision release_reason=$releaseReason"
 Write-Host "weekly_cycle_target=$weeklyCycleTarget weekly_cycle_consecutive_no_critical=$weeklyCycleConsecutiveNoCritical weekly_cycle_ready=$weeklyCycleReady weekly_cycle_status=$weeklyCycleStatus weekly_cycle_reason=$weeklyCycleReason"
+Write-Host "recovery_cycle_id=$($recoveryCycleState.Id) recovery_cycle_status=$($recoveryCycleState.Status) recovery_cycle_freeze_active=$($recoveryCycleState.FreezeActive) recovery_cycle_allowed_slice=$($recoveryCycleState.AllowedSlice) recovery_cycle_weekly_ready=$($recoveryCycleState.WeeklyReady) recovery_cycle_pilot_recommendation_eligible=$($recoveryCycleState.PilotRecommendationEligible)"
 if ($warnings.Count -gt 0) {
     Write-Host "Warnings: $($warnings -join ', ')" -ForegroundColor Yellow
     Write-Host "Warnings by severity: critical=$warningCountsCritical non_critical=$warningCountsNonCritical" -ForegroundColor Yellow

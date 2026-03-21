@@ -650,7 +650,8 @@ function Get-WeeklyCycleState {
 function Get-WeeklyReportMarkdown {
     param(
         [object]$WarningsAnalysis,
-        [object]$WeeklyCycleState
+        [object]$WeeklyCycleState,
+        [object]$RecoveryCycleState
     )
 
     $warningCountsTotal = [int]$WarningsAnalysis.WarningCountsTotal
@@ -669,6 +670,18 @@ function Get-WeeklyReportMarkdown {
     $weeklyCycleLastCriticalGeneratedAtLabel = [string]$WeeklyCycleState.WeeklyCycleLastCriticalGeneratedAtLabel
     $weeklyCycleHistoryCount = [int]$WeeklyCycleState.WeeklyCycleHistoryCount
     $weeklyCycleHistoryBlock = [string]$WeeklyCycleState.WeeklyCycleHistoryBlock
+    $recoveryCycleId = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'Id' -DefaultValue '')
+    $recoveryCycleStatus = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'Status' -DefaultValue 'inactive')
+    $recoveryCycleStartsAt = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'StartsAt' -DefaultValue '')
+    $recoveryCycleEndsAt = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'EndsAt' -DefaultValue '')
+    $recoveryCycleAllowedSlice = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'AllowedSlice' -DefaultValue '')
+    $recoveryCycleFreezeActive = [bool](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'FreezeActive' -DefaultValue $false)
+    $recoveryCycleStatusDoc = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'StatusDoc' -DefaultValue '')
+    $recoveryCyclePlanDoc = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'PlanDoc' -DefaultValue '')
+    $recoveryCycleDailyRitualCommand = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'DailyRitualCommand' -DefaultValue '')
+    $recoveryCycleWeeklyReady = [bool](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'WeeklyReady' -DefaultValue $false)
+    $recoveryCyclePilotRecommendationEligible = [bool](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'PilotRecommendationEligible' -DefaultValue $false)
+    $recoveryCycleParkedFrontsBlock = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'ParkedFrontsBlock' -DefaultValue '- none')
     $effectiveHostChecklistCommand = if ([string]::IsNullOrWhiteSpace([string]$hostChecklistCommand)) {
         'npm run checklist:prod:public-sync:host'
     } else {
@@ -1003,6 +1016,21 @@ $warningDetailBlock
 
 $weeklyCycleHistoryBlock
 
+## Recovery Cycle
+
+- recovery_cycle_id: $recoveryCycleId
+- recovery_cycle_status: $recoveryCycleStatus
+- recovery_cycle_window: $recoveryCycleStartsAt -> $recoveryCycleEndsAt
+- recovery_cycle_freeze_active: $recoveryCycleFreezeActive
+- recovery_cycle_allowed_slice: $recoveryCycleAllowedSlice
+- recovery_cycle_weekly_ready: $recoveryCycleWeeklyReady
+- recovery_cycle_pilot_recommendation_eligible: $recoveryCyclePilotRecommendationEligible
+- recovery_cycle_daily_ritual_command: $recoveryCycleDailyRitualCommand
+- recovery_cycle_status_doc: $recoveryCycleStatusDoc
+- recovery_cycle_plan_doc: $recoveryCyclePlanDoc
+
+$recoveryCycleParkedFrontsBlock
+
 ## Incident Triage (<= 15 min)
 
 - minute_0_5: run `npm run gate:prod:fast` and check health/availability/chat status.
@@ -1021,7 +1049,8 @@ $weeklyCycleHistoryBlock
 function New-WeeklyReportPayload {
     param(
         [object]$WarningsAnalysis,
-        [object]$WeeklyCycleState
+        [object]$WeeklyCycleState,
+        [object]$RecoveryCycleState
     )
 
     $effectiveHostChecklistCommand = if ([string]::IsNullOrWhiteSpace([string]$hostChecklistCommand)) {
@@ -1078,6 +1107,21 @@ function New-WeeklyReportPayload {
         alerts = Convert-ToArraySafe -Value $serviceFunnelAlerts
     }
 
+    $recoveryCycleParkedFronts = Convert-ToArraySafe -Value (Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'ParkedFronts' -DefaultValue @())
+    $recoveryCyclePayload = [ordered]@{}
+    $recoveryCyclePayload.id = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'Id' -DefaultValue '')
+    $recoveryCyclePayload.status = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'Status' -DefaultValue 'inactive')
+    $recoveryCyclePayload.startsAt = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'StartsAt' -DefaultValue '')
+    $recoveryCyclePayload.endsAt = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'EndsAt' -DefaultValue '')
+    $recoveryCyclePayload.freezeActive = [bool](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'FreezeActive' -DefaultValue $false)
+    $recoveryCyclePayload.allowedSlice = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'AllowedSlice' -DefaultValue '')
+    $recoveryCyclePayload.parkedFronts = @($recoveryCycleParkedFronts)
+    $recoveryCyclePayload.statusDoc = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'StatusDoc' -DefaultValue '')
+    $recoveryCyclePayload.planDoc = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'PlanDoc' -DefaultValue '')
+    $recoveryCyclePayload.dailyRitualCommand = [string](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'DailyRitualCommand' -DefaultValue '')
+    $recoveryCyclePayload.weeklyReady = [bool](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'WeeklyReady' -DefaultValue $false)
+    $recoveryCyclePayload.pilotRecommendationEligible = [bool](Get-ObjectValueOrDefault -Object $RecoveryCycleState -Property 'PilotRecommendationEligible' -DefaultValue $false)
+
     $retentionPayload = [ordered]@{
         appointmentsTotal = $retentionAppointmentsTotal
         appointmentsNonCancelled = $retentionAppointmentsNonCancelled
@@ -1101,6 +1145,7 @@ function New-WeeklyReportPayload {
     $reportPayload = [ordered]@{
         generatedAt = $reportGeneratedAt
         domain = $base
+        recoveryCycle = $recoveryCyclePayload
         summary = $summaryPayload
         conversion = $conversionPayload
         conversionTrend = [ordered]@{
@@ -1400,7 +1445,8 @@ function Write-WeeklyReportArtifacts {
         [string]$ReportJsonPath,
         [string]$RetentionBaselinePath,
         [object]$WarningsAnalysis,
-        [object]$WeeklyCycleState
+        [object]$WeeklyCycleState,
+        [object]$RecoveryCycleState
     )
 
     $retentionBaselinePayload = [ordered]@{
@@ -1409,8 +1455,8 @@ function Write-WeeklyReportArtifacts {
         recurrenceRatePct = $retentionBaselineRecurrenceRatePct
         source = $retentionBaselineSource
     }
-    $markdown = Get-WeeklyReportMarkdown -WarningsAnalysis $WarningsAnalysis -WeeklyCycleState $WeeklyCycleState
-    $reportPayload = New-WeeklyReportPayload -WarningsAnalysis $WarningsAnalysis -WeeklyCycleState $WeeklyCycleState
+    $markdown = Get-WeeklyReportMarkdown -WarningsAnalysis $WarningsAnalysis -WeeklyCycleState $WeeklyCycleState -RecoveryCycleState $RecoveryCycleState
+    $reportPayload = New-WeeklyReportPayload -WarningsAnalysis $WarningsAnalysis -WeeklyCycleState $WeeklyCycleState -RecoveryCycleState $RecoveryCycleState
 
     Set-Content -Path $ReportMdPath -Value $markdown -Encoding UTF8
     $retentionBaselinePayload | ConvertTo-Json -Depth 6 | Set-Content -Path $RetentionBaselinePath -Encoding UTF8

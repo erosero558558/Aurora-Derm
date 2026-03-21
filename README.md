@@ -22,6 +22,7 @@ es la marca y operacion clinica activa que hoy corre sobre esa plataforma.
 
 ## Estado operativo
 
+- Recovery cycle activo `2026-03-21 -> 2026-04-20`: freeze duro en `admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy`.
 - Web publica: Astro V6 + `content/public-v6/**`
 - Admin: `admin.html` + `admin.js` generado desde `src/apps/admin/index.js`
 - UI admin activa: `src/apps/admin-v3/**`
@@ -44,6 +45,8 @@ es la marca y operacion clinica activa que hoy corre sobre esa plataforma.
 - `docs/DEPLOYMENT.md`
 - `docs/DEPLOY_HOSTING_PLAYBOOK.md`
 - `docs/GITHUB_ACTIONS_DEPLOY.md`
+- `docs/FLOW_OS_RECOVERY_PLAN.md`
+- `docs/PRODUCT_OPERATIONAL_STATUS.md`
 - `docs/PRODUCTION_TEST_CHECKLIST.md`
 - `docs/CALENDAR_CUTOVER.md`
 - `docs/STABILITY_14_DAYS_PLAN.md`

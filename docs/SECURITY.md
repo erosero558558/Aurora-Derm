@@ -16,8 +16,8 @@ Si necesitas ubicar el flujo correcto antes de actuar, empieza por `docs/OPERATI
 Los datos sensibles almacenados en disco (`store.json`) se cifran automáticamente.
 
 - **Algoritmo:** Cifrado simétrico robusto (implementado en `lib/storage.php`).
-- **Clave:** `AURORADERM_DATA_ENCRYPTION_KEY` (Variable de entorno obligatoria en producción).
-- **Enforcement explícito:** `AURORADERM_REQUIRE_DATA_ENCRYPTION=true` obliga a que `health` y readiness reporten incumplimiento si el fallback JSON queda en texto plano.
+- **Clave:** `PIELARMONIA_DATA_ENCRYPTION_KEY` en producción activa del host (`AURORADERM_DATA_ENCRYPTION_KEY` queda como alias legado donde todavía aplique).
+- **Enforcement explícito:** `PIELARMONIA_REQUIRE_DATA_ENCRYPTION=true` obliga a que `health` y readiness reporten incumplimiento si el fallback JSON queda en texto plano (`AURORADERM_REQUIRE_DATA_ENCRYPTION=true` sigue siendo compatible como alias legado).
 - **Permisos:** El directorio `data/` tiene permisos `775` y un `.htaccess` que deniega todo acceso web directo (`Deny from all`).
 
 #### Checklist exacto de host para validar cifrado
@@ -37,8 +37,8 @@ Se considera correcto cuando el payload reporta:
 
 Si el payload sigue mostrando `storeEncryptionStatus=plaintext` o `storeEncryptionCompliant=false`:
 
-1. Configura `AURORADERM_DATA_ENCRYPTION_KEY` en la fuente real de variables del host.
-2. Activa `AURORADERM_REQUIRE_DATA_ENCRYPTION=true` cuando el entorno de producción no lo derive automáticamente.
+1. Configura `PIELARMONIA_DATA_ENCRYPTION_KEY` en la fuente real de variables del host.
+2. Activa `PIELARMONIA_REQUIRE_DATA_ENCRYPTION=true` cuando el entorno de producción no lo derive automáticamente.
 3. Recarga PHP/web server según el host.
 4. Repite `health-diagnostics` hasta ver `storeEncryptionCompliant=true`.
 
@@ -80,4 +80,3 @@ Si descubres una vulnerabilidad, por favor sigue estos pasos:
 - [ ] `AURORADERM_ADMIN_PASSWORD` es fuerte y única.
 - [ ] Dependencias (`npm audit`) verificadas sin vulnerabilidades críticas.
 - [ ] Permisos de archivos en servidor (`chmod`) son restrictivos (especialmente `data/`).
-

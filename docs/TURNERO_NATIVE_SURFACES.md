@@ -1,5 +1,12 @@
 # Superficies Nativas del Turnero
 
+Nota operativa del ciclo `2026-03-21 -> 2026-04-20`:
+
+- mientras `docs/PRODUCT_OPERATIONAL_STATUS.md` siga en `RED`, no abrir nuevas
+  superficies nativas ni nuevas olas de packaging/release salvo que desbloqueen
+  directamente `verify/smoke/gate` del piloto web por clinica
+- el freeze activo vive en `docs/FLOW_OS_RECOVERY_PLAN.md`
+
 ## Objetivo
 
 Centralizar alta, packaging, distribucion y release de futuras apps nativas del

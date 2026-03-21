@@ -7,6 +7,12 @@ La politica canonica de source-vs-output para bundles versionados vive en
 
 El admin opera en modo `sony_v3 only`.
 
+Mientras `docs/PRODUCT_OPERATIONAL_STATUS.md` siga en `RED`, el rollout admin
+queda congelado en la slice `admin v3 + queue/turnero + auth/OpenClaw +
+readiness + deploy`. Los paneles de `expansion`, `renewal`, `commercial` y
+`executive review` no forman parte del gate operativo del piloto durante este
+ciclo.
+
 - `GET /admin.html` siempre arranca en `sony_v3`
 - no existe seleccion runtime por query
 - no existe seleccion runtime por `localStorage.adminUiVariant`
@@ -124,4 +130,3 @@ npm run build
 - No forman parte del runtime, del gate ni de la operacion diaria.
 - `admin.html` debe cargar `admin.js` directamente; el bridge heredado no forma parte del shell canonico.
 - Los CSS legacy retirados del front door viven en `styles/archive/admin/`.
-
