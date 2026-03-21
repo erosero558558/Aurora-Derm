@@ -748,6 +748,28 @@ test.describe('Sala turnos display', () => {
         await expect(page.locator('#displaySurfaceSyncHost')).toContainText(
             '1'
         );
+        await expect(
+            page.locator('[data-turnero-display-surface-replication="true"]')
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '[data-turnero-display-surface-replication="true"] [data-role="banner"]'
+            )
+        ).toContainText('Display surface replication');
+        await expect(
+            page.locator(
+                '[data-turnero-display-surface-replication="true"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
+        await expect(
+            page.locator('[data-turnero-display-surface-replication="true"]')
+        ).toContainText('template');
+        await expect(
+            page.locator('[data-turnero-display-surface-replication="true"]')
+        ).toContainText('replication');
+        await expect(
+            page.locator('[data-turnero-display-surface-replication="true"]')
+        ).toContainText('score');
 
         await expect(
             page.locator('[data-turnero-display-surface-go-live="true"]')
@@ -762,5 +784,44 @@ test.describe('Sala turnos display', () => {
                 '[data-turnero-display-surface-go-live="true"] .turnero-surface-ops__chip'
             )
         ).toHaveCount(6);
+        await expect(
+            page.locator('[data-turnero-display-surface-fleet="true"]')
+        ).toBeVisible();
+        await expect(
+            page.locator('[data-turnero-display-surface-fleet="true"]')
+        ).toContainText('Surface Fleet Readiness');
+        await expect(
+            page.locator('[data-turnero-display-surface-fleet="true"]')
+        ).toContainText('Fleet readiness visible');
+        await expect(
+            page.locator(
+                '[data-turnero-display-surface-fleet="true"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
+        await expect(
+            page.locator('[data-turnero-display-surface-fleet="true"]')
+        ).toContainText('Wave');
+        await expect(
+            page.locator('[data-turnero-display-surface-fleet="true"]')
+        ).toContainText('Fleet');
+        await expect(
+            page.locator('[data-turnero-display-surface-fleet="true"]')
+        ).toContainText('Score');
+        await expect(
+            page.locator('[data-turnero-display-surface-service-handover="true"]')
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '[data-turnero-display-surface-service-handover="true"] [data-role="banner"]'
+            )
+        ).toContainText('Display surface service handover');
+        await expect(
+            page.locator(
+                '[data-turnero-display-surface-service-handover="true"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
+        await expect(
+            page.locator('[data-turnero-display-surface-service-handover="true"]')
+        ).toHaveAttribute('data-state', 'ready');
     });
 });

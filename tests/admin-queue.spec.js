@@ -16343,6 +16343,35 @@ test.describe('Admin turnero sala', () => {
             page.locator('#queueSurfaceSupportConsoleHost')
         ).toContainText('Copy brief');
         await expect(
+            page.locator('#queueSurfaceServiceHandoverConsoleHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueSurfaceServiceHandoverConsoleHost')
+        ).toContainText('Surface Service Handover Console');
+        await expect(
+            page.locator('#queueSurfaceServiceHandoverConsoleHost')
+        ).toContainText('Copy brief');
+        await expect(
+            page.locator('#queueSurfaceServiceHandoverConsoleHost')
+        ).toContainText('Add playbook');
+        await expect(
+            page.locator('#queueSurfaceServiceHandoverConsoleHost')
+        ).toContainText('Add owner');
+        await expect(
+            page.locator('#queueSurfaceServiceHandoverConsoleHost')
+        ).toContainText('Recompute');
+        await expect(
+            page.locator('#queueSurfaceServiceHandoverConsoleHost')
+        ).toContainText('Turnero Operador');
+        await expect(
+            page.locator(
+                '#queueSurfaceServiceHandoverConsoleHost .turnero-admin-queue-surface-service-handover-console__surface'
+            )
+        ).toHaveCount(3);
+        await expect(
+            page.locator('#queueSurfaceServiceHandoverConsoleHost')
+        ).toHaveAttribute('data-state', 'blocked');
+        await expect(
             page.locator(
                 '#queueSurfaceSyncConsoleHost .turnero-admin-queue-surface-sync-console__handoff-item'
             )
@@ -16411,5 +16440,87 @@ test.describe('Admin turnero sala', () => {
         await expect(
             page.locator('#queueSurfaceGoLiveConsoleHost')
         ).toContainText('Chequeo manual de readiness');
+
+        await expect(
+            page.locator('#queueSurfaceReplicationConsoleHost')
+        ).toBeVisible();
+        await expect(
+            page.locator('#queueSurfaceReplicationConsoleHost')
+        ).toContainText('Surface Replication Scaleout');
+        await expect(
+            page.locator('#queueSurfaceReplicationConsoleHost')
+        ).toContainText('Copy brief');
+        await expect(
+            page.locator('#queueSurfaceReplicationConsoleHost')
+        ).toContainText('Download JSON');
+        await expect(
+            page.locator('#queueSurfaceReplicationConsoleHost')
+        ).toContainText('Add template');
+        await expect(
+            page.locator('#queueSurfaceReplicationConsoleHost')
+        ).toContainText('Add owner');
+        await expect(
+            page.locator(
+                '#queueSurfaceReplicationConsoleHost .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(9);
+
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost')
+        ).toContainText('Surface Fleet Readiness');
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost')
+        ).toContainText('Copy brief');
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost')
+        ).toContainText('Download JSON');
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost')
+        ).toContainText('Add wave');
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost')
+        ).toContainText('Add owner');
+
+        await page.selectOption(
+            '#queueSurfaceFleetConsoleHost [data-field="wave-surface-key"]',
+            'operator'
+        );
+        await page
+            .locator('#queueSurfaceFleetConsoleHost [data-field="wave-label"]')
+            .fill('Wave 9');
+        await page
+            .locator('#queueSurfaceFleetConsoleHost [data-field="wave-note"]')
+            .fill('Plan de despliegue.');
+        await page
+            .locator('#queueSurfaceFleetConsoleHost [data-action="add-wave"]')
+            .click();
+
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost [data-role="wave-count"]')
+        ).toHaveText('1');
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost [data-role="wave-list"]')
+        ).toContainText('Wave 9');
+
+        await page.selectOption(
+            '#queueSurfaceFleetConsoleHost [data-field="owner-surface-key"]',
+            'display'
+        );
+        await page
+            .locator('#queueSurfaceFleetConsoleHost [data-field="owner-name"]')
+            .fill('ops-lead');
+        await page
+            .locator('#queueSurfaceFleetConsoleHost [data-field="owner-note"]')
+            .fill('Fleet owner en sala.');
+        await page
+            .locator('#queueSurfaceFleetConsoleHost [data-action="add-owner"]')
+            .click();
+
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost [data-role="owner-count"]')
+        ).toHaveText('1');
+        await expect(
+            page.locator('#queueSurfaceFleetConsoleHost [data-role="owner-list"]')
+        ).toContainText('ops-lead');
     });
 });

@@ -66,6 +66,8 @@ import { buildTurneroSurfaceGoLiveSnapshot } from '../queue-shared/turnero-surfa
 import { createTurneroSurfaceGoLiveLedger } from '../queue-shared/turnero-surface-go-live-ledger.js';
 import { buildTurneroSurfaceGoLivePack } from '../queue-shared/turnero-surface-go-live-pack.js';
 import { mountTurneroSurfaceGoLiveBanner } from '../queue-shared/turnero-surface-go-live-banner.js';
+import { buildTurneroSurfaceFleetPack } from '../queue-shared/turnero-surface-fleet-pack.js';
+import { mountTurneroSurfaceFleetBanner } from '../queue-shared/turnero-surface-fleet-banner.js';
 import { buildTurneroSurfaceAcceptancePack } from '../queue-shared/turnero-surface-acceptance-pack.js';
 import { mountTurneroSurfaceAcceptanceBanner } from '../queue-shared/turnero-surface-acceptance-banner.js';
 import { buildTurneroSurfaceRuntimeWatch } from '../queue-shared/turnero-surface-runtime-watch.js';
@@ -73,6 +75,8 @@ import { buildTurneroSurfaceOpsReadinessPack } from '../queue-shared/turnero-sur
 import { buildTurneroSurfaceOpsSummary } from '../queue-shared/turnero-surface-ops-summary.js';
 import { mountTurneroSurfaceIncidentBanner } from '../queue-shared/turnero-surface-incident-banner.js';
 import { mountTurneroSurfaceCheckpointChip } from '../queue-shared/turnero-surface-checkpoint-chip.js';
+import { buildTurneroSurfaceServiceHandoverPack } from '../queue-shared/turnero-surface-service-handover-pack.js';
+import { mountTurneroSurfaceServiceHandoverBanner } from '../queue-shared/turnero-surface-service-handover-banner.js';
 import { buildTurneroSurfaceRolloutPack } from '../queue-shared/turnero-surface-rollout-pack.js';
 import { mountTurneroSurfaceRolloutBanner } from '../queue-shared/turnero-surface-rollout-banner.js';
 import { listTurneroSurfaceFallbackDrills } from '../queue-shared/turnero-surface-fallback-drill-store.js';
@@ -106,6 +110,11 @@ import { buildTurneroSurfaceCommercialReadout } from '../queue-shared/turnero-su
 import { mountTurneroSurfaceCommercialBanner } from '../queue-shared/turnero-surface-commercial-banner.js';
 import { createTurneroSurfaceCommercialLedger } from '../queue-shared/turnero-surface-commercial-ledger.js';
 import { createTurneroSurfaceCommercialOwnerStore } from '../queue-shared/turnero-surface-commercial-owner-store.js';
+import { createTurneroSurfaceDeploymentTemplateLedger } from '../queue-shared/turnero-surface-deployment-template-ledger.js';
+import { buildTurneroSurfaceReplicationPack } from '../queue-shared/turnero-surface-replication-pack.js';
+import { buildTurneroSurfaceReplicationReadout } from '../queue-shared/turnero-surface-replication-readout.js';
+import { mountTurneroSurfaceReplicationBanner } from '../queue-shared/turnero-surface-replication-banner.js';
+import { createTurneroSurfaceReplicationOwnerStore } from '../queue-shared/turnero-surface-replication-owner-store.js';
 import { buildTurneroSurfaceSupportPack } from '../queue-shared/turnero-surface-support-pack.js';
 import { mountTurneroSurfaceSupportBanner } from '../queue-shared/turnero-surface-support-banner.js';
 import { buildTurneroSurfaceRecoveryPack } from '../queue-shared/turnero-surface-recovery-pack.js';
@@ -184,8 +193,10 @@ const operatorRuntime = {
     releaseShellStatusListener: null,
     surfaceSyncPack: null,
     surfaceGoLivePack: null,
+    surfaceFleetPack: null,
     surfaceSupportPack: null,
     surfaceAcceptancePack: null,
+    surfaceReplicationPack: null,
 };
 let operatorClinicProfile = null;
 
@@ -273,6 +284,47 @@ function getById(id) {
     return document.getElementById(id);
 }
 
+function getOperatorSurfaceProfileStatusNode() {
+    const allNodes = Array.from(
+        document.querySelectorAll('.queue-operator-profile-status')
+    ).filter((node) => node instanceof HTMLElement);
+    const visibleNodes = allNodes.filter((node) => {
+        if (node.hidden) {
+            return false;
+        }
+        if (node.closest('[hidden]')) {
+            return false;
+        }
+        return !node.closest('.is-hidden');
+    });
+    const visibleAppNode = visibleNodes.find(
+        (node) => node.closest('#operatorApp') instanceof HTMLElement
+    );
+    const existingNode = getById('operatorProfileStatus');
+    const selectedNode =
+        visibleAppNode ||
+        (existingNode instanceof HTMLElement ? existingNode : null) ||
+        allNodes[0] ||
+        null;
+
+    if (!(selectedNode instanceof HTMLElement)) {
+        return null;
+    }
+
+    if (selectedNode.id !== 'operatorProfileStatus') {
+        if (
+            existingNode instanceof HTMLElement &&
+            existingNode !== selectedNode &&
+            existingNode.id === 'operatorProfileStatus'
+        ) {
+            existingNode.removeAttribute('id');
+        }
+        selectedNode.id = 'operatorProfileStatus';
+    }
+
+    return selectedNode;
+}
+
 function escapeHtml(value) {
     return String(value || '')
         .replaceAll('&', '&amp;')
@@ -298,6 +350,13 @@ function getOperatorCommercialScope() {
     );
 }
 
+function getOperatorFleetScope() {
+    return (
+        String(operatorClinicProfile?.region || 'regional').trim() ||
+        'regional'
+    );
+}
+
 function getOperatorSurfaceCurrentRoute() {
     if (
         typeof window === 'undefined' ||
@@ -313,7 +372,7 @@ function getOperatorSurfaceCurrentRoute() {
 }
 
 function ensureOperatorSurfaceCommercialPanel() {
-    const statusNode = getById('operatorProfileStatus');
+    const statusNode = getOperatorSurfaceProfileStatusNode();
     if (!(statusNode instanceof HTMLElement)) {
         return null;
     }
@@ -462,6 +521,139 @@ function renderOperatorSurfaceCommercialState() {
         panel.chipsHost.appendChild(chipNode);
         mountTurneroSurfaceCheckpointChip(chipNode, chip);
     });
+    renderOperatorSurfaceReplicationState();
+    return pack;
+}
+
+function getOperatorSurfaceReplicationScope() {
+    return getOperatorCommercialScope();
+}
+
+function ensureOperatorSurfaceReplicationPanel() {
+    const host = getById('operatorSurfaceReplicationHost');
+    if (!(host instanceof HTMLElement)) {
+        return null;
+    }
+
+    if (!host.className.includes('turnero-surface-ops__stack')) {
+        host.className = `${host.className} turnero-surface-ops__stack`.trim();
+    }
+
+    let bannerHost = host.querySelector('[data-role="banner"]');
+    if (!(bannerHost instanceof HTMLElement)) {
+        bannerHost = document.createElement('div');
+        bannerHost.dataset.role = 'banner';
+        host.appendChild(bannerHost);
+    }
+
+    let chipsHost = host.querySelector('[data-role="chips"]');
+    if (!(chipsHost instanceof HTMLElement)) {
+        chipsHost = document.createElement('div');
+        chipsHost.dataset.role = 'chips';
+        chipsHost.className = 'turnero-surface-ops__chips';
+        host.appendChild(chipsHost);
+    }
+
+    return {
+        host,
+        bannerHost,
+        chipsHost,
+    };
+}
+
+function buildOperatorSurfaceReplicationPack() {
+    const scope = getOperatorSurfaceReplicationScope();
+    const templateLedger = createTurneroSurfaceDeploymentTemplateLedger(
+        scope,
+        operatorClinicProfile
+    );
+    const ownerStore = createTurneroSurfaceReplicationOwnerStore(
+        scope,
+        operatorClinicProfile
+    );
+    const pack = buildTurneroSurfaceReplicationPack({
+        surfaceKey: 'operator-turnos',
+        surfaceLabel:
+            operatorClinicProfile?.surfaces?.operator?.label ||
+            'Turnero Operador',
+        clinicProfile: operatorClinicProfile,
+        runtimeState: 'ready',
+        truth: 'watch',
+        templateState: 'ready',
+        assetProfile: 'mini-pc + printer',
+        replicationOwner: 'ops-lead',
+        installTimeBucket: 'half-day',
+        documentationState: 'ready',
+        templates: templateLedger.list({ surfaceKey: 'operator-turnos' }),
+        owners: ownerStore.list({ surfaceKey: 'operator-turnos' }),
+    });
+
+    return {
+        ...pack,
+        readout: buildTurneroSurfaceReplicationReadout({
+            snapshot: pack.snapshot,
+            checklist: pack.checklist,
+            gate: pack.gate,
+            templates: pack.templates,
+            owners: pack.owners,
+        }),
+    };
+}
+
+function renderOperatorSurfaceReplicationState() {
+    const panel = ensureOperatorSurfaceReplicationPanel();
+    if (!panel) {
+        return null;
+    }
+
+    if (!operatorClinicProfile) {
+        panel.host.hidden = true;
+        return null;
+    }
+
+    const pack = buildOperatorSurfaceReplicationPack();
+    operatorRuntime.surfaceReplicationPack = pack;
+    panel.host.hidden = false;
+    mountTurneroSurfaceReplicationBanner(panel.bannerHost, {
+        snapshot: pack.snapshot,
+        checklist: pack.checklist,
+        gate: pack.gate,
+        templates: pack.templates,
+        owners: pack.owners,
+        title: 'Operator surface replication',
+    });
+    panel.chipsHost.replaceChildren();
+    [
+        {
+            label: 'template',
+            value: pack.readout.templateState,
+            state: pack.readout.templateState === 'ready' ? 'ready' : 'warning',
+        },
+        {
+            label: 'replication',
+            value: pack.readout.gateBand,
+            state:
+                pack.readout.gateBand === 'ready'
+                    ? 'ready'
+                    : pack.readout.gateBand === 'watch'
+                      ? 'warning'
+                      : 'alert',
+        },
+        {
+            label: 'score',
+            value: String(pack.readout.gateScore || 0),
+            state:
+                pack.readout.gateBand === 'ready'
+                    ? 'ready'
+                    : pack.readout.gateBand === 'watch'
+                      ? 'warning'
+                      : 'alert',
+        },
+    ].forEach((chip) => {
+        const chipNode = document.createElement('span');
+        panel.chipsHost.appendChild(chipNode);
+        mountTurneroSurfaceCheckpointChip(chipNode, chip);
+    });
     return pack;
 }
 
@@ -584,6 +776,7 @@ function renderOperatorSurfaceOps() {
             host.hidden = true;
         });
         renderOperatorSurfaceGoLiveState();
+        renderOperatorSurfaceFleetState();
         return;
     }
 
@@ -683,10 +876,11 @@ function renderOperatorSurfaceOps() {
         }
     );
     renderOperatorSurfaceGoLiveState();
+    renderOperatorSurfaceFleetState();
 }
 
 function ensureOperatorSurfaceIntegrityPanel() {
-    const statusNode = getById('operatorProfileStatus');
+    const statusNode = getOperatorSurfaceProfileStatusNode();
     if (!(statusNode instanceof HTMLElement)) {
         return null;
     }
@@ -767,6 +961,97 @@ function buildOperatorSurfaceIntegrityPack(state = getState()) {
     });
 }
 
+function ensureOperatorSurfaceServiceHandoverPanel() {
+    const statusNode = getOperatorSurfaceProfileStatusNode();
+    if (!(statusNode instanceof HTMLElement)) {
+        return null;
+    }
+
+    let host = statusNode.parentElement?.querySelector(
+        '[data-turnero-operator-surface-service-handover="true"]'
+    );
+    if (!(host instanceof HTMLElement)) {
+        host = document.createElement('div');
+        host.dataset.turneroOperatorSurfaceServiceHandover = 'true';
+        host.className = 'turnero-surface-ops__stack';
+        const integrityHost = statusNode.parentElement?.querySelector(
+            '[data-turnero-operator-surface-integrity="true"]'
+        );
+        const opsHost = statusNode.parentElement?.querySelector(
+            '[data-turnero-operator-surface-ops="true"]'
+        );
+        if (integrityHost instanceof HTMLElement) {
+            integrityHost.insertAdjacentElement('afterend', host);
+        } else if (opsHost instanceof HTMLElement) {
+            opsHost.insertAdjacentElement('afterend', host);
+        } else {
+            statusNode.insertAdjacentElement('afterend', host);
+        }
+    }
+
+    let bannerHost = host.querySelector('[data-role="banner"]');
+    if (!(bannerHost instanceof HTMLElement)) {
+        bannerHost = document.createElement('div');
+        bannerHost.dataset.role = 'banner';
+        host.appendChild(bannerHost);
+    }
+
+    let chipsHost = host.querySelector('[data-role="chips"]');
+    if (!(chipsHost instanceof HTMLElement)) {
+        chipsHost = document.createElement('div');
+        chipsHost.dataset.role = 'chips';
+        chipsHost.className = 'turnero-surface-ops__chips';
+        host.appendChild(chipsHost);
+    }
+
+    return { host, bannerHost, chipsHost };
+}
+
+function buildOperatorSurfaceServiceHandoverPack() {
+    return buildTurneroSurfaceServiceHandoverPack({
+        surfaceKey: 'operator-turnos',
+        clinicProfile: operatorClinicProfile,
+        scope:
+            operatorClinicProfile?.region ||
+            operatorClinicProfile?.branding?.city ||
+            'regional',
+    });
+}
+
+function renderOperatorSurfaceServiceHandoverState() {
+    const panel = ensureOperatorSurfaceServiceHandoverPanel();
+    if (!panel) {
+        return null;
+    }
+
+    if (!operatorClinicProfile) {
+        panel.host.hidden = true;
+        panel.bannerHost.replaceChildren();
+        panel.chipsHost.replaceChildren();
+        return null;
+    }
+
+    const pack = buildOperatorSurfaceServiceHandoverPack();
+    operatorRuntime.surfaceServiceHandoverPack = pack;
+    panel.host.hidden = false;
+    panel.host.dataset.state = pack.gate.band;
+    panel.host.dataset.band = pack.gate.band;
+    panel.bannerHost.replaceChildren();
+    mountTurneroSurfaceServiceHandoverBanner(panel.bannerHost, {
+        pack,
+        title: 'Operator surface service handover',
+    });
+    panel.chipsHost.replaceChildren();
+    (Array.isArray(pack.readout?.chips) ? pack.readout.chips : []).forEach(
+        (chip) => {
+            const chipNode = document.createElement('span');
+            panel.chipsHost.appendChild(chipNode);
+            mountTurneroSurfaceCheckpointChip(chipNode, chip);
+        }
+    );
+    return pack;
+}
+
 function renderOperatorSurfaceIntegrityState(state = getState()) {
     const panel = ensureOperatorSurfaceIntegrityPanel();
     if (!panel) {
@@ -829,33 +1114,19 @@ function renderOperatorSurfaceIntegrityState(state = getState()) {
 }
 
 function ensureOperatorSurfaceGoLivePanel() {
-    const statusNode = getById('operatorProfileStatus');
-    if (!(statusNode instanceof HTMLElement)) {
+    const syncHost = getById('operatorSurfaceSyncHost');
+    if (!(syncHost instanceof HTMLElement)) {
         return null;
     }
 
-    let host = statusNode.parentElement?.querySelector(
+    let host = syncHost.parentElement?.querySelector(
         '[data-turnero-operator-surface-go-live="true"]'
     );
     if (!(host instanceof HTMLElement)) {
         host = document.createElement('div');
         host.dataset.turneroOperatorSurfaceGoLive = 'true';
         host.className = 'turnero-surface-ops__stack';
-        const integrityHost = statusNode.parentElement?.querySelector(
-            '[data-turnero-operator-surface-integrity="true"]'
-        );
-        if (integrityHost instanceof HTMLElement) {
-            integrityHost.insertAdjacentElement('afterend', host);
-        } else {
-            const opsHost = statusNode.parentElement?.querySelector(
-                '[data-turnero-operator-surface-ops="true"]'
-            );
-            if (opsHost instanceof HTMLElement) {
-                opsHost.insertAdjacentElement('afterend', host);
-            } else {
-                statusNode.insertAdjacentElement('afterend', host);
-            }
-        }
+        syncHost.insertAdjacentElement('afterend', host);
     }
 
     let bannerHost = host.querySelector('[data-role="banner"]');
@@ -880,7 +1151,7 @@ function getOperatorSurfaceGoLiveScope() {
     return 'operator';
 }
 
-function buildOperatorSurfaceGoLivePack(state = getState()) {
+function buildOperatorSurfaceGoLivePack() {
     const heartbeatPayload = buildHeartbeatPayload();
     const surfaceContract =
         operatorRuntime.surfaceContract ||
@@ -930,7 +1201,7 @@ function buildOperatorSurfaceGoLivePack(state = getState()) {
     });
 }
 
-function renderOperatorSurfaceGoLiveState(state = getState()) {
+function renderOperatorSurfaceGoLiveState() {
     const panel = ensureOperatorSurfaceGoLivePanel();
     if (!panel) {
         return null;
@@ -943,7 +1214,7 @@ function renderOperatorSurfaceGoLiveState(state = getState()) {
         return null;
     }
 
-    const pack = buildOperatorSurfaceGoLivePack(state);
+    const pack = buildOperatorSurfaceGoLivePack();
     operatorRuntime.surfaceGoLivePack = pack;
     panel.host.hidden = false;
     panel.bannerHost.replaceChildren();
@@ -963,8 +1234,138 @@ function renderOperatorSurfaceGoLiveState(state = getState()) {
     return pack;
 }
 
+function ensureOperatorSurfaceFleetPanel() {
+    const statusNode = getOperatorSurfaceProfileStatusNode();
+    if (!(statusNode instanceof HTMLElement)) {
+        return null;
+    }
+
+    let host = statusNode.parentElement?.querySelector(
+        '[data-turnero-operator-surface-fleet="true"]'
+    );
+    if (!(host instanceof HTMLElement)) {
+        host = document.createElement('div');
+        host.dataset.turneroOperatorSurfaceFleet = 'true';
+        host.className = 'turnero-surface-ops__stack';
+        const supportHost = statusNode.parentElement?.querySelector(
+            '[data-turnero-operator-surface-support="true"]'
+        );
+        if (supportHost instanceof HTMLElement) {
+            supportHost.insertAdjacentElement('afterend', host);
+        } else {
+            const goLiveHost = statusNode.parentElement?.querySelector(
+                '[data-turnero-operator-surface-go-live="true"]'
+            );
+            if (goLiveHost instanceof HTMLElement) {
+                goLiveHost.insertAdjacentElement('afterend', host);
+            } else {
+                const integrityHost = statusNode.parentElement?.querySelector(
+                    '[data-turnero-operator-surface-integrity="true"]'
+                );
+                if (integrityHost instanceof HTMLElement) {
+                    integrityHost.insertAdjacentElement('afterend', host);
+                } else {
+                    const opsHost = statusNode.parentElement?.querySelector(
+                        '[data-turnero-operator-surface-ops="true"]'
+                    );
+                    if (opsHost instanceof HTMLElement) {
+                        opsHost.insertAdjacentElement('afterend', host);
+                    } else {
+                        statusNode.insertAdjacentElement('afterend', host);
+                    }
+                }
+            }
+        }
+    }
+
+    let bannerHost = host.querySelector('[data-role="banner"]');
+    if (!(bannerHost instanceof HTMLElement)) {
+        bannerHost = document.createElement('div');
+        bannerHost.dataset.role = 'banner';
+        host.appendChild(bannerHost);
+    }
+
+    let chipsHost = host.querySelector('[data-role="chips"]');
+    if (!(chipsHost instanceof HTMLElement)) {
+        chipsHost = document.createElement('div');
+        chipsHost.dataset.role = 'chips';
+        chipsHost.className = 'turnero-surface-ops__chips';
+        host.appendChild(chipsHost);
+    }
+
+    return { host, bannerHost, chipsHost };
+}
+
+function buildOperatorSurfaceFleetPack() {
+    const goLiveBand = operatorRuntime.surfaceGoLivePack?.gate?.band || 'watch';
+    return buildTurneroSurfaceFleetPack({
+        surfaceKey: 'operator',
+        scope: getOperatorFleetScope(),
+        clinicProfile: operatorClinicProfile,
+        runtimeState: goLiveBand,
+        truth: goLiveBand === 'ready' ? 'aligned' : 'watch',
+    });
+}
+
+function renderOperatorSurfaceFleetState() {
+    const panel = ensureOperatorSurfaceFleetPanel();
+    if (!panel) {
+        return null;
+    }
+
+    if (!operatorClinicProfile) {
+        panel.host.hidden = true;
+        panel.bannerHost.replaceChildren();
+        panel.chipsHost.replaceChildren();
+        return null;
+    }
+
+    const pack = buildOperatorSurfaceFleetPack();
+    operatorRuntime.surfaceFleetPack = pack;
+    panel.host.hidden = false;
+    panel.bannerHost.replaceChildren();
+    mountTurneroSurfaceFleetBanner(panel.bannerHost, {
+        pack,
+        readout: pack.readout,
+        title: 'Surface Fleet Readiness',
+    });
+    panel.chipsHost.replaceChildren();
+    [
+        {
+            label: 'Wave',
+            value: pack.readout.waveLabel || 'none',
+            state: pack.readout.waveLabel ? 'ready' : 'warning',
+        },
+        {
+            label: 'Fleet',
+            value: pack.readout.gateBand,
+            state:
+                pack.readout.gateBand === 'ready'
+                    ? 'ready'
+                    : pack.readout.gateBand === 'watch'
+                      ? 'warning'
+                      : 'alert',
+        },
+        {
+            label: 'Score',
+            value: String(pack.readout.gateScore || 0),
+            state:
+                pack.readout.gateBand === 'ready'
+                    ? 'ready'
+                    : pack.readout.gateBand === 'watch'
+                      ? 'warning'
+                      : 'alert',
+        },
+    ].forEach((chip) => {
+        const chipNode = document.createElement('span');
+        panel.chipsHost.appendChild(chipNode);
+        mountTurneroSurfaceCheckpointChip(chipNode, chip);
+    });
+    return pack;
+}
+
 function ensureOperatorSurfaceSupportPanel() {
-    const statusNode = getById('operatorProfileStatus');
+    const statusNode = getOperatorSurfaceProfileStatusNode();
     if (!(statusNode instanceof HTMLElement)) {
         return null;
     }
@@ -1141,6 +1542,7 @@ function renderOperatorSurfaceAcceptanceState() {
 }
 
 function renderOperatorProfileStatus(profile) {
+    getOperatorSurfaceProfileStatusNode();
     const surfaceContract = getOperatorSurfaceContract(profile);
     const readiness = getTurneroClinicReadiness(profile);
     const releaseMode = getTurneroClinicReleaseMode(profile);
@@ -1177,6 +1579,7 @@ function renderOperatorProfileStatus(profile) {
         });
     renderOperatorSurfaceOps();
     renderOperatorSurfaceIntegrityState();
+    renderOperatorSurfaceServiceHandoverState();
     renderOperatorSurfaceAcceptanceState();
     renderOperatorSurfaceCommercialState();
 }
@@ -1264,6 +1667,7 @@ function applyOperatorClinicProfile(profile) {
         `Ruta ${operatorRoute} · ${consultorioSummary}`
     );
     renderOperatorProfileStatus(profile);
+    renderOperatorSurfaceIntegrityState();
     renderOperatorSurfaceRecoveryState();
     renderOperatorSurfaceAcceptanceState();
     renderOperatorSurfaceSupportState();
@@ -1444,8 +1848,10 @@ function renderOperatorSurfaceSyncState(
         mountTurneroSurfaceCheckpointChip(chipNode, chip);
     });
     renderOperatorSurfaceIntegrityState(state);
+    renderOperatorSurfaceServiceHandoverState();
     renderOperatorSurfaceCommercialState();
     renderOperatorSurfaceSupportState(state);
+    renderOperatorSurfaceGoLiveState();
     return pack;
 }
 

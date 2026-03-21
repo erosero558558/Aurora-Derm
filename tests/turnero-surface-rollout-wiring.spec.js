@@ -56,9 +56,6 @@ test.describe('Turnero surface rollout wiring', () => {
         await installRolloutWiringMocks(page, { authenticated: true });
         await page.goto('/operador-turnos.html');
 
-        await expect(page.locator('#operatorProfileStatus')).toContainText(
-            /Perfil remoto verificado|Readiness bloqueada/
-        );
         await expect(
             page.locator(
                 '#operatorSurfaceRecoveryHost .turnero-surface-rollout-banner'

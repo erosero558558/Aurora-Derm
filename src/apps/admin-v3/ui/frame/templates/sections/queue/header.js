@@ -128,6 +128,7 @@ export function renderQueueAppsHub() {
                         <div id="queueContingencyDeck" class="queue-contingency-deck" data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents"></div>
                         <div id="queueReliabilityRecoveryNerveCenterHost" class="queue-reliability-recovery-nerve-center" data-turnero-reliability-recovery data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents"></div>
                         <div id="queueSurfaceRecoveryConsoleHost" class="queue-surface-recovery-console-host" data-turnero-surface-recovery-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents"></div>
+                        <div id="queueSurfaceServiceHandoverConsoleHost" class="queue-surface-service-handover-console-host" data-turnero-surface-service-handover-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents"></div>
                     </div>
                 </section>
 

@@ -6,7 +6,9 @@ function toneFromState(value) {
         return 'ready';
     }
     if (
-        ['watch', 'warning', 'review', 'backup', 'standby'].includes(normalized)
+        ['watch', 'warning', 'review', 'backup', 'standby', 'guided'].includes(
+            normalized
+        )
     ) {
         return 'warning';
     }
@@ -49,10 +51,9 @@ function buildDetail(snapshot, state) {
     const parts = [
         `Runtime ${toString(snapshot.runtimeState, 'unknown')}`,
         `truth ${toString(snapshot.truth, 'unknown')}`,
-        `playbook ${state.readyPlaybookCount}/${state.playbookCount}`,
-        `owners ${state.activeOwnerCount}/${state.rosterCount}`,
-        `mode ${toString(snapshot.handoverMode, 'manual')}`,
+        `playbook ${toString(snapshot.playbookState, 'missing')}`,
         `support ${toString(snapshot.supportChannel, 'n/a')}`,
+        `handover ${toString(snapshot.handoverMode, 'manual')}`,
     ];
 
     if (snapshot.primaryOwner || snapshot.backupOwner) {
@@ -61,6 +62,14 @@ function buildDetail(snapshot, state) {
                 snapshot.backupOwner || 'none'
             )}`
         );
+    }
+
+    if (state.playbookCount > 0) {
+        parts.push(`playbook ${state.readyPlaybookCount}/${state.playbookCount}`);
+    }
+
+    if (state.rosterCount > 0) {
+        parts.push(`roster ${state.activeOwnerCount}/${state.rosterCount}`);
     }
 
     return parts.join(' · ');
@@ -152,6 +161,13 @@ export function buildTurneroSurfaceServiceHandoverReadout(input = {}) {
     const readyPlaybookCount = Number(gate.readyPlaybookCount || 0) || 0;
     const activeOwnerCount = Number(gate.activeOwnerCount || 0) || 0;
 
+    const ownerValue = [
+        toString(snapshot.primaryOwner, ''),
+        toString(snapshot.backupOwner, ''),
+    ]
+        .filter(Boolean)
+        .join(' / ');
+
     return {
         surfaceKey: toString(snapshot.surfaceKey, 'surface'),
         surfaceLabel: toString(
@@ -208,34 +224,24 @@ export function buildTurneroSurfaceServiceHandoverReadout(input = {}) {
         state: gateBand,
         chips: [
             {
-                label: 'Runtime',
-                value: toString(snapshot.runtimeState, 'unknown'),
-                state: toneFromState(snapshot.runtimeState),
-            },
-            {
-                label: 'Truth',
-                value: toString(snapshot.truth, 'unknown'),
-                state: toneFromState(snapshot.truth),
-            },
-            {
-                label: 'Playbook',
-                value: `${readyPlaybookCount}/${playbook.length}`,
+                label: 'Owner',
+                value: ownerValue || 'none',
                 state:
-                    playbook.length === 0
-                        ? 'alert'
-                        : readyPlaybookCount === playbook.length
-                          ? 'ready'
-                          : 'warning',
+                    snapshot.primaryOwner && snapshot.backupOwner
+                        ? 'ready'
+                        : snapshot.primaryOwner || snapshot.backupOwner
+                          ? 'warning'
+                          : 'alert',
             },
             {
-                label: 'Owners',
-                value: `${activeOwnerCount}/${roster.length}`,
+                label: 'Handover',
+                value: toString(snapshot.handoverMode, 'manual'),
                 state:
-                    roster.length === 0
-                        ? 'alert'
-                        : activeOwnerCount === roster.length
-                          ? 'ready'
-                          : 'warning',
+                    snapshot.handoverMode === 'broadcast'
+                        ? 'ready'
+                        : snapshot.handoverMode === 'guided'
+                          ? 'warning'
+                          : 'alert',
             },
             {
                 label: 'Gate',
