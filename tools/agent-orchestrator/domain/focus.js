@@ -313,6 +313,19 @@ function findRuntimeSurfaceVerification(runtimeVerification, target) {
     );
 }
 
+function findRuntimeSurfaceDiagnostic(runtimeVerification, target) {
+    const safeTarget = normalizeOptionalToken(target);
+    if (!safeTarget) return null;
+    const diagnostics = Array.isArray(runtimeVerification?.summary?.diagnostics)
+        ? runtimeVerification.summary.diagnostics
+        : [];
+    return (
+        diagnostics.find(
+            (item) => normalizeOptionalToken(item?.surface) === safeTarget
+        ) || null
+    );
+}
+
 function evaluateRuntimeRequiredCheck(check, runtimeVerification) {
     if (!runtimeVerification) {
         return {
@@ -345,6 +358,10 @@ function evaluateRuntimeRequiredCheck(check, runtimeVerification) {
         runtimeVerification,
         check.target
     );
+    const diagnostic = findRuntimeSurfaceDiagnostic(
+        runtimeVerification,
+        check.target
+    );
     if (!surface) {
         return {
             ...check,
@@ -359,7 +376,11 @@ function evaluateRuntimeRequiredCheck(check, runtimeVerification) {
             ...check,
             state: 'red',
             ok: false,
-            message: `runtime ${check.target} ${String(surface.state || 'unhealthy').trim() || 'unhealthy'}`,
+            reason: String(diagnostic?.reason || '').trim(),
+            next_action: String(diagnostic?.next_action || '').trim(),
+            message:
+                String(diagnostic?.message || '').trim() ||
+                `runtime ${check.target} ${String(surface.state || 'unhealthy').trim() || 'unhealthy'}`,
         };
     }
 

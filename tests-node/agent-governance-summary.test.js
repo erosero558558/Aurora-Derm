@@ -47,7 +47,7 @@ const CODEX_MODEL_ROUTING_FIELDS = `
     premium_calls_used: 0
     premium_gate_state: "closed"
     decision_packet_ref: ""
-    model_policy_version: "2026-03-17-codex-model-routing-v1"`;
+    model_policy_version: "2026-03-17-codex-model-routing-v2"`;
 
 function createFixtureDir() {
     const dir = mkdtempSync(join(tmpdir(), 'agent-governance-summary-'));

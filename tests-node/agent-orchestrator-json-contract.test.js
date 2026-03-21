@@ -1206,6 +1206,90 @@ test('JSON contract minimo estable para board doctor --strict (falla con payload
     }
 });
 
+test('JSON contract minimo estable para board sync check/apply', () => {
+    const dir = createFixtureDir();
+    try {
+        writeFixtureFiles(dir);
+        writeFileSync(
+            join(dir, 'AGENT_BOARD.yaml'),
+            `version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  revision: 0
+  updated_at: ${DATE}
+strategy:
+  active:
+    id: STRAT-2026-03-admin-operativo
+    title: "Admin operativo"
+    status: active
+    focus_id: "FOCUS-2026-03-admin-operativo-cut-1"
+    focus_title: "Admin operativo demostrable"
+    focus_summary: "Corte comun"
+    focus_status: active
+    focus_proof: "Demo comun"
+    focus_steps: ["admin_queue_pilot_cut", "pilot_readiness_evidence", "feedback_trim"]
+    focus_next_step: "admin_queue_pilot_cut"
+    focus_required_checks: ["job:public_main_sync", "runtime:operator_auth"]
+    focus_owner: "ernesto"
+    focus_review_due_at: "2026-03-21"
+tasks:
+  - id: AG-254
+    title: "Future slice fixture"
+    owner: ernesto
+    executor: codex
+    status: ready
+    risk: medium
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["controllers/AdminController.php"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: primary
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: feedback_trim
+    integration_slice: backend_readiness
+    work_type: forward
+    expected_outcome: "Future slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`,
+            'utf8'
+        );
+
+        const check = runJsonExpectStatus(dir, ['board', 'sync', 'check'], 1);
+        assertVersionLike(check.version);
+        assert.equal(check.command, 'board sync');
+        assert.equal(check.action, 'check');
+        assert.equal(Array.isArray(check.normalized_candidates), true);
+        assert.equal(Array.isArray(check.blocking_findings), true);
+        assert.equal(Array.isArray(check.warnings), true);
+        assert.equal(check.normalized_candidates[0].task_id, 'AG-254');
+
+        const apply = runJson(dir, ['board', 'sync', 'apply']);
+        assertVersionLike(apply.version);
+        assert.equal(apply.command, 'board sync');
+        assert.equal(apply.action, 'apply');
+        assert.equal(typeof apply.applied_total, 'number');
+        assert.equal(Array.isArray(apply.applied_task_ids), true);
+        assert.equal(typeof apply.check_ok_after_apply, 'boolean');
+    } finally {
+        cleanupFixtureDir(dir);
+    }
+});
+
 test('JSON contract minimo estable para metrics --json', () => {
     const dir = createFixtureDir();
     try {

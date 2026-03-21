@@ -48,6 +48,9 @@ jobs:
       - name: Board doctor
         run: node agent-orchestrator.js board doctor --json
 
+      - name: Board sync apply
+        run: node agent-orchestrator.js board sync apply --json
+
       - name: Codex mirror check
         run: node agent-orchestrator.js codex-check --json
 

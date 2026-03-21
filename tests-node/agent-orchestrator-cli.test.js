@@ -889,6 +889,42 @@ tasks:
 `;
 }
 
+function boardForBoardSyncFixture(
+    tasksYaml,
+    strategyYaml = activeAdminStrategyYaml()
+) {
+    const rawTasksBlock = String(tasksYaml || '').replace(/^\s*\n|\n\s*$/g, '');
+    const taskLines = rawTasksBlock.split('\n');
+    const commonIndent = taskLines
+        .filter((line) => line.trim())
+        .reduce((minIndent, line) => {
+            const indent = (line.match(/^(\s*)/) || [''])[0].length;
+            return minIndent === null ? indent : Math.min(minIndent, indent);
+        }, null);
+    const tasksBlock = taskLines
+        .map((line) => {
+            if (!line.trim()) return '';
+            const normalizedLine =
+                commonIndent && commonIndent > 0
+                    ? line.slice(commonIndent)
+                    : line;
+            return `  ${normalizedLine}`;
+        })
+        .join('\n');
+    return `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  revision: 0
+  updated_at: ${DATE}
+${String(strategyYaml || '').trim()}
+tasks:
+${tasksBlock}
+`.trim();
+}
+
 function boardForReleasePublishFixture() {
     return `
 version: 1
@@ -2210,6 +2246,70 @@ tasks:
     }
 });
 
+test('status expone la razon concreta del required_check runtime y el reporte de board sync', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer({
+        operatorPayload: {
+            mode: 'google_oauth',
+            configured: true,
+            status: 'anonymous',
+        },
+    });
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  revision: 0
+  updated_at: ${DATE}
+${activeAdminStrategyYaml().replace('runtime:openclaw_chatgpt', 'runtime:operator_auth').trim()}
+tasks:
+`.trim(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+    const nowIso = new Date().toISOString();
+    writePublicSyncJobsFixture(dir, {
+        state: 'success',
+        checked_at: nowIso,
+        last_success_at: nowIso,
+        last_error_at: '',
+        last_error_message: '',
+        deployed_commit: 'abc1234',
+        current_head: 'abc1234',
+        remote_head: 'abc1234',
+    });
+
+    const json = parseJsonStdout(
+        await runCliWithEnvAsync(dir, ['status', '--json'], {
+            OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+        })
+    );
+
+    const runtimeCheck = json.focus.required_checks.find(
+        (item) => item.id === 'runtime:operator_auth'
+    );
+    assert.equal(runtimeCheck.state, 'red');
+    assert.equal(runtimeCheck.reason, 'auth_mode_mismatch');
+    assert.match(runtimeCheck.message, /modo expuesto no coincide/i);
+    assert.equal(json.board_sync.check_ok, true);
+    assert.equal(
+        json.diagnostics.some(
+            (item) =>
+                item.code === 'warn.focus.required_check_unverified' &&
+                /auth_mode_mismatch/.test(String(item.message || ''))
+        ),
+        true
+    );
+});
+
 test('focus check bloquea drift estructural cuando una tarea activa no declara slice', (t) => {
     const dir = createFixtureDir();
     t.after(() => cleanupFixtureDir(dir));
@@ -2278,6 +2378,398 @@ test('focus check no falla solo porque una estrategia activa todavia no declara 
     const json = parseJsonStdout(result);
     assert.equal(json.ok, true);
     assert.deepEqual(json.structural_errors, []);
+});
+
+test('board sync check detecta tareas ready en paso futuro y leases activos stale', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForBoardSyncFixture(`
+  - id: AG-254
+    title: "Backend future slice"
+    owner: deck
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-17T03:48:36.145Z"
+    risk: high
+    scope: auth
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["lib/auth.php"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: primary
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: feedback_trim
+    integration_slice: backend_readiness
+    work_type: forward
+    expected_outcome: "Future backend slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+
+  - id: AG-255
+    title: "Frontend future slice"
+    owner: deck
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-17T04:34:00.213Z"
+    risk: high
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin-v3/ui/frame/login.js"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-frontend-admin-operativo
+    strategy_role: primary
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: feedback_trim
+    integration_slice: frontend_runtime
+    work_type: forward
+    expected_outcome: "Future frontend slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+
+  - id: AG-258
+    title: "Active deploy slice"
+    owner: deck
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-17T04:34:43.402Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["controllers/HealthController.php"]
+    lease_id: lease_AG_258_fixture
+    lease_owner: deck
+    lease_created_at: "2026-03-17T04:34:43.402Z"
+    heartbeat_at: "2026-03-17T08:42:06.323Z"
+    lease_expires_at: "2026-03-17T12:42:06.323Z"
+    lease_reason: leases_heartbeat
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: support
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: admin_queue_pilot_cut
+    integration_slice: ops_deploy
+    work_type: support
+    expected_outcome: "Active deploy slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+
+    const result = runCli(dir, ['board', 'sync', 'check', '--json'], 1);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.ok, false);
+    assert.deepEqual(
+        json.normalized_candidates.map((item) => item.task_id).sort(),
+        ['AG-254', 'AG-255']
+    );
+    assert.equal(
+        json.blocking_findings.some(
+            (item) =>
+                item.task_id === 'AG-258' &&
+                item.code === 'lease_expired_active'
+        ),
+        true
+    );
+    assert.equal(
+        json.blocking_findings.some(
+            (item) =>
+                item.task_id === 'AG-258' && item.code === 'heartbeat_stale'
+        ),
+        true
+    );
+});
+
+test('board sync apply mueve tareas future-ready a backlog sin ocultar blockers activos', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForBoardSyncFixture(`
+  - id: AG-254
+    title: "Backend future slice"
+    owner: deck
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-17T03:48:36.145Z"
+    risk: high
+    scope: auth
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["lib/auth.php"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: primary
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: feedback_trim
+    integration_slice: backend_readiness
+    work_type: forward
+    expected_outcome: "Future backend slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+
+  - id: AG-255
+    title: "Frontend future slice"
+    owner: deck
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-17T04:34:00.213Z"
+    risk: high
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin-v3/ui/frame/login.js"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-frontend-admin-operativo
+    strategy_role: primary
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: feedback_trim
+    integration_slice: frontend_runtime
+    work_type: forward
+    expected_outcome: "Future frontend slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+
+  - id: AG-258
+    title: "Active deploy slice"
+    owner: deck
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-17T04:34:43.402Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["controllers/HealthController.php"]
+    lease_id: lease_AG_258_fixture
+    lease_owner: deck
+    lease_created_at: "2026-03-17T04:34:43.402Z"
+    heartbeat_at: "2026-03-17T08:42:06.323Z"
+    lease_expires_at: "2026-03-17T12:42:06.323Z"
+    lease_reason: leases_heartbeat
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: support
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: admin_queue_pilot_cut
+    integration_slice: ops_deploy
+    work_type: support
+    expected_outcome: "Active deploy slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+
+    const result = runCli(dir, ['board', 'sync', 'apply', '--json']);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.ok, true);
+    assert.equal(json.applied_total, 2);
+    assert.deepEqual(json.applied_task_ids.sort(), ['AG-254', 'AG-255']);
+    assert.equal(json.check_ok_after_apply, false);
+    assert.equal(
+        json.blocking_findings.some(
+            (item) =>
+                item.task_id === 'AG-258' &&
+                item.code === 'lease_expired_active'
+        ),
+        true
+    );
+
+    const board = readBoard(dir);
+    assert.match(board, /id: AG-254[\s\S]*?status: backlog/);
+    assert.match(board, /id: AG-255[\s\S]*?status: backlog/);
+    assert.match(board, /id: AG-258[\s\S]*?status: in_progress/);
+});
+
+test('focus advance normaliza cola future-ready antes de escribir el nuevo next_step', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForBoardSyncFixture(`
+  - id: AG-255
+    title: "Frontend future slice"
+    owner: deck
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-17T04:34:00.213Z"
+    risk: high
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    files: ["src/apps/admin-v3/ui/frame/login.js"]
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-frontend-admin-operativo
+    strategy_role: primary
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: feedback_trim
+    integration_slice: frontend_runtime
+    work_type: forward
+    expected_outcome: "Future frontend slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+
+    const result = runCli(dir, [
+        'focus',
+        'advance',
+        '--next-step',
+        'pilot_readiness_evidence',
+        '--json',
+    ]);
+    const json = parseJsonStdout(result);
+
+    assert.equal(json.ok, true);
+    assert.equal(json.focus.configured.next_step, 'pilot_readiness_evidence');
+    assert.equal(json.board_sync.applied_total, 1);
+    assert.deepEqual(json.board_sync.applied_task_ids, ['AG-255']);
+
+    const board = readBoard(dir);
+    assert.match(board, /focus_next_step: "pilot_readiness_evidence"/);
+    assert.match(board, /id: AG-255[\s\S]*?status: backlog/);
+});
+
+test('focus advance falla si queda una tarea slot-active fuera del nuevo next_step', (t) => {
+    const dir = createFixtureDir();
+    t.after(() => cleanupFixtureDir(dir));
+
+    writeFixtureFiles(dir, {
+        board: boardForBoardSyncFixture(`
+  - id: AG-258
+    title: "Active deploy slice"
+    owner: deck
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-17T04:34:43.402Z"
+    risk: high
+    scope: deploy
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    files: ["controllers/HealthController.php"]
+    lease_id: lease_AG_258_fixture
+    lease_owner: deck
+    lease_created_at: "2026-03-17T04:34:43.402Z"
+    heartbeat_at: "2026-03-17T12:30:00.000Z"
+    lease_expires_at: "2026-03-17T16:30:00.000Z"
+    lease_reason: leases_heartbeat
+    acceptance: "Fixture"
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: support
+    focus_id: FOCUS-2026-03-admin-operativo-cut-1
+    focus_step: feedback_trim
+    integration_slice: ops_deploy
+    work_type: support
+    expected_outcome: "Active deploy slice"
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
+
+    const result = runCli(
+        dir,
+        ['focus', 'advance', '--next-step', 'pilot_readiness_evidence'],
+        1
+    );
+    assert.match(
+        result.stderr || result.stdout,
+        /focus advance bloqueado por board sync/i
+    );
+    assert.match(readBoard(dir), /focus_next_step: "admin_queue_pilot_cut"/);
 });
 
 test('decision open/ls/close mantiene ledger separado del board', (t) => {
@@ -5486,6 +5978,64 @@ test('runtime verify clasifica operator_auth caido por HTTP sin degradarlo a mod
     assert.equal(
         verifyPayload.runtime.summary.diagnostics.some(
             (item) => item.reason === 'auth_mode_mismatch'
+        ),
+        false
+    );
+});
+
+test('runtime verify clasifica operator_auth con HTTP 200 legacy como auth_mode_mismatch', async (t) => {
+    const dir = createFixtureDir();
+    const runtimeServer = await startRuntimeFixtureServer({
+        operatorPayload: {
+            mode: 'google_oauth',
+            configured: true,
+            status: 'anonymous',
+        },
+    });
+    t.after(async () => {
+        await runtimeServer.close();
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: boardForRuntimeTaskFixture({
+            id: 'AG-909',
+            title: 'Operator auth runtime mode mismatch fixture',
+            runtimeSurface: 'operator_auth',
+            runtimeTransport: 'http_bridge',
+            files: ['lib/auth.php'],
+        }),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+
+    const verifyPayload = parseJsonStdout(
+        await runCliWithEnvAsync(
+            dir,
+            ['runtime', 'verify', 'openclaw_chatgpt', '--json'],
+            {
+                OPENCLAW_RUNTIME_BASE_URL: runtimeServer.baseUrl,
+            },
+            1
+        )
+    );
+
+    assert.equal(verifyPayload.ok, false);
+    assert.equal(
+        verifyPayload.runtime.summary.diagnostics.some(
+            (item) =>
+                item.surface === 'operator_auth' &&
+                item.reason === 'auth_mode_mismatch'
+        ),
+        true
+    );
+    assert.match(
+        verifyPayload.runtime.summary.message,
+        /operator_auth=unhealthy\(auth_mode_mismatch\)/
+    );
+    assert.equal(
+        verifyPayload.runtime.summary.diagnostics.some(
+            (item) => item.reason === 'auth_status_http_200'
         ),
         false
     );

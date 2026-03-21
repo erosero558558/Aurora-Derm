@@ -1,5 +1,45 @@
 'use strict';
 
+function parseExpectedRevisionFromFlags(
+    flags = {},
+    parseExpectedBoardRevisionFlag,
+    options = {}
+) {
+    const { required = false, commandLabel = 'board command' } = options;
+    if (typeof parseExpectedBoardRevisionFlag !== 'function') return null;
+    const parsed = parseExpectedBoardRevisionFlag(flags);
+    if (parsed instanceof Error) throw parsed;
+    if (required && (parsed === null || parsed === undefined)) {
+        const error = new Error(
+            `${commandLabel} requiere --expect-rev para evitar carreras de AGENT_BOARD.yaml`
+        );
+        error.code = 'expect_rev_required';
+        error.error_code = 'expect_rev_required';
+        throw error;
+    }
+    return parsed;
+}
+
+function printBoardJsonError(printJson, error, action = null) {
+    const payload = {
+        version: 1,
+        ok: false,
+        command: 'board sync',
+        ...(action ? { action } : {}),
+        error: String(error?.message || error || 'board_sync_failed'),
+        error_code: String(
+            error?.error_code || error?.code || 'board_sync_failed'
+        ),
+    };
+    if (payload.error_code === 'board_revision_mismatch') {
+        payload.expected_revision = Number(error?.expected_revision);
+        payload.actual_revision = Number(error?.actual_revision);
+    }
+    printJson(payload);
+    process.exitCode = 1;
+    return payload;
+}
+
 async function handleBoardCommand(ctx) {
     const {
         args = [],
@@ -32,12 +72,162 @@ async function handleBoardCommand(ctx) {
         printJson = (v) => console.log(JSON.stringify(v, null, 2)),
         loadJobsSnapshot,
         loadPublishEvents,
+        buildBoardSyncReport,
+        applyBoardSync,
+        writeBoardAndSync,
+        parseExpectedBoardRevisionFlag,
     } = ctx;
     const subcommand = String(args[0] || 'doctor')
         .trim()
         .toLowerCase();
     const wantsJson = args.includes('--json');
     const { flags, positionals } = parseFlags(args.slice(1));
+
+    if (subcommand === 'sync') {
+        const action = String(positionals[0] || 'check')
+            .trim()
+            .toLowerCase();
+        if (!['check', 'apply'].includes(action)) {
+            throw new Error(
+                'Uso: node agent-orchestrator.js board sync <check|apply> [--expect-rev N] [--json]'
+            );
+        }
+
+        const board = parseBoard();
+        const nowIso = new Date().toISOString();
+
+        if (action === 'check') {
+            const report =
+                typeof buildBoardSyncReport === 'function'
+                    ? buildBoardSyncReport(board, { nowIso })
+                    : {
+                          version: 1,
+                          ok: true,
+                          check_ok: true,
+                          normalized_candidates: [],
+                          blocking_findings: [],
+                          warnings: [],
+                          summary: {
+                              normalized_total: 0,
+                              blocking_total: 0,
+                              warning_total: 0,
+                          },
+                      };
+            const payload = {
+                version: 1,
+                ok: Boolean(report.check_ok),
+                command: 'board sync',
+                action: 'check',
+                normalized_candidates: report.normalized_candidates || [],
+                blocking_findings: report.blocking_findings || [],
+                warnings: report.warnings || [],
+                summary: report.summary || {},
+            };
+            if (wantsJson) {
+                printJson(payload);
+                if (!payload.ok) process.exitCode = 1;
+                return payload;
+            }
+            console.log('== Board Sync Check ==');
+            console.log(
+                `ok=${payload.ok} normalized=${payload.summary.normalized_total || 0} blocking=${payload.summary.blocking_total || 0} warnings=${payload.summary.warning_total || 0}`
+            );
+            for (const item of payload.normalized_candidates) {
+                console.log(`- NORMALIZE ${item.task_id}: ${item.message}`);
+            }
+            for (const item of payload.blocking_findings) {
+                console.log(`- BLOCK ${item.task_id}: ${item.message}`);
+            }
+            for (const item of payload.warnings) {
+                console.log(`- WARN ${item.code}: ${item.message}`);
+            }
+            if (!payload.ok) {
+                throw new Error(
+                    `board sync check fallo: normalized=${payload.summary.normalized_total || 0}, blocking=${payload.summary.blocking_total || 0}`
+                );
+            }
+            return payload;
+        }
+
+        const syncResult =
+            typeof applyBoardSync === 'function'
+                ? applyBoardSync(board, { nowIso })
+                : {
+                      ok: true,
+                      applied_total: 0,
+                      applied_task_ids: [],
+                      normalized_candidates: [],
+                      blocking_findings: [],
+                      warnings: [],
+                      summary: {},
+                      write_blocked: false,
+                      write_blocking_findings: [],
+                      check_ok_after_apply: true,
+                  };
+
+        if (syncResult.applied_total > 0 && !syncResult.write_blocked) {
+            const expectRevision = parseExpectedRevisionFromFlags(
+                flags,
+                parseExpectedBoardRevisionFlag,
+                { required: false, commandLabel: 'board sync apply' }
+            );
+            try {
+                writeBoardAndSync(board, {
+                    silentSync: wantsJson,
+                    command: 'board sync apply',
+                    actor: 'orchestrator',
+                    expectRevision,
+                });
+            } catch (error) {
+                if (wantsJson) {
+                    return printBoardJsonError(printJson, error, 'apply');
+                }
+                throw error;
+            }
+        }
+
+        const payload = {
+            version: 1,
+            ok: Boolean(syncResult.ok),
+            command: 'board sync',
+            action: 'apply',
+            normalized_candidates: syncResult.normalized_candidates || [],
+            applied_total: Number(syncResult.applied_total || 0),
+            applied_task_ids: syncResult.applied_task_ids || [],
+            blocking_findings: syncResult.blocking_findings || [],
+            warnings: syncResult.warnings || [],
+            summary: syncResult.summary || {},
+            write_blocked: Boolean(syncResult.write_blocked),
+            write_blocking_findings: syncResult.write_blocking_findings || [],
+            check_ok_after_apply: Boolean(syncResult.check_ok_after_apply),
+        };
+        if (wantsJson) {
+            printJson(payload);
+            if (!payload.ok) process.exitCode = 1;
+            return payload;
+        }
+        console.log('== Board Sync Apply ==');
+        console.log(
+            `ok=${payload.ok} applied=${payload.applied_total} remaining_blocking=${payload.summary.blocking_total || 0} check_ok_after_apply=${payload.check_ok_after_apply}`
+        );
+        for (const taskId of payload.applied_task_ids) {
+            console.log(`- APPLY ${taskId}: moved to backlog`);
+        }
+        for (const item of payload.blocking_findings) {
+            console.log(`- BLOCK ${item.task_id}: ${item.message}`);
+        }
+        for (const item of payload.warnings) {
+            console.log(`- WARN ${item.code}: ${item.message}`);
+        }
+        if (!payload.ok) {
+            throw new Error(
+                `board sync apply bloqueado: ${payload.write_blocking_findings
+                    .map((item) => item.task_id)
+                    .join(', ')}`
+            );
+        }
+        return payload;
+    }
 
     if (subcommand === 'doctor') {
         const board = parseBoard();
@@ -107,9 +297,7 @@ async function handleBoardCommand(ctx) {
                 : null;
         const focusSummary = focusData.summary;
         const publishEvents =
-            typeof loadPublishEvents === 'function'
-                ? loadPublishEvents()
-                : [];
+            typeof loadPublishEvents === 'function' ? loadPublishEvents() : [];
         const strategyDiagnostics =
             strategySummary?.active && strategySummary.orphan_tasks > 0
                 ? [
@@ -250,7 +438,9 @@ async function handleBoardCommand(ctx) {
         return report;
     }
 
-    throw new Error('Uso: node agent-orchestrator.js board <doctor|events>');
+    throw new Error(
+        'Uso: node agent-orchestrator.js board <doctor|events|sync>'
+    );
 }
 
 module.exports = {

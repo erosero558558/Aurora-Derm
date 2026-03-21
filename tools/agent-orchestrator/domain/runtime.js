@@ -792,31 +792,6 @@ function describeRuntimeSurface(surface = {}) {
                 next_action: `revisar ${edgeLabel}, routing y origen para /api.php?resource=operator-auth-status y /admin-auth.php?action=status`,
             };
         }
-        if (Number(surface.http_status || 0) > 0) {
-            return {
-                surface: key,
-                state,
-                healthy: false,
-                blocking: true,
-                reason: `auth_status_http_${Number(surface.http_status || 0)}`,
-                message: `operator_auth unhealthy: endpoint devolvio HTTP ${Number(surface.http_status || 0)}`,
-                next_action:
-                    'revisar Cloudflare/origen y la ruta /api.php?resource=operator-auth-status',
-            };
-        }
-        if (String(surface.error || '').trim()) {
-            return {
-                surface: key,
-                state,
-                healthy: false,
-                blocking: true,
-                reason: 'auth_status_unreachable',
-                message:
-                    'operator_auth unhealthy: el endpoint no respondio de forma valida',
-                next_action:
-                    'revisar Cloudflare/origen y la ruta /api.php?resource=operator-auth-status',
-            };
-        }
         if (
             String(surface.mode || '').trim() &&
             String(surface.mode || '').trim() !== OPENCLAW_PROVIDER
@@ -847,6 +822,31 @@ function describeRuntimeSurface(surface = {}) {
                     'operator_auth unhealthy: la facade existe pero no esta configurada',
                 next_action:
                     'completar configuracion de operator auth antes del corte',
+            };
+        }
+        if (Number(surface.http_status || 0) >= 400) {
+            return {
+                surface: key,
+                state,
+                healthy: false,
+                blocking: true,
+                reason: `auth_status_http_${Number(surface.http_status || 0)}`,
+                message: `operator_auth unhealthy: endpoint devolvio HTTP ${Number(surface.http_status || 0)}`,
+                next_action:
+                    'revisar Cloudflare/origen y la ruta /api.php?resource=operator-auth-status',
+            };
+        }
+        if (String(surface.error || '').trim()) {
+            return {
+                surface: key,
+                state,
+                healthy: false,
+                blocking: true,
+                reason: 'auth_status_unreachable',
+                message:
+                    'operator_auth unhealthy: el endpoint no respondio de forma valida',
+                next_action:
+                    'revisar Cloudflare/origen y la ruta /api.php?resource=operator-auth-status',
             };
         }
         return {

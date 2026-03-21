@@ -36,6 +36,7 @@ function buildStatusReport(input = {}) {
         },
         strategy: input.strategy || null,
         focus: input.focus || null,
+        board_sync: input.board_sync || null,
         codex_instances: input.codex_instances || null,
         provider_modes: input.provider_modes || null,
         runtime_surfaces: input.runtime_surfaces || null,
@@ -97,6 +98,11 @@ function renderStatusText(data, options = {}) {
         );
         lines.push(
             `Foco activo: ${data.focus.active ? 'si' : 'no'} | next_step=${data.focus.configured.next_step || 'n/a'} | active_tasks=${data.focus.active_tasks_total ?? 0} | aligned=${data.focus.aligned_tasks ?? 0} | slices=${data.focus.distinct_active_slices ?? 0}`
+        );
+    }
+    if (data?.board_sync) {
+        lines.push(
+            `Board sync: check_ok=${data.board_sync.check_ok !== false ? 'si' : 'no'} | normalizable=${data.board_sync.summary?.normalized_total ?? 0} | blocking=${data.board_sync.summary?.blocking_total ?? 0} | warnings=${data.board_sync.summary?.warning_total ?? 0}`
         );
     }
     if (data?.jobs) {
@@ -214,9 +220,31 @@ function renderStatusText(data, options = {}) {
                 Array.isArray(data.focus.required_checks) &&
                 data.focus.required_checks.length > 0
                     ? data.focus.required_checks
-                          .map((item) => `${item.id}=${item.state}`)
+                          .map((item) => {
+                              const reason = String(item.reason || '').trim();
+                              return reason
+                                  ? `${item.id}=${item.state}(${reason})`
+                                  : `${item.id}=${item.state}`;
+                          })
                           .join(', ')
                     : 'none'
+            }`
+        );
+    }
+    if (data?.board_sync) {
+        lines.push('');
+        lines.push('Board sync:');
+        lines.push(
+            `- check_ok: ${data.board_sync.check_ok !== false ? 'si' : 'no'}`
+        );
+        lines.push(
+            `- normalized_candidates: ${
+                data.board_sync.summary?.normalized_total ?? 0
+            }`
+        );
+        lines.push(
+            `- blocking_findings: ${
+                data.board_sync.summary?.blocking_total ?? 0
             }`
         );
     }

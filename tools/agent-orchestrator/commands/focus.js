@@ -265,6 +265,7 @@ async function handleFocusCommand(ctx) {
         validateStrategyConfiguration,
         currentDate,
         detectDefaultOwner,
+        applyBoardSync,
         writeBoardAndSync,
         parseExpectedBoardRevisionFlag,
         printJson = (value) => console.log(JSON.stringify(value, null, 2)),
@@ -376,9 +377,24 @@ async function handleFocusCommand(ctx) {
                 `focus set-active invalido: ${validationErrors.join(' | ')}`
             );
         }
+        const syncResult =
+            typeof applyBoardSync === 'function'
+                ? applyBoardSync(board, {
+                      nowIso: new Date().toISOString(),
+                      currentDate,
+                  })
+                : null;
+        if (syncResult?.write_blocked) {
+            throw new Error(
+                `focus set-active bloqueado por board sync: ${syncResult.write_blocking_findings
+                    .map((item) => `${item.task_id}:${item.code}`)
+                    .join(', ')}`
+            );
+        }
         const postSummary = (
-            await buildLiveFocusSummary(
+            await resolveLiveFocusSummary(
                 {
+                    buildLiveFocusSummary,
                     buildFocusSummary,
                     parseDecisions,
                     loadJobsSnapshot,
@@ -405,6 +421,15 @@ async function handleFocusCommand(ctx) {
             command: 'focus',
             action: 'set-active',
             focus: postSummary,
+            board_sync: syncResult
+                ? {
+                      applied_total: syncResult.applied_total,
+                      applied_task_ids: syncResult.applied_task_ids,
+                      blocking_findings: syncResult.blocking_findings,
+                      warnings: syncResult.warnings,
+                      check_ok_after_apply: syncResult.check_ok_after_apply,
+                  }
+                : null,
         };
         if (wantsJson) {
             printJson(payload);
@@ -450,9 +475,24 @@ async function handleFocusCommand(ctx) {
                 `focus advance invalido: ${validationErrors.join(' | ')}`
             );
         }
+        const syncResult =
+            typeof applyBoardSync === 'function'
+                ? applyBoardSync(board, {
+                      nowIso: new Date().toISOString(),
+                      currentDate,
+                  })
+                : null;
+        if (syncResult?.write_blocked) {
+            throw new Error(
+                `focus advance bloqueado por board sync: ${syncResult.write_blocking_findings
+                    .map((item) => `${item.task_id}:${item.code}`)
+                    .join(', ')}`
+            );
+        }
         const postSummary = (
-            await buildLiveFocusSummary(
+            await resolveLiveFocusSummary(
                 {
+                    buildLiveFocusSummary,
                     buildFocusSummary,
                     parseDecisions,
                     loadJobsSnapshot,
@@ -481,6 +521,15 @@ async function handleFocusCommand(ctx) {
             command: 'focus',
             action: 'advance',
             focus: postSummary,
+            board_sync: syncResult
+                ? {
+                      applied_total: syncResult.applied_total,
+                      applied_task_ids: syncResult.applied_task_ids,
+                      blocking_findings: syncResult.blocking_findings,
+                      warnings: syncResult.warnings,
+                      check_ok_after_apply: syncResult.check_ok_after_apply,
+                  }
+                : null,
         };
         if (wantsJson) {
             printJson(payload);
@@ -523,8 +572,9 @@ async function handleFocusCommand(ctx) {
         focus_evidence_ref: evidence,
     });
     const postSummary = (
-        await buildLiveFocusSummary(
+        await resolveLiveFocusSummary(
             {
+                buildLiveFocusSummary,
                 buildFocusSummary,
                 parseDecisions,
                 loadJobsSnapshot,

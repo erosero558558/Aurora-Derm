@@ -4,45 +4,25 @@ Inicio: 2026-02-24
 Cadencia: por commit (cada commit deja evidencia verificable)
 Relacion con Operativo 2026: complementario estricto (no reemplaza ni compite por control)
 
-<!-- CODEX_ACTIVE
-codex_instance: codex_backend_ops
-block: A2-BE
-task_id: CDX-043
-subfront_id: SF-backend-turnero-web-pilot
-status: blocked
-files: ["api.php", "controllers/AdminDataController.php", "controllers/QueueController.php", "lib/TurneroClinicProfile.php", "lib/QueueSurfaceStatusStore.php", "lib/QueueService.php", "bin/turnero-clinic-profile.js", "scripts/ops/prod/VERIFICAR-DESPLIEGUE.ps1", "tests/test_queue_service.php", "tests/test_figo_queue_core.php", "verification/agent-runs/CDX-043.md"]
-updated_at: 2026-03-14
--->
-
-<!-- CODEX_ACTIVE
-codex_instance: codex_frontend
-block: C1
-task_id: CDX-044
-subfront_id: SF-frontend-turnero-web-pilot
-status: review
-files: ["admin.html", "operador-turnos.html", "kiosco-turnos.html", "sala-turnos.html", "src/apps/admin-v3/shared/core/router.js", "src/apps/admin-v3/shared/modules/queue", "src/apps/admin-v3/core/boot/navigation/sections.js", "src/apps/admin-v3/core/boot/navigation/commands.js", "src/apps/admin-v3/core/boot/listeners/action-groups/queue", "src/apps/admin-v3/ui/frame/templates/sections/queue", "src/apps/queue-operator", "src/apps/queue-kiosk", "src/apps/queue-display", "src/apps/queue-shared"]
-updated_at: 2026-03-14
--->
-
 <!-- CODEX_STRATEGY_ACTIVE
-id: STRAT-2026-03-turnero-web-pilot
-title: "Turnero web por clinica"
+id: STRAT-2026-03-admin-operativo
+title: "Admin operativo"
 status: active
 owner: Ernesto
 owner_policy: "detected_default_owner"
-objective: "Reabrir queue/turnero como un piloto web por clinica demostrable en admin basic, operador, kiosco y sala, usando clinic-profile como fuente de verdad y bloqueando superficies fuera de canon."
-started_at: "2026-03-14"
-review_due_at: "2026-03-28"
-success_signal: "Una clinica puede demostrarse de punta a punta desde kiosco hasta sala con branding, heartbeats y bloqueos de canon correctos, sin depender de apps nativas."
-subfront_ids: ["SF-frontend-turnero-web-pilot", "SF-backend-turnero-web-pilot", "SF-transversal-turnero-web-pilot"]
-updated_at: "2026-03-17"
+objective: "Convertir el frente admin clinico, queue/turnero y OpenClaw UX en una entrega operable y visible, con soporte backend y runtime estrictamente alineado."
+started_at: "2026-03-17"
+review_due_at: "2026-03-21"
+success_signal: "Un mismo corte operativo puede demostrarse de punta a punta sin abrir trabajo fuera del frente admin operativo."
+subfront_ids: ["SF-frontend-admin-operativo", "SF-frontend-queue-turnero-operativo", "SF-backend-admin-operativo", "SF-transversal-admin-operativo"]
+updated_at: "2026-03-21"
 -->
 
 ## Proposito
 
-- Reabrir `queue/turnero` como un piloto web por clinica, no como scope lateral del admin.
-- Sostener una demo repetible en `admin basic`, `operator`, `kiosk` y `display` con un mismo `clinic-profile`.
-- Mantener `main` verde mientras el canon por clinica, los heartbeats y el smoke de salida se vuelven la fuente real de confianza del corte.
+- Mantener `admin clinico`, `queue/turnero` y `OpenClaw UX` dentro de un solo frente operativo demostrable.
+- Sostener un corte repetible donde login, quick-nav, queue/turnero piloto y readiness backend se validen como una misma entrega.
+- Mantener `main` verde mientras runtime, gates y foco activo permanecen alineados entre board, plan y verificadores.
 
 ## Gobernanza
 
@@ -68,9 +48,9 @@ updated_at: "2026-03-17"
 
 ## Estrategia madre activa
 
-- Estrategia activa: `STRAT-2026-03-turnero-web-pilot`.
+- Estrategia activa: `STRAT-2026-03-admin-operativo`.
 - Draft siguiente: ninguno por ahora.
-- Objetivo: reabrir `queue/turnero` como un piloto web por clinica demostrable en `admin basic`, `operator`, `kiosk` y `display`, con `clinic-profile` como fuente de verdad.
+- Objetivo: convertir `admin clinico`, `queue/turnero` y `OpenClaw UX` en una entrega operable y visible con soporte backend/runtime estrictamente alineado.
 - Revision vigente: semanal; `carry-over` permitido si la salida sigue siendo la misma entrega operativa.
 - Regla de foco: cada hilo Codex toma un solo `subfront_id` valido y rechaza
   trabajo fuera del frente salvo `strategy_role=exception`; un mismo lane puede
@@ -86,11 +66,11 @@ updated_at: "2026-03-17"
 ## Tri-lane operativo vigente
 
 - `codex_frontend`:
-  `admin.html#queue` en `basic`, `operator`, `kiosk` y `display` del piloto web por clinica.
+  shell admin, quick-nav y surfaces `queue/turnero` que sostienen la demo operativa del corte.
 - `codex_backend_ops`:
-  `clinic-profile`, `queue state`, `queueSurfaceStatus`, readiness y gate web pilot.
+  auth, readiness, deploy/gates y backend de soporte directo para el mismo corte operativo.
 - `codex_transversal`:
-  runtime/orquestacion solo como soporte directo si el acceso real del piloto queda bloqueado.
+  runtime/orquestacion, `clinic-profile`, `queue state`, `queueSurfaceStatus`, readiness y gate web pilot solo como desbloqueo del frente, sin abrir trabajo fuera del objetivo activo.
 - Excepcion unica:
   `strategy_role=exception` con `strategy_reason` explicito para hotfix critico o desbloqueo directo del frente activo.
 - Regla critica:

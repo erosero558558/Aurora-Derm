@@ -73,6 +73,9 @@ jobs:
             - name: Legacy board drift guard (check)
               run: node bin/board-legacy-drift-guard.js --check --json
 
+            - name: Board sync check
+              run: node agent-orchestrator.js board sync check --json
+
             - name: Tri-lane runtime check (JSON)
               run: node agent-orchestrator.js codex-check --json
 

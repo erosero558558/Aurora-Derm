@@ -38,6 +38,7 @@ async function handleStatusCommand(ctx) {
         summarizeJobsSnapshot,
         getGovernancePolicy,
         loadPublishEvents,
+        buildBoardSyncReport,
         loadModelUsageLedger,
         buildModelUsageSummary,
         collectPremiumGateBlockers,
@@ -62,6 +63,12 @@ async function handleStatusCommand(ctx) {
     );
     const strategy = buildStrategyCoverageSummary(board);
     const now = new Date();
+    const boardSync =
+        typeof buildBoardSyncReport === 'function'
+            ? buildBoardSyncReport(board, {
+                  nowIso: now.toISOString(),
+              })
+            : null;
     const focusData =
         typeof buildLiveFocusSummary === 'function'
             ? await buildLiveFocusSummary(board, { now })
@@ -143,6 +150,7 @@ async function handleStatusCommand(ctx) {
         },
         strategy,
         focus: focusData.summary,
+        board_sync: boardSync,
         codex_instances: codexInstances,
         provider_modes: providerModes,
         runtime_surfaces: runtimeSurfaces,

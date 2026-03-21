@@ -50,6 +50,7 @@ const domainJobs = require('./tools/agent-orchestrator/domain/jobs');
 const domainBoardLeases = require('./tools/agent-orchestrator/domain/board-leases');
 const domainBoardDoctor = require('./tools/agent-orchestrator/domain/board-doctor');
 const domainBoardEvents = require('./tools/agent-orchestrator/domain/board-events');
+const domainBoardSync = require('./tools/agent-orchestrator/domain/board-sync');
 const domainGitHubSignals = require('./tools/agent-orchestrator/domain/github-signals');
 const statusCommandHandlers = require('./tools/agent-orchestrator/commands/status');
 const conflictsCommandHandlers = require('./tools/agent-orchestrator/commands/conflicts');
@@ -861,6 +862,33 @@ async function buildLiveFocusSummary(board, options = {}) {
     });
 }
 
+function buildBoardSyncReport(board, options = {}) {
+    const codexParallelism = getCodexParallelismPolicy();
+    return domainBoardSync.buildBoardSyncReport(board, {
+        ...options,
+        policy: options.policy || getGovernancePolicy(),
+        nowIso: options.nowIso || isoNow(),
+        activeStatuses: ACTIVE_STATUSES,
+        slotStatuses: codexParallelism.slot_statuses,
+    });
+}
+
+function applyBoardSync(board, options = {}) {
+    const codexParallelism = getCodexParallelismPolicy();
+    const currentDateValue =
+        typeof options.currentDate === 'function'
+            ? options.currentDate()
+            : options.currentDate || currentDate();
+    return domainBoardSync.applyBoardSync(board, {
+        ...options,
+        policy: options.policy || getGovernancePolicy(),
+        nowIso: options.nowIso || isoNow(),
+        currentDate: currentDateValue,
+        activeStatuses: ACTIVE_STATUSES,
+        slotStatuses: codexParallelism.slot_statuses,
+    });
+}
+
 function resolveTaskCreateTemplate(templateNameRaw) {
     return domainTaskCreate.resolveTaskCreateTemplate(templateNameRaw, {
         templates: TASK_CREATE_TEMPLATES,
@@ -1597,6 +1625,7 @@ async function cmdStatus(args) {
         summarizeDiagnostics: domainDiagnostics.summarizeDiagnostics,
         buildWarnFirstDiagnostics,
         buildLiveFocusSummary,
+        buildBoardSyncReport,
         getGovernancePolicy,
         loadJobsSnapshot,
         loadPublishEvents,
@@ -1772,6 +1801,10 @@ function cmdBoard(args) {
         printJson: coreOutput.printJson,
         loadJobsSnapshot,
         loadPublishEvents,
+        buildBoardSyncReport,
+        applyBoardSync,
+        writeBoardAndSync,
+        parseExpectedBoardRevisionFlag,
     });
 }
 
@@ -1882,6 +1915,7 @@ async function cmdFocus(args) {
             domainStrategy.validateStrategyConfiguration,
         currentDate,
         detectDefaultOwner,
+        applyBoardSync,
         writeBoardAndSync,
         parseExpectedBoardRevisionFlag,
         printJson: coreOutput.printJson,

@@ -19,6 +19,7 @@ Operar el sistema en modo `codex-only` con tres lanes Codex activos:
     - Ejecuta `intake -> score -> stale --strict -> conflicts --strict -> board doctor -> codex-check -> jobs status`.
 - `agent-governance.yml`: push/PR/manual.
     - Valida contratos, policy, mirror Codex y jobs tracked.
+    - Corre `board sync check` como guardrail bloqueante del foco activo.
 - `public_main_sync`:
     - Cron externo productivo `* * * * *`
     - `job_id=8d31e299-7e57-4959-80b5-aaa2d73e9674`
@@ -29,6 +30,7 @@ Operar el sistema en modo `codex-only` con tres lanes Codex activos:
 1. Revisar salud:
     - `node agent-orchestrator.js strategy status --json`
     - `node agent-orchestrator.js status --json --explain-red`
+    - `node agent-orchestrator.js board sync check --json`
     - `node agent-orchestrator.js board doctor --json`
     - `node agent-orchestrator.js jobs verify public_main_sync --json`
 2. Reservar trabajo:
@@ -64,6 +66,9 @@ Operar el sistema en modo `codex-only` con tres lanes Codex activos:
     - resolver con `handoffs create/close` o replanificar archivos
 3. Si `board doctor` reporta lease expirado o heartbeat stale:
     - refrescar con `leases heartbeat <task_id> --ttl-hours 4 --expect-rev <n> --json`
+      Si `board sync check` reporta `normalized_candidates`:
+    - aplicar `node agent-orchestrator.js board sync apply --json`
+    - el comando solo baja a `backlog` tareas `ready` en pasos futuros; no auto-demueve trabajo ambiguo.
 4. Si `jobs verify public_main_sync --json` falla:
     - revisar cron VPS, status file y `health`
     - si `verification_source=health_url` y `failure_reason=health_missing_public_sync`, el host respondio pero sigue sin exponer `checks.publicSync`; tratarlo como rollout stale del contrato publico antes de culpar al cron o al repo

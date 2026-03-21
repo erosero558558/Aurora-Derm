@@ -274,6 +274,7 @@ Notas:
 Comandos de lectura:
 
 - `npm run agent:status`
+- `npm run agent:board:sync:check`
 - `npm run agent:board:doctor`
 - `npm run agent:summary:local`
 - `npm run agent:leases`
@@ -284,6 +285,7 @@ Comandos de validacion:
 - `npm run agent:test`
 - `npm run agent:policy:lint`
 - `npm run agent:gate`
+- `npm run agent:board:sync:apply`
 - `node agent-orchestrator.js runtime verify openclaw_chatgpt --json`
 
 Para mutaciones del board, seguir `AGENTS.md` y usar `--expect-rev`.

@@ -660,7 +660,12 @@ function buildWarnFirstDiagnostics(input = {}) {
                     ),
                     source,
                     message: `Required checks del foco no estan verdes: ${pendingChecks
-                        .map((item) => `${item.id}=${item.state}`)
+                        .map((item) => {
+                            const reason = String(item.reason || '').trim();
+                            return reason
+                                ? `${item.id}=${item.state}(${reason})`
+                                : `${item.id}=${item.state}`;
+                        })
                         .join(', ')}`,
                     meta: {
                         checks: pendingChecks,
@@ -834,12 +839,7 @@ function buildWarnFirstDiagnostics(input = {}) {
             })
         );
     }
-    if (
-        warnPolicyEnabled(
-            warnPolicyMap,
-            'publish_live_verification_pending'
-        )
-    ) {
+    if (warnPolicyEnabled(warnPolicyMap, 'publish_live_verification_pending')) {
         const pendingPublishEvents =
             collectLatestPendingPublishEvents(publishEvents);
         if (pendingPublishEvents.length > 0) {
@@ -859,9 +859,7 @@ function buildWarnFirstDiagnostics(input = {}) {
                         entries: pendingPublishEvents.map((event) => ({
                             task_id: String(event.task_id || ''),
                             task_family: String(event.task_family || ''),
-                            codex_instance: String(
-                                event.codex_instance || ''
-                            ),
+                            codex_instance: String(event.codex_instance || ''),
                             commit: String(event.commit || ''),
                             published_at: String(event.published_at || ''),
                             live_status: String(event.live_status || ''),
