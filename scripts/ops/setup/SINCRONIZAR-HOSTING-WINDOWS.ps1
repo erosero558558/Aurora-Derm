@@ -45,8 +45,30 @@ $lockPath = $statusPathResolved + '.lock'
 $lockInfoPath = Get-HostingLockInfoPath -LockDirectoryPath $lockPath
 $gitExe = (Get-Command git -ErrorAction Stop).Source
 $powershellExe = (Get-Command powershell -ErrorAction Stop).Source
+$npmExe = (Get-Command npm.cmd -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+if ([string]::IsNullOrWhiteSpace($npmExe)) {
+    $npmExe = (Get-Command npm -ErrorAction Stop).Source
+}
+$generatedSiteRootPath = Join-Path $mirrorRepoPathResolved '.generated\site-root'
+$publicBuildReportPath = Join-Path $runtimePaths.RuntimeRoot 'public-v6-build-report.json'
 $arrancarTimeoutSeconds = 90
 $validationTimeoutSeconds = 45
+$publicBuildTimeoutSeconds = 600
+$publishedGeneratedDirectories = @(
+    'es',
+    'en',
+    '_astro',
+    'js\chunks',
+    'js\engines',
+    'js\admin-chunks'
+)
+$publishedGeneratedFiles = @(
+    'script.js',
+    'admin.js',
+    'js\booking-calendar.js',
+    'js\queue-kiosk.js',
+    'js\queue-display.js'
+)
 
 function Write-Info {
     param([string]$Message)
@@ -297,6 +319,108 @@ function Resolve-DesiredCommit {
     }
 }
 
+function Test-PublishedGeneratedArtifactsReady {
+    param([string]$RepoPath)
+
+    foreach ($relativePath in $publishedGeneratedDirectories) {
+        if (-not (Test-Path -LiteralPath (Join-Path $RepoPath $relativePath) -PathType Container)) {
+            return $false
+        }
+    }
+
+    foreach ($relativePath in $publishedGeneratedFiles) {
+        if (-not (Test-Path -LiteralPath (Join-Path $RepoPath $relativePath) -PathType Leaf)) {
+            return $false
+        }
+    }
+
+    return $true
+}
+
+function Remove-PublishedGeneratedArtifacts {
+    param([string]$RepoPath)
+
+    foreach ($relativePath in ($publishedGeneratedDirectories + $publishedGeneratedFiles)) {
+        $targetPath = Join-Path $RepoPath $relativePath
+        if (Test-Path -LiteralPath $targetPath) {
+            Remove-Item -LiteralPath $targetPath -Recurse -Force -ErrorAction Stop
+        }
+    }
+}
+
+function Publish-PublicGeneratedArtifacts {
+    param(
+        [string]$RepoPath,
+        [string]$GeneratedRootPath
+    )
+
+    if (-not (Test-Path -LiteralPath $GeneratedRootPath -PathType Container)) {
+        throw "No existe .generated/site-root para publicar: $GeneratedRootPath"
+    }
+
+    foreach ($relativePath in $publishedGeneratedDirectories) {
+        $sourcePath = Join-Path $GeneratedRootPath $relativePath
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Container)) {
+            throw "Falta directorio generado requerido: $relativePath"
+        }
+    }
+
+    foreach ($relativePath in $publishedGeneratedFiles) {
+        $sourcePath = Join-Path $GeneratedRootPath $relativePath
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+            throw "Falta archivo generado requerido: $relativePath"
+        }
+    }
+
+    Remove-PublishedGeneratedArtifacts -RepoPath $RepoPath
+
+    foreach ($relativePath in $publishedGeneratedDirectories) {
+        $sourcePath = Join-Path $GeneratedRootPath $relativePath
+        $targetPath = Join-Path $RepoPath $relativePath
+        Ensure-HostingParentDirectory -Path $targetPath
+        Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Recurse -Force
+    }
+
+    foreach ($relativePath in $publishedGeneratedFiles) {
+        $sourcePath = Join-Path $GeneratedRootPath $relativePath
+        $targetPath = Join-Path $RepoPath $relativePath
+        Ensure-HostingParentDirectory -Path $targetPath
+        Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Force
+    }
+}
+
+function Invoke-PublicBuildAndPublish {
+    param([string]$RepoPath)
+
+    Ensure-HostingParentDirectory -Path $publicBuildReportPath
+    if (Test-Path -LiteralPath $publicBuildReportPath) {
+        Remove-Item -LiteralPath $publicBuildReportPath -Force -ErrorAction SilentlyContinue
+    }
+
+    Push-Location $RepoPath
+    try {
+        $buildResult = Invoke-HostingCommandWithOutput `
+            -FilePath $npmExe `
+            -Arguments @('run', 'build:public:v6', '--', '--report', $publicBuildReportPath) `
+            -TimeoutSeconds $publicBuildTimeoutSeconds `
+            -HeartbeatPath $statusPathResolved `
+            -Label 'build:public:v6'
+        if ($buildResult.TimedOut -eq $true) {
+            throw 'public_build_timeout'
+        }
+        if ($buildResult.ExitCode -ne 0) {
+            if (-not [string]::IsNullOrWhiteSpace($buildResult.Output)) {
+                Write-Info $buildResult.Output.Trim()
+            }
+            throw 'public_build_failed'
+        }
+    } finally {
+        Pop-Location
+    }
+
+    Publish-PublicGeneratedArtifacts -RepoPath $RepoPath -GeneratedRootPath $generatedSiteRootPath
+}
+
 function Invoke-StartMirrorStack {
     param(
         [string]$StartScriptPath,
@@ -502,6 +626,10 @@ $status = [ordered]@{
     current_head = ''
     head_changed = $false
     env_changed = $false
+    public_build_required = $false
+    public_build_ran = $false
+    public_artifacts_ok = $false
+    public_build_report_path = $publicBuildReportPath
     restarted = $false
     cloned = $false
     health_ok = $false
@@ -728,6 +856,20 @@ try {
 
     $mirrorEnvHashAfter = Get-HostingFileSha256 -Path $mirrorEnvPath
     $status.env_changed = ($mirrorEnvHashBefore -ne $mirrorEnvHashAfter) -or ($externalEnvHash -ne $mirrorEnvHashBefore)
+    $status.public_artifacts_ok = Test-PublishedGeneratedArtifactsReady -RepoPath $mirrorRepoPathResolved
+    $status.public_build_required = $status.cloned -or $status.head_changed -or (-not $status.public_artifacts_ok)
+    $status.public_build_report_path = $publicBuildReportPath
+
+    if ($status.public_build_required) {
+        Set-SyncPhase -CurrentStatus $status -State 'building_public' -DeployState 'build_public' -TimeoutSeconds $publicBuildTimeoutSeconds
+        Invoke-PublicBuildAndPublish -RepoPath $mirrorRepoPathResolved
+        $status.public_build_ran = $true
+        $status.public_artifacts_ok = Test-PublishedGeneratedArtifactsReady -RepoPath $mirrorRepoPathResolved
+        if (-not $status.public_artifacts_ok) {
+            throw 'public_artifacts_missing_after_publish'
+        }
+        Write-Status -Payload $status
+    }
 
     $runtimeConfig = New-HostingRuntimeCaddyConfig `
         -TemplatePath $expectedCaddyTemplatePath `
@@ -858,6 +1000,16 @@ try {
         $status.deploy_state = 'restart_timeout'
         $status.last_failure_reason = 'sync_restart_timeout'
         $status.timed_out = $true
+    } elseif ([string]::Equals($status.error, 'public_build_timeout', [System.StringComparison]::OrdinalIgnoreCase)) {
+        $status.deploy_state = 'build_public_timeout'
+        $status.last_failure_reason = 'public_build_timeout'
+        $status.timed_out = $true
+    } elseif (
+        [string]::Equals($status.error, 'public_build_failed', [System.StringComparison]::OrdinalIgnoreCase) -or
+        [string]::Equals($status.error, 'public_artifacts_missing_after_publish', [System.StringComparison]::OrdinalIgnoreCase)
+    ) {
+        $status.deploy_state = 'build_public_failed'
+        $status.last_failure_reason = $status.error
     } elseif ([string]::Equals($status.error, 'sync_post_restart_contract_invalid', [System.StringComparison]::OrdinalIgnoreCase)) {
         $status.deploy_state = 'validate'
         $status.last_failure_reason = 'sync_post_restart_contract_invalid'
