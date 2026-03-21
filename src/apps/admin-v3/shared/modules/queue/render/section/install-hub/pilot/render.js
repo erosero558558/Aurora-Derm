@@ -39,6 +39,11 @@ import {
     resolveInstallHubSurfaceIdByTelemetryKey,
 } from '../registry.js';
 import { mountTurneroAdminQueueSurfaceRolloutConsole } from '../../../../../../../../queue-shared/turnero-admin-queue-surface-rollout-console.js';
+import {
+    getFlowOsRecoveryFreezeNotice,
+    hideFlowOsRecoveryHost,
+    isFlowOsRecoveryPilotHostFrozen,
+} from '../../../../../../../../queue-shared/flow-os-recovery-freeze.js';
 
 function resolvePublicShellDriftOptions(manifest = {}) {
     const config =
@@ -1120,6 +1125,27 @@ async function hydrateQueueOpsPilotReleaseEvidence(
         return;
     }
 
+    const freezeExecutivePortfolioStudio = isFlowOsRecoveryPilotHostFrozen(
+        'queueOpsPilotExecutivePortfolioStudioHost'
+    );
+    const freezeStrategyDigitalTwinStudio = isFlowOsRecoveryPilotHostFrozen(
+        'queueOpsPilotStrategyDigitalTwinStudioHost'
+    );
+    const freezeMultiClinicControlTower = isFlowOsRecoveryPilotHostFrozen(
+        'queueMultiClinicControlTowerHost'
+    );
+    const freezeNote = getFlowOsRecoveryFreezeNotice();
+
+    if (freezeExecutivePortfolioStudio) {
+        hideFlowOsRecoveryHost(executivePortfolioStudioHost, freezeNote);
+    }
+    if (freezeStrategyDigitalTwinStudio) {
+        hideFlowOsRecoveryHost(strategyDigitalTwinStudioHost, freezeNote);
+    }
+    if (freezeMultiClinicControlTower) {
+        hideFlowOsRecoveryHost(multiClinicControlTowerHost, freezeNote);
+    }
+
     const publicShellOptions = resolvePublicShellDriftOptions(manifest);
     const bundleOptions = {
         origin: window.location.origin,
@@ -1137,13 +1163,22 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     if (rolloutGovernorHost instanceof HTMLElement) {
         rolloutGovernorHost.setAttribute('aria-busy', 'true');
     }
-    if (executivePortfolioStudioHost instanceof HTMLElement) {
+    if (
+        executivePortfolioStudioHost instanceof HTMLElement &&
+        !freezeExecutivePortfolioStudio
+    ) {
         executivePortfolioStudioHost.setAttribute('aria-busy', 'true');
     }
-    if (strategyDigitalTwinStudioHost instanceof HTMLElement) {
+    if (
+        strategyDigitalTwinStudioHost instanceof HTMLElement &&
+        !freezeStrategyDigitalTwinStudio
+    ) {
         strategyDigitalTwinStudioHost.setAttribute('aria-busy', 'true');
     }
-    if (multiClinicControlTowerHost instanceof HTMLElement) {
+    if (
+        multiClinicControlTowerHost instanceof HTMLElement &&
+        !freezeMultiClinicControlTower
+    ) {
         multiClinicControlTowerHost.setAttribute('aria-busy', 'true');
     }
     if (missionControlHost instanceof HTMLElement) {
@@ -1279,13 +1314,22 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             if (rolloutGovernorHost instanceof HTMLElement) {
                 rolloutGovernorHost.removeAttribute('aria-busy');
             }
-            if (executivePortfolioStudioHost instanceof HTMLElement) {
+            if (
+                executivePortfolioStudioHost instanceof HTMLElement &&
+                !freezeExecutivePortfolioStudio
+            ) {
                 executivePortfolioStudioHost.removeAttribute('aria-busy');
             }
-            if (strategyDigitalTwinStudioHost instanceof HTMLElement) {
+            if (
+                strategyDigitalTwinStudioHost instanceof HTMLElement &&
+                !freezeStrategyDigitalTwinStudio
+            ) {
                 strategyDigitalTwinStudioHost.removeAttribute('aria-busy');
             }
-            if (multiClinicControlTowerHost instanceof HTMLElement) {
+            if (
+                multiClinicControlTowerHost instanceof HTMLElement &&
+                !freezeMultiClinicControlTower
+            ) {
                 multiClinicControlTowerHost.removeAttribute('aria-busy');
             }
             if (missionControlHost instanceof HTMLElement) {
@@ -1323,6 +1367,11 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     }
 
     if (rolloutGovernorHost instanceof HTMLElement) {
+        const rolloutClinicProfile =
+            pilot.clinicProfile ||
+            pilot.turneroClinicProfile ||
+            snapshot.turneroClinicProfile ||
+            null;
         try {
             mountTurneroReleaseRolloutCommandCenterCard(rolloutGovernorHost, {
                 snapshot,
@@ -1343,7 +1392,7 @@ async function hydrateQueueOpsPilotReleaseEvidence(
                 'queue-ops-pilot__rollout-surface-console-host';
             rolloutGovernorHost.appendChild(rolloutConsoleHost);
             mountTurneroAdminQueueSurfaceRolloutConsole(rolloutConsoleHost, {
-                clinicProfile,
+                clinicProfile: rolloutClinicProfile,
                 scope: 'regional',
                 snapshots: [
                     { surfaceKey: 'operator' },
@@ -1371,7 +1420,10 @@ async function hydrateQueueOpsPilotReleaseEvidence(
     rolloutGovernorModel =
         rolloutGovernorHost.__turneroReleaseRolloutCommandCenterModel || null;
 
-    if (executivePortfolioStudioHost instanceof HTMLElement) {
+    if (
+        executivePortfolioStudioHost instanceof HTMLElement &&
+        !freezeExecutivePortfolioStudio
+    ) {
         try {
             mountTurneroReleaseExecutivePortfolioStudio(
                 executivePortfolioStudioHost,
@@ -1428,7 +1480,10 @@ async function hydrateQueueOpsPilotReleaseEvidence(
             snapshot
         );
 
-    if (strategyDigitalTwinStudioHost instanceof HTMLElement) {
+    if (
+        strategyDigitalTwinStudioHost instanceof HTMLElement &&
+        !freezeStrategyDigitalTwinStudio
+    ) {
         try {
             strategyDigitalTwinStudioHost.innerHTML = '';
             mountTurneroReleaseStrategyDigitalTwinStudio(
@@ -1457,7 +1512,10 @@ async function hydrateQueueOpsPilotReleaseEvidence(
         }
     }
 
-    if (multiClinicControlTowerHost instanceof HTMLElement) {
+    if (
+        multiClinicControlTowerHost instanceof HTMLElement &&
+        !freezeMultiClinicControlTower
+    ) {
         try {
             mountMultiClinicControlTowerCard(multiClinicControlTowerHost, {
                 snapshot,

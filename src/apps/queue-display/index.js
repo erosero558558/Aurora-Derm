@@ -81,6 +81,10 @@ import { createTurneroSurfaceRenewalLedger } from '../queue-shared/turnero-surfa
 import { createTurneroSurfaceRenewalOwnerStore } from '../queue-shared/turnero-surface-renewal-owner-store.js';
 import { buildTurneroSurfaceRenewalPack } from '../queue-shared/turnero-surface-renewal-pack.js';
 import { mountTurneroSurfaceRenewalBanner } from '../queue-shared/turnero-surface-renewal-banner.js';
+import {
+    getFlowOsRecoveryFreezeNotice,
+    shouldFreezeTurneroSurfaceSignal,
+} from '../queue-shared/flow-os-recovery-freeze.js';
 import { listTurneroSurfaceFallbackDrills } from '../queue-shared/turnero-surface-fallback-drill-store.js';
 import { listTurneroSurfaceCheckinLogbook } from '../queue-shared/turnero-surface-checkin-logbook.js';
 
@@ -98,6 +102,26 @@ const DISPLAY_BELL_FLASH_DURATION_MS = 1300;
 const DISPLAY_BELL_COOLDOWN_MS = 1200;
 const DISPLAY_BELL_BLOCKED_HINT_COOLDOWN_MS = 20000;
 const DISPLAY_HEARTBEAT_MS = 15000;
+
+function hideDisplaySurfaceOpsPanel(panel) {
+    if (!panel || typeof panel !== 'object') {
+        return null;
+    }
+
+    const note = getFlowOsRecoveryFreezeNotice();
+    if (panel.host instanceof HTMLElement) {
+        panel.host.hidden = true;
+        panel.host.dataset.flowOsRecoveryFrozen = 'true';
+        panel.host.dataset.flowOsRecoveryNote = note;
+    }
+    if (panel.bannerHost instanceof HTMLElement) {
+        panel.bannerHost.replaceChildren();
+    }
+    if (panel.chipsHost instanceof HTMLElement) {
+        panel.chipsHost.replaceChildren();
+    }
+    return null;
+}
 
 const state = {
     lastCalledSignature: '',
@@ -609,6 +633,11 @@ function renderDisplaySurfaceRenewalState() {
         return null;
     }
 
+    if (shouldFreezeTurneroSurfaceSignal('renewal')) {
+        state.surfaceRenewalPack = null;
+        return hideDisplaySurfaceOpsPanel(panel);
+    }
+
     if (!state.clinicProfile) {
         panel.host.hidden = true;
         panel.bannerHost.replaceChildren();
@@ -780,6 +809,11 @@ function renderDisplaySurfaceExpansionState(inputState = state) {
         return null;
     }
 
+    if (shouldFreezeTurneroSurfaceSignal('expansion')) {
+        resolvedInputState.surfaceExpansionPack = null;
+        return hideDisplaySurfaceOpsPanel(panel);
+    }
+
     if (!resolvedInputState.clinicProfile) {
         panel.host.hidden = true;
         panel.bannerHost.replaceChildren();
@@ -866,8 +900,7 @@ function buildDisplaySurfaceReplicationPack() {
     const pack = buildTurneroSurfaceReplicationPack({
         surfaceKey: 'sala-turnos',
         surfaceLabel:
-            state.clinicProfile?.surfaces?.display?.label ||
-            'Turnero Sala TV',
+            state.clinicProfile?.surfaces?.display?.label || 'Turnero Sala TV',
         clinicProfile: state.clinicProfile,
         runtimeState: 'ready',
         truth: 'aligned',
@@ -1567,8 +1600,7 @@ function getDisplaySurfaceGoLiveScope() {
 
 function getDisplaySurfaceFleetScope() {
     return (
-        String(state.clinicProfile?.region || 'regional').trim() ||
-        'regional'
+        String(state.clinicProfile?.region || 'regional').trim() || 'regional'
     );
 }
 
@@ -2031,13 +2063,14 @@ function renderDisplaySurfacePackageState(inputState) {
         eyebrow: 'Package gate',
     });
     panel.chipsHost.replaceChildren();
-    (Array.isArray(pack.readout?.checkpoints) ? pack.readout.checkpoints : []).forEach(
-        (chip) => {
-            const chipNode = document.createElement('span');
-            panel.chipsHost.appendChild(chipNode);
-            mountTurneroSurfaceCheckpointChip(chipNode, chip);
-        }
-    );
+    (Array.isArray(pack.readout?.checkpoints)
+        ? pack.readout.checkpoints
+        : []
+    ).forEach((chip) => {
+        const chipNode = document.createElement('span');
+        panel.chipsHost.appendChild(chipNode);
+        mountTurneroSurfaceCheckpointChip(chipNode, chip);
+    });
     return pack;
 }
 
@@ -2124,8 +2157,8 @@ function renderDisplayProfileStatus(profile) {
         surfaceRuntime.uiState === 'alert'
             ? 'alert'
             : surfaceRuntime.uiState === 'warning'
-                ? 'warning'
-                : 'ready';
+              ? 'warning'
+              : 'ready';
     el.textContent = surfaceRuntime.text;
     try {
         renderDisplaySurfaceRecoveryState();
@@ -2260,7 +2293,9 @@ function renderDisplaySurfaceRecoveryState() {
 
 function renderDisplaySurfaceRolloutState(runtimeState = null, target = null) {
     const host =
-        target instanceof HTMLElement ? target : getById('displaySurfaceRecoveryHost');
+        target instanceof HTMLElement
+            ? target
+            : getById('displaySurfaceRecoveryHost');
     if (!(host instanceof HTMLElement)) {
         return null;
     }

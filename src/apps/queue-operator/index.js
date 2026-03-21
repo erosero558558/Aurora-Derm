@@ -144,6 +144,10 @@ import { createTurneroSurfaceRenewalLedger } from '../queue-shared/turnero-surfa
 import { createTurneroSurfaceRenewalOwnerStore } from '../queue-shared/turnero-surface-renewal-owner-store.js';
 import { buildTurneroSurfaceRenewalPack } from '../queue-shared/turnero-surface-renewal-pack.js';
 import { mountTurneroSurfaceRenewalBanner } from '../queue-shared/turnero-surface-renewal-banner.js';
+import {
+    getFlowOsRecoveryFreezeNotice,
+    shouldFreezeTurneroSurfaceSignal,
+} from '../queue-shared/flow-os-recovery-freeze.js';
 
 const QUEUE_REFRESH_MS = 8000;
 const OPERATOR_HEARTBEAT_MS = 15000;
@@ -154,6 +158,26 @@ let operatorHeartbeat = null;
 let operatorAuthPollPromise = null;
 let lastOperatorGuardToastAt = 0;
 let lastOperatorGuardToastKey = '';
+
+function hideOperatorSurfaceOpsPanel(panel) {
+    if (!panel || typeof panel !== 'object') {
+        return null;
+    }
+
+    const note = getFlowOsRecoveryFreezeNotice();
+    if (panel.host instanceof HTMLElement) {
+        panel.host.hidden = true;
+        panel.host.dataset.flowOsRecoveryFrozen = 'true';
+        panel.host.dataset.flowOsRecoveryNote = note;
+    }
+    if (panel.bannerHost instanceof HTMLElement) {
+        panel.bannerHost.replaceChildren();
+    }
+    if (panel.chipsHost instanceof HTMLElement) {
+        panel.chipsHost.replaceChildren();
+    }
+    return null;
+}
 
 function initOperatorOpsTheme() {
     if (
@@ -388,8 +412,7 @@ function getOperatorCommercialScope() {
 
 function getOperatorFleetScope() {
     return (
-        String(operatorClinicProfile?.region || 'regional').trim() ||
-        'regional'
+        String(operatorClinicProfile?.region || 'regional').trim() || 'regional'
     );
 }
 
@@ -738,7 +761,9 @@ function buildOperatorSurfaceRenewalPack() {
         surfaceKey: 'operator-turnos',
         clinicProfile: operatorClinicProfile,
         runtimeState:
-            getOperatorSurfaceContract().state === 'alert' ? 'blocked' : 'ready',
+            getOperatorSurfaceContract().state === 'alert'
+                ? 'blocked'
+                : 'ready',
         truth:
             operatorRuntime.surfaceIntegrityPack?.drift?.state === 'aligned'
                 ? 'aligned'
@@ -768,6 +793,11 @@ function renderOperatorSurfaceRenewalState() {
     const panel = ensureOperatorSurfaceRenewalPanel();
     if (!panel) {
         return null;
+    }
+
+    if (shouldFreezeTurneroSurfaceSignal('renewal')) {
+        operatorRuntime.surfaceRenewalPack = null;
+        return hideOperatorSurfaceOpsPanel(panel);
     }
 
     if (!operatorClinicProfile) {
@@ -910,7 +940,9 @@ function buildOperatorSurfaceExpansionPack(state = getState()) {
     return buildTurneroSurfaceExpansionPack({
         surfaceKey: 'operator',
         clinicProfile: operatorClinicProfile,
-        runtimeState: syncHealth.degraded ? 'degraded' : syncHealth.syncMode || 'ready',
+        runtimeState: syncHealth.degraded
+            ? 'degraded'
+            : syncHealth.syncMode || 'ready',
         truth:
             operatorRuntime.surfaceIntegrityPack?.drift?.state === 'aligned'
                 ? 'aligned'
@@ -936,6 +968,11 @@ function renderOperatorSurfaceExpansionState(state = getState()) {
     const panel = ensureOperatorSurfaceExpansionPanel();
     if (!panel) {
         return null;
+    }
+
+    if (shouldFreezeTurneroSurfaceSignal('expansion')) {
+        operatorRuntime.surfaceExpansionPack = null;
+        return hideOperatorSurfaceOpsPanel(panel);
     }
 
     if (!operatorClinicProfile) {
@@ -2132,7 +2169,9 @@ function buildOperatorSurfacePackagePack(state = getState()) {
     const pack = buildTurneroSurfacePackagePack({
         surfaceKey: 'operator',
         clinicProfile: operatorClinicProfile,
-        runtimeState: syncHealth.degraded ? 'degraded' : syncHealth.syncMode || 'live',
+        runtimeState: syncHealth.degraded
+            ? 'degraded'
+            : syncHealth.syncMode || 'live',
         truth:
             operatorRuntime.surfaceIntegrityPack?.drift?.state === 'aligned'
                 ? 'aligned'
@@ -2181,13 +2220,14 @@ function renderOperatorSurfacePackageState(state = getState()) {
         eyebrow: 'Package gate',
     });
     panel.chipsHost.replaceChildren();
-    (Array.isArray(pack.readout?.checkpoints) ? pack.readout.checkpoints : []).forEach(
-        (chip) => {
-            const chipNode = document.createElement('span');
-            panel.chipsHost.appendChild(chipNode);
-            mountTurneroSurfaceCheckpointChip(chipNode, chip);
-        }
-    );
+    (Array.isArray(pack.readout?.checkpoints)
+        ? pack.readout.checkpoints
+        : []
+    ).forEach((chip) => {
+        const chipNode = document.createElement('span');
+        panel.chipsHost.appendChild(chipNode);
+        mountTurneroSurfaceCheckpointChip(chipNode, chip);
+    });
     return pack;
 }
 

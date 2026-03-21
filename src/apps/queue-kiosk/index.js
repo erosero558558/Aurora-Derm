@@ -77,6 +77,10 @@ import { createTurneroSurfaceRenewalLedger } from '../queue-shared/turnero-surfa
 import { createTurneroSurfaceRenewalOwnerStore } from '../queue-shared/turnero-surface-renewal-owner-store.js';
 import { buildTurneroSurfaceRenewalPack } from '../queue-shared/turnero-surface-renewal-pack.js';
 import { mountTurneroSurfaceRenewalBanner } from '../queue-shared/turnero-surface-renewal-banner.js';
+import {
+    getFlowOsRecoveryFreezeNotice,
+    shouldFreezeTurneroSurfaceSignal,
+} from '../queue-shared/flow-os-recovery-freeze.js';
 import { listTurneroSurfaceFallbackDrills } from '../queue-shared/turnero-surface-fallback-drill-store.js';
 import { listTurneroSurfaceCheckinLogbook } from '../queue-shared/turnero-surface-checkin-logbook.js';
 
@@ -105,6 +109,26 @@ const KIOSK_WELCOME_HIDE_MS = 1800;
 const KIOSK_WELCOME_REMOVE_MS = 2600;
 const KIOSK_VOICE_GUIDE_LANG = 'es-EC';
 const KIOSK_HEARTBEAT_MS = 15000;
+
+function hideKioskSurfaceOpsPanel(panel) {
+    if (!panel || typeof panel !== 'object') {
+        return null;
+    }
+
+    const note = getFlowOsRecoveryFreezeNotice();
+    if (panel.host instanceof HTMLElement) {
+        panel.host.hidden = true;
+        panel.host.dataset.flowOsRecoveryFrozen = 'true';
+        panel.host.dataset.flowOsRecoveryNote = note;
+    }
+    if (panel.bannerHost instanceof HTMLElement) {
+        panel.bannerHost.replaceChildren();
+    }
+    if (panel.chipsHost instanceof HTMLElement) {
+        panel.chipsHost.replaceChildren();
+    }
+    return null;
+}
 
 const state = {
     queueState: null,
@@ -681,7 +705,10 @@ function ensureKioskSurfaceSuccessPanel() {
 
 function buildKioskSurfaceSuccessPack() {
     const scope = getKioskSurfaceSuccessScope();
-    const ledgerStore = createTurneroSurfaceSuccessLedger(scope, state.clinicProfile);
+    const ledgerStore = createTurneroSurfaceSuccessLedger(
+        scope,
+        state.clinicProfile
+    );
     const ownerStore = createTurneroSurfaceSuccessOwnerStore(
         scope,
         state.clinicProfile
@@ -750,6 +777,11 @@ function renderKioskSurfaceRenewalState() {
     const panel = ensureKioskSurfaceRenewalPanel();
     if (!panel) {
         return null;
+    }
+
+    if (shouldFreezeTurneroSurfaceSignal('renewal')) {
+        state.surfaceRenewalPack = null;
+        return hideKioskSurfaceOpsPanel(panel);
     }
 
     if (!state.clinicProfile) {
@@ -917,6 +949,11 @@ function renderKioskSurfaceExpansionState(inputState = state) {
     const panel = ensureKioskSurfaceExpansionPanel();
     if (!panel) {
         return null;
+    }
+
+    if (shouldFreezeTurneroSurfaceSignal('expansion')) {
+        inputState.surfaceExpansionPack = null;
+        return hideKioskSurfaceOpsPanel(panel);
     }
 
     if (!inputState.clinicProfile) {
@@ -1684,8 +1721,7 @@ function getKioskSurfaceGoLiveScope() {
 
 function getKioskSurfaceFleetScope() {
     return (
-        String(state.clinicProfile?.region || 'regional').trim() ||
-        'regional'
+        String(state.clinicProfile?.region || 'regional').trim() || 'regional'
     );
 }
 
@@ -2096,7 +2132,10 @@ function buildKioskSurfacePackagePack(inputState = state) {
     const pack = buildTurneroSurfacePackagePack({
         surfaceKey: 'kiosk',
         clinicProfile: inputState.clinicProfile,
-        runtimeState: inputState?.queueState?.status || inputState?.queueState?.state || 'ready',
+        runtimeState:
+            inputState?.queueState?.status ||
+            inputState?.queueState?.state ||
+            'ready',
         truth: inputState?.queueState ? 'aligned' : 'watch',
         packageTier: 'pilot',
         bundleState: 'draft',
@@ -2142,13 +2181,14 @@ function renderKioskSurfacePackageState(inputState = state) {
         eyebrow: 'Package gate',
     });
     panel.chipsHost.replaceChildren();
-    (Array.isArray(pack.readout?.checkpoints) ? pack.readout.checkpoints : []).forEach(
-        (chip) => {
-            const chipNode = document.createElement('span');
-            panel.chipsHost.appendChild(chipNode);
-            mountTurneroSurfaceCheckpointChip(chipNode, chip);
-        }
-    );
+    (Array.isArray(pack.readout?.checkpoints)
+        ? pack.readout.checkpoints
+        : []
+    ).forEach((chip) => {
+        const chipNode = document.createElement('span');
+        panel.chipsHost.appendChild(chipNode);
+        mountTurneroSurfaceCheckpointChip(chipNode, chip);
+    });
     return pack;
 }
 
@@ -2235,8 +2275,8 @@ function renderKioskProfileStatus(profile) {
         surfaceRuntime.uiState === 'alert'
             ? 'alert'
             : surfaceRuntime.uiState === 'warning'
-                ? 'warning'
-                : 'ready';
+              ? 'warning'
+              : 'ready';
     el.textContent = surfaceRuntime.text;
     try {
         renderKioskSurfaceRecoveryState();
@@ -2268,7 +2308,8 @@ function renderKioskSurfaceRecoveryState() {
     if (!(rolloutHost instanceof HTMLElement)) {
         rolloutHost = document.createElement('section');
         rolloutHost.dataset.role = 'rollout';
-        rolloutHost.className = 'turnero-surface-rollout-stack turnero-surface-ops__stack';
+        rolloutHost.className =
+            'turnero-surface-rollout-stack turnero-surface-ops__stack';
     }
 
     if (
@@ -2371,7 +2412,9 @@ function renderKioskSurfaceRecoveryState() {
 
 function renderKioskSurfaceRolloutState(runtimeState = null, target = null) {
     const host =
-        target instanceof HTMLElement ? target : getById('kioskSurfaceRecoveryHost');
+        target instanceof HTMLElement
+            ? target
+            : getById('kioskSurfaceRecoveryHost');
     if (!(host instanceof HTMLElement)) {
         return null;
     }

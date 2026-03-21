@@ -123,6 +123,13 @@ import {
     getTurneroClinicShortName,
     getTurneroConsultorioLabel,
 } from '../../../../../../queue-shared/turnero-runtime-contract.mjs';
+import {
+    FLOW_OS_RECOVERY_FROZEN_ADMIN_PANEL_IDS,
+    getFlowOsRecoveryFreezeNotice,
+    hideFlowOsRecoveryHost,
+    isFlowOsRecoveryAdminPanelFrozen,
+    isFlowOsRecoveryFreezeActive,
+} from '../../../../../../queue-shared/flow-os-recovery-freeze.js';
 
 const QUEUE_INSTALL_PRESET_STORAGE_KEY = 'queueInstallPresetV1';
 const QUEUE_OPENING_CHECKLIST_STORAGE_KEY = 'queueOpeningChecklistV1';
@@ -3208,6 +3215,15 @@ function renderQueueReleaseServiceExcellenceAdoptionCloud(
         'queueReleaseServiceExcellenceAdoptionCloudHost'
     );
     if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    if (
+        isFlowOsRecoveryAdminPanelFrozen(
+            'queueReleaseServiceExcellenceAdoptionCloudHost'
+        )
+    ) {
+        hideFlowOsRecoveryHost(root, getFlowOsRecoveryFreezeNotice());
         return null;
     }
 
@@ -6376,6 +6392,10 @@ function renderQueueAdminViewMode(manifest, detectedPlatform) {
     const secondaryNote =
         releaseNotes[1] ||
         'Instaladores y Android TV quedan como siguiente release, no como bloqueo del go-live.';
+    const notes = [releaseNote, secondaryNote];
+    if (isFlowOsRecoveryFreezeActive()) {
+        notes.push(getFlowOsRecoveryFreezeNotice());
+    }
     const renderKey = [
         adminMode,
         clinicName,
@@ -6383,6 +6403,7 @@ function renderQueueAdminViewMode(manifest, detectedPlatform) {
         clinicId,
         releaseNote,
         secondaryNote,
+        notes.length,
     ].join('|');
     const shouldRender =
         root.dataset.queueAdminViewModeRenderKey !== renderKey ||
@@ -6423,8 +6444,9 @@ function renderQueueAdminViewMode(manifest, detectedPlatform) {
                         </button>
                     </div>
                     <ul class="queue-admin-view-mode__notes">
-                        <li>${escapeHtml(releaseNote)}</li>
-                        <li>${escapeHtml(secondaryNote)}</li>
+                        ${notes
+                            .map((note) => `<li>${escapeHtml(note)}</li>`)
+                            .join('')}
                     </ul>
                 </section>
             `
@@ -6450,6 +6472,20 @@ function renderQueueAdminViewMode(manifest, detectedPlatform) {
     if (expertButton instanceof HTMLButtonElement) {
         expertButton.onclick = () => rerenderFullHub('expert');
     }
+}
+
+function applyFlowOsRecoveryFreezeToQueueHub() {
+    if (!isFlowOsRecoveryFreezeActive()) {
+        return;
+    }
+
+    const note = getFlowOsRecoveryFreezeNotice();
+    FLOW_OS_RECOVERY_FROZEN_ADMIN_PANEL_IDS.forEach((panelId) => {
+        if (!isFlowOsRecoveryAdminPanelFrozen(panelId)) {
+            return;
+        }
+        hideFlowOsRecoveryHost(document.getElementById(panelId), note);
+    });
 }
 
 function formatNumpadBindingLabel(binding) {
@@ -23279,6 +23315,11 @@ function renderQueueRegionalProgramOffice(manifest, detectedPlatform) {
         return null;
     }
 
+    if (isFlowOsRecoveryAdminPanelFrozen('queueRegionalProgramOfficeHost')) {
+        hideFlowOsRecoveryHost(root, getFlowOsRecoveryFreezeNotice());
+        return null;
+    }
+
     return mountRegionalProgramOfficeCard(
         root,
         getQueueRegionalProgramOfficeContext(),
@@ -23483,6 +23524,11 @@ function renderQueueSurfaceCommercialConsole(manifest, detectedPlatform) {
         return null;
     }
 
+    if (isFlowOsRecoveryAdminPanelFrozen('queueSurfaceCommercialConsoleHost')) {
+        hideFlowOsRecoveryHost(root, getFlowOsRecoveryFreezeNotice());
+        return null;
+    }
+
     return mountTurneroAdminQueueSurfaceCommercialConsole(root, {
         scope: getQueueSurfaceRecoveryScope(),
         clinicProfile: getTurneroClinicProfile(),
@@ -23502,6 +23548,11 @@ function renderQueueSurfaceCommercialConsole(manifest, detectedPlatform) {
 function renderQueueSurfaceRenewalConsole(manifest, detectedPlatform) {
     const root = document.getElementById('queueSurfaceRenewalConsoleHost');
     if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    if (isFlowOsRecoveryAdminPanelFrozen('queueSurfaceRenewalConsoleHost')) {
+        hideFlowOsRecoveryHost(root, getFlowOsRecoveryFreezeNotice());
         return null;
     }
 
@@ -23546,6 +23597,11 @@ function renderQueueSurfaceSuccessConsole(manifest, detectedPlatform) {
 function renderQueueSurfaceExpansionConsole(manifest, detectedPlatform) {
     const root = document.getElementById('queueSurfaceExpansionConsoleHost');
     if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    if (isFlowOsRecoveryAdminPanelFrozen('queueSurfaceExpansionConsoleHost')) {
+        hideFlowOsRecoveryHost(root, getFlowOsRecoveryFreezeNotice());
         return null;
     }
 
@@ -24282,6 +24338,7 @@ function rerenderQueueOpsHub(manifest, detectedPlatform) {
     primeQueueAdminViewModeToHub(adminMode);
     renderQueueHubDomainView();
     applyQueueAdminViewModeToHub(adminMode);
+    applyFlowOsRecoveryFreezeToQueueHub();
     queueOpsInteractionController.syncIndicator();
     queueOpsInteractionController.scheduleSettle();
 }
@@ -24774,6 +24831,7 @@ export function renderQueueInstallHub(options = {}) {
     primeQueueAdminViewModeToHub(adminMode);
     renderQueueHubDomainView();
     applyQueueAdminViewModeToHub(adminMode);
+    applyFlowOsRecoveryFreezeToQueueHub();
     if (hubRoot) {
         hubRoot.dataset.queueHubReady = 'true';
     }
