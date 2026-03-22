@@ -18,7 +18,7 @@ const OPERATOR_AUTH_PENDING_WEB_STATE_KEY = 'operator_auth_pending_web_state';
 const OPERATOR_AUTH_FLASH_ERROR_KEY = 'operator_auth_flash_error';
 const OPERATOR_AUTH_MODE_GOOGLE = 'google_oauth';
 const OPERATOR_AUTH_MODE_OPENCLAW = 'openclaw_chatgpt';
-const OPERATOR_AUTH_SOURCE = OPERATOR_AUTH_MODE_GOOGLE;
+const OPERATOR_AUTH_SOURCE = OPERATOR_AUTH_MODE_OPENCLAW;
 const OPERATOR_AUTH_SUPPORTED_SOURCES = [
     OPERATOR_AUTH_MODE_GOOGLE,
     OPERATOR_AUTH_MODE_OPENCLAW,
@@ -183,12 +183,7 @@ function operator_auth_recommended_mode(): string
 
 function operator_auth_normalize_mode(string $mode): string
 {
-    $normalized = strtolower(trim($mode));
-    if ($normalized === OPERATOR_AUTH_MODE_OPENCLAW) {
-        return OPERATOR_AUTH_MODE_GOOGLE;
-    }
-
-    return $normalized;
+    return strtolower(trim($mode));
 }
 
 function operator_auth_mode_is_supported(string $mode): bool
@@ -334,6 +329,12 @@ function operator_auth_callback_url(): string
     return operator_auth_server_base_url() . '/admin-auth.php?action=oauth-callback';
 }
 
+function operator_auth_uses_google_broker_defaults(): bool
+{
+    $mode = operator_auth_mode();
+    return $mode === OPERATOR_AUTH_MODE_GOOGLE || $mode === OPERATOR_AUTH_MODE_OPENCLAW;
+}
+
 function operator_auth_broker_authorize_url(): string
 {
     $raw = getenv('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL');
@@ -341,7 +342,7 @@ function operator_auth_broker_authorize_url(): string
         return trim($raw);
     }
 
-    if (operator_auth_mode() === OPERATOR_AUTH_MODE_GOOGLE) {
+    if (operator_auth_uses_google_broker_defaults()) {
         return 'https://accounts.google.com/o/oauth2/v2/auth';
     }
 
@@ -355,7 +356,7 @@ function operator_auth_broker_token_url(): string
         return trim($raw);
     }
 
-    if (operator_auth_mode() === OPERATOR_AUTH_MODE_GOOGLE) {
+    if (operator_auth_uses_google_broker_defaults()) {
         return 'https://oauth2.googleapis.com/token';
     }
 
@@ -369,7 +370,7 @@ function operator_auth_broker_userinfo_url(): string
         return trim($raw);
     }
 
-    if (operator_auth_mode() === OPERATOR_AUTH_MODE_GOOGLE) {
+    if (operator_auth_uses_google_broker_defaults()) {
         return 'https://openidconnect.googleapis.com/v1/userinfo';
     }
 
@@ -413,7 +414,7 @@ function operator_auth_broker_jwks_url(): string
         return trim($raw);
     }
 
-    if (operator_auth_mode() === OPERATOR_AUTH_MODE_GOOGLE) {
+    if (operator_auth_uses_google_broker_defaults()) {
         return 'https://www.googleapis.com/oauth2/v3/certs';
     }
 
@@ -427,7 +428,7 @@ function operator_auth_broker_expected_issuer(): string
         return trim($raw);
     }
 
-    if (operator_auth_mode() === OPERATOR_AUTH_MODE_GOOGLE) {
+    if (operator_auth_uses_google_broker_defaults()) {
         return 'https://accounts.google.com';
     }
 

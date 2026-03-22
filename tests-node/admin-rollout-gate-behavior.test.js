@@ -150,7 +150,7 @@ function runGate(baseUrl, reportPath, options = {}) {
                 baseUrl,
                 '--stage',
                 stage,
-                '--require-operator-auth',
+                '--require-openclaw-auth',
                 '--skip-runtime-smoke',
                 ...extraArgs,
                 '--report-path',
@@ -208,9 +208,8 @@ test('admin rollout gate acepta stage general y switches de tolerancia usados po
                     sendJson(res, 200, {
                         ok: true,
                         authenticated: false,
-                        mode: 'google_oauth',
-                        recommendedMode: 'google_oauth',
-                        transport: 'web_broker',
+                        mode: 'openclaw_chatgpt',
+                        transport: 'local_helper',
                         status: 'anonymous',
                         configured: true,
                         configuration: {
@@ -264,7 +263,7 @@ function readJson(path) {
     return JSON.parse(readFileSync(path, 'utf8').replace(/^\uFEFF/, ''));
 }
 
-test('admin rollout gate marca la fachada como legacy cuando operator-auth-status cae y admin-auth sigue sin contrato auth', async () => {
+test('admin rollout gate marca la fachada como legacy cuando operator-auth-status cae y admin-auth sigue sin contrato OpenClaw', async () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'admin-rollout-gate-legacy-'));
     const reportPath = join(tempDir, 'report.json');
 
@@ -338,8 +337,8 @@ test('admin rollout gate marca la fachada como legacy cuando operator-auth-statu
     }
 });
 
-test('admin rollout gate acepta operator-auth-status cuando ya expone contrato auth valido', async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'admin-rollout-gate-auth-'));
+test('admin rollout gate acepta operator-auth-status cuando ya expone contrato OpenClaw valido', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'admin-rollout-gate-openclaw-'));
     const reportPath = join(tempDir, 'report.json');
     let facadeHits = 0;
 
@@ -359,9 +358,8 @@ test('admin rollout gate acepta operator-auth-status cuando ya expone contrato a
                     sendJson(res, 200, {
                         ok: true,
                         authenticated: false,
-                        mode: 'google_oauth',
-                        recommendedMode: 'google_oauth',
-                        transport: 'web_broker',
+                        mode: 'openclaw_chatgpt',
+                        transport: 'local_helper',
                         status: 'anonymous',
                         configured: true,
                         configuration: {
@@ -417,7 +415,7 @@ test('admin rollout gate acepta operator-auth-status cuando ya expone contrato a
                     'operator-auth-status'
                 );
                 assert.equal(report.operator_auth.contract_valid, true);
-                assert.equal(report.operator_auth.mode, 'google_oauth');
+                assert.equal(report.operator_auth.mode, 'openclaw_chatgpt');
                 assert.equal(report.operator_auth.status, 'anonymous');
                 assert.equal(report.operator_auth.configured, true);
             }
@@ -452,8 +450,7 @@ test('admin rollout gate acepta web_broker configurado sin exigir helper local',
                     sendJson(res, 200, {
                         ok: true,
                         authenticated: false,
-                        mode: 'google_oauth',
-                        recommendedMode: 'google_oauth',
+                        mode: 'openclaw_chatgpt',
                         transport: 'web_broker',
                         status: 'pending',
                         configured: true,
@@ -529,8 +526,7 @@ test('admin rollout gate falla si web_broker no tiene trust OIDC completo', asyn
                     sendJson(res, 200, {
                         ok: true,
                         authenticated: false,
-                        mode: 'google_oauth',
-                        recommendedMode: 'google_oauth',
+                        mode: 'openclaw_chatgpt',
                         transport: 'web_broker',
                         status: 'pending',
                         configured: true,
@@ -612,9 +608,8 @@ test('admin rollout gate falla cuando admin.html y sw.js publican versiones mezc
                     sendJson(res, 200, {
                         ok: true,
                         authenticated: false,
-                        mode: 'google_oauth',
-                        recommendedMode: 'google_oauth',
-                        transport: 'web_broker',
+                        mode: 'openclaw_chatgpt',
+                        transport: 'local_helper',
                         status: 'anonymous',
                         configured: true,
                         configuration: {

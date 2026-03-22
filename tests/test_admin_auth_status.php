@@ -49,6 +49,8 @@ function with_admin_status_server(array $env, callable $callback): void
             'env' => [
                 'PIELARMONIA_DATA_DIR' => $dataDir,
                 'PIELARMONIA_AVAILABILITY_SOURCE' => 'store',
+                'PIELARMONIA_OPERATOR_AUTH_MODE' => 'openclaw_chatgpt',
+                'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => 'web_broker',
             ] + $env,
         ]);
         $callback($server['base_url']);
@@ -123,6 +125,24 @@ run_test('admin status reports legacy mode as configured when password exists an
             $status['body']['capabilities']['adminAgent'] ?? true,
             'legacy status should remain capability-free before authentication'
         );
+    });
+});
+
+run_test('admin status configures openclaw web broker from google oauth defaults when broker vars are absent', function () {
+    with_admin_status_server([
+        'PIELARMONIA_OPERATOR_AUTH_MODE' => 'openclaw_chatgpt',
+        'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => 'web_broker',
+        'PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL' => 'true',
+        'PIELARMONIA_GOOGLE_OAUTH_CLIENT_ID' => 'test-google-client-id',
+        'PIELARMONIA_GOOGLE_OAUTH_CLIENT_SECRET' => 'test-google-client-secret',
+    ], function (string $baseUrl): void {
+        $status = admin_status_request($baseUrl);
+        assert_equals(200, $status['code'], 'status should respond 200');
+        assert_true($status['body']['ok'] ?? false, 'status payload should be ok');
+        assert_equals('openclaw_chatgpt', $status['body']['mode'] ?? '', 'openclaw mode should remain primary');
+        assert_equals('openclaw_chatgpt', $status['body']['recommendedMode'] ?? '', 'recommended mode should remain openclaw');
+        assert_true($status['body']['configured'] ?? false, 'google oauth defaults should satisfy broker config');
+        assert_equals('anonymous', $status['body']['status'] ?? '', 'configured web broker should stay anonymous before login');
     });
 });
 

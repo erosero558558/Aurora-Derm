@@ -5,7 +5,7 @@ declare(strict_types=1);
 function operator_auth_test_defaults(array $overrides = []): array
 {
     $defaults = [
-        'mode' => 'google_oauth',
+        'mode' => 'openclaw_chatgpt',
         'transport' => 'local_helper',
         'allowlist' => 'operator@example.com',
         'email' => 'operator@example.com',
@@ -268,7 +268,7 @@ function operator_auth_test_login(string $serverBaseUrl, string $cookieFile, arr
             'email' => (string) $defaults['email'],
             'profileId' => (string) $defaults['profile_id'],
             'accountId' => (string) $defaults['account_id'],
-            'source' => 'google_oauth',
+            'source' => 'openclaw_chatgpt',
         ],
         'start' => $start,
         'complete' => $complete,
