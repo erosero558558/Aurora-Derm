@@ -1,7 +1,7 @@
 import {
     getTurneroClinicProfileFingerprint,
     getTurneroSurfaceContract,
-} from './clinic-profile.js';
+} from './turnero-runtime-contract.mjs';
 
 const DEFAULT_SURFACE = 'operator';
 const STALE_HEARTBEAT_SECONDS = 45;

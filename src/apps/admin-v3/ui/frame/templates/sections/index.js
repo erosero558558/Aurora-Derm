@@ -7,8 +7,8 @@ import { renderQueueSection } from './queue.js';
 
 export function renderAllSections() {
     return `
-        ${renderDashboardSection()}
         ${renderQueueSection()}
+        ${renderDashboardSection()}
         ${renderClinicalHistorySection()}
         ${renderAppointmentsSection()}
         ${renderCallbacksSection()}

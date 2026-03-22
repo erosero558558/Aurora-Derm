@@ -23,8 +23,8 @@ export function renderSidebarNav() {
     return `
         <div class="admin-nav-group" id="adminPrimaryNav">
             ${navGroupLabel('Flujo diario')}
-            ${navItem('dashboard', 'Inicio', 'dashboard', true)}
-            ${navItem('queue', 'Turnero', 'queue')}
+            ${navItem('queue', 'Turnero', 'queue', true)}
+            ${navItem('dashboard', 'Inicio', 'dashboard')}
             ${navItem('appointments', 'Agenda', 'appointments')}
             ${navItem('callbacks', 'Pendientes', 'callbacks')}
             ${navItem('availability', 'Horarios', 'availability')}

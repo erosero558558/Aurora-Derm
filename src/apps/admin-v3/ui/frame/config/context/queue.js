@@ -1,13 +1,13 @@
 export const QUEUE_CONTEXT = {
-    eyebrow: 'Herramientas avanzadas',
-    title: 'Turnero y diagnostico de sala',
+    eyebrow: 'Consola operativa',
+    title: 'Control room del turnero',
     summary:
-        'Mantiene el turnero completo, instaladores y diagnostico fuera del flujo principal diario.',
+        'El admin arranca en queue para mostrar operación diaria, truth/readiness y release registry sin abrir paneles expertos.',
     actions: [
         {
             action: 'open-operator-app',
-            label: 'Abrir turnero',
-            meta: 'Ir a la app operativa separada',
+            label: 'Abrir operador',
+            meta: 'Ir a la surface operativa primaria',
         },
         {
             action: 'queue-call-next',

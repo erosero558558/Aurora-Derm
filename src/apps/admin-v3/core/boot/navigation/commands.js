@@ -160,7 +160,7 @@ export function parseQuickCommand(value) {
         command.includes('cola') ||
         command === 'queue'
     ) {
-        return 'queue_sla_risk';
+        return 'queue_section';
     }
     if (command.includes('no show')) {
         return 'appointments_no_show';

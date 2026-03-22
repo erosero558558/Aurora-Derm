@@ -149,6 +149,7 @@ function renderPanelSummary(state) {
     const truth = state.truthSummary || {};
     const readiness = state.readinessSummary || {};
     const safeMode = state.readinessPack.safeMode || { enabled: false };
+    const fallbackVisible = state.manifestSource === 'fallback';
     const statusTone =
         readiness.state === 'ready'
             ? 'ready'
@@ -171,7 +172,7 @@ function renderPanelSummary(state) {
                     <p class="queue-app-card__eyebrow">Surface truth</p>
                     <h5 class="queue-app-card__title">Admin queue · verdad de surfaces</h5>
                     <p class="queue-app-card__description">
-                        Truth pack, readiness pack y fallback visible del manifest de release.
+                        Truth pack, readiness pack y resolución visible contra release registry.
                     </p>
                 </div>
                 <div class="turnero-admin-queue-surface-truth-panel__stats">
@@ -188,11 +189,19 @@ function renderPanelSummary(state) {
                 </div>
             </div>
             <div class="turnero-admin-queue-surface-truth-panel__meta">
-                <span>Manifest ${escapeHtml(state.manifestSource)}</span>
-                <span>Requested ${escapeHtml(state.requestedManifestUrl || '')}</span>
-                <span>Resolved ${escapeHtml(state.resolvedManifestUrl || '')}</span>
-                <span>Updated ${escapeHtml(formatTimestamp(state.truthPack.generatedAt || state.generatedAt))}</span>
+                <span>Manifest source ${escapeHtml(state.manifestSource)}</span>
+                <span>Requested URL ${escapeHtml(state.requestedManifestUrl || '')}</span>
+                <span>Resolved URL ${escapeHtml(state.resolvedManifestUrl || '')}</span>
+                <span>Timestamp ${escapeHtml(formatTimestamp(state.truthPack.generatedAt || state.generatedAt))}</span>
             </div>
+            ${
+                fallbackVisible
+                    ? `<aside class="turnero-surface-safe-mode-banner" data-state="watch" data-reason="manifest_fallback_visible">
+                            <strong>Fallback piloto visible</strong>
+                            <p>El manifest salió de /app-downloads/pilot/release-manifest.json. La consola queda en watch y no cuenta como cierre pleno.</p>
+                        </aside>`
+                    : ''
+            }
             ${
                 safeMode.enabled
                     ? `<aside class="turnero-surface-safe-mode-banner" data-state="${escapeHtml(
@@ -205,8 +214,8 @@ function renderPanelSummary(state) {
             }
             <div class="turnero-admin-queue-surface-truth-panel__summary">
                 <article>
-                    <span>Aligned</span>
-                    <strong>${escapeHtml(String(truth.aligned || 0))}</strong>
+                    <span>Ready</span>
+                    <strong>${escapeHtml(String(truth.readyCount || truth.aligned || 0))}</strong>
                 </article>
                 <article>
                     <span>Watch</span>
@@ -233,6 +242,9 @@ function renderPanelSummary(state) {
                     )}
                 </span>
             </div>
+            <p class="turnero-admin-queue-surface-truth-panel__note">
+                Readiness bands ready / watch / degraded / unknown
+            </p>
             <ul class="turnero-admin-queue-surface-truth-panel__rows">
                 ${renderPanelRows(state)}
             </ul>

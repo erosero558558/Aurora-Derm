@@ -14,7 +14,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self';"
         />
-        <title>Nucleo Interno de Consultorio - Piel en Armonia</title>
+        <title>Consola de control del turnero - Piel en Armonia</title>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <script src="src/apps/queue-shared/ops-theme-global.js?v=turnero-20260314-auto-theme1"></script>
         <link
@@ -38,8 +38,112 @@
             >Saltar al contenido principal</a
         >
 
-        <div id="loginScreen" class="login-screen"></div>
-        <div id="adminDashboard" class="admin-dashboard is-hidden"></div>
+        <div id="loginScreen" class="login-screen">
+            <section class="login-screen__raw-shell" data-login-raw="true">
+                <p>Autenticacion requerida</p>
+                <h1>Turnero control room</h1>
+                <p>
+                    La consola operativa del consultorio hidrata despues de
+                    validar la sesion.
+                </p>
+            </section>
+        </div>
+        <div
+            id="adminDashboard"
+            class="admin-dashboard is-hidden"
+            data-admin-entrypoint="queue"
+            aria-hidden="true"
+        >
+            <main
+                id="adminMainContent"
+                class="admin-dashboard__raw-shell"
+                tabindex="-1"
+                data-admin-raw-shell="turnero-control-room"
+            >
+                <section id="adminRawControlRoom" data-admin-raw-hero="queue">
+                    <p>Consola de control del turnero</p>
+                    <h2>Queue-first control room</h2>
+                    <p>
+                        El admin publica queue como vista inicial y deja
+                        visible el estado de surfaces, release y registry antes
+                        de hidratar.
+                    </p>
+                </section>
+
+                <nav aria-label="Secciones del admin" data-admin-raw-nav="true">
+                    <a href="#queue" data-section="queue">Turnero</a>
+                    <a href="#dashboard" data-section="dashboard">Inicio</a>
+                    <a href="#appointments" data-section="appointments"
+                        >Agenda</a
+                    >
+                    <a href="#callbacks" data-section="callbacks"
+                        >Pendientes</a
+                    >
+                    <a href="#availability" data-section="availability"
+                        >Horarios</a
+                    >
+                    <a
+                        href="#clinical-history"
+                        data-section="clinical-history"
+                        >Historia clinica</a
+                    >
+                </nav>
+
+                <section
+                    id="queue"
+                    class="admin-section active"
+                    data-admin-raw-section="queue"
+                >
+                    <header data-turnero-control-room="raw">
+                        <p>Control room</p>
+                        <h3>Turnero</h3>
+                        <p>
+                            Queue, surfaces, install hub y release registry
+                            quedan confirmables desde el HTML raw.
+                        </p>
+                    </header>
+
+                    <div id="queueAppsHub" data-admin-raw-panel="queue-apps">
+                        <article
+                            id="queueSurfaceTruthPanel"
+                            data-turnero-surface-truth-panel
+                        >
+                            <strong>Surface Truth Panel</strong>
+                            <p>
+                                Readiness bands: ready / watch / degraded /
+                                unknown
+                            </p>
+                            <p>Manifest source: pending hydration</p>
+                            <p>Requested URL: /release-manifest.json</p>
+                            <p>Resolved URL: /release-manifest.json</p>
+                            <p>Timestamp: pending hydration</p>
+                        </article>
+
+                        <article
+                            id="queueReleaseCommandDeck"
+                            data-admin-raw-panel="release-registry"
+                        >
+                            <strong>Release and registry</strong>
+                            <p>
+                                La consola resuelve admin, operador, kiosco y
+                                sala contra release/registry publicado.
+                            </p>
+                        </article>
+
+                        <article
+                            id="queueAppDownloadsCards"
+                            data-admin-raw-panel="app-hub"
+                        >
+                            <strong>App hub</strong>
+                            <p>
+                                Install hub e instaladores visibles para
+                                confirmar el cierre operativo del turnero.
+                            </p>
+                        </article>
+                    </div>
+                </section>
+            </main>
+        </div>
 
         <div
             id="toastContainer"

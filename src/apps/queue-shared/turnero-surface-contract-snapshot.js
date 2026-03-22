@@ -5,7 +5,7 @@ import {
     getTurneroClinicReleaseMode,
     getTurneroClinicShortName,
     getTurneroSurfaceContract,
-} from './clinic-profile.js';
+} from './turnero-runtime-contract.mjs';
 import {
     asObject,
     normalizePathToken,

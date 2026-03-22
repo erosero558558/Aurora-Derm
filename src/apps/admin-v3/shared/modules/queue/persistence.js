@@ -13,16 +13,14 @@ import {
     QUEUE_STATION_CONSULTORIO_STORAGE_KEY,
     QUEUE_STATION_MODE_STORAGE_KEY,
 } from './constants.js';
-import { normalize } from './helpers.js';
+import {
+    getTurneroActiveClinicId as getActiveQueueClinicId,
+    normalizeOneTap,
+    normalizeStationConsultorio,
+    normalizeStationMode,
+} from '../../../../queue-shared/turnero-runtime-contract.mjs';
 
 let lastQueueUiClinicId = null;
-
-function getActiveQueueClinicId() {
-    return (
-        String(getState().data.turneroClinicProfile?.clinic_id || '').trim() ||
-        'default-clinic'
-    );
-}
 
 function normalizeScopedStorageMap(rawValue) {
     const source = rawValue && typeof rawValue === 'object' ? rawValue : {};
@@ -91,23 +89,6 @@ function removeScopedStorageValue(key, clinicId) {
     setStorageJson(key, nextState);
 }
 
-function normalizeStationModeValue(value) {
-    return normalize(value) === 'locked' ? 'locked' : 'free';
-}
-
-function normalizeStationConsultorioValue(value) {
-    return Number(value || 0) === 2 ? 2 : 1;
-}
-
-function normalizeBooleanStorageValue(value) {
-    return (
-        value === true ||
-        value === 1 ||
-        value === '1' ||
-        String(value || '').trim().toLowerCase() === 'true'
-    );
-}
-
 function normalizeCustomCallKeyValue(value) {
     return value && typeof value === 'object' ? value : null;
 }
@@ -117,25 +98,25 @@ function buildQueueUiDefaultsForClinic(clinicId) {
         QUEUE_STATION_MODE_STORAGE_KEY,
         clinicId,
         'free',
-        normalizeStationModeValue
+        (value) => normalizeStationMode(value, 'free')
     );
     const stationConsultorio = readScopedStorageValue(
         QUEUE_STATION_CONSULTORIO_STORAGE_KEY,
         clinicId,
         1,
-        normalizeStationConsultorioValue
+        (value) => normalizeStationConsultorio(value, 1)
     );
     const oneTap = readScopedStorageValue(
         QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY,
         clinicId,
         false,
-        normalizeBooleanStorageValue
+        (value) => normalizeOneTap(value, false)
     );
     const helpOpen = readScopedStorageValue(
         QUEUE_HELP_STORAGE_KEY,
         clinicId,
         false,
-        normalizeBooleanStorageValue
+        (value) => normalizeOneTap(value, false)
     );
     const customCallKey = readScopedStorageValue(
         QUEUE_CUSTOM_CALL_KEY_STORAGE_KEY,
@@ -159,12 +140,12 @@ function persistQueueUiPreferences(state) {
     persistScopedStorageValue(
         QUEUE_STATION_MODE_STORAGE_KEY,
         clinicId,
-        normalizeStationModeValue(state.queue.stationMode || 'free')
+        normalizeStationMode(state.queue.stationMode || 'free', 'free')
     );
     persistScopedStorageValue(
         QUEUE_STATION_CONSULTORIO_STORAGE_KEY,
         clinicId,
-        normalizeStationConsultorioValue(state.queue.stationConsultorio || 1)
+        normalizeStationConsultorio(state.queue.stationConsultorio || 1, 1)
     );
     persistScopedStorageValue(
         QUEUE_ONE_TAP_ADVANCE_STORAGE_KEY,

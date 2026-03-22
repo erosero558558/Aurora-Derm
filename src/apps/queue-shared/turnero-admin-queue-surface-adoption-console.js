@@ -816,19 +816,20 @@ function renderConsoleHtml(state) {
 }
 
 function buildConsoleState(input = {}, registry = null, currentState = {}) {
+    const previousState = asObject(currentState);
     const clinicProfile = asObject(
-        input.clinicProfile || currentState.clinicProfile
+        input.clinicProfile || previousState.clinicProfile
     );
     const scope = toString(
-        input.scope || currentState.scope || getScope({ clinicProfile }),
+        input.scope || previousState.scope || getScope({ clinicProfile }),
         'regional'
     );
     const trainingLedger =
-        currentState.trainingLedger ||
+        previousState.trainingLedger ||
         input.trainingLedger ||
         createTurneroSurfaceTrainingLedger(scope, clinicProfile);
     const ackStore =
-        currentState.ackStore ||
+        previousState.ackStore ||
         input.ackStore ||
         createTurneroSurfaceOperatorAckStore(scope, clinicProfile);
     const snapshotSeeds = resolveSnapshotSeeds(input, clinicProfile);

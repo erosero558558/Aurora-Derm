@@ -35,7 +35,7 @@ const initialState = {
         lastError: '',
     },
     ui: {
-        activeSection: 'dashboard',
+        activeSection: 'queue',
         sidebarCollapsed: false,
         sidebarOpen: false,
         themeMode: 'system',

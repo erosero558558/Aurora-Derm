@@ -1,4 +1,7 @@
-import { getTurneroSurfaceContract } from '../../../../queue-shared/clinic-profile.js';
+import {
+    getTurneroActiveClinicProfile,
+    getTurneroSurfaceContract,
+} from '../../../../queue-shared/turnero-runtime-contract.mjs';
 import { getState } from '../../core/store.js';
 import { createToast } from '../../ui/render.js';
 
@@ -37,29 +40,6 @@ function hasAdminPilotContext() {
     );
 }
 
-function buildAdminProfileWithRuntimeMeta(profile, meta) {
-    if (!profile || typeof profile !== 'object') {
-        return null;
-    }
-
-    const source =
-        String(meta?.source || '').trim().toLowerCase() === 'remote'
-            ? 'remote'
-            : 'fallback_default';
-    const profileFingerprint = String(meta?.profileFingerprint || '').trim();
-
-    return {
-        ...profile,
-        runtime_meta: {
-            ...(profile.runtime_meta && typeof profile.runtime_meta === 'object'
-                ? profile.runtime_meta
-                : {}),
-            source,
-            profileFingerprint,
-        },
-    };
-}
-
 export function getAdminQueuePilotSurfaceContract() {
     if (!isAdminBodyContext()) {
         return null;
@@ -70,25 +50,7 @@ export function getAdminQueuePilotSurfaceContract() {
     }
 
     const state = getState();
-    const profile = buildAdminProfileWithRuntimeMeta(
-        state.data.turneroClinicProfile,
-        state.data.turneroClinicProfileMeta
-    );
-
-    if (!profile) {
-        return {
-            surface: 'admin',
-            enabled: true,
-            expectedRoute: ADMIN_DEFAULT_ROUTE,
-            currentRoute: getCurrentAdminRoute(),
-            routeMatches: false,
-            state: 'alert',
-            label: 'Admin web',
-            detail:
-                'No se pudo cargar clinic-profile.json; admin quedó sin perfil remoto válido para operar como piloto.',
-            reason: 'profile_missing',
-        };
-    }
+    const profile = getTurneroActiveClinicProfile(state);
 
     return getTurneroSurfaceContract(profile, 'admin', {
         currentRoute: getCurrentAdminRoute(),
@@ -127,7 +89,7 @@ export function getAdminQueuePilotBlockedMessage() {
     return 'No se puede operar esta clínica desde admin: clinic-profile.json remoto ausente o inválido. Corrige el perfil y recarga admin.html#queue antes de operar la cola.';
 }
 
-export function notifyAdminQueuePilotBlocked(action) {
+export function notifyAdminQueuePilotBlocked(_action) {
     const message = getAdminQueuePilotBlockedMessage();
     if (!message) {
         return '';

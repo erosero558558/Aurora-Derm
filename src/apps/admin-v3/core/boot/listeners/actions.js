@@ -84,7 +84,7 @@ export function attachActionListeners() {
 
         event.preventDefault();
         const navigated = await navigateToSection(
-            String(nav.getAttribute('data-section') || 'dashboard')
+            String(nav.getAttribute('data-section') || 'queue')
         );
 
         if (isCompactViewport() && navigated !== false) {

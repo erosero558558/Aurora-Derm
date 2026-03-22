@@ -5,8 +5,8 @@ export function renderShellTopbar() {
     return `
         <header class="admin-v3-topbar">
             <div class="admin-v3-topbar__copy">
-                <p class="sony-kicker">Nucleo interno</p>
-                <h2 id="pageTitle">Inicio</h2>
+                <p class="sony-kicker">Consola de control</p>
+                <h2 id="pageTitle">Turnero</h2>
             </div>
             <div class="admin-v3-topbar__actions">
                 <button type="button" id="adminMenuToggle" class="admin-v3-topbar__menu" aria-controls="adminSidebar" aria-expanded="false">${icon('menu')}<span>Menu</span></button>

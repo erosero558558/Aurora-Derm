@@ -195,7 +195,7 @@ function summarizeArtifact(entry) {
     return {
         kind: normalizeArtifactKind(entry.kind),
         label: toString(entry.label || entry.title, ''),
-        status: normalizeArtifactState(entry.status),
+        status: normalizeArtifactStatus(entry.status),
         owner: toString(entry.owner, ''),
         note: toString(entry.note, ''),
         updatedAt: toString(entry.updatedAt, ''),

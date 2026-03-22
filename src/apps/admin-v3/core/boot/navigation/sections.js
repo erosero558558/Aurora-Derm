@@ -20,14 +20,14 @@ import {
 } from '../ui-prefs.js';
 
 function syncAdminThemeForSection(section) {
-    const normalized = normalizeSection(section, 'dashboard');
+    const normalized = normalizeSection(section, 'queue');
     const nextTheme =
         normalized === 'queue' ? 'system' : readInitialThemeMode();
     setThemeMode(nextTheme, { persist: false });
 }
 
 export function showSection(section) {
-    const normalized = normalizeSection(section, 'dashboard');
+    const normalized = normalizeSection(section, 'queue');
     updateState((state) => ({
         ...state,
         ui: {
@@ -52,7 +52,7 @@ function shouldConfirmAvailabilityExit(targetSection, force) {
 }
 
 export async function navigateToSection(section, options = {}) {
-    const normalized = normalizeSection(section, 'dashboard');
+    const normalized = normalizeSection(section, 'queue');
     const { force = false } = options;
     const previousSection = getState().ui.activeSection;
 

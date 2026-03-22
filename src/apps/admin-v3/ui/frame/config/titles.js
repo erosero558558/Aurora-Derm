@@ -5,5 +5,5 @@ export const SECTION_TITLES = {
     callbacks: 'Pendientes',
     reviews: 'Resenas',
     availability: 'Horarios',
-    queue: 'Turnero sala',
+    queue: 'Turnero',
 };

@@ -1,15 +1,15 @@
 import { getQueryParam, setHash } from './persistence.js';
 
 const VALID_SECTIONS = new Set([
-    'dashboard',
     'queue',
+    'dashboard',
     'clinical-history',
     'appointments',
     'callbacks',
     'availability',
 ]);
 
-export function normalizeSection(value, fallback = 'dashboard') {
+export function normalizeSection(value, fallback = 'queue') {
     const candidate = String(value || '')
         .trim()
         .toLowerCase();
@@ -28,7 +28,7 @@ function readQuerySection() {
     return normalizeSection(getQueryParam('section'), '');
 }
 
-export function readSectionFromHash(fallback = 'dashboard') {
+export function readSectionFromHash(fallback = 'queue') {
     return readHashSection() || readQuerySection() || normalizeSection('', fallback);
 }
 

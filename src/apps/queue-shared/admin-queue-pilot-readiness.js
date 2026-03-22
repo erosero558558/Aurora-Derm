@@ -6,7 +6,7 @@ import {
     getTurneroPilotOpeningPackage,
     getTurneroReleaseMode,
     normalizeTurneroClinicProfile,
-} from './clinic-profile.js';
+} from './turnero-runtime-contract.mjs';
 
 const ADMIN_QUEUE_STORAGE_PREFIX = 'adminQueueClinicScopedV1';
 const ADMIN_QUEUE_LEGACY_STORAGE_KEYS = Object.freeze([

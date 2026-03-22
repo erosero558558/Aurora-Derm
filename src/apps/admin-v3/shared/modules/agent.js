@@ -937,12 +937,12 @@ async function applyClientActions(actions) {
         const args = action?.args || {};
 
         if (tool === 'ui.navigate') {
-            await navigateToSection(args.section || 'dashboard');
+            await navigateToSection(args.section || 'queue');
             continue;
         }
 
         if (tool === 'ui.set_section_filter') {
-            const section = String(args.section || 'dashboard');
+            const section = String(args.section || 'queue');
             const filter = String(args.filter || 'all');
             if (getState().ui.activeSection !== section) {
                 await navigateToSection(section);

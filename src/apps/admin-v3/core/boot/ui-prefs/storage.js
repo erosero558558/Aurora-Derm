@@ -17,7 +17,7 @@ import { renderSidebarState } from './sidebar.js';
 
 export function restoreUiPrefs() {
     const storedSection = normalizeSection(
-        getStorageItem(ADMIN_LAST_SECTION_STORAGE_KEY, 'dashboard')
+        getStorageItem(ADMIN_LAST_SECTION_STORAGE_KEY, 'queue')
     );
     const lastSection = readSectionFromHash(storedSection);
     const collapsed =
