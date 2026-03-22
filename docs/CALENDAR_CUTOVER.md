@@ -10,30 +10,37 @@ Fecha objetivo: cuando vayas a pasar de `store` a `google` en produccion.
 Configura:
 
 ```php
+putenv('AURORADERM_AVAILABILITY_SOURCE=google');
+putenv('AURORADERM_REQUIRE_GOOGLE_CALENDAR=true');
+putenv('AURORADERM_CALENDAR_BLOCK_ON_FAILURE=true');
+putenv('AURORADERM_CALENDAR_AUTH_MODE=oauth_refresh_token');
+
+putenv('AURORADERM_GOOGLE_OAUTH_CLIENT_ID=...');
+putenv('AURORADERM_GOOGLE_OAUTH_CLIENT_SECRET=...');
+putenv('AURORADERM_GOOGLE_OAUTH_REFRESH_TOKEN=...');
+
+putenv('AURORADERM_GOOGLE_CALENDAR_ID_ROSERO=...');
+putenv('AURORADERM_GOOGLE_CALENDAR_ID_NARVAEZ=...');
+putenv('AURORADERM_CALENDAR_TIMEZONE=America/Guayaquil');
+putenv('AURORADERM_CALENDAR_CACHE_TTL_SEC=60');
+```
+
+Aliases transitorios que todavia deben quedar alineados si el hosting legacy los usa:
+
+```php
 putenv('PIELARMONIA_AVAILABILITY_SOURCE=google');
 putenv('PIELARMONIA_REQUIRE_GOOGLE_CALENDAR=true');
-putenv('PIELARMONIA_CALENDAR_BLOCK_ON_FAILURE=true');
-putenv('PIELARMONIA_CALENDAR_AUTH_MODE=oauth_refresh_token');
-
-putenv('PIELARMONIA_GOOGLE_OAUTH_CLIENT_ID=...');
-putenv('PIELARMONIA_GOOGLE_OAUTH_CLIENT_SECRET=...');
-putenv('PIELARMONIA_GOOGLE_OAUTH_REFRESH_TOKEN=...');
-
-putenv('PIELARMONIA_GOOGLE_CALENDAR_ID_ROSERO=...');
-putenv('PIELARMONIA_GOOGLE_CALENDAR_ID_NARVAEZ=...');
-putenv('PIELARMONIA_CALENDAR_TIMEZONE=America/Guayaquil');
-putenv('PIELARMONIA_CALENDAR_CACHE_TTL_SEC=60');
 ```
 
 Duraciones:
 
 ```php
-putenv('PIELARMONIA_SERVICE_DURATION_MAP=consulta:30,telefono:30,video:30,acne:30,cancer:30,laser:60,rejuvenecimiento:60');
+putenv('AURORADERM_SERVICE_DURATION_MAP=consulta:30,telefono:30,video:30,acne:30,cancer:30,laser:60,rejuvenecimiento:60');
 ```
 
 Nota de hardening:
 
-- Con `PIELARMONIA_REQUIRE_GOOGLE_CALENDAR=true`, si por error el servidor queda en `source=store`, la API bloquea:
+- Con `AURORADERM_REQUIRE_GOOGLE_CALENDAR=true`, si por error el servidor queda en `source=store`, la API bloquea:
     - `GET availability` / `GET booked-slots` con `503 calendar_unreachable`
     - `POST appointments` / `PATCH reschedule` con `503 calendar_unreachable`
 - Esto evita reservas falsas cuando el cutover no esta activo en Google.
@@ -78,3 +85,4 @@ Efecto:
 - `Post-Deploy Gate` en verde.
 - `Production Monitor` en verde.
 - `Calendar Write Smoke` en verde.
+

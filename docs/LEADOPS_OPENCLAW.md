@@ -59,10 +59,11 @@ Chequeos por surface:
 
 Variables minimas en `env.php`:
 
-- `PIELARMONIA_LEADOPS_MACHINE_TOKEN`
-- `PIELARMONIA_LEADOPS_MACHINE_TOKEN_HEADER` (default `Authorization`)
-- `PIELARMONIA_LEADOPS_MACHINE_TOKEN_PREFIX` (default `Bearer`)
-- `PIELARMONIA_LEADOPS_WORKER_STALE_AFTER_SECONDS` (default `900`)
+- `AURORADERM_LEADOPS_MACHINE_TOKEN`
+- `PIELARMONIA_LEADOPS_MACHINE_TOKEN` (alias transitorio aceptado mientras se termina la migracion de env vars)
+- `AURORADERM_LEADOPS_MACHINE_TOKEN_HEADER` (default `Authorization`)
+- `AURORADERM_LEADOPS_MACHINE_TOKEN_PREFIX` (default `Bearer`)
+- `AURORADERM_LEADOPS_WORKER_STALE_AFTER_SECONDS` (default `900`)
 
 Notas:
 
@@ -74,9 +75,10 @@ Notas:
 
 Variables minimas para el worker:
 
-- `PIELARMONIA_LEADOPS_SERVER_BASE_URL`
-- `PIELARMONIA_LEADOPS_MACHINE_TOKEN`
-- `PIELARMONIA_LEADOPS_WORKER_INTERVAL_MS`
+- `AURORADERM_LEADOPS_SERVER_BASE_URL`
+- `PIELARMONIA_LEADOPS_SERVER_BASE_URL` (alias transitorio aceptado mientras se termina la migracion de env vars)
+- `AURORADERM_LEADOPS_MACHINE_TOKEN`
+- `AURORADERM_LEADOPS_WORKER_INTERVAL_MS`
 - `OPENCLAW_GATEWAY_ENDPOINT`
 - `OPENCLAW_GATEWAY_MODEL`
 
@@ -90,9 +92,9 @@ Variables opcionales:
 Ejemplo PowerShell:
 
 ```powershell
-$env:PIELARMONIA_LEADOPS_SERVER_BASE_URL = "https://pielarmonia.com"
-$env:PIELARMONIA_LEADOPS_MACHINE_TOKEN = "token_largo_rotado"
-$env:PIELARMONIA_LEADOPS_WORKER_INTERVAL_MS = "5000"
+$env:AURORADERM_LEADOPS_SERVER_BASE_URL = "https://pielarmonia.com"
+$env:AURORADERM_LEADOPS_MACHINE_TOKEN = "token_largo_rotado"
+$env:AURORADERM_LEADOPS_WORKER_INTERVAL_MS = "5000"
 $env:OPENCLAW_GATEWAY_ENDPOINT = "http://127.0.0.1:4141/v1/responses"
 $env:OPENCLAW_GATEWAY_MODEL = "openclaw:main"
 $env:OPENCLAW_GATEWAY_API_KEY = "token_gateway"
@@ -111,9 +113,9 @@ El login admin por OpenClaw usa un helper HTTP local separado del worker LeadOps
 
 Variables minimas del helper:
 
-- `PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL`
-- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN`
-- `PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET`
+- `AURORADERM_OPERATOR_AUTH_HELPER_BASE_URL`
+- `AURORADERM_OPERATOR_AUTH_BRIDGE_TOKEN`
+- `AURORADERM_OPERATOR_AUTH_BRIDGE_SECRET`
 - `OPENCLAW_RUNTIME_BASE_URL`
 
 Variables opcionales:
@@ -126,9 +128,9 @@ Variables opcionales:
 Ejemplo PowerShell:
 
 ```powershell
-$env:PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL = "http://127.0.0.1:4173"
-$env:PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN = "token_bridge_largo_rotado"
-$env:PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET = "secret_hmac_rotado"
+$env:AURORADERM_OPERATOR_AUTH_HELPER_BASE_URL = "http://127.0.0.1:4173"
+$env:AURORADERM_OPERATOR_AUTH_BRIDGE_TOKEN = "token_bridge_largo_rotado"
+$env:AURORADERM_OPERATOR_AUTH_BRIDGE_SECRET = "secret_hmac_rotado"
 $env:OPENCLAW_RUNTIME_BASE_URL = "http://127.0.0.1:4141"
 npm run checklist:admin:openclaw-auth:local
 npm run smoke:admin:openclaw-auth:local
@@ -147,7 +149,7 @@ Interpretacion rapida del preflight:
 - Implementacion canonica del smoke local: `scripts/ops/admin/SMOKE-OPENCLAW-AUTH-LOCAL.ps1`.
 - `npm run openclaw:auth:start` usa la implementacion canonica en `scripts/ops/admin/INICIAR-OPENCLAW-AUTH-HELPER.ps1`, corre `openclaw:auth-preflight` y solo despues levanta `openclaw:auth-helper`.
 - OpenClaw sigue siendo el acceso primario del operador local.
-- Si hace falta contingencia web desde cualquier PC, habilitar `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `PIELARMONIA_ADMIN_PASSWORD` o `PIELARMONIA_ADMIN_PASSWORD_HASH` y `PIELARMONIA_ADMIN_2FA_SECRET`.
+- Si hace falta contingencia web desde cualquier PC, habilitar `AURORADERM_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `AURORADERM_ADMIN_PASSWORD` o `AURORADERM_ADMIN_PASSWORD_HASH` y `AURORADERM_ADMIN_2FA_SECRET`.
 - La UI solo debe mostrar `Clave + 2FA de contingencia` cuando el backend anuncie `fallbacks.legacy_password.available=true`.
 
 Flujo esperado:
@@ -166,7 +168,7 @@ Estados operativos del worker:
 - `pending`: hay configuracion pero aun no existe heartbeat util.
 - `online`: el ultimo heartbeat/success esta fresco.
 - `degraded`: hubo error mas reciente que el ultimo success.
-- `offline`: el heartbeat supera `PIELARMONIA_LEADOPS_WORKER_STALE_AFTER_SECONDS`.
+- `offline`: el heartbeat supera `AURORADERM_LEADOPS_WORKER_STALE_AFTER_SECONDS`.
 
 Comportamiento esperado:
 
@@ -198,3 +200,4 @@ Admin y reporte:
 5. Ejecutar el worker local y revisar que `lead-ai-result` cierre el job.
 6. Validar que `health` y metricas reflejan el modo `online`, `degraded` u `offline`.
 7. Registrar el outcome comercial en admin para alimentar el reporte semanal.
+
