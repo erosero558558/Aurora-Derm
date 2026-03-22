@@ -546,6 +546,53 @@ class OperatorAuthControllerTest extends TestCase
         self::assertTrue((bool) ($status['payload']['capabilities']['adminAgent'] ?? false));
     }
 
+    public function testWebBrokerStartPublishesOauthCallbackRedirectUri(): void
+    {
+        $this->configureWebBrokerTransport();
+
+        $start = $this->captureResponse(
+            static fn () => \OperatorAuthController::start([]),
+            'POST'
+        );
+
+        self::assertSame(202, $start['status']);
+        $redirectUrl = (string) ($start['payload']['redirectUrl'] ?? '');
+        self::assertNotSame('', $redirectUrl, 'web broker start should expose a redirect URL');
+
+        $parsed = parse_url($redirectUrl);
+        self::assertIsArray($parsed, 'redirect URL should be parseable');
+
+        parse_str((string) ($parsed['query'] ?? ''), $query);
+        self::assertSame(
+            'https://pielarmonia.com/admin-auth.php?action=oauth-callback',
+            (string) ($query['redirect_uri'] ?? ''),
+            'web broker should reuse the Google callback already allowed in production'
+        );
+    }
+
+    public function testOauthCallbackFallsBackToOperatorAuthWhenCalendarStateIsAbsent(): void
+    {
+        $this->configureWebBrokerTransport();
+        $this->captureResponse(static fn () => \OperatorAuthController::start([]), 'POST');
+        $pending = $_SESSION['operator_auth_pending_web_state'] ?? null;
+        self::assertIsArray($pending);
+
+        $this->installWebBrokerHttpClient($pending);
+
+        $redirect = $this->captureRedirect(
+            static fn () => \OperatorAuthController::oauthCallback([]),
+            [
+                'action' => 'oauth-callback',
+                'state' => (string) ($pending['state'] ?? ''),
+                'code' => 'oauth-callback-code',
+            ]
+        );
+
+        self::assertSame(302, $redirect['status']);
+        self::assertSame('/admin.html', (string) ($redirect['location'] ?? ''));
+        self::assertSame('authenticated', (string) ($redirect['result']['status'] ?? ''));
+    }
+
     public function testWebBrokerCallbackAuthenticatesRestrictedAllowlistEmail(): void
     {
         $this->configureWebBrokerTransport([

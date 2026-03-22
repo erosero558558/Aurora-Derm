@@ -331,7 +331,7 @@ function operator_auth_server_base_url(): string
 
 function operator_auth_callback_url(): string
 {
-    return operator_auth_server_base_url() . '/admin-auth.php?action=callback';
+    return operator_auth_server_base_url() . '/admin-auth.php?action=oauth-callback';
 }
 
 function operator_auth_broker_authorize_url(): string
@@ -1911,6 +1911,23 @@ function operator_auth_claim_audience_matches($audience, string $expected): bool
     return false;
 }
 
+function operator_auth_claim_issuer_matches(string $issuer, string $expected): bool
+{
+    $normalizedIssuer = trim($issuer);
+    $normalizedExpected = trim($expected);
+    if ($normalizedIssuer === '' || $normalizedExpected === '') {
+        return false;
+    }
+
+    if (hash_equals($normalizedExpected, $normalizedIssuer)) {
+        return true;
+    }
+
+    $googleAliases = ['accounts.google.com', 'https://accounts.google.com'];
+    return in_array($normalizedExpected, $googleAliases, true)
+        && in_array($normalizedIssuer, $googleAliases, true);
+}
+
 function operator_auth_fetch_broker_jwks(): array
 {
     $response = operator_auth_broker_request('GET', operator_auth_broker_jwks_url());
@@ -2015,7 +2032,7 @@ function operator_auth_validate_broker_identity(array $tokenPayload, array $user
     $claims = is_array($segments['payload'] ?? null) ? $segments['payload'] : [];
     $issuer = trim((string) ($claims['iss'] ?? ''));
     $expectedIssuer = operator_auth_broker_expected_issuer();
-    if ($issuer === '' || !hash_equals($expectedIssuer, $issuer)) {
+    if (!operator_auth_claim_issuer_matches($issuer, $expectedIssuer)) {
         return [
             'ok' => false,
             'status' => 'broker_claims_invalid',

@@ -443,7 +443,9 @@ function createWebBrokerBackend() {
 
         if (
             request.method === 'GET' &&
-            url.searchParams.get('action') === 'callback'
+            ['callback', 'oauth-callback'].includes(
+                String(url.searchParams.get('action') || '')
+            )
         ) {
             const state = String(url.searchParams.get('state') || '');
             const code = String(url.searchParams.get('code') || '');
@@ -579,7 +581,7 @@ test('runSmoke soporta web_broker y valida callback, sesion compartida y logout'
                 const redirect = new URL(redirectUrl);
                 const state = String(redirect.searchParams.get('state') || '');
                 const response = await fetch(
-                    `${serverBaseUrl}/admin-auth.php?action=callback&state=${encodeURIComponent(
+                    `${serverBaseUrl}/admin-auth.php?action=oauth-callback&state=${encodeURIComponent(
                         state
                     )}&code=smoke-code`,
                     {

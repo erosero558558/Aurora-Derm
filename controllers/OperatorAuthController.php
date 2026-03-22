@@ -6,6 +6,26 @@ require_once __DIR__ . '/../lib/calendar/CalendarOAuthReauth.php';
 
 class OperatorAuthController
 {
+    private static function redirectOperatorAuthResult(array $result): void
+    {
+        $location = operator_auth_sanitize_return_to(
+            (string) ($result['redirectTo'] ?? '/admin.html'),
+            '/admin.html'
+        );
+
+        if (defined('TESTING_ENV')) {
+            $GLOBALS['__TEST_REDIRECT'] = [
+                'location' => $location,
+                'status' => 302,
+                'result' => $result,
+            ];
+            return;
+        }
+
+        header('Location: ' . $location, true, 302);
+        exit();
+    }
+
     public static function start(array $context = []): void
     {
         start_secure_session();
@@ -53,51 +73,27 @@ class OperatorAuthController
     public static function callback(array $context = []): void
     {
         start_secure_session();
-
-        $result = operator_auth_handle_broker_callback($_GET);
-        $location = operator_auth_sanitize_return_to(
-            (string) ($result['redirectTo'] ?? '/admin.html'),
-            '/admin.html'
-        );
-
-        if (defined('TESTING_ENV')) {
-            $GLOBALS['__TEST_REDIRECT'] = [
-                'location' => $location,
-                'status' => 302,
-                'result' => $result,
-            ];
-            return;
-        }
-
-        header('Location: ' . $location, true, 302);
-        exit();
+        self::redirectOperatorAuthResult(operator_auth_handle_broker_callback($_GET));
     }
 
     public static function oauthCallback(array $context = []): void
     {
         $result = CalendarOAuthReauth::completeCallback($_GET);
-        if (!is_array($result)) {
-            http_response_code(400);
+        if (is_array($result)) {
+            $status = (int) ($result['status'] ?? 500);
+            $title = (string) ($result['title'] ?? 'Autenticacion del administrador');
+            $message = (string) ($result['message'] ?? 'No se pudo completar la autenticacion.');
+            $tone = (string) ($result['tone'] ?? 'info');
+            $redirectUrl = (string) ($result['redirectUrl'] ?? (rtrim(operator_auth_server_base_url(), '/') . '/admin.html'));
+
+            http_response_code($status);
             header('Content-Type: text/html; charset=utf-8');
-            echo operator_auth_google_callback_document(
-                'Callback invalido',
-                'No se encontro un challenge activo para esta reautorizacion.',
-                'warning',
-                rtrim(operator_auth_server_base_url(), '/') . '/admin.html?calendarReauth=missing'
-            );
+            echo operator_auth_google_callback_document($title, $message, $tone, $redirectUrl);
             exit();
         }
 
-        $status = (int) ($result['status'] ?? 500);
-        $title = (string) ($result['title'] ?? 'Autenticacion del administrador');
-        $message = (string) ($result['message'] ?? 'No se pudo completar la autenticacion.');
-        $tone = (string) ($result['tone'] ?? 'info');
-        $redirectUrl = (string) ($result['redirectUrl'] ?? (rtrim(operator_auth_server_base_url(), '/') . '/admin.html'));
-
-        http_response_code($status);
-        header('Content-Type: text/html; charset=utf-8');
-        echo operator_auth_google_callback_document($title, $message, $tone, $redirectUrl);
-        exit();
+        start_secure_session();
+        self::redirectOperatorAuthResult(operator_auth_handle_broker_callback($_GET));
     }
 
     public static function calendarTokenStart(array $context = []): void
