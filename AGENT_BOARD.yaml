@@ -7,7 +7,7 @@ policy:
   codex_backend_instance: codex_backend_ops
   codex_frontend_instance: codex_frontend
   codex_transversal_instance: codex_transversal
-  revision: 740
+  revision: 737
   updated_at: 2026-03-21
 
 strategy:
@@ -11335,4 +11335,228 @@ tasks:
     depends_on: []
     prompt: "Rollout publico de health/publicSync y verificacion host-side"
     created_at: 2026-03-17
+    updated_at: 2026-03-17
+
+  - id: AG-259
+    title: "Step 62 surface expansion upsell console"
+    owner: Ernesto
+    executor: codex
+    status: in_progress
+    status_since_at: "2026-03-21T08:48:37.260Z"
+    risk: medium
+    scope: turnero
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["src/apps/queue-shared/turnero-surface-expansion-snapshot.js", "src/apps/queue-shared/turnero-surface-expansion-ledger.js", "src/apps/queue-shared/turnero-surface-expansion-owner-store.js", "src/apps/queue-shared/turnero-surface-expansion-gate.js", "src/apps/queue-shared/turnero-surface-expansion-banner.js", "src/apps/queue-shared/turnero-surface-expansion-readout.js", "src/apps/queue-shared/turnero-surface-expansion-pack.js", "src/apps/queue-shared/turnero-admin-queue-surface-expansion-console.js", "src/apps/admin-v3/shared/modules/queue/render/section/install-hub.js", "src/apps/queue-operator/index.js", "src/apps/queue-kiosk/index.js", "src/apps/queue-display/index.js"]
+    source_signal: strategy_intake
+    source_ref: "STRAT-2026-03-admin-operativo"
+    priority_score: 70
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: "lease_AG-259_20260321084837260_e44152"
+    lease_owner: "Ernesto"
+    lease_created_at: "2026-03-21T08:48:37.260Z"
+    heartbeat_at: "2026-03-21T08:48:37.260Z"
+    lease_expires_at: "2026-03-21T12:48:37.260Z"
+    lease_reason: "board_write"
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Validar flujo UI y demo del subfrente SF-frontend-queue-turnero-operativo para \"Step 62 surface expansion upsell console\"."
+    acceptance_ref: "verification/agent-runs/AG-259.md"
+    evidence_ref: "verification/agent-runs/AG-259.md"
+    strategy_id: "STRAT-2026-03-admin-operativo"
+    subfront_id: "SF-frontend-queue-turnero-operativo"
+    strategy_role: "primary"
+    focus_id: "FOCUS-2026-03-admin-operativo-cut-1"
+    focus_step: "admin_queue_pilot_cut"
+    integration_slice: "frontend_runtime"
+    work_type: "forward"
+    expected_outcome: ""
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Step 62 surface expansion upsell console"
+    created_at: 2026-03-21
+    updated_at: 2026-03-21
+
+  - id: AG-260
+    title: "Repo cleanup exception for transversal board split"
+    owner: Ernesto
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-21T09:37:01.167Z"
+    risk: low
+    scope: codex-governance
+    codex_instance: codex_transversal
+    domain_lane: transversal_runtime
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["AGENT_BOARD.yaml"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Aislar la gobernanza del split repo-wide en el lane transversal sin tocar codigo de producto."
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: "STRAT-2026-03-admin-operativo"
+    subfront_id: "SF-transversal-admin-operativo"
+    strategy_role: "exception"
+    strategy_reason: "repo_wide_cleanup_exception"
+    exception_opened_at: "2026-03-21T09:37:01.133Z"
+    exception_expires_at: "2026-03-21T13:37:01.133Z"
+    exception_state: "open"
+    focus_id: "FOCUS-2026-03-admin-operativo-cut-1"
+    focus_step: "admin_queue_pilot_cut"
+    integration_slice: "runtime_support"
+    work_type: "support"
+    expected_outcome: ""
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Repo cleanup exception for transversal board split"
+    created_at: 2026-03-21
+    updated_at: 2026-03-21
+
+  - id: AG-261
+    title: "Repo cleanup split for frontend quarantine"
+    owner: Ernesto
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-21T09:37:17.335Z"
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["admin.html", "js/admin-preboot-shortcuts.js", "src/apps/admin-v3/core/boot/listeners/actions.js", "src/apps/admin-v3/core/boot/navigation/commands.js", "src/apps/admin-v3/core/boot/navigation/sections.js", "src/apps/admin-v3/core/boot/ui-prefs/storage.js", "src/apps/admin-v3/shared/core/keyboard/constants.js", "src/apps/admin-v3/shared/core/router.js", "src/apps/admin-v3/shared/core/store.js", "src/apps/admin-v3/shared/modules/agent.js", "src/apps/admin-v3/shared/modules/queue/persistence.js", "src/apps/admin-v3/shared/modules/queue/pilot-guard.js", "src/apps/admin-v3/shared/modules/queue/render/section/install-hub/smoke-signal.js", "src/apps/admin-v3/ui/frame/config/context/queue.js", "src/apps/admin-v3/ui/frame/config/titles.js", "src/apps/admin-v3/ui/frame/templates/nav.js", "src/apps/admin-v3/ui/frame/templates/sections/index.js", "src/apps/admin-v3/ui/frame/templates/sections/queue/header.js", "src/apps/admin-v3/ui/frame/templates/shell/context-strip.js", "src/apps/admin-v3/ui/frame/templates/shell/topbar.js", "src/apps/admin/index.js", "src/apps/queue-shared/admin-queue-pilot-readiness.js", "src/apps/queue-shared/turnero-admin-queue-surface-adoption-console.js", "src/apps/queue-shared/turnero-admin-queue-surface-truth-panel.js", "src/apps/queue-shared/turnero-runtime-contract.mjs", "src/apps/queue-shared/turnero-surface-contract-snapshot.js", "src/apps/queue-shared/turnero-surface-package-pack.js", "src/apps/queue-shared/turnero-surface-runtime-watch.js", "src/apps/queue-shared/turnero-admin-queue-surface-executive-review-console.js", "src/apps/queue-shared/turnero-admin-queue-surface-renewal-console.js", "src/apps/queue-shared/turnero-surface-executive-review-banner.js", "src/apps/queue-shared/turnero-surface-executive-review-gate.js", "src/apps/queue-shared/turnero-surface-executive-review-ledger.js", "src/apps/queue-shared/turnero-surface-executive-review-owner-store.js", "src/apps/queue-shared/turnero-surface-executive-review-pack.js", "src/apps/queue-shared/turnero-surface-executive-review-readout.js", "src/apps/queue-shared/turnero-surface-executive-review-snapshot.js", "src/apps/queue-shared/turnero-surface-renewal-banner.js", "src/apps/queue-shared/turnero-surface-renewal-gate.js", "src/apps/queue-shared/turnero-surface-renewal-ledger.js", "src/apps/queue-shared/turnero-surface-renewal-owner-store.js", "src/apps/queue-shared/turnero-surface-renewal-pack.js", "src/apps/queue-shared/turnero-surface-renewal-readout.js", "src/apps/queue-shared/turnero-surface-renewal-snapshot.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Separar y validar los cambios frontend fuera de AG-259 sin cruzar lanes."
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: "STRAT-2026-03-admin-operativo"
+    subfront_id: "SF-frontend-queue-turnero-operativo"
+    strategy_role: "exception"
+    strategy_reason: "repo_wide_cleanup_exception"
+    exception_opened_at: "2026-03-21T09:37:17.298Z"
+    exception_expires_at: "2026-03-21T17:37:17.298Z"
+    exception_state: "open"
+    focus_id: "FOCUS-2026-03-admin-operativo-cut-1"
+    focus_step: "admin_queue_pilot_cut"
+    integration_slice: "frontend_runtime"
+    work_type: "support"
+    expected_outcome: ""
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Repo cleanup split for frontend quarantine"
+    created_at: 2026-03-21
+    updated_at: 2026-03-21
+
+  - id: AG-262
+    title: "Repo cleanup split for backend and validator support"
+    owner: Ernesto
+    executor: codex
+    status: ready
+    status_since_at: "2026-03-21T09:37:36.437Z"
+    risk: medium
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    provider_mode: 
+    runtime_surface: 
+    runtime_transport: 
+    runtime_last_transport: 
+    files: ["admin.js", "bin/check-public-runtime-artifacts.js", "bin/check-turnero-runtime-artifacts.js", "bin/lib/public-runtime-artifacts.js", "package.json", "tests-node/admin-quick-command-routing.test.js", "tests-node/check-public-runtime-artifacts.test.js", "tests-node/turnero-admin-queue-surface-package-console.test.js", "tests-node/turnero-runtime-contract.test.js", "tests-node/turnero-surface-truth-readiness.test.js", "tests/admin-ui-runtime-smoke.spec.js", "tests/admin-v3-shell.spec.js", "tests/turnero-runtime-smoke.spec.js", "verification/agent-runs/AG-190.md", "tests-node/turnero-admin-queue-surface-expansion-console.test.js", "tests-node/turnero-admin-queue-surface-renewal-console.test.js", "tests-node/turnero-surface-expansion-contract.test.js", "tests-node/turnero-surface-package-standardization.test.js", "tests-node/turnero-surface-renewal-contract.test.js"]
+    source_signal: manual
+    source_ref: ""
+    priority_score: 0
+    sla_due_at: ""
+    last_attempt_at: ""
+    attempts: 0
+    blocked_reason: ""
+    lease_id: ""
+    lease_owner: ""
+    lease_created_at: ""
+    heartbeat_at: ""
+    lease_expires_at: ""
+    lease_reason: ""
+    lease_cleared_at: ""
+    lease_cleared_reason: ""
+    runtime_impact: low
+    critical_zone: false
+    acceptance: "Separar validators, package scripts y tests de soporte backend sin mezclar frontend ni board."
+    acceptance_ref: ""
+    evidence_ref: ""
+    strategy_id: "STRAT-2026-03-admin-operativo"
+    subfront_id: "SF-backend-admin-operativo"
+    strategy_role: "exception"
+    strategy_reason: "repo_wide_cleanup_exception"
+    exception_opened_at: "2026-03-21T09:37:36.409Z"
+    exception_expires_at: "2026-03-21T15:37:36.409Z"
+    exception_state: "open"
+    focus_id: "FOCUS-2026-03-admin-operativo-cut-1"
+    focus_step: "admin_queue_pilot_cut"
+    integration_slice: "ops_deploy"
+    work_type: "support"
+    expected_outcome: ""
+    decision_ref: ""
+    rework_parent: ""
+    rework_reason: ""
+    depends_on: []
+    prompt: "Repo cleanup split for backend and validator support"
+    created_at: 2026-03-21
     updated_at: 2026-03-21
