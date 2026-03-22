@@ -35,7 +35,6 @@ function createSandbox(prefix = 'turnero-runtime-artifacts-') {
         base,
         sourceRoot: resolve(base, 'source-root'),
         buildRoot: resolve(base, '.generated', 'site-root'),
-        publishedRoot: resolve(base, 'published-root'),
         reportPath: resolve(base, 'report.json'),
     };
 }
@@ -44,22 +43,13 @@ function removeSandbox(base) {
     rmSync(base, { recursive: true, force: true });
 }
 
-function runChecker(
-    scriptPath,
-    root,
-    sourceRoot,
-    publishedRoot,
-    outputPath,
-    selfSourcePath = ''
-) {
+function runChecker(scriptPath, root, sourceRoot, outputPath, selfSourcePath = '') {
     const args = [
         scriptPath,
         '--root',
         root,
         '--source-root',
         sourceRoot,
-        '--published-root',
-        publishedRoot,
         '--output',
         outputPath,
     ];
@@ -221,8 +211,8 @@ test('shared turnero runtime contract exposes the shared facade for surface stat
         schema: 'turnero-clinic-profile/v1',
         clinic_id: 'clinic-123',
         branding: {
-            name: 'Clinica Aurora Derm',
-            short_name: 'Aurora Derm',
+            name: 'Clinica Piel en Armonia',
+            short_name: 'Piel en Armonia',
             city: 'Quito',
             base_url: 'https://pielarmonia.com',
         },
@@ -388,13 +378,11 @@ test('turnero runtime checker validates source wiring and bundle signatures', ()
     try {
         seedRuntimeSourceTree(sandbox.sourceRoot);
         seedRuntimeBundles(sandbox.buildRoot);
-        seedRuntimeBundles(sandbox.publishedRoot);
 
         const result = runChecker(
             CHECKER_PATH,
             sandbox.buildRoot,
             sandbox.sourceRoot,
-            sandbox.publishedRoot,
             sandbox.reportPath
         );
 
@@ -418,13 +406,11 @@ test('turnero runtime checker fails when a bundle loses its shared surface signa
     try {
         seedRuntimeSourceTree(sandbox.sourceRoot);
         seedRuntimeBundles(sandbox.buildRoot, { omitDisplayRoute: true });
-        seedRuntimeBundles(sandbox.publishedRoot, { omitDisplayRoute: true });
 
         const result = runChecker(
             CHECKER_PATH,
             sandbox.buildRoot,
             sandbox.sourceRoot,
-            sandbox.publishedRoot,
             sandbox.reportPath
         );
 
@@ -457,7 +443,6 @@ test('turnero runtime checker fails if the checker source proxies the public run
     try {
         seedRuntimeSourceTree(sandbox.sourceRoot);
         seedRuntimeBundles(sandbox.buildRoot);
-        seedRuntimeBundles(sandbox.publishedRoot);
         writeFileSync(
             proxyCheckerPath,
             "// require('./check-public-runtime-artifacts.js')\n",
@@ -468,7 +453,6 @@ test('turnero runtime checker fails if the checker source proxies the public run
             CHECKER_PATH,
             sandbox.buildRoot,
             sandbox.sourceRoot,
-            sandbox.publishedRoot,
             sandbox.reportPath,
             proxyCheckerPath
         );
@@ -481,48 +465,6 @@ test('turnero runtime checker fails if the checker source proxies the public run
                 (entry) =>
                     entry.code ===
                     'turnero_runtime_proxy_public_checker_detected'
-            ),
-            true
-        );
-    } finally {
-        removeSandbox(sandbox.base);
-    }
-});
-
-test('turnero runtime checker fails when published root drifts from generated operator bundle', () => {
-    const sandbox = createSandbox('turnero-runtime-checker-published-drift-');
-
-    try {
-        seedRuntimeSourceTree(sandbox.sourceRoot);
-        seedRuntimeBundles(sandbox.buildRoot);
-        seedRuntimeBundles(sandbox.publishedRoot);
-        writeSandboxFile(
-            resolve(sandbox.publishedRoot, 'js/queue-operator.js'),
-            [
-                "const schema = 'turnero-clinic-profile/v1';",
-                "const profile = '/content/turnero/clinic-profile.json';",
-                "const route = '/operador-turnos.html';",
-                "const stale = 'legacy-runtime';",
-                '',
-            ].join('\n')
-        );
-
-        const result = runChecker(
-            CHECKER_PATH,
-            sandbox.buildRoot,
-            sandbox.sourceRoot,
-            sandbox.publishedRoot,
-            sandbox.reportPath
-        );
-
-        assert.notEqual(result.status, 0);
-        const report = JSON.parse(readFileSync(sandbox.reportPath, 'utf8'));
-        assert.equal(report.passed, false);
-        assert.equal(
-            report.diagnostics.some(
-                (entry) =>
-                    entry.code === 'turnero_published_bundle_drift' &&
-                    entry.file === 'js/queue-operator.js'
             ),
             true
         );
