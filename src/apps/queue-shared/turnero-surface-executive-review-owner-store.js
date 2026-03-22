@@ -4,7 +4,7 @@ import {
     removeClinicScopedStorageValue,
 } from './clinic-storage.js';
 import {
-    resolveTurneroSurfaceExecutiveReviewSurfaceProfileKey,
+    normalizeTurneroSurfaceExecutiveReviewSurfaceKey,
     resolveTurneroSurfaceExecutiveReviewScope,
 } from './turnero-surface-executive-review-snapshot.js';
 
@@ -85,18 +85,14 @@ function normalizeEntry(entry = {}, fallbackScope = 'regional') {
     const createdAt =
         toString(source.createdAt || source.updatedAt) ||
         new Date().toISOString();
-    const actor = toString(
-        source.actor || source.owner || source.name,
-        'owner'
-    );
+    const actor = toString(source.actor || source.owner || source.name, 'owner');
 
     return {
         id:
             toString(source.id) ||
             `exec-owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        scope:
-            toString(source.scope, fallbackScope || 'regional') || 'regional',
-        surfaceKey: resolveTurneroSurfaceExecutiveReviewSurfaceProfileKey(
+        scope: toString(source.scope, fallbackScope || 'regional') || 'regional',
+        surfaceKey: normalizeTurneroSurfaceExecutiveReviewSurfaceKey(
             source.surfaceKey || source.surface || 'surface'
         ),
         actor,
@@ -200,10 +196,7 @@ function writeScopeEntries(storageKey, clinicProfile, scope, entries) {
         return persistEnvelope(storageKey, clinicProfile, nextEnvelope);
     }
 
-    nextEnvelope.scopes[normalizedScope] = normalizedEntries.slice(
-        0,
-        MAX_HISTORY
-    );
+    nextEnvelope.scopes[normalizedScope] = normalizedEntries.slice(0, MAX_HISTORY);
     return persistEnvelope(storageKey, clinicProfile, nextEnvelope);
 }
 
@@ -216,14 +209,10 @@ export function createTurneroSurfaceExecutiveReviewOwnerStore(
     return {
         list({ surfaceKey = '', role = '', status = '' } = {}) {
             const normalizedSurfaceKey = toString(surfaceKey)
-                ? resolveTurneroSurfaceExecutiveReviewSurfaceProfileKey(
-                      surfaceKey
-                  )
+                ? normalizeTurneroSurfaceExecutiveReviewSurfaceKey(surfaceKey)
                 : '';
             const normalizedRole = toString(role).toLowerCase();
-            const normalizedStatus = toString(status)
-                ? normalizeStatus(status)
-                : '';
+            const normalizedStatus = normalizeStatus(status);
             return readScopeEntries(STORAGE_KEY, clinicProfile, normalizedScope)
                 .filter((entry) => {
                     if (
@@ -262,9 +251,7 @@ export function createTurneroSurfaceExecutiveReviewOwnerStore(
         },
         clear({ surfaceKey = '' } = {}) {
             const normalizedSurfaceKey = toString(surfaceKey)
-                ? resolveTurneroSurfaceExecutiveReviewSurfaceProfileKey(
-                      surfaceKey
-                  )
+                ? normalizeTurneroSurfaceExecutiveReviewSurfaceKey(surfaceKey)
                 : '';
             if (!normalizedSurfaceKey) {
                 return writeScopeEntries(
