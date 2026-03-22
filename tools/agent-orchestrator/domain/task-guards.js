@@ -549,7 +549,11 @@ function isAlignedCodexMirrorTask(task, candidate) {
 
     const taskInstance = normalizeOptionalToken(task.codex_instance);
     const candidateInstance = normalizeOptionalToken(candidate.codex_instance);
-    if (taskInstance && candidateInstance && taskInstance !== candidateInstance) {
+    if (
+        taskInstance &&
+        candidateInstance &&
+        taskInstance !== candidateInstance
+    ) {
         return false;
     }
 
@@ -607,6 +611,23 @@ function validateTaskCodexMirrorDependency(board, task, options = {}) {
         Boolean(String(task?.strategy_id || '').trim()) ||
         Boolean(String(task?.subfront_id || '').trim());
     if (!shouldEnforce) {
+        return;
+    }
+
+    const allowExistingActiveMaintenance =
+        options.allowExistingActiveMaintenance === true;
+    const currentBoardTask = Array.isArray(board?.tasks)
+        ? board.tasks.find(
+              (candidate) =>
+                  String(candidate?.id || '').trim() ===
+                  String(taskId || '').trim()
+          )
+        : null;
+    if (
+        allowExistingActiveMaintenance &&
+        currentBoardTask &&
+        isActiveTaskStatus(currentBoardTask, activeStatuses)
+    ) {
         return;
     }
 
@@ -764,9 +785,8 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
 
     const runtimeTask = isOpenClawRuntimeTask(task);
     if (runtimeTask) {
-        const expectedProviderMode = expectedProviderModeForSurface(
-            runtimeSurface
-        );
+        const expectedProviderMode =
+            expectedProviderModeForSurface(runtimeSurface);
         if (providerMode !== expectedProviderMode) {
             throw new Error(
                 `task ${taskId || '(sin id)'}: runtime ${runtimeSurface || 'surface'} requiere provider_mode=${expectedProviderMode}`

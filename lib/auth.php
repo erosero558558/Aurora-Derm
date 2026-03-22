@@ -331,6 +331,15 @@ function operator_auth_server_base_url(): string
 
 function operator_auth_callback_url(): string
 {
+    if (operator_auth_transport() === OPERATOR_AUTH_TRANSPORT_WEB_BROKER) {
+        $publicBase = app_env('AURORADERM_OPERATOR_AUTH_PUBLIC_BASE_URL');
+        if (is_string($publicBase) && trim($publicBase) !== '') {
+            return rtrim(trim($publicBase), '/') . '/admin-auth.php?action=oauth-callback';
+        }
+
+        return 'https://pielarmonia.com/admin-auth.php?action=oauth-callback';
+    }
+
     return operator_auth_server_base_url() . '/admin-auth.php?action=oauth-callback';
 }
 

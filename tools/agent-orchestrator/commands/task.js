@@ -791,6 +791,7 @@ function handleTaskClaim(ctx) {
     }
     const board = parseBoard();
     const task = ensureTask(board, taskId);
+    const originalTaskStatus = String(task.status || '').trim();
     const decisionsData =
         typeof parseDecisions === 'function'
             ? parseDecisions()
@@ -844,6 +845,9 @@ function handleTaskClaim(ctx) {
     const handoffData = parseHandoffs();
     validateTaskGovernancePrechecks(board, task, {
         allowSelf: true,
+        allowExistingActiveMaintenance:
+            ACTIVE_STATUSES.has(originalTaskStatus) &&
+            ACTIVE_STATUSES.has(String(task.status || '').trim()),
         handoffs: handoffData.handoffs,
         decisionsData,
     });
@@ -980,7 +984,10 @@ async function handleTaskStart(ctx) {
         'release-publish',
         'release_publish'
     );
-    if (releasePublish && !/^(AG|CDX)-\d+$/i.test(String(taskId || '').trim())) {
+    if (
+        releasePublish &&
+        !/^(AG|CDX)-\d+$/i.test(String(taskId || '').trim())
+    ) {
         throw new Error(
             'task start --release-publish solo permite tareas existentes AG-* o CDX-*'
         );
@@ -1036,12 +1043,15 @@ async function handleTaskStart(ctx) {
     const handoffData = parseHandoffs();
     const preserveFrontendReleaseLane = Boolean(
         releasePublish &&
-            String(task.scope || '').trim().toLowerCase() ===
-                'frontend-public' &&
-            String(task.domain_lane || '').trim().toLowerCase() ===
-                'frontend_content' &&
-            String(task.codex_instance || '').trim().toLowerCase() ===
-                'codex_frontend'
+        String(task.scope || '')
+            .trim()
+            .toLowerCase() === 'frontend-public' &&
+        String(task.domain_lane || '')
+            .trim()
+            .toLowerCase() === 'frontend_content' &&
+        String(task.codex_instance || '')
+            .trim()
+            .toLowerCase() === 'codex_frontend'
     );
     applyDualCodexOverrides(task, flags, {
         isFlagEnabled,

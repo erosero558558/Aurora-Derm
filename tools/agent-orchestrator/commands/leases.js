@@ -228,10 +228,27 @@ function handleLeasesCommand(ctx) {
             } catch (error) {
                 if (
                     String(error?.error_code || error?.code || '') ===
+                    'workspace_git_unavailable'
+                ) {
+                    workspaceCapture = null;
+                } else if (
+                    String(error?.error_code || error?.code || '') ===
                         'workspace_task_worktree_missing' &&
                     typeof ensureTaskWorktree === 'function'
                 ) {
-                    workspaceCapture = ensureTaskWorktree(taskId);
+                    try {
+                        workspaceCapture = ensureTaskWorktree(taskId);
+                    } catch (innerError) {
+                        if (
+                            String(
+                                innerError?.error_code || innerError?.code || ''
+                            ) === 'workspace_git_unavailable'
+                        ) {
+                            workspaceCapture = null;
+                        } else {
+                            throw innerError;
+                        }
+                    }
                 } else {
                     throw error;
                 }
@@ -249,7 +266,16 @@ function handleLeasesCommand(ctx) {
                     .toLowerCase() === 'codex' &&
                 typeof mirrorWorkspaceBoard === 'function'
             ) {
-                mirrorWorkspaceBoard();
+                try {
+                    mirrorWorkspaceBoard();
+                } catch (error) {
+                    if (
+                        String(error?.error_code || error?.code || '') !==
+                        'workspace_git_unavailable'
+                    ) {
+                        throw error;
+                    }
+                }
             }
         } catch (error) {
             if (wantsJson) {
@@ -267,8 +293,7 @@ function handleLeasesCommand(ctx) {
                 ? {
                       snapshot_checked_at:
                           workspaceCapture.snapshot?.checked_at || null,
-                      sync_state:
-                          workspaceCapture.task_row?.sync_state || null,
+                      sync_state: workspaceCapture.task_row?.sync_state || null,
                   }
                 : null,
             lease_action: leaseResult.action,

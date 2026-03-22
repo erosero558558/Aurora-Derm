@@ -239,7 +239,10 @@ function Invoke-OperatorAuthStatus {
     $status = [string]($payload.status)
     $ok =
         $response.Ok -and
-        [string]::Equals($mode, 'google_oauth', [System.StringComparison]::OrdinalIgnoreCase) -and
+        (
+            [string]::Equals($mode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -or
+            [string]::Equals($mode, 'google_oauth', [System.StringComparison]::OrdinalIgnoreCase)
+        ) -and
         [string]::Equals($transport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase) -and
         (-not [string]::Equals($status, 'transport_misconfigured', [System.StringComparison]::OrdinalIgnoreCase))
 

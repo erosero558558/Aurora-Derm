@@ -140,9 +140,13 @@ function Invoke-LocalAuthContract {
         -TimeoutSec 15
 
     $payload = $response.Payload
+    $authMode = [string]$payload.mode
     $ok =
         $response.Ok -and
-        ([string]$payload.mode -eq 'google_oauth') -and
+        (
+            [string]::Equals($authMode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -or
+            [string]::Equals($authMode, 'google_oauth', [System.StringComparison]::OrdinalIgnoreCase)
+        ) -and
         ([string]$payload.transport -eq 'web_broker') -and
         ([string]$payload.status -ne 'transport_misconfigured')
 
@@ -217,7 +221,7 @@ function Invoke-LocalSmoke {
             '-ExecutionPolicy', 'Bypass',
             '-File', $ScriptPath,
             '-BaseUrl', 'http://127.0.0.1',
-            '-ExpectedAuthMode', 'google_oauth',
+            '-ExpectedAuthMode', 'openclaw_chatgpt,google_oauth',
             '-ExpectedTransport', 'web_broker',
             '-Quiet'
         ) `
