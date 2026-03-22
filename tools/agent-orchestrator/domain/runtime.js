@@ -12,7 +12,9 @@ try {
     leadOpsWorkerHelpers = null;
 }
 
+const PILOT_RUNTIME_PROVIDER = 'pilot_runtime';
 const OPENCLAW_PROVIDER = 'openclaw_chatgpt';
+const OPERATOR_AUTH_CANONICAL_PROVIDER = 'google_oauth';
 const OPENCLAW_RUNTIME_SURFACES = [
     'figo_queue',
     'leadops_worker',
@@ -613,10 +615,16 @@ async function verifyOperatorAuth(options = {}) {
         }
         const mode = String(payload.mode || 'disabled').trim();
         const status = String(payload.status || '').trim();
+        const recommendedMode = String(payload.recommendedMode || '').trim();
+        const contractTransport = String(payload.transport || '').trim();
+        const configured = payload.configured === true;
         const healthy = Boolean(
             response.ok &&
             payload.ok !== false &&
-            mode === OPENCLAW_PROVIDER &&
+            mode === OPERATOR_AUTH_CANONICAL_PROVIDER &&
+            recommendedMode === OPERATOR_AUTH_CANONICAL_PROVIDER &&
+            contractTransport === 'web_broker' &&
+            configured &&
             status !== 'operator_auth_not_configured'
         );
         return {
@@ -626,6 +634,9 @@ async function verifyOperatorAuth(options = {}) {
             verification_url: url,
             transport: 'http_bridge',
             mode,
+            recommended_mode: recommendedMode,
+            contract_transport: contractTransport,
+            configured,
             status,
             authenticated: Boolean(payload.authenticated),
             http_status: Number(response.status || 0),
@@ -720,12 +731,12 @@ function describeRuntimeSurface(surface = {}) {
         if (surface.configured === false || surface.mode === 'disabled') {
             return {
                 surface: key,
-                state,
+                state: 'degraded',
                 healthy: false,
-                blocking: true,
+                blocking: false,
                 reason: 'worker_disabled',
                 message:
-                    'leadops_worker unhealthy: la surface esta deshabilitada o no configurada en health',
+                    'leadops_worker degradado: la surface esta deshabilitada o no configurada en health',
                 next_action:
                     'habilitar/configurar el worker o excluirlo del corte si no aplica',
             };
@@ -733,9 +744,9 @@ function describeRuntimeSurface(surface = {}) {
         if (surface.degraded) {
             return {
                 surface: key,
-                state,
+                state: 'degraded',
                 healthy: false,
-                blocking: true,
+                blocking: false,
                 reason: 'worker_degraded',
                 message:
                     'leadops_worker degradado: health reporta el worker en linea pero degradado',
@@ -745,12 +756,12 @@ function describeRuntimeSurface(surface = {}) {
         }
         return {
             surface: key,
-            state,
+            state: 'degraded',
             healthy: false,
-            blocking: true,
+            blocking: false,
             reason: 'worker_unhealthy',
             message:
-                'leadops_worker unhealthy: la surface no pasa la verificacion runtime',
+                'leadops_worker degradado: la surface no pasa la verificacion runtime',
             next_action:
                 'revisar health.checks.leadOps y la ruta bin/lead-ai-worker.js',
         };
@@ -768,7 +779,7 @@ function describeRuntimeSurface(surface = {}) {
                 blocking: true,
                 reason: 'facade_only_rollout',
                 message:
-                    'operator_auth unhealthy: la fachada admin-auth ya publica contrato OpenClaw pero operator-auth-status aun no',
+                    'operator_auth unhealthy: la fachada admin-auth ya publica contrato auth pero operator-auth-status aun no',
                 next_action:
                     'desplegar y estabilizar /api.php?resource=operator-auth-status para alinear el surface canonico',
             };
@@ -794,7 +805,8 @@ function describeRuntimeSurface(surface = {}) {
         }
         if (
             String(surface.mode || '').trim() &&
-            String(surface.mode || '').trim() !== OPENCLAW_PROVIDER
+            String(surface.mode || '').trim() !==
+                OPERATOR_AUTH_CANONICAL_PROVIDER
         ) {
             return {
                 surface: key,
@@ -803,9 +815,42 @@ function describeRuntimeSurface(surface = {}) {
                 blocking: true,
                 reason: 'auth_mode_mismatch',
                 message:
-                    'operator_auth unhealthy: el modo expuesto no coincide con openclaw_chatgpt',
+                    'operator_auth unhealthy: el modo expuesto no coincide con google_oauth',
                 next_action:
-                    'alinear operator_auth al modo recomendado openclaw_chatgpt',
+                    'alinear operator_auth al modo recomendado google_oauth',
+            };
+        }
+        if (
+            String(surface.recommended_mode || '').trim() &&
+            String(surface.recommended_mode || '').trim() !==
+                OPERATOR_AUTH_CANONICAL_PROVIDER
+        ) {
+            return {
+                surface: key,
+                state,
+                healthy: false,
+                blocking: true,
+                reason: 'auth_recommended_mode_mismatch',
+                message:
+                    'operator_auth unhealthy: recommendedMode aun no apunta a google_oauth',
+                next_action:
+                    'publicar recommendedMode=google_oauth en operator-auth-status y admin-auth.php?action=status',
+            };
+        }
+        if (
+            String(surface.contract_transport || '').trim() &&
+            String(surface.contract_transport || '').trim() !== 'web_broker'
+        ) {
+            return {
+                surface: key,
+                state,
+                healthy: false,
+                blocking: true,
+                reason: 'auth_transport_misconfigured',
+                message:
+                    'operator_auth unhealthy: el contrato remoto no publica transport=web_broker',
+                next_action:
+                    'alinear operator_auth para exponer transport=web_broker en produccion',
             };
         }
         if (
@@ -931,8 +976,8 @@ async function verifyOpenClawRuntime(options = {}) {
     );
     const cliHelperConfigured = existsSync(helperPath);
     return {
-        provider: OPENCLAW_PROVIDER,
-        ok: summary.state === 'healthy',
+        provider: String(options.provider || PILOT_RUNTIME_PROVIDER).trim(),
+        ok: summary.blocking_surfaces.length === 0,
         summary,
         overall_state: summary.state,
         preferred_transport: 'http_bridge',
@@ -1057,7 +1102,36 @@ function invokeViaCliHelper(task, options = {}) {
 async function invokeOpenClawRuntime(task, options = {}) {
     const runtimeSurface = normalizeSurface(task?.runtime_surface);
     const runtimeTransport = normalizeTransport(task?.runtime_transport);
-    if (normalizeOptionalToken(task?.provider_mode) !== OPENCLAW_PROVIDER) {
+    const providerMode = normalizeOptionalToken(task?.provider_mode);
+    if (runtimeSurface === 'operator_auth') {
+        if (
+            providerMode !== OPENCLAW_PROVIDER &&
+            providerMode !== OPERATOR_AUTH_CANONICAL_PROVIDER
+        ) {
+            const error = new Error(
+                'runtime invoke requiere provider_mode=openclaw_chatgpt|google_oauth'
+            );
+            error.code = 'invalid_provider_mode';
+            throw error;
+        }
+        return normalizeInvokeResult(
+            {
+                ok: false,
+                mode: 'failed',
+                provider: providerMode || OPERATOR_AUTH_CANONICAL_PROVIDER,
+                runtime_surface: runtimeSurface,
+                runtime_transport: runtimeTransport,
+                errorCode: 'invoke_unsupported_surface',
+                error: 'operator_auth es una superficie verificable, no invocable',
+            },
+            {
+                provider: providerMode || OPERATOR_AUTH_CANONICAL_PROVIDER,
+                runtime_surface: runtimeSurface,
+                runtime_transport: runtimeTransport,
+            }
+        );
+    }
+    if (providerMode !== OPENCLAW_PROVIDER) {
         const error = new Error(
             'runtime invoke requiere provider_mode=openclaw_chatgpt'
         );
@@ -1071,25 +1145,6 @@ async function invokeOpenClawRuntime(task, options = {}) {
         error.code = 'invalid_runtime_surface';
         throw error;
     }
-    if (runtimeSurface === 'operator_auth') {
-        return normalizeInvokeResult(
-            {
-                ok: false,
-                mode: 'failed',
-                provider: OPENCLAW_PROVIDER,
-                runtime_surface: runtimeSurface,
-                runtime_transport: runtimeTransport,
-                errorCode: 'invoke_unsupported_surface',
-                error: 'operator_auth es una superficie verificable, no invocable',
-            },
-            {
-                provider: OPENCLAW_PROVIDER,
-                runtime_surface: runtimeSurface,
-                runtime_transport: runtimeTransport,
-            }
-        );
-    }
-
     const diagnostics = [];
     const tryHttp = async () => {
         if (runtimeSurface === 'figo_queue') {
@@ -1198,12 +1253,19 @@ function buildRuntimeBlockingErrors(tasks, verification) {
         }
         if (
             normalizeOptionalToken(task?.codex_instance) !==
-                'codex_transversal' ||
-            normalizeOptionalToken(task?.provider_mode) !== OPENCLAW_PROVIDER
+                'codex_transversal'
         ) {
             continue;
         }
         const surfaceKey = normalizeSurface(task?.runtime_surface);
+        const providerMode = normalizeOptionalToken(task?.provider_mode);
+        const expectedProvider =
+            surfaceKey === 'operator_auth'
+                ? OPERATOR_AUTH_CANONICAL_PROVIDER
+                : OPENCLAW_PROVIDER;
+        if (providerMode && providerMode !== expectedProvider) {
+            continue;
+        }
         const surface = surfaceByKey.get(surfaceKey);
         if (!surface || !surface.healthy) {
             errors.push(
@@ -1216,7 +1278,9 @@ function buildRuntimeBlockingErrors(tasks, verification) {
 }
 
 module.exports = {
+    PILOT_RUNTIME_PROVIDER,
     OPENCLAW_PROVIDER,
+    OPERATOR_AUTH_CANONICAL_PROVIDER,
     OPENCLAW_RUNTIME_SURFACES,
     OPENCLAW_RUNTIME_TRANSPORTS,
     resolveRuntimeBaseUrl,

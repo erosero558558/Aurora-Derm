@@ -139,7 +139,7 @@ test('intake buildTaskFromSignal acota operator_auth al surface verificable corr
     assert.equal(task.scope, 'openclaw_runtime');
     assert.equal(task.codex_instance, 'codex_transversal');
     assert.equal(task.domain_lane, 'transversal_runtime');
-    assert.equal(task.provider_mode, 'openclaw_chatgpt');
+    assert.equal(task.provider_mode, 'google_oauth');
     assert.equal(task.runtime_surface, 'operator_auth');
     assert.deepEqual(task.files, [
         'lib/auth.php',

@@ -15,6 +15,7 @@ const GENERATED_RUNTIME_DIRECTORIES = [
 const GENERATED_RUNTIME_FILES = [
     'script.js',
     'admin.js',
+    'js/queue-operator.js',
     'js/booking-calendar.js',
     'js/queue-kiosk.js',
     'js/queue-display.js',
@@ -22,6 +23,7 @@ const GENERATED_RUNTIME_FILES = [
 const PUBLISHED_ROOT_RUNTIME_DIRECTORIES = ['js/admin-chunks'];
 const PUBLISHED_ROOT_RUNTIME_FILES = [
     'admin.js',
+    'js/queue-operator.js',
     'js/queue-kiosk.js',
     'js/queue-display.js',
 ];

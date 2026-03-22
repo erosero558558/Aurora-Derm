@@ -555,7 +555,10 @@ async function startRuntimeFixtureServer(options = {}) {
                     ok: true,
                     authenticated: false,
                     status: 'anonymous',
-                    mode: 'openclaw_chatgpt',
+                    mode: 'google_oauth',
+                    recommendedMode: 'google_oauth',
+                    transport: 'web_broker',
+                    configured: true,
                     ...(options.operatorPayload || {}),
                 })
             );
@@ -587,7 +590,10 @@ async function startRuntimeFixtureServer(options = {}) {
                         ok: true,
                         authenticated: false,
                         status: 'anonymous',
-                        mode: 'openclaw_chatgpt',
+                        mode: 'google_oauth',
+                        recommendedMode: 'google_oauth',
+                        transport: 'web_broker',
+                        configured: true,
                         ...(options.operatorFacadePayload &&
                         typeof options.operatorFacadePayload === 'object'
                             ? options.operatorFacadePayload
@@ -633,6 +639,10 @@ function boardForRuntimeTaskFixture(options = {}) {
     const title = String(options.title || 'Runtime OpenClaw fixture');
     const runtimeSurface = String(options.runtimeSurface || 'figo_queue');
     const runtimeTransport = String(options.runtimeTransport || 'http_bridge');
+    const providerMode =
+        runtimeSurface === 'operator_auth'
+            ? 'google_oauth'
+            : 'openclaw_chatgpt';
     const files = Array.isArray(options.files)
         ? options.files
         : runtimeSurface === 'leadops_worker'
@@ -680,7 +690,7 @@ tasks:
     domain_lane: transversal_runtime
     lane_lock: strict
     cross_domain: false
-    provider_mode: openclaw_chatgpt
+    provider_mode: ${providerMode}
     runtime_surface: ${runtimeSurface}
     runtime_transport: ${runtimeTransport}
     runtime_last_transport: ""
@@ -2322,11 +2332,8 @@ tasks:
 test('status expone la razon concreta del required_check runtime y el reporte de board sync', async (t) => {
     const dir = createFixtureDir();
     const runtimeServer = await startRuntimeFixtureServer({
-        operatorPayload: {
-            mode: 'google_oauth',
-            configured: true,
-            status: 'anonymous',
-        },
+        operatorStatusCode: 530,
+        operatorRawBody: 'error code: 1033',
     });
     t.after(async () => {
         await runtimeServer.close();
@@ -2370,14 +2377,14 @@ tasks:
         (item) => item.id === 'runtime:operator_auth'
     );
     assert.equal(runtimeCheck.state, 'red');
-    assert.equal(runtimeCheck.reason, 'auth_mode_mismatch');
-    assert.match(runtimeCheck.message, /modo expuesto no coincide/i);
+    assert.equal(runtimeCheck.reason, 'auth_status_http_530');
+    assert.match(runtimeCheck.message, /HTTP 530/i);
     assert.equal(json.board_sync.check_ok, true);
     assert.equal(
         json.diagnostics.some(
             (item) =>
                 item.code === 'warn.focus.required_check_unverified' &&
-                /auth_mode_mismatch/.test(String(item.message || ''))
+                /auth_status_http_530/.test(String(item.message || ''))
         ),
         true
     );
@@ -6082,7 +6089,7 @@ tasks:
         )
     );
     assert.equal(verifyPayload.ok, true);
-    assert.equal(verifyPayload.runtime.provider, 'openclaw_chatgpt');
+    assert.equal(verifyPayload.runtime.provider, 'pilot_runtime');
     assert.equal(
         verifyPayload.runtime.surfaces.every((surface) => surface.healthy),
         true
@@ -6164,14 +6171,13 @@ test('runtime verify resume surfaces degradadas y explica por que openclaw_chatg
     );
 
     assert.equal(verifyPayload.ok, false);
-    assert.equal(verifyPayload.runtime.provider, 'openclaw_chatgpt');
-    assert.equal(verifyPayload.runtime.summary.state, 'unhealthy');
+    assert.equal(verifyPayload.runtime.provider, 'pilot_runtime');
+    assert.equal(verifyPayload.runtime.summary.state, 'degraded');
     assert.deepEqual(verifyPayload.runtime.summary.degraded_surfaces, [
         'figo_queue',
-    ]);
-    assert.deepEqual(verifyPayload.runtime.summary.unhealthy_surfaces, [
         'leadops_worker',
     ]);
+    assert.deepEqual(verifyPayload.runtime.summary.unhealthy_surfaces, []);
     assert.equal(
         verifyPayload.runtime.summary.healthy_surfaces.includes(
             'operator_auth'
@@ -6200,7 +6206,7 @@ test('runtime verify resume surfaces degradadas y explica por que openclaw_chatg
     );
     assert.match(
         verifyPayload.runtime.summary.message,
-        /leadops_worker=unhealthy\(worker_disabled\)/
+        /leadops_worker=degraded\(worker_disabled\)/
     );
     assert.match(
         verifyPayload.runtime.summary.message,
@@ -6267,7 +6273,9 @@ test('runtime verify clasifica operator_auth con HTTP 200 legacy como auth_mode_
     const dir = createFixtureDir();
     const runtimeServer = await startRuntimeFixtureServer({
         operatorPayload: {
-            mode: 'google_oauth',
+            mode: 'openclaw_chatgpt',
+            recommendedMode: 'openclaw_chatgpt',
+            transport: 'web_broker',
             configured: true,
             status: 'anonymous',
         },

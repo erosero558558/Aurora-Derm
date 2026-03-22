@@ -189,14 +189,14 @@ test('prod-readiness-summary consume evidencia local de prod-monitor', () => {
         assert.equal(summary.recoveryCycle.status, 'active');
         assert.equal(
             summary.recoveryCycle.scopeFreeze.allowedSlice,
-            'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy'
+            'admin v3 + queue/turnero + auth Google + readiness + deploy'
         );
 
         const markdown = readFileSync(mdOut, 'utf8');
         assert.match(markdown, /## Recovery Cycle/);
         assert.match(
             markdown,
-            /admin v3 \+ queue\/turnero \+ auth\/OpenClaw \+ readiness \+ deploy/
+            /admin v3 \+ queue\/turnero \+ auth Google \+ readiness \+ deploy/
         );
         assert.match(markdown, /## Production Monitor Evidence/);
         assert.match(markdown, /- status: ok/);

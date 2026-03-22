@@ -6,6 +6,7 @@ const domainDiagnostics = require('../domain/diagnostics');
 async function handleStatusCommand(ctx) {
     const {
         args,
+        parseFlags,
         parseBoard,
         parseHandoffs,
         analyzeConflicts,
@@ -42,9 +43,19 @@ async function handleStatusCommand(ctx) {
         loadModelUsageLedger,
         buildModelUsageSummary,
         collectPremiumGateBlockers,
+        collectWorkspaceComplianceFindings,
+        buildWorkspaceComplianceDiagnostics,
+        collectWorkspaceTruth,
+        buildWorkspaceTruthDiagnostics,
     } = ctx;
     const wantsJson = args.includes('--json');
     const wantsExplainRed = args.includes('--explain-red');
+    const { flags = {} } =
+        typeof parseFlags === 'function' ? parseFlags(args) : { flags: {} };
+    const workspaceOptions =
+        args.includes('--current-only') || Boolean(flags['current-only']) || Boolean(flags.current_only)
+            ? { currentOnly: true, allWorktrees: false }
+            : { allWorktrees: true, currentOnly: false };
     const board = parseBoard();
     const handoffData = parseHandoffs();
     const conflictAnalysis = analyzeConflicts(
@@ -140,6 +151,14 @@ async function handleStatusCommand(ctx) {
     const evidenceReport = evidenceDiagnostics.buildTerminalEvidenceReport(
         board.tasks
     );
+    const workspaceReport =
+        typeof collectWorkspaceTruth === 'function'
+            ? collectWorkspaceTruth(workspaceOptions)
+            : null;
+    const workspaceSyncFindings =
+        typeof collectWorkspaceComplianceFindings === 'function'
+            ? collectWorkspaceComplianceFindings(board.tasks)
+            : [];
     const data = {
         version: board.version,
         policy: board.policy,
@@ -201,6 +220,9 @@ async function handleStatusCommand(ctx) {
               }
             : null,
         premium_gate_blockers: premiumGateBlockers,
+        workspace_sync_findings: workspaceSyncFindings,
+        workspace_hygiene: workspaceReport?.workspace_hygiene || null,
+        workspace_truth: workspaceReport?.workspace_truth || null,
     };
 
     if (wantsExplainRed) {
@@ -259,6 +281,20 @@ async function handleStatusCommand(ctx) {
                 publishEvents,
             }),
             ...terminalEvidenceDiagnostics,
+            ...(
+                typeof buildWorkspaceComplianceDiagnostics === 'function'
+                    ? buildWorkspaceComplianceDiagnostics(board.tasks, {
+                          source: 'status',
+                      })
+                    : []
+            ),
+            ...(
+                typeof buildWorkspaceTruthDiagnostics === 'function'
+                    ? buildWorkspaceTruthDiagnostics(workspaceReport, {
+                          source: 'status',
+                      })
+                    : []
+            ),
         ])
     );
 

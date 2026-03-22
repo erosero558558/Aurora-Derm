@@ -14,6 +14,10 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 attachDiagnostics: ctx.attachDiagnostics,
                 buildWarnFirstDiagnostics: ctx.buildWarnFirstDiagnostics,
                 buildLiveFocusSummary: ctx.buildLiveFocusSummary,
+                parseFlags: ctx.parseFlags,
+                collectWorkspaceTruth: ctx.collectWorkspaceTruth,
+                buildWorkspaceTruthDiagnostics:
+                    ctx.buildWorkspaceTruthDiagnostics,
             });
         },
 
@@ -80,6 +84,12 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 buildModelUsageSummary: ctx.buildModelUsageSummary,
                 collectPremiumGateBlockers: ctx.collectPremiumGateBlockers,
                 getGovernancePolicy: ctx.getGovernancePolicy,
+                parseFlags: ctx.parseFlags,
+                buildWorkspaceComplianceDiagnostics:
+                    ctx.buildWorkspaceComplianceDiagnostics,
+                collectWorkspaceTruth: ctx.collectWorkspaceTruth,
+                buildWorkspaceTruthDiagnostics:
+                    ctx.buildWorkspaceTruthDiagnostics,
             });
         },
 
@@ -114,6 +124,10 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 validateDecisionPacketFile: ctx.validateDecisionPacketFile,
                 printJson: ctx.printJson,
                 toTaskJson: ctx.toTaskJson,
+                collectWorkspaceTruth: ctx.collectWorkspaceTruth,
+                assertWorkspaceTruthOk: ctx.assertWorkspaceTruthOk,
+                ensureTaskWorktree: ctx.ensureTaskWorktree,
+                applyWorkspaceTaskSnapshot: ctx.applyWorkspaceTaskSnapshot,
             });
         },
     };

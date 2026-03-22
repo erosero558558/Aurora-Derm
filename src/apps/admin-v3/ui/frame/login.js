@@ -1,10 +1,15 @@
 import { qs } from '../../shared/ui/render.js';
 
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
+const LEGACY_OPERATOR_AUTH_MODE = 'openclaw_chatgpt';
+
 function normalizeRecommendedMode(mode = 'legacy_password') {
-    return String(mode || '')
+    const raw = String(mode || '')
         .trim()
-        .toLowerCase() === 'openclaw_chatgpt'
-        ? 'openclaw_chatgpt'
+        .toLowerCase();
+    return raw === CANONICAL_OPERATOR_AUTH_MODE ||
+        raw === LEGACY_OPERATOR_AUTH_MODE
+        ? CANONICAL_OPERATOR_AUTH_MODE
         : 'legacy_password';
 }
 
@@ -18,7 +23,8 @@ function syncContingencyActions({
     const primaryBtn = qs('#loginPrimaryToggleBtn');
     const copy = qs('#adminLoginContingencyCopy');
     const openClawPrimary =
-        normalizeRecommendedMode(recommendedMode) === 'openclaw_chatgpt';
+        normalizeRecommendedMode(recommendedMode) ===
+        CANONICAL_OPERATOR_AUTH_MODE;
     const showFallback =
         openClawPrimary &&
         fallbackAvailable === true &&
@@ -74,17 +80,12 @@ function formatOpenClawExpiry(expiresAt) {
 }
 
 export function setLoginMode(mode = 'legacy_password', options = {}) {
-    const normalized =
-        String(mode || '')
-            .trim()
-            .toLowerCase() === 'openclaw_chatgpt'
-            ? 'openclaw_chatgpt'
-            : 'legacy_password';
+    const normalized = normalizeRecommendedMode(mode);
     const recommendedMode = normalizeRecommendedMode(
         options.recommendedMode || normalized
     );
     const fallbackAvailable = options.fallbackAvailable === true;
-    const openClawPrimary = recommendedMode === 'openclaw_chatgpt';
+    const openClawPrimary = recommendedMode === CANONICAL_OPERATOR_AUTH_MODE;
     const transport =
         String(options.transport || '')
             .trim()
@@ -109,11 +110,11 @@ export function setLoginMode(mode = 'legacy_password', options = {}) {
 
     legacyStage?.classList.toggle(
         'is-hidden',
-        normalized === 'openclaw_chatgpt'
+        normalized === CANONICAL_OPERATOR_AUTH_MODE
     );
     openclawStage?.classList.toggle(
         'is-hidden',
-        normalized !== 'openclaw_chatgpt'
+        normalized !== CANONICAL_OPERATOR_AUTH_MODE
     );
     form?.classList.remove('is-2fa-stage');
     resetBtn?.classList.add('is-hidden');
@@ -124,7 +125,7 @@ export function setLoginMode(mode = 'legacy_password', options = {}) {
         transport,
     });
 
-    if (normalized === 'openclaw_chatgpt') {
+    if (normalized === CANONICAL_OPERATOR_AUTH_MODE) {
         if (eyebrow) {
             eyebrow.textContent = openClawPrimary
                 ? 'Acceso principal'
@@ -199,7 +200,7 @@ export function setLogin2FAVisibility(visible, options = {}) {
         options.recommendedMode || 'legacy_password'
     );
     const fallbackAvailable = options.fallbackAvailable === true;
-    const openClawPrimary = recommendedMode === 'openclaw_chatgpt';
+    const openClawPrimary = recommendedMode === CANONICAL_OPERATOR_AUTH_MODE;
 
     if (!group) return;
 
@@ -381,12 +382,7 @@ export function setLoginSubmittingState(submitting, options = {}) {
     const passwordInput = qs('#adminPassword');
     const codeInput = qs('#admin2FACode');
     const group = qs('#group2FA');
-    const mode =
-        String(options.mode || '')
-            .trim()
-            .toLowerCase() === 'openclaw_chatgpt'
-            ? 'openclaw_chatgpt'
-            : 'legacy_password';
+    const mode = normalizeRecommendedMode(options.mode);
     const transport =
         String(options.transport || '')
             .trim()
@@ -417,17 +413,21 @@ export function setLoginSubmittingState(submitting, options = {}) {
 
     if (passwordInput instanceof HTMLInputElement) {
         passwordInput.disabled =
-            mode === 'openclaw_chatgpt' || Boolean(submitting) || requires2FA;
+            mode === CANONICAL_OPERATOR_AUTH_MODE ||
+            Boolean(submitting) ||
+            requires2FA;
     }
 
     if (codeInput instanceof HTMLInputElement) {
         codeInput.disabled =
-            mode === 'openclaw_chatgpt' || Boolean(submitting) || !requires2FA;
+            mode === CANONICAL_OPERATOR_AUTH_MODE ||
+            Boolean(submitting) ||
+            !requires2FA;
     }
 
     if (button instanceof HTMLButtonElement) {
         button.disabled = Boolean(submitting);
-        if (mode === 'openclaw_chatgpt') {
+        if (mode === CANONICAL_OPERATOR_AUTH_MODE) {
             if (submitting) {
                 button.textContent = 'Abriendo OpenClaw...';
             } else if (transport === 'web_broker' && status === 'pending') {
@@ -457,7 +457,7 @@ export function setLoginSubmittingState(submitting, options = {}) {
         resetBtn.disabled = Boolean(submitting);
         resetBtn.classList.toggle(
             'is-hidden',
-            mode === 'openclaw_chatgpt' || !requires2FA
+            mode === CANONICAL_OPERATOR_AUTH_MODE || !requires2FA
         );
     }
 

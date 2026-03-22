@@ -38,7 +38,6 @@ $commonHttpPath = Join-Path $repoRoot 'bin/powershell/Common.Http.ps1'
 $openClawAuthDiagnosticScriptPath = Join-Path $repoRoot 'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1'
 $turneroClinicProfileScriptPath = Join-Path $repoRoot 'bin/turnero-clinic-profile.js'
 . $commonHttpPath
-$diagnosticsAuthConfiguration = Get-DiagnosticsAuthConfiguration
 
 function Test-BooleanLike {
     param(
@@ -69,6 +68,11 @@ function Resolve-RequireOperatorAuthFlag {
     }
 
     $explicitCandidates = @(
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_INPUT,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH,
         $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_EFFECTIVE,
         $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_INPUT,
         $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE,
@@ -150,7 +154,7 @@ $healthSnapshot = [ordered]@{
         status = 'unknown'
         configured = $false
         hardeningCompliant = $false
-        recommendedMode = 'openclaw_chatgpt'
+        recommendedMode = 'google_oauth'
         recommendedModeActive = $false
         operatorAuthEnabled = $false
         operatorAuthConfigured = $false
@@ -408,7 +412,7 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $reportPath *> $null
 
         if (-not (Test-Path $reportPath)) {
-            throw 'No se genero reporte del diagnostico OpenClaw.'
+            throw 'No se genero reporte del diagnostico Operator Auth.'
         }
 
         $raw = Get-Content -Path $reportPath -Raw
@@ -429,7 +433,7 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
             available = $true
             ok = $false
             diagnosis = 'diagnostic_script_failed'
-            nextAction = 'No se pudo interpretar el diagnostico OpenClaw del admin.'
+            nextAction = 'No se pudo interpretar el diagnostico Operator Auth del admin.'
             source = ''
             mode = ''
             configured = $false
@@ -470,15 +474,6 @@ foreach ($c in $checks) {
         }
 
         if (-not $handledBlockedCalendar) {
-            if (
-                $r.Name -eq 'health-diagnostics' -and
-                $r.StatusCode -eq 403 -and
-                [string]::IsNullOrWhiteSpace([string]$diagnosticsAuthConfiguration.Token)
-            ) {
-                $failures += '[FAIL] monitor_secret_missing: health-diagnostics protegido y no existe token local para autenticar el monitor'
-                continue
-            }
-
             $failures += "[FAIL] $($r.Name): status=$($r.StatusCode) error=$($r.Error)"
         }
         continue
@@ -579,7 +574,7 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 $authStatus = 'unknown'
                 $authConfigured = $false
                 $authHardeningCompliant = $false
-                $authRecommendedMode = 'openclaw_chatgpt'
+                $authRecommendedMode = 'google_oauth'
                 $authRecommendedModeActive = $false
                 $authOperatorAuthEnabled = $false
                 $authOperatorAuthConfigured = $false
@@ -590,7 +585,7 @@ if ($null -ne $healthResult -and $healthResult.StatusCode -eq 200) {
                 try { $authStatus = [string]$authNode.status } catch { $authStatus = 'unknown' }
                 try { $authConfigured = [bool]$authNode.configured } catch { $authConfigured = $false }
                 try { $authHardeningCompliant = [bool]$authNode.hardeningCompliant } catch { $authHardeningCompliant = $false }
-                try { $authRecommendedMode = [string]$authNode.recommendedMode } catch { $authRecommendedMode = 'openclaw_chatgpt' }
+                try { $authRecommendedMode = [string]$authNode.recommendedMode } catch { $authRecommendedMode = 'google_oauth' }
                 try { $authRecommendedModeActive = [bool]$authNode.recommendedModeActive } catch { $authRecommendedModeActive = $false }
                 try { $authOperatorAuthEnabled = [bool]$authNode.operatorAuthEnabled } catch { $authOperatorAuthEnabled = $false }
                 try { $authOperatorAuthConfigured = [bool]$authNode.operatorAuthConfigured } catch { $authOperatorAuthConfigured = $false }
@@ -1398,7 +1393,7 @@ if ($null -eq $adminAuthResult) {
         try { $adminAuthStatus = [string]$adminAuthPayload.status } catch {}
         Write-Host "[INFO] admin-auth-status mode=$adminAuthMode transport=$adminAuthTransport status=$adminAuthStatus"
 
-        if ($adminAuthMode -ne 'openclaw_chatgpt') {
+        if ($adminAuthMode -ne 'google_oauth') {
             $failures += "[FAIL] admin-auth-status mode inesperado ($adminAuthMode)"
         }
         if ([string]::IsNullOrWhiteSpace($adminAuthTransport)) {

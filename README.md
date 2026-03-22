@@ -9,7 +9,8 @@ es la marca y operacion clinica activa que hoy corre sobre esa plataforma.
 
 - `admin`: consola interna y shell operativa del equipo clinico
 - `queue/turnero`: operador, kiosco, display y surfaces de sala
-- `OpenClaw`: runtime de auth y orquestacion interna
+- `Operator Auth`: login Google canonico del admin/operator
+- `OpenClaw`: runtime interno para orquestacion transversal y LeadOps
 - `LeadOps`: apoyo operacional y automatizacion del frente comercial
 - web publica: gateway y superficies publicas en modo mantenimiento controlado
 
@@ -22,7 +23,7 @@ es la marca y operacion clinica activa que hoy corre sobre esa plataforma.
 
 ## Estado operativo
 
-- Recovery cycle activo `2026-03-21 -> 2026-04-20`: freeze duro en `admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy`.
+- Recovery cycle activo `2026-03-21 -> 2026-04-20`: freeze duro en `admin v3 + queue/turnero + auth Google + readiness + deploy`.
 - Web publica: Astro V6 + `content/public-v6/**`
 - Admin: `admin.html` + `admin.js` generado desde `src/apps/admin/index.js`
 - UI admin activa: `src/apps/admin-v3/**`
@@ -76,7 +77,7 @@ Notas de testing local:
 - Para apuntar las suites a un servidor ya levantado usa `TEST_BASE_URL=http://127.0.0.1:8011`.
 - La reutilizacion de servidor queda en opt-in con `TEST_REUSE_EXISTING_SERVER=1`.
 - `npm run benchmark:local` reutiliza `TEST_BASE_URL` o levanta `127.0.0.1:8011` si no le pasas host.
-- El login OpenClaw/ChatGPT local necesita dos procesos vivos: backend PHP en `8011` y helper local en `4173`.
+- El login local con `local_helper` necesita dos procesos vivos: backend PHP en `8011` y helper local en `4173`.
 - Script canonico del helper local: `scripts/ops/admin/INICIAR-OPENCLAW-AUTH-HELPER.ps1`.
 - Antes de abrir `admin.html`, valida el runtime local con `npm run openclaw:auth-preflight -- --json`.
 - `npm run auth:operator:bridge` queda solo como alias de compatibilidad y delega al launcher canonico.

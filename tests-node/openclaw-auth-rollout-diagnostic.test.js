@@ -100,7 +100,8 @@ function operatorAuthConfiguredPayload(overrides = {}) {
     return {
         ok: true,
         authenticated: false,
-        mode: 'openclaw_chatgpt',
+        mode: 'google_oauth',
+        recommendedMode: 'google_oauth',
         transport: 'web_broker',
         status: 'anonymous',
         configured: true,
@@ -176,10 +177,7 @@ test('diagnostico detecta fachada legacy cuando operator-auth-status no esta dis
                 assert.equal(report.diagnosis, 'admin_auth_legacy_facade');
                 assert.equal(report.operator_auth_status.http_status, 503);
                 assert.equal(report.admin_auth_facade.http_status, 200);
-                assert.match(
-                    report.next_action,
-                    /admin-auth\.php.*contrato OpenClaw/i
-                );
+                assert.match(report.next_action, /admin-auth\.php.*contrato auth/i);
             }
         );
     } finally {
@@ -190,7 +188,7 @@ test('diagnostico detecta fachada legacy cuando operator-auth-status no esta dis
     }
 });
 
-test('diagnostico marca facade_only_rollout cuando solo la fachada ya habla OpenClaw', async () => {
+test('diagnostico marca facade_only_rollout cuando solo la fachada ya habla auth canonico', async () => {
     const tempDir = mkdtempSync(
         join(tmpdir(), 'openclaw-auth-diagnostic-facade-only-')
     );
@@ -242,7 +240,7 @@ test('diagnostico marca facade_only_rollout cuando solo la fachada ya habla Open
     }
 });
 
-test('diagnostico queda en verde cuando operator-auth-status ya publica contrato OpenClaw configurado', async () => {
+test('diagnostico queda en verde cuando operator-auth-status ya publica contrato auth configurado', async () => {
     const tempDir = mkdtempSync(
         join(tmpdir(), 'openclaw-auth-diagnostic-ready-')
     );
@@ -278,9 +276,9 @@ test('diagnostico queda en verde cuando operator-auth-status ya publica contrato
 
                 assert.equal(result.status, 0, result.stderr || result.stdout);
                 assert.equal(report.ok, true);
-                assert.equal(report.diagnosis, 'openclaw_ready');
+                assert.equal(report.diagnosis, 'operator_auth_ready');
                 assert.equal(report.resolved.source, 'operator-auth-status');
-                assert.equal(report.resolved.mode, 'openclaw_chatgpt');
+                assert.equal(report.resolved.mode, 'google_oauth');
                 assert.equal(report.resolved.configured, true);
             }
         );
@@ -292,7 +290,7 @@ test('diagnostico queda en verde cuando operator-auth-status ya publica contrato
     }
 });
 
-test('diagnostico marca transport_misconfigured cuando la surface OpenClaw omite transport', async () => {
+test('diagnostico marca transport_misconfigured cuando la surface auth omite transport', async () => {
     const tempDir = mkdtempSync(
         join(tmpdir(), 'openclaw-auth-diagnostic-missing-transport-')
     );
@@ -310,7 +308,8 @@ test('diagnostico marca transport_misconfigured cuando la surface OpenClaw omite
                     sendJson(res, 200, {
                         ok: true,
                         authenticated: false,
-                        mode: 'openclaw_chatgpt',
+                        mode: 'google_oauth',
+                        recommendedMode: 'google_oauth',
                         status: 'anonymous',
                         configured: true,
                         configuration: {
@@ -332,7 +331,8 @@ test('diagnostico marca transport_misconfigured cuando la surface OpenClaw omite
                     sendJson(res, 200, {
                         ok: true,
                         authenticated: false,
-                        mode: 'openclaw_chatgpt',
+                        mode: 'google_oauth',
+                        recommendedMode: 'google_oauth',
                         status: 'anonymous',
                         configured: true,
                         configuration: {
@@ -368,7 +368,7 @@ test('diagnostico marca transport_misconfigured cuando la surface OpenClaw omite
     }
 });
 
-test('diagnostico no marca openclaw_ready cuando web_broker sigue sin trust OIDC completo', async () => {
+test('diagnostico no marca operator_auth_ready cuando web_broker sigue sin trust OIDC completo', async () => {
     const tempDir = mkdtempSync(
         join(tmpdir(), 'openclaw-auth-diagnostic-trust-missing-')
     );
@@ -446,7 +446,7 @@ test('diagnostico no marca openclaw_ready cuando web_broker sigue sin trust OIDC
 
                 assert.equal(result.status, 1, result.stderr || result.stdout);
                 assert.equal(report.ok, false);
-                assert.equal(report.diagnosis, 'openclaw_not_configured');
+                assert.equal(report.diagnosis, 'operator_auth_not_configured');
                 assert.match(report.next_action, /trust OIDC/i);
             }
         );
@@ -458,7 +458,7 @@ test('diagnostico no marca openclaw_ready cuando web_broker sigue sin trust OIDC
     }
 });
 
-test('diagnostico enumera env faltantes cuando OpenClaw esta activo pero incompleto', async () => {
+test('diagnostico enumera env faltantes cuando auth Google esta activo pero incompleto', async () => {
     const tempDir = mkdtempSync(
         join(tmpdir(), 'openclaw-auth-diagnostic-missing-env-')
     );
@@ -520,18 +520,18 @@ test('diagnostico enumera env faltantes cuando OpenClaw esta activo pero incompl
 
                 assert.equal(result.status, 1, result.stderr || result.stdout);
                 assert.equal(report.ok, false);
-                assert.equal(report.diagnosis, 'openclaw_not_configured');
+                assert.equal(report.diagnosis, 'operator_auth_not_configured');
                 assert.deepEqual(report.resolved.missing, [
                     'bridge_token',
                     'allowlist',
                 ]);
                 assert.match(
                     report.next_action,
-                    /PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN/
+                    /AURORADERM_OPERATOR_AUTH_BRIDGE_TOKEN/
                 );
                 assert.match(
                     report.next_action,
-                    /PIELARMONIA_OPERATOR_AUTH_ALLOWLIST/
+                    /AURORADERM_OPERATOR_AUTH_ALLOWLIST/
                 );
             }
         );
@@ -645,7 +645,7 @@ test('diagnostico acepta web_broker listo sin exigir helper local', async () => 
 
                 assert.equal(result.status, 0, result.stderr || result.stdout);
                 assert.equal(report.ok, true);
-                assert.equal(report.diagnosis, 'openclaw_ready');
+                assert.equal(report.diagnosis, 'operator_auth_ready');
                 assert.equal(report.resolved.transport, 'web_broker');
                 assert.equal(report.resolved.source, 'operator-auth-status');
                 assert.match(report.next_action, /web_broker/i);

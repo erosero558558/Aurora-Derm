@@ -28,6 +28,8 @@ import {
 } from '../../ui/frame.js';
 import { refreshDataAndRender } from './rendering.js';
 
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
+
 const OPENCLAW_TERMINAL_STATUSES = new Set([
     'anonymous',
     'operator_auth_not_configured',
@@ -215,7 +217,8 @@ function buildOpenClawFeedback(auth) {
 function buildLegacyFeedback(auth) {
     const status = normalizeAuthStatus(auth.status);
     const isContingency =
-        String(auth.recommendedMode || '').trim() === 'openclaw_chatgpt';
+        String(auth.recommendedMode || '').trim() ===
+        CANONICAL_OPERATOR_AUTH_MODE;
 
     if (auth.requires2FA) {
         return {
@@ -260,7 +263,9 @@ function syncLoginSurfaceFromState() {
         auth.fallbacks?.legacy_password?.available === true;
     const status = normalizeAuthStatus(auth.status);
     const openClawState =
-        mode === 'openclaw_chatgpt' ? getVisibleOpenClawState(auth) : null;
+        mode === CANONICAL_OPERATOR_AUTH_MODE
+            ? getVisibleOpenClawState(auth)
+            : null;
 
     setLoginMode(mode, {
         recommendedMode,
@@ -269,7 +274,7 @@ function syncLoginSurfaceFromState() {
         transport: openClawState?.transport || auth.transport,
     });
 
-    if (mode === 'openclaw_chatgpt') {
+    if (mode === CANONICAL_OPERATOR_AUTH_MODE) {
         setOpenClawChallenge(openClawState.challenge, {
             status: normalizeAuthStatus(openClawState.status),
             error: openClawState.lastError,
@@ -343,7 +348,7 @@ async function pollOpenClawStatus() {
         return;
     }
 
-    if (String(auth.mode || '') !== 'openclaw_chatgpt') {
+    if (String(auth.mode || '') !== CANONICAL_OPERATOR_AUTH_MODE) {
         clearOpenClawPollTimer();
         return;
     }
@@ -383,7 +388,7 @@ async function handleOpenClawSubmit() {
 
     clearOpenClawPollTimer();
     setLoginSubmittingState(true, {
-        mode: 'openclaw_chatgpt',
+        mode: CANONICAL_OPERATOR_AUTH_MODE,
         status: currentAuth.status,
         transport: currentAuth.transport,
     });
@@ -463,7 +468,7 @@ async function handleOpenClawSubmit() {
     } finally {
         const auth = getState().auth;
         setLoginSubmittingState(false, {
-            mode: auth.mode || 'openclaw_chatgpt',
+            mode: auth.mode || CANONICAL_OPERATOR_AUTH_MODE,
             status: auth.status,
             transport: auth.transport,
         });
@@ -505,7 +510,7 @@ export async function handleLoginSubmit(event) {
     event.preventDefault();
 
     const state = getState();
-    if (getActiveLoginSurfaceMode(state.auth) === 'openclaw_chatgpt') {
+    if (getActiveLoginSurfaceMode(state.auth) === CANONICAL_OPERATOR_AUTH_MODE) {
         await handleOpenClawSubmit();
         return;
     }
@@ -594,7 +599,7 @@ export function resumeOpenClawPolling() {
     const auth = getState().auth;
     if (
         auth.authenticated ||
-        String(auth.mode || '') !== 'openclaw_chatgpt' ||
+        String(auth.mode || '') !== CANONICAL_OPERATOR_AUTH_MODE ||
         normalizeAuthStatus(auth.status) !== 'pending' ||
         (!auth.challenge &&
             !(
@@ -631,7 +636,7 @@ export function showPrimaryLoginSurface() {
     resetLoginForm({ clearPassword: true });
     syncLoginSurfaceFromState();
 
-    if (nextMode === 'openclaw_chatgpt') {
+    if (nextMode === CANONICAL_OPERATOR_AUTH_MODE) {
         const openClawState = getVisibleOpenClawState(getState().auth);
         if (
             normalizeAuthStatus(openClawState.status) === 'pending' &&

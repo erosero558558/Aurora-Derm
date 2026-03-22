@@ -19,7 +19,7 @@ const FLOW_OS_RECOVERY_CYCLE = Object.freeze({
     startsAt: '2026-03-21',
     endsAt: '2026-04-20',
     allowedSlice:
-        'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy',
+        'admin v3 + queue/turnero + auth Google + readiness + deploy',
     statusDoc: 'docs/PRODUCT_OPERATIONAL_STATUS.md',
     planDoc: 'docs/FLOW_OS_RECOVERY_PLAN.md',
 });

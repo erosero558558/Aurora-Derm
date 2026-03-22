@@ -40,6 +40,17 @@ function printBoardJsonError(printJson, error, action = null) {
     return payload;
 }
 
+function resolveWorkspaceOptions(args = [], flags = {}) {
+    if (
+        args.includes('--current-only') ||
+        Boolean(flags['current-only']) ||
+        Boolean(flags.current_only)
+    ) {
+        return { currentOnly: true, allWorktrees: false };
+    }
+    return { allWorktrees: true, currentOnly: false };
+}
+
 async function handleBoardCommand(ctx) {
     const {
         args = [],
@@ -76,6 +87,12 @@ async function handleBoardCommand(ctx) {
         applyBoardSync,
         writeBoardAndSync,
         parseExpectedBoardRevisionFlag,
+        collectWorkspaceComplianceFindings,
+        buildWorkspaceComplianceDiagnostics,
+        collectWorkspaceTruth,
+        buildWorkspaceTruthDiagnostics,
+        buildBoardReconcileReport,
+        applySafeBoardReconcile,
     } = ctx;
     const subcommand = String(args[0] || 'doctor')
         .trim()
@@ -298,6 +315,14 @@ async function handleBoardCommand(ctx) {
         const focusSummary = focusData.summary;
         const publishEvents =
             typeof loadPublishEvents === 'function' ? loadPublishEvents() : [];
+        const workspaceReport =
+            typeof collectWorkspaceTruth === 'function'
+                ? collectWorkspaceTruth(resolveWorkspaceOptions(args, flags))
+                : null;
+        const workspaceSyncFindings =
+            typeof collectWorkspaceComplianceFindings === 'function'
+                ? collectWorkspaceComplianceFindings(board.tasks)
+                : [];
         const strategyDiagnostics =
             strategySummary?.active && strategySummary.orphan_tasks > 0
                 ? [
@@ -335,17 +360,39 @@ async function handleBoardCommand(ctx) {
                 : []),
             ...strategyDiagnostics,
             ...warnFirstDiagnostics,
+            ...(
+                typeof buildWorkspaceComplianceDiagnostics === 'function'
+                    ? buildWorkspaceComplianceDiagnostics(board.tasks, {
+                          source: 'board doctor',
+                          makeDiagnostic,
+                      })
+                    : []
+            ),
+            ...(
+                typeof buildWorkspaceTruthDiagnostics === 'function'
+                    ? buildWorkspaceTruthDiagnostics(workspaceReport, {
+                          source: 'board doctor',
+                          makeDiagnostic,
+                          getWarnPolicyMap,
+                          warnPolicyEnabled,
+                          warnPolicySeverity,
+                      })
+                    : []
+            ),
         ];
         const report = attachDiagnostics(
             {
                 ...baseReport,
                 strategy_summary: strategySummary,
                 focus_summary: focusSummary,
+                workspace_sync_findings: workspaceSyncFindings,
                 leases: listBoardLeases(board, {
                     policy,
                     nowIso: now.toISOString(),
                     activeOnly: true,
                 }),
+                workspace_hygiene: workspaceReport?.workspace_hygiene || null,
+                workspace_truth: workspaceReport?.workspace_truth || null,
             },
             mergedDiagnostics
         );
@@ -368,6 +415,57 @@ async function handleBoardCommand(ctx) {
         if (strict && report.errors_count > 0) {
             throw new Error(
                 `board doctor strict: errors=${report.errors_count}`
+            );
+        }
+        return report;
+    }
+
+    if (subcommand === 'reconcile') {
+        const canonicalRoot = String(
+            flags['canonical-root'] || flags.canonical_root || ''
+        ).trim();
+        const applySafe =
+            args.includes('--apply-safe') || Boolean(flags['apply-safe']) || Boolean(flags.apply_safe);
+        const report =
+            typeof (applySafe ? applySafeBoardReconcile : buildBoardReconcileReport) ===
+            'function'
+                ? (applySafe ? applySafeBoardReconcile : buildBoardReconcileReport)({
+                      canonicalRoot,
+                  })
+                : {
+                      version: 1,
+                      ok: true,
+                      command: 'board reconcile',
+                      summary: {
+                          total_worktrees: 0,
+                          metadata_only_candidates: 0,
+                          blocking_candidates: 0,
+                      },
+                  };
+        if (wantsJson) {
+            printJson(report);
+            if (!report.ok) process.exitCode = 1;
+            return report;
+        }
+        console.log('== Board Reconcile ==');
+        console.log(
+            `ok=${report.ok} canonical=${report.canonical_root || 'n/a'} metadata_only=${report.summary?.metadata_only_candidates || 0} blocking=${report.summary?.blocking_candidates || 0}${applySafe ? ` applied=${report.applied_total || 0}` : ''}`
+        );
+        for (const row of Array.isArray(report.metadata_only_candidates)
+            ? report.metadata_only_candidates
+            : []) {
+            console.log(`- META ${row.path}: revision=${row.board_revision}`);
+        }
+        for (const row of Array.isArray(report.blocking_candidates)
+            ? report.blocking_candidates
+            : []) {
+            console.log(
+                `- BLOCK ${row.path}: missing=${(row.missing_task_ids || []).join(', ') || 'none'} extra=${(row.extra_task_ids || []).join(', ') || 'none'} divergent=${(row.divergent_task_ids || []).join(', ') || 'none'}`
+            );
+        }
+        if (!report.ok) {
+            throw new Error(
+                `board reconcile bloqueado: ${report.summary?.blocking_candidates || 0} worktree(s) con drift funcional`
             );
         }
         return report;
@@ -440,7 +538,7 @@ async function handleBoardCommand(ctx) {
     }
 
     throw new Error(
-        'Uso: node agent-orchestrator.js board <doctor|events|sync>'
+        'Uso: node agent-orchestrator.js board <doctor|events|sync|reconcile>'
     );
 }
 

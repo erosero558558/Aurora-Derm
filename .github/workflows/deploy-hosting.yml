@@ -103,13 +103,23 @@ on:
                 required: false
                 default: false
                 type: boolean
+            admin_rollout_require_operator_auth_fast:
+                description: 'Exigir contrato Operator Auth en post-deploy-fast'
+                required: false
+                default: true
+                type: boolean
             admin_rollout_require_openclaw_auth_fast:
-                description: 'Exigir contrato OpenClaw en post-deploy-fast'
+                description: 'Alias legacy: exigir contrato OpenClaw en post-deploy-fast'
+                required: false
+                default: true
+                type: boolean
+            admin_rollout_require_operator_auth_live_smoke_fast:
+                description: 'Exigir smoke live Operator Auth en post-deploy-fast'
                 required: false
                 default: true
                 type: boolean
             admin_rollout_require_openclaw_live_smoke_fast:
-                description: 'Exigir smoke live OpenClaw en post-deploy-fast'
+                description: 'Alias legacy: exigir smoke live OpenClaw en post-deploy-fast'
                 required: false
                 default: true
                 type: boolean
@@ -128,13 +138,23 @@ on:
                 required: false
                 default: false
                 type: boolean
+            admin_rollout_require_operator_auth_gate:
+                description: 'Exigir contrato Operator Auth en post-deploy-gate'
+                required: false
+                default: true
+                type: boolean
             admin_rollout_require_openclaw_auth_gate:
-                description: 'Exigir contrato OpenClaw en post-deploy-gate'
+                description: 'Alias legacy: exigir contrato OpenClaw en post-deploy-gate'
+                required: false
+                default: true
+                type: boolean
+            admin_rollout_require_operator_auth_live_smoke_gate:
+                description: 'Exigir smoke live Operator Auth en post-deploy-gate'
                 required: false
                 default: true
                 type: boolean
             admin_rollout_require_openclaw_live_smoke_gate:
-                description: 'Exigir smoke live OpenClaw en post-deploy-gate'
+                description: 'Alias legacy: exigir smoke live OpenClaw en post-deploy-gate'
                 required: false
                 default: true
                 type: boolean
@@ -445,13 +465,13 @@ jobs:
             ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke_fast || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST || 'true' }}
             ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure_fast || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST || 'false' }}
             ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_missing_flag_fast || vars.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST || 'false' }}
-            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_require_openclaw_auth_fast || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST || '' }}
-            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_require_openclaw_live_smoke_fast || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST || '' }}
+            ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_require_operator_auth_fast || github.event.inputs.admin_rollout_require_openclaw_auth_fast || vars.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST || '' }}
+            ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_PROPAGATED: ${{ github.event.inputs.admin_rollout_require_operator_auth_live_smoke_fast || github.event.inputs.admin_rollout_require_openclaw_live_smoke_fast || vars.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST || '' }}
             ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke_gate || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE || 'false' }}
             ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure_gate || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE || 'false' }}
             ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_allow_missing_flag_gate || vars.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG || 'false' }}
-            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_require_openclaw_auth_gate || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH || '' }}
-            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_require_openclaw_live_smoke_gate || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE || '' }}
+            ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_require_operator_auth_gate || github.event.inputs.admin_rollout_require_openclaw_auth_gate || vars.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH || '' }}
+            ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_GATE_PROPAGATED: ${{ github.event.inputs.admin_rollout_require_operator_auth_live_smoke_gate || github.event.inputs.admin_rollout_require_openclaw_live_smoke_gate || vars.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE || '' }}
             TELEMEDICINE_DEPLOY_STATUS: unknown
             TELEMEDICINE_DEPLOY_REASON: not_evaluated
             TELEMEDICINE_DEPLOY_FAILURES: -1
@@ -1552,10 +1572,10 @@ jobs:
                     --default-stage general \
                     --skip-runtime-smoke false \
                     --default-skip-runtime-smoke false \
-                    --require-openclaw-auth "" \
-                    --default-require-openclaw-auth "" \
-                    --require-openclaw-live-smoke "" \
-                    --default-require-openclaw-live-smoke "" \
+                    --require-operator-auth "" \
+                    --default-require-operator-auth "" \
+                    --require-operator-auth-live-smoke "" \
+                    --default-require-operator-auth-live-smoke "" \
                     --allow-feature-api-failure false \
                     --default-allow-feature-api-failure false \
                     --allow-missing-flag false \
@@ -1566,10 +1586,10 @@ jobs:
                     --default-stage general \
                     --skip-runtime-smoke "${ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_PROPAGATED}" \
                     --default-skip-runtime-smoke true \
-                    --require-openclaw-auth "${ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_PROPAGATED}" \
-                    --default-require-openclaw-auth "" \
-                    --require-openclaw-live-smoke "${ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_PROPAGATED}" \
-                    --default-require-openclaw-live-smoke "" \
+                    --require-operator-auth "${ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_PROPAGATED}" \
+                    --default-require-operator-auth "" \
+                    --require-operator-auth-live-smoke "${ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_PROPAGATED}" \
+                    --default-require-operator-auth-live-smoke "" \
                     --allow-feature-api-failure "${ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_PROPAGATED}" \
                     --default-allow-feature-api-failure false \
                     --allow-missing-flag "${ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_PROPAGATED}" \
@@ -1580,10 +1600,10 @@ jobs:
                     --default-stage general \
                     --skip-runtime-smoke "${ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_PROPAGATED}" \
                     --default-skip-runtime-smoke false \
-                    --require-openclaw-auth "${ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_GATE_PROPAGATED}" \
-                    --default-require-openclaw-auth "" \
-                    --require-openclaw-live-smoke "${ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_GATE_PROPAGATED}" \
-                    --default-require-openclaw-live-smoke "" \
+                    --require-operator-auth "${ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_GATE_PROPAGATED}" \
+                    --default-require-operator-auth "" \
+                    --require-operator-auth-live-smoke "${ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_GATE_PROPAGATED}" \
+                    --default-require-operator-auth-live-smoke "" \
                     --allow-feature-api-failure "${ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_PROPAGATED}" \
                     --default-allow-feature-api-failure false \
                     --allow-missing-flag "${ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_PROPAGATED}" \
@@ -1594,15 +1614,15 @@ jobs:
                   policy_source_base="$(json_field "$base_policy_json" policy_source)"
 
                   skip_runtime_smoke_fast="$(json_field "$fast_policy_json" skip_runtime_smoke_effective)"
-                  require_openclaw_auth_fast="$(json_field "$fast_policy_json" require_openclaw_auth_effective)"
-                  require_openclaw_live_smoke_fast="$(json_field "$fast_policy_json" require_openclaw_live_smoke_effective)"
+                  require_operator_auth_fast="$(json_field "$fast_policy_json" require_operator_auth_effective)"
+                  require_operator_auth_live_smoke_fast="$(json_field "$fast_policy_json" require_operator_auth_live_smoke_effective)"
                   allow_feature_api_failure_fast="$(json_field "$fast_policy_json" allow_feature_api_failure_effective)"
                   allow_missing_flag_fast="$(json_field "$fast_policy_json" allow_missing_flag_effective)"
                   policy_source_fast="$(json_field "$fast_policy_json" policy_source)"
 
                   skip_runtime_smoke_gate="$(json_field "$gate_policy_json" skip_runtime_smoke_effective)"
-                  require_openclaw_auth_gate="$(json_field "$gate_policy_json" require_openclaw_auth_effective)"
-                  require_openclaw_live_smoke_gate="$(json_field "$gate_policy_json" require_openclaw_live_smoke_effective)"
+                  require_operator_auth_gate="$(json_field "$gate_policy_json" require_operator_auth_effective)"
+                  require_operator_auth_live_smoke_gate="$(json_field "$gate_policy_json" require_operator_auth_live_smoke_effective)"
                   allow_feature_api_failure_gate="$(json_field "$gate_policy_json" allow_feature_api_failure_effective)"
                   allow_missing_flag_gate="$(json_field "$gate_policy_json" allow_missing_flag_effective)"
                   policy_source_gate="$(json_field "$gate_policy_json" policy_source)"
@@ -1632,17 +1652,17 @@ jobs:
                   public_v4_allow_missing_control="$(json_field "$public_v4_policy_json" allow_missing_control_effective)"
 
                   precheck_policy_source="stage-default"
-                  precheck_require_openclaw_auth="$(json_field "$base_policy_json" require_openclaw_auth_effective)"
+                  precheck_require_operator_auth="$(json_field "$base_policy_json" require_operator_auth_effective)"
                   precheck_allow_feature_api_failure="$(json_field "$base_policy_json" allow_feature_api_failure_effective)"
                   precheck_allow_missing_flag="$(json_field "$base_policy_json" allow_missing_flag_effective)"
                   if [ "$run_gate" = "true" ]; then
                     precheck_policy_source="gate:${policy_source_gate}"
-                    precheck_require_openclaw_auth="$require_openclaw_auth_gate"
+                    precheck_require_operator_auth="$require_operator_auth_gate"
                     precheck_allow_feature_api_failure="$allow_feature_api_failure_gate"
                     precheck_allow_missing_flag="$allow_missing_flag_gate"
                   elif [ "$run_fast" = "true" ]; then
                     precheck_policy_source="fast:${policy_source_fast}"
-                    precheck_require_openclaw_auth="$require_openclaw_auth_fast"
+                    precheck_require_operator_auth="$require_operator_auth_fast"
                     precheck_allow_feature_api_failure="$allow_feature_api_failure_fast"
                     precheck_allow_missing_flag="$allow_missing_flag_fast"
                   else
@@ -1655,14 +1675,14 @@ jobs:
                   echo "stage=$stage" >> "$GITHUB_OUTPUT"
                   echo "stage_profile=$stage_profile" >> "$GITHUB_OUTPUT"
                   echo "skip_runtime_smoke_fast=$skip_runtime_smoke_fast" >> "$GITHUB_OUTPUT"
-                  echo "require_openclaw_auth_fast=$require_openclaw_auth_fast" >> "$GITHUB_OUTPUT"
-                  echo "require_openclaw_live_smoke_fast=$require_openclaw_live_smoke_fast" >> "$GITHUB_OUTPUT"
+                  echo "require_operator_auth_fast=$require_operator_auth_fast" >> "$GITHUB_OUTPUT"
+                  echo "require_operator_auth_live_smoke_fast=$require_operator_auth_live_smoke_fast" >> "$GITHUB_OUTPUT"
                   echo "allow_feature_api_failure_fast=$allow_feature_api_failure_fast" >> "$GITHUB_OUTPUT"
                   echo "allow_missing_flag_fast=$allow_missing_flag_fast" >> "$GITHUB_OUTPUT"
                   echo "policy_source_fast=$policy_source_fast" >> "$GITHUB_OUTPUT"
                   echo "skip_runtime_smoke_gate=$skip_runtime_smoke_gate" >> "$GITHUB_OUTPUT"
-                  echo "require_openclaw_auth_gate=$require_openclaw_auth_gate" >> "$GITHUB_OUTPUT"
-                  echo "require_openclaw_live_smoke_gate=$require_openclaw_live_smoke_gate" >> "$GITHUB_OUTPUT"
+                  echo "require_operator_auth_gate=$require_operator_auth_gate" >> "$GITHUB_OUTPUT"
+                  echo "require_operator_auth_live_smoke_gate=$require_operator_auth_live_smoke_gate" >> "$GITHUB_OUTPUT"
                   echo "allow_feature_api_failure_gate=$allow_feature_api_failure_gate" >> "$GITHUB_OUTPUT"
                   echo "allow_missing_flag_gate=$allow_missing_flag_gate" >> "$GITHUB_OUTPUT"
                   echo "policy_source_gate=$policy_source_gate" >> "$GITHUB_OUTPUT"
@@ -1678,29 +1698,29 @@ jobs:
                   echo "public_v4_min_confirmed_rate_pct=$public_v4_min_confirmed_rate_pct" >> "$GITHUB_OUTPUT"
                   echo "public_v4_allow_missing_control=$public_v4_allow_missing_control" >> "$GITHUB_OUTPUT"
                   echo "precheck_policy_source=$precheck_policy_source" >> "$GITHUB_OUTPUT"
-                  echo "require_openclaw_auth_precheck=$precheck_require_openclaw_auth" >> "$GITHUB_OUTPUT"
+                  echo "require_operator_auth_precheck=$precheck_require_operator_auth" >> "$GITHUB_OUTPUT"
                   echo "allow_feature_api_failure_precheck=$precheck_allow_feature_api_failure" >> "$GITHUB_OUTPUT"
                   echo "allow_missing_flag_precheck=$precheck_allow_missing_flag" >> "$GITHUB_OUTPUT"
 
-                  echo "Dispatch config -> mode=$dispatch_mode fast=$run_fast gate=$run_gate stage=$stage stage_profile=$stage_profile precheck_source=$precheck_policy_source require_openclaw_auth_precheck=$precheck_require_openclaw_auth public_v4_enable_monitor=$public_v4_enable_monitor public_v4_stage=$public_v4_stage public_v4_profile=$public_v4_stage_profile"
+                  echo "Dispatch config -> mode=$dispatch_mode fast=$run_fast gate=$run_gate stage=$stage stage_profile=$stage_profile precheck_source=$precheck_policy_source require_operator_auth_precheck=$precheck_require_operator_auth public_v4_enable_monitor=$public_v4_enable_monitor public_v4_stage=$public_v4_stage public_v4_profile=$public_v4_stage_profile"
 
             - name: Validar contrato features admin_sony_ui (post-deploy)
               if: ${{ env.FTP_DRY_RUN != 'true' }}
               shell: pwsh
               env:
                   ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_PRECHECK_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_auth_precheck }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_PRECHECK_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_precheck }}
                   ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_PRECHECK_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_feature_api_failure_precheck }}
                   ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_PRECHECK_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_missing_flag_precheck }}
               run: |
-                  $requireOpenClawAuth = ([string]$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_PRECHECK_EFFECTIVE).Trim().ToLowerInvariant() -eq 'true'
+                  $requireOperatorAuth = ([string]$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_PRECHECK_EFFECTIVE).Trim().ToLowerInvariant() -eq 'true'
                   $allowFeatureApiFailure = ([string]$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_PRECHECK_EFFECTIVE).Trim().ToLowerInvariant() -eq 'true'
                   $allowMissingFlag = ([string]$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_PRECHECK_EFFECTIVE).Trim().ToLowerInvariant() -eq 'true'
                   ./GATE-ADMIN-ROLLOUT.ps1 `
                     -Domain $env:PROD_URL `
                     -Stage $env:ADMIN_ROLLOUT_STAGE_EFFECTIVE `
                     -SkipRuntimeSmoke `
-                    -RequireOpenClawAuth:$requireOpenClawAuth `
+                    -RequireOperatorAuth:$requireOperatorAuth `
                     -AllowFeatureApiFailure:$allowFeatureApiFailure `
                     -AllowMissingAdminFlag:$allowMissingFlag `
                     -ReportPath 'verification/last-admin-ui-rollout-gate-deploy-hosting.json'
@@ -1745,8 +1765,8 @@ jobs:
                           wait_seconds: process.env.POSTDEPLOY_FAST_WAIT_SECONDS,
                           admin_rollout_stage: process.env.ADMIN_ROLLOUT_STAGE_EFFECTIVE,
                           admin_rollout_skip_runtime_smoke: process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE,
-                          admin_rollout_require_openclaw_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE,
-                          admin_rollout_require_openclaw_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE,
+                          admin_rollout_require_operator_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE,
+                          admin_rollout_require_operator_auth_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE,
                           admin_rollout_allow_feature_api_failure: process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE,
                           admin_rollout_allow_missing_flag: process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE,
                           enable_public_v4_rollout_monitor: process.env.PUBLIC_V4_ENABLE_MONITOR_EFFECTIVE,
@@ -1767,8 +1787,8 @@ jobs:
               env:
                   ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
                   ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.skip_runtime_smoke_fast }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_auth_fast }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_live_smoke_fast }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_fast }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_live_smoke_fast }}
                   ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_feature_api_failure_fast }}
                   ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_missing_flag_fast }}
                   PUBLIC_V4_ENABLE_MONITOR_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.public_v4_enable_monitor }}
@@ -1798,8 +1818,8 @@ jobs:
                           domain: process.env.PROD_URL,
                           admin_rollout_stage: process.env.ADMIN_ROLLOUT_STAGE_EFFECTIVE,
                           admin_rollout_skip_runtime_smoke: process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_EFFECTIVE,
-                          admin_rollout_require_openclaw_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_GATE_EFFECTIVE,
-                          admin_rollout_require_openclaw_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_GATE_EFFECTIVE,
+                          admin_rollout_require_operator_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_GATE_EFFECTIVE,
+                          admin_rollout_require_operator_auth_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_GATE_EFFECTIVE,
                           admin_rollout_allow_feature_api_failure: process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_EFFECTIVE,
                           admin_rollout_allow_missing_flag: process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_EFFECTIVE,
                           enable_public_v4_rollout_monitor: process.env.PUBLIC_V4_ENABLE_MONITOR_EFFECTIVE,
@@ -1820,8 +1840,8 @@ jobs:
               env:
                   ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
                   ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.skip_runtime_smoke_gate }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_auth_gate }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_live_smoke_gate }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_gate }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_live_smoke_gate }}
                   ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_feature_api_failure_gate }}
                   ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.allow_missing_flag_gate }}
                   PUBLIC_V4_ENABLE_MONITOR_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.public_v4_enable_monitor }}
@@ -1848,15 +1868,15 @@ jobs:
                     echo "- admin rollout stage (effective): \`${{ steps.resolve_postdeploy.outputs.stage }}\`"
                     echo "- admin rollout stage profile (effective): \`${{ steps.resolve_postdeploy.outputs.stage_profile }}\`"
                     echo "- admin rollout skip runtime smoke fast (effective): \`${{ steps.resolve_postdeploy.outputs.skip_runtime_smoke_fast }}\`"
-                    echo "- admin rollout require OpenClaw auth fast (effective): \`${{ steps.resolve_postdeploy.outputs.require_openclaw_auth_fast }}\`"
-                    echo "- admin rollout require OpenClaw live smoke fast (effective): \`${{ steps.resolve_postdeploy.outputs.require_openclaw_live_smoke_fast }}\`"
+                    echo "- admin rollout require Operator Auth fast (effective): \`${{ steps.resolve_postdeploy.outputs.require_operator_auth_fast }}\`"
+                    echo "- admin rollout require Operator Auth live smoke fast (effective): \`${{ steps.resolve_postdeploy.outputs.require_operator_auth_live_smoke_fast }}\`"
                     echo "- admin rollout policy source fast (effective): \`${{ steps.resolve_postdeploy.outputs.policy_source_fast }}\`"
                     echo "- admin rollout skip runtime smoke gate (effective): \`${{ steps.resolve_postdeploy.outputs.skip_runtime_smoke_gate }}\`"
-                    echo "- admin rollout require OpenClaw auth gate (effective): \`${{ steps.resolve_postdeploy.outputs.require_openclaw_auth_gate }}\`"
-                    echo "- admin rollout require OpenClaw live smoke gate (effective): \`${{ steps.resolve_postdeploy.outputs.require_openclaw_live_smoke_gate }}\`"
+                    echo "- admin rollout require Operator Auth gate (effective): \`${{ steps.resolve_postdeploy.outputs.require_operator_auth_gate }}\`"
+                    echo "- admin rollout require Operator Auth live smoke gate (effective): \`${{ steps.resolve_postdeploy.outputs.require_operator_auth_live_smoke_gate }}\`"
                     echo "- admin rollout policy source gate (effective): \`${{ steps.resolve_postdeploy.outputs.policy_source_gate }}\`"
                     echo "- admin rollout precheck policy source (effective): \`${{ steps.resolve_postdeploy.outputs.precheck_policy_source }}\`"
-                    echo "- admin rollout require OpenClaw auth precheck (effective): \`${{ steps.resolve_postdeploy.outputs.require_openclaw_auth_precheck }}\`"
+                    echo "- admin rollout require Operator Auth precheck (effective): \`${{ steps.resolve_postdeploy.outputs.require_operator_auth_precheck }}\`"
                     echo "- admin rollout allow feature API failure precheck (effective): \`${{ steps.resolve_postdeploy.outputs.allow_feature_api_failure_precheck }}\`"
                     echo "- admin rollout allow missing flag precheck (effective): \`${{ steps.resolve_postdeploy.outputs.allow_missing_flag_precheck }}\`"
                     echo "- enable_public_v4_rollout_monitor (propagated): \`${ENABLE_PUBLIC_V4_ROLLOUT_MONITOR_PROPAGATED}\`"
@@ -1973,10 +1993,10 @@ jobs:
                   RUN_POSTDEPLOY_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.run_gate }}
                   ADMIN_ROLLOUT_STAGE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage }}
                   ADMIN_ROLLOUT_STAGE_PROFILE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.stage_profile }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_auth_fast }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_live_smoke_fast }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_auth_gate }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_openclaw_live_smoke_gate }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_fast }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_live_smoke_fast }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_gate }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.require_operator_auth_live_smoke_gate }}
                   ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.policy_source_fast }}
                   ADMIN_ROLLOUT_POLICY_SOURCE_GATE_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.policy_source_gate }}
                   PUBLIC_V4_ENABLE_MONITOR_EFFECTIVE: ${{ steps.resolve_postdeploy.outputs.public_v4_enable_monitor }}
@@ -2027,10 +2047,10 @@ jobs:
                     admin_rollout: {
                       stage_effective: process.env.ADMIN_ROLLOUT_STAGE_EFFECTIVE || 'general',
                       stage_profile_effective: process.env.ADMIN_ROLLOUT_STAGE_PROFILE_EFFECTIVE || 'n/a',
-                      require_openclaw_auth_fast_effective: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE || 'false',
-                      require_openclaw_live_smoke_fast_effective: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE || 'false',
-                      require_openclaw_auth_gate_effective: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_GATE_EFFECTIVE || 'false',
-                      require_openclaw_live_smoke_gate_effective: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_GATE_EFFECTIVE || 'false',
+                      require_operator_auth_fast_effective: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE || 'false',
+                      require_operator_auth_live_smoke_fast_effective: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE || 'false',
+                      require_operator_auth_gate_effective: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_GATE_EFFECTIVE || 'false',
+                      require_operator_auth_live_smoke_gate_effective: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_GATE_EFFECTIVE || 'false',
                       policy_source_fast_effective: process.env.ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE || 'n/a',
                       policy_source_gate_effective: process.env.ADMIN_ROLLOUT_POLICY_SOURCE_GATE_EFFECTIVE || 'n/a'
                     },

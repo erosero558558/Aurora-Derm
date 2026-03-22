@@ -36,13 +36,23 @@ on:
                 required: false
                 default: false
                 type: boolean
+            admin_rollout_require_operator_auth:
+                description: 'Exigir contrato Operator Auth en gate admin UI fast'
+                required: false
+                default: true
+                type: boolean
             admin_rollout_require_openclaw_auth:
-                description: 'Exigir contrato OpenClaw en gate admin UI fast'
+                description: 'Alias legacy: exigir contrato OpenClaw en gate admin UI fast'
+                required: false
+                default: true
+                type: boolean
+            admin_rollout_require_operator_auth_live_smoke:
+                description: 'Exigir smoke live Operator Auth en fast lane'
                 required: false
                 default: true
                 type: boolean
             admin_rollout_require_openclaw_live_smoke:
-                description: 'Exigir smoke live OpenClaw en fast lane'
+                description: 'Alias legacy: exigir smoke live OpenClaw en fast lane'
                 required: false
                 default: true
                 type: boolean
@@ -123,8 +133,8 @@ jobs:
             ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST: ${{ github.event.inputs.admin_rollout_skip_runtime_smoke || vars.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST || 'true' }}
             ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST: ${{ github.event.inputs.admin_rollout_allow_feature_api_failure || vars.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST || 'false' }}
             ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST: ${{ github.event.inputs.admin_rollout_allow_missing_flag || vars.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST || 'false' }}
-            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST: ${{ github.event.inputs.admin_rollout_require_openclaw_auth || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST || '' }}
-            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST: ${{ github.event.inputs.admin_rollout_require_openclaw_live_smoke || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST || '' }}
+            ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST: ${{ github.event.inputs.admin_rollout_require_operator_auth || github.event.inputs.admin_rollout_require_openclaw_auth || vars.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST || '' }}
+            ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST: ${{ github.event.inputs.admin_rollout_require_operator_auth_live_smoke || github.event.inputs.admin_rollout_require_openclaw_live_smoke || vars.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST || vars.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST || '' }}
             ENABLE_PUBLIC_V4_ROLLOUT_MONITOR_FAST: ${{ github.event.inputs.enable_public_v4_rollout_monitor || vars.PROD_MONITOR_ENABLE_PUBLIC_V4_ROLLOUT || 'false' }}
             PUBLIC_V4_ROLLOUT_STAGE_FAST: ${{ github.event.inputs.public_v4_rollout_stage || vars.PUBLIC_V4_ROLLOUT_STAGE || 'canary' }}
             PUBLIC_V4_ROLLOUT_SURFACE_TEST_FAST: ${{ github.event.inputs.public_v4_rollout_surface_test || vars.PUBLIC_V4_ROLLOUT_SURFACE_TEST || 'v4' }}
@@ -137,12 +147,12 @@ jobs:
             ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE: canary
             ADMIN_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE: progressive
             ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE: 'true'
-            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE: 'true'
-            ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE: 'true'
+            ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE: 'true'
+            ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE: 'true'
             ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE: 'false'
             ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE: 'false'
             ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE: stage-default
-            ADMIN_OPENCLAW_LIVE_SMOKE_FAST_STATUS: skipped
+            ADMIN_OPERATOR_AUTH_LIVE_SMOKE_FAST_STATUS: skipped
             ENABLE_PUBLIC_V4_ROLLOUT_MONITOR_FAST_EFFECTIVE: 'false'
             PUBLIC_V4_ROLLOUT_STAGE_FAST_EFFECTIVE: canary
             PUBLIC_V4_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE: progressive
@@ -285,10 +295,10 @@ jobs:
                     --default-stage canary `
                     --skip-runtime-smoke "$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST" `
                     --default-skip-runtime-smoke true `
-                    --require-openclaw-auth "$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST" `
-                    --default-require-openclaw-auth "" `
-                    --require-openclaw-live-smoke "$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST" `
-                    --default-require-openclaw-live-smoke "" `
+                    --require-operator-auth "$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST" `
+                    --default-require-operator-auth "" `
+                    --require-operator-auth-live-smoke "$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST" `
+                    --default-require-operator-auth-live-smoke "" `
                     --allow-feature-api-failure "$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST" `
                     --default-allow-feature-api-failure false `
                     --allow-missing-flag "$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST" `
@@ -300,20 +310,20 @@ jobs:
 
                   $policy = $policyJson | ConvertFrom-Json
                   $skipRuntimeSmokeText = if ([bool]$policy.skip_runtime_smoke_effective) { 'true' } else { 'false' }
-                  $requireOpenClawAuthText = if ([bool]$policy.require_openclaw_auth_effective) { 'true' } else { 'false' }
-                  $requireOpenClawLiveSmokeText = if ([bool]$policy.require_openclaw_live_smoke_effective) { 'true' } else { 'false' }
+                  $requireOperatorAuthText = if ([bool]$policy.require_operator_auth_effective) { 'true' } else { 'false' }
+                  $requireOperatorAuthLiveSmokeText = if ([bool]$policy.require_operator_auth_live_smoke_effective) { 'true' } else { 'false' }
                   $allowFeatureApiFailureText = if ([bool]$policy.allow_feature_api_failure_effective) { 'true' } else { 'false' }
                   $allowMissingFlagText = if ([bool]$policy.allow_missing_flag_effective) { 'true' } else { 'false' }
 
                   "ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE=$($policy.stage_effective)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                   "ADMIN_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE=$($policy.stage_profile)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                   "ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE=$skipRuntimeSmokeText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                  "ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE=$requireOpenClawAuthText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                  "ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE=$requireOpenClawLiveSmokeText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE=$requireOperatorAuthText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE=$requireOperatorAuthLiveSmokeText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                   "ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE=$allowFeatureApiFailureText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                   "ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE=$allowMissingFlagText" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                   "ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE=$($policy.policy_source)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                  Write-Host "Admin rollout fast => stage=$($policy.stage_effective) profile=$($policy.stage_profile) skip_runtime_smoke=$skipRuntimeSmokeText require_openclaw_auth=$requireOpenClawAuthText require_openclaw_live_smoke=$requireOpenClawLiveSmokeText allow_feature_api_failure=$allowFeatureApiFailureText allow_missing_flag=$allowMissingFlagText policy_source=$($policy.policy_source)"
+                  Write-Host "Admin rollout fast => stage=$($policy.stage_effective) profile=$($policy.stage_profile) skip_runtime_smoke=$skipRuntimeSmokeText require_operator_auth=$requireOperatorAuthText require_operator_auth_live_smoke=$requireOperatorAuthLiveSmokeText allow_feature_api_failure=$allowFeatureApiFailureText allow_missing_flag=$allowMissingFlagText policy_source=$($policy.policy_source)"
 
             - name: Resolver configuracion rollout publico V4 (fast)
               if: ${{ steps.gate_fast.outcome == 'success' }}
@@ -390,19 +400,19 @@ jobs:
                   Write-Host 'Reporte rollout publico V4 (fast) escrito en verification/last-public-v4-rollout-fast.json'
 
             - name: Setup Node para smoke admin UI (fast)
-              if: ${{ steps.gate_fast.outcome == 'success' && (env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' || env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE == 'true') }}
+              if: ${{ steps.gate_fast.outcome == 'success' && (env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' || env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE == 'true') }}
               uses: actions/setup-node@v4
               with:
                   node-version: '20'
                   cache: 'npm'
 
             - name: Instalar dependencias Node (fast)
-              if: ${{ steps.gate_fast.outcome == 'success' && (env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' || env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE == 'true') }}
+              if: ${{ steps.gate_fast.outcome == 'success' && (env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' || env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE == 'true') }}
               shell: pwsh
               run: npm ci
 
             - name: Instalar Playwright (chromium) para smoke admin UI (fast)
-              if: ${{ steps.gate_fast.outcome == 'success' && (env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' || env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE == 'true') }}
+              if: ${{ steps.gate_fast.outcome == 'success' && (env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE != 'true' || env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE == 'true') }}
               shell: pwsh
               run: npx playwright install chromium
 
@@ -413,7 +423,7 @@ jobs:
               run: |
                   New-Item -ItemType Directory -Path verification -Force | Out-Null
                   $skipRuntimeSmoke = ([string]$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE).ToLowerInvariant() -eq 'true'
-                  $requireOpenClawAuth = ([string]$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE).ToLowerInvariant() -eq 'true'
+                  $requireOperatorAuth = ([string]$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE).ToLowerInvariant() -eq 'true'
                   $allowFeatureApiFailure = ([string]$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE).ToLowerInvariant() -eq 'true'
                   $allowMissingFlag = ([string]$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE).ToLowerInvariant() -eq 'true'
 
@@ -421,37 +431,36 @@ jobs:
                     -Domain $env:TARGET_DOMAIN `
                     -Stage $env:ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE `
                     -SkipRuntimeSmoke:$skipRuntimeSmoke `
-                    -RequireOpenClawAuth:$requireOpenClawAuth `
+                    -RequireOperatorAuth:$requireOperatorAuth `
                     -AllowFeatureApiFailure:$allowFeatureApiFailure `
                     -AllowMissingAdminFlag:$allowMissingFlag `
                     -ReportPath 'verification/last-admin-ui-rollout-gate-fast.json'
 
-            - name: Ejecutar smoke live OpenClaw web broker (fast)
-              id: admin_openclaw_live_smoke_fast
-              if: ${{ steps.admin_rollout_fast.outcome == 'success' && env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE == 'true' }}
+            - name: Ejecutar smoke live Operator Auth web broker (fast)
+              id: admin_operator_auth_live_smoke_fast
+              if: ${{ steps.admin_rollout_fast.outcome == 'success' && env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE == 'true' }}
               shell: pwsh
               run: |
                   New-Item -ItemType Directory -Path verification -Force | Out-Null
-                  node ./bin/operator-auth-live-smoke.js `
-                    --transport web_broker `
+                  npm run smoke:admin:auth:live:node -- `
                     --server-base-url "$env:TARGET_DOMAIN" `
-                    --json-out 'verification/last-admin-openclaw-live-smoke-fast.json'
+                    --json-out 'verification/last-admin-auth-live-smoke-fast.json'
                   if ($LASTEXITCODE -ne 0) {
-                    throw 'Smoke live OpenClaw web_broker fallo en fast lane.'
+                    throw 'Smoke live Operator Auth web_broker fallo en fast lane.'
                   }
 
-            - name: Resolver estado smoke live OpenClaw (fast)
+            - name: Resolver estado smoke live Operator Auth (fast)
               if: ${{ always() }}
               shell: pwsh
               run: |
                   $status = 'skipped'
-                  if ([string]$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE -eq 'true') {
-                    $status = '${{ steps.admin_openclaw_live_smoke_fast.outcome }}'
+                  if ([string]$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE -eq 'true') {
+                    $status = '${{ steps.admin_operator_auth_live_smoke_fast.outcome }}'
                     if ([string]::IsNullOrWhiteSpace($status)) {
                       $status = 'unknown'
                     }
                   }
-                  "ADMIN_OPENCLAW_LIVE_SMOKE_FAST_STATUS=$status" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                  "ADMIN_OPERATOR_AUTH_LIVE_SMOKE_FAST_STATUS=$status" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
             - name: Publicar reporte gate admin rollout (fast)
               if: ${{ always() }}
@@ -471,12 +480,12 @@ jobs:
                   if-no-files-found: warn
                   retention-days: 14
 
-            - name: Publicar reporte smoke live OpenClaw (fast)
+            - name: Publicar reporte smoke live Operator Auth (fast)
               if: ${{ always() }}
               uses: actions/upload-artifact@v4
               with:
-                  name: post-deploy-fast-openclaw-live-smoke-report
-                  path: verification/last-admin-openclaw-live-smoke-fast.json
+                  name: post-deploy-fast-operator-auth-live-smoke-report
+                  path: verification/last-admin-auth-live-smoke-fast.json
                   if-no-files-found: warn
                   retention-days: 14
 
@@ -685,8 +694,8 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout stage (fast): ``$env:ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout stage profile (fast): ``$env:ADMIN_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout skip runtime smoke (fast): ``$env:ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout require OpenClaw auth (fast): ``$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout require OpenClaw live smoke (fast): ``$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout require Operator Auth (fast): ``$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout require Operator Auth live smoke (fast): ``$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout allow feature API failure (fast): ``$env:ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout allow missing flag (fast): ``$env:ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Admin rollout policy source (fast): ``$env:ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE``"
@@ -712,9 +721,9 @@ jobs:
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Public V4 rollout allow missing control (effective): ``$env:PUBLIC_V4_ROLLOUT_ALLOW_MISSING_CONTROL_FAST_EFFECTIVE``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Semaforo admin rollout (fast): ``$adminRolloutOutcome``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Reporte admin rollout (fast): ``verification/last-admin-ui-rollout-gate-fast.json``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Smoke live OpenClaw (fast): ``${{ steps.admin_openclaw_live_smoke_fast.outcome }}``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Smoke live OpenClaw status (fast): ``$env:ADMIN_OPENCLAW_LIVE_SMOKE_FAST_STATUS``"
-                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Reporte smoke live OpenClaw (fast): ``verification/last-admin-openclaw-live-smoke-fast.json``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Smoke live Operator Auth (fast): ``${{ steps.admin_operator_auth_live_smoke_fast.outcome }}``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Smoke live Operator Auth status (fast): ``$env:ADMIN_OPERATOR_AUTH_LIVE_SMOKE_FAST_STATUS``"
+                  Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Reporte smoke live Operator Auth (fast): ``verification/last-admin-auth-live-smoke-fast.json``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Reporte public V4 rollout (fast): ``verification/last-public-v4-rollout-fast.json``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Telemedicine fast status: ``$env:TELEMEDICINE_FAST_STATUS``"
                   Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Telemedicine fast reason: ``$env:TELEMEDICINE_FAST_REASON``"
@@ -754,12 +763,12 @@ jobs:
                   ADMIN_ROLLOUT_STAGE: ${{ env.ADMIN_ROLLOUT_STAGE_FAST_EFFECTIVE }}
                   ADMIN_ROLLOUT_STAGE_PROFILE: ${{ env.ADMIN_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE }}
                   ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE: ${{ env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE_FAST_EFFECTIVE }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH: ${{ env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE }}
-                  ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE: ${{ env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH: ${{ env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE }}
+                  ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE: ${{ env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE }}
                   ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE: ${{ env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE_FAST_EFFECTIVE }}
                   ADMIN_ROLLOUT_ALLOW_MISSING_FLAG: ${{ env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG_FAST_EFFECTIVE }}
                   ADMIN_ROLLOUT_POLICY_SOURCE: ${{ env.ADMIN_ROLLOUT_POLICY_SOURCE_FAST_EFFECTIVE }}
-                  ADMIN_OPENCLAW_LIVE_SMOKE_STATUS: ${{ env.ADMIN_OPENCLAW_LIVE_SMOKE_FAST_STATUS }}
+                  ADMIN_OPERATOR_AUTH_LIVE_SMOKE_STATUS: ${{ env.ADMIN_OPERATOR_AUTH_LIVE_SMOKE_FAST_STATUS }}
                   PUBLIC_V4_ENABLE_MONITOR: ${{ env.ENABLE_PUBLIC_V4_ROLLOUT_MONITOR_FAST_EFFECTIVE }}
                   PUBLIC_V4_STAGE: ${{ env.PUBLIC_V4_ROLLOUT_STAGE_FAST_EFFECTIVE }}
                   PUBLIC_V4_STAGE_PROFILE: ${{ env.PUBLIC_V4_ROLLOUT_STAGE_PROFILE_FAST_EFFECTIVE }}
@@ -811,12 +820,12 @@ jobs:
                         `- admin_rollout_stage: ${process.env.ADMIN_ROLLOUT_STAGE || 'n/a'}`,
                         `- admin_rollout_stage_profile: ${process.env.ADMIN_ROLLOUT_STAGE_PROFILE || 'n/a'}`,
                         `- admin_rollout_skip_runtime_smoke: ${process.env.ADMIN_ROLLOUT_SKIP_RUNTIME_SMOKE || 'n/a'}`,
-                        `- admin_rollout_require_openclaw_auth: ${process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH || 'n/a'}`,
-                        `- admin_rollout_require_openclaw_live_smoke: ${process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE || 'n/a'}`,
+                        `- admin_rollout_require_operator_auth: ${process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH || 'n/a'}`,
+                        `- admin_rollout_require_operator_auth_live_smoke: ${process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE || 'n/a'}`,
                         `- admin_rollout_allow_feature_api_failure: ${process.env.ADMIN_ROLLOUT_ALLOW_FEATURE_API_FAILURE || 'n/a'}`,
                         `- admin_rollout_allow_missing_flag: ${process.env.ADMIN_ROLLOUT_ALLOW_MISSING_FLAG || 'n/a'}`,
                         `- admin_rollout_policy_source: ${process.env.ADMIN_ROLLOUT_POLICY_SOURCE || 'n/a'}`,
-                        `- admin_openclaw_live_smoke_status: ${process.env.ADMIN_OPENCLAW_LIVE_SMOKE_STATUS || 'skipped'}`,
+                        `- admin_operator_auth_live_smoke_status: ${process.env.ADMIN_OPERATOR_AUTH_LIVE_SMOKE_STATUS || 'skipped'}`,
                         `- public_v4_enable_monitor: ${process.env.PUBLIC_V4_ENABLE_MONITOR || 'n/a'}`,
                         `- public_v4_stage: ${process.env.PUBLIC_V4_STAGE || 'n/a'}`,
                         `- public_v4_stage_profile: ${process.env.PUBLIC_V4_STAGE_PROFILE || 'n/a'}`,

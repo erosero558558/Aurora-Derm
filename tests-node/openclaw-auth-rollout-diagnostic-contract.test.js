@@ -40,7 +40,7 @@ function loadFile(path) {
     return readFileSync(path, 'utf8');
 }
 
-test('diagnostico OpenClaw del rollout admin publica contrato y clasificaciones canonicas', () => {
+test('diagnostico Operator Auth del rollout admin publica contrato y clasificaciones canonicas', () => {
     const raw = loadFile(SCRIPT_PATH);
 
     assert.equal(
@@ -71,14 +71,14 @@ test('diagnostico OpenClaw del rollout admin publica contrato y clasificaciones 
         'falta diagnostico facade_only_rollout'
     );
     assert.equal(
-        raw.includes("diagnosis = 'openclaw_ready'"),
+        raw.includes("diagnosis = 'operator_auth_ready'"),
         true,
-        'falta diagnostico openclaw_ready'
+        'falta diagnostico operator_auth_ready'
     );
     assert.equal(
-        raw.includes("diagnosis = 'openclaw_not_configured'"),
+        raw.includes("diagnosis = 'operator_auth_not_configured'"),
         true,
-        'falta diagnostico openclaw_not_configured'
+        'falta diagnostico operator_auth_not_configured'
     );
     assert.equal(
         raw.includes("diagnosis = 'admin_auth_legacy_facade'"),
@@ -97,7 +97,7 @@ test('diagnostico OpenClaw del rollout admin publica contrato y clasificaciones 
     );
 });
 
-test('package y docs publican el diagnostico de rollout OpenClaw del admin', () => {
+test('package y docs publican el diagnostico de rollout Operator Auth del admin', () => {
     const packageJson = loadFile(PACKAGE_JSON_PATH);
     const adminOpsReadme = loadFile(ADMIN_OPS_README_PATH);
     const operationsIndex = loadFile(OPERATIONS_INDEX_PATH);
@@ -105,26 +105,24 @@ test('package y docs publican el diagnostico de rollout OpenClaw del admin', () 
 
     assert.equal(
         packageJson.includes(
-            '"diagnose:admin:openclaw-auth:rollout": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1 -Domain https://pielarmonia.com"'
+            '"diagnose:admin:auth:rollout": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1 -Domain https://pielarmonia.com"'
         ),
         true,
-        'package.json debe exponer diagnose:admin:openclaw-auth:rollout'
+        'package.json debe exponer diagnose:admin:auth:rollout'
     );
     assert.equal(
-        adminOpsReadme.includes('npm run diagnose:admin:openclaw-auth:rollout'),
+        adminOpsReadme.includes('npm run diagnose:admin:auth:rollout'),
         true,
-        'README de admin ops debe documentar el diagnostico OpenClaw'
+        'README de admin ops debe documentar el diagnostico Operator Auth'
     );
     assert.equal(
-        operationsIndex.includes(
-            'npm run diagnose:admin:openclaw-auth:rollout'
-        ),
+        operationsIndex.includes('npm run diagnose:admin:auth:rollout'),
         true,
-        'Operations Index debe incluir el diagnostico OpenClaw del admin'
+        'Operations Index debe incluir el diagnostico Operator Auth del admin'
     );
     assert.equal(
-        adminRolloutDoc.includes('diagnose:admin:openclaw-auth:rollout'),
+        adminRolloutDoc.includes('diagnose:admin:auth:rollout'),
         true,
-        'ADMIN-UI-ROLLOUT debe incluir el diagnostico OpenClaw del rollout'
+        'ADMIN-UI-ROLLOUT debe incluir el diagnostico Operator Auth del rollout'
     );
 });

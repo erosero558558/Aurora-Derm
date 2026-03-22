@@ -122,6 +122,7 @@ function parseArgs(argv) {
     const args = {
         root: GENERATED_SITE_ROOT,
         sourceRoot: ROOT,
+        publishedRoot: ROOT,
         output: DEFAULT_OUTPUT,
         scriptPath: __filename,
         json: false,
@@ -161,6 +162,23 @@ function parseArgs(argv) {
             args.sourceRoot = path.resolve(
                 ROOT,
                 token.slice('--source-root='.length).trim()
+            );
+            continue;
+        }
+
+        if (token === '--published-root') {
+            const nextValue = String(argv[index + 1] || '').trim();
+            if (nextValue) {
+                args.publishedRoot = path.resolve(ROOT, nextValue);
+                index += 1;
+            }
+            continue;
+        }
+
+        if (token.startsWith('--published-root=')) {
+            args.publishedRoot = path.resolve(
+                ROOT,
+                token.slice('--published-root='.length).trim()
             );
             continue;
         }
@@ -350,13 +368,84 @@ function inspectBundles(root) {
     };
 }
 
-function inspectTurneroRuntimeArtifacts({ root, sourceRoot, scriptPath }) {
+function inspectPublishedBundles(root, publishedRoot) {
+    const diagnostics = [];
+    const bundleChecks = BUNDLE_SIGNATURES.map((bundle) => {
+        const sourcePath = path.resolve(root, bundle.file);
+        const publishedPath = path.resolve(publishedRoot, bundle.file);
+        const sourceText = readText(sourcePath);
+        const publishedText = readText(publishedPath);
+        const sourceExists = sourceText !== null;
+        const publishedExists = publishedText !== null;
+        const missingTokens = [];
+
+        if (!publishedExists) {
+            diagnostics.push({
+                code: 'turnero_published_bundle_missing',
+                file: bundle.file,
+            });
+        }
+
+        if (publishedExists) {
+            for (const token of bundle.requiredTokens || []) {
+                if (!publishedText.includes(token)) {
+                    missingTokens.push(token);
+                }
+            }
+        }
+
+        if (missingTokens.length > 0) {
+            diagnostics.push({
+                code: 'turnero_published_bundle_signature_missing',
+                file: bundle.file,
+                missingTokens,
+            });
+        }
+
+        if (
+            sourceExists &&
+            publishedExists &&
+            sourceText !== publishedText
+        ) {
+            diagnostics.push({
+                code: 'turnero_published_bundle_drift',
+                file: bundle.file,
+            });
+        }
+
+        return {
+            file: bundle.file,
+            sourceExists,
+            publishedExists,
+            requiredTokens: bundle.requiredTokens || [],
+            missingTokens,
+            contentDrift:
+                sourceExists &&
+                publishedExists &&
+                sourceText !== publishedText,
+        };
+    });
+
+    return {
+        bundleChecks,
+        diagnostics,
+    };
+}
+
+function inspectTurneroRuntimeArtifacts({
+    root,
+    sourceRoot,
+    publishedRoot,
+    scriptPath,
+}) {
     const sourceChecks = inspectSourceWiring(sourceRoot);
     const bundleChecks = inspectBundles(root);
+    const publishedBundles = inspectPublishedBundles(root, publishedRoot);
     const selfCheck = inspectSelfProxy(scriptPath);
     const diagnostics = [
         ...sourceChecks.diagnostics,
         ...bundleChecks.diagnostics,
+        ...publishedBundles.diagnostics,
     ];
 
     if (selfCheck.proxyDetected) {
@@ -370,10 +459,12 @@ function inspectTurneroRuntimeArtifacts({ root, sourceRoot, scriptPath }) {
         generatedAt: new Date().toISOString(),
         rootPath: root,
         sourceRootPath: sourceRoot,
+        publishedRootPath: publishedRoot,
         passed: diagnostics.length === 0,
         selfCheck,
         sourceChecks: sourceChecks.sourceChecks,
         bundleChecks: bundleChecks.bundleChecks,
+        publishedBundleChecks: publishedBundles.bundleChecks,
         diagnostics,
     };
 }
@@ -386,9 +477,13 @@ function main() {
     const sourceRoot = args.sourceRoot
         ? path.resolve(args.sourceRoot)
         : ROOT;
+    const publishedRoot = args.publishedRoot
+        ? path.resolve(args.publishedRoot)
+        : ROOT;
     const report = inspectTurneroRuntimeArtifacts({
         root: inspectionRoot,
         sourceRoot,
+        publishedRoot,
         scriptPath: args.scriptPath || __filename,
     });
     const outputPath = args.output
@@ -401,9 +496,11 @@ function main() {
         passed: report.passed,
         rootPath: report.rootPath,
         sourceRootPath: report.sourceRootPath,
+        publishedRootPath: report.publishedRootPath,
         selfCheck: report.selfCheck,
         sourceChecks: report.sourceChecks,
         bundleChecks: report.bundleChecks,
+        publishedBundleChecks: report.publishedBundleChecks,
         diagnostics: report.diagnostics,
     };
 

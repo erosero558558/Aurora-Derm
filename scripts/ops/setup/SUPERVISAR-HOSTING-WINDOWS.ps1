@@ -150,7 +150,7 @@ function Invoke-LocalAuth {
     $payload = $response.Payload
     $ok =
         $response.Ok -and
-        ([string]$payload.mode -eq 'openclaw_chatgpt') -and
+        ([string]$payload.mode -eq 'google_oauth') -and
         ([string]$payload.transport -eq 'web_broker') -and
         ([string]$payload.status -ne 'transport_misconfigured')
 
@@ -167,7 +167,7 @@ function Invoke-LocalAuth {
         if (-not [string]::IsNullOrWhiteSpace($response.Error)) {
             $authError = $response.Error
         } else {
-            $authError = 'Contrato OpenClaw invalido en supervisor.'
+            $authError = 'Contrato Operator Auth invalido en supervisor.'
         }
     }
 
@@ -199,7 +199,7 @@ function Invoke-HostingSmoke {
                 '-ExecutionPolicy', 'Bypass',
                 '-File', $ScriptPath,
                 '-BaseUrl', 'http://127.0.0.1',
-                '-ExpectedAuthMode', 'openclaw_chatgpt',
+                '-ExpectedAuthMode', 'google_oauth',
                 '-ExpectedTransport', 'web_broker',
                 '-ReportPath', $reportPath,
                 '-Quiet'

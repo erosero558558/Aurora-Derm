@@ -13,6 +13,7 @@ const {
 const DEFAULT_DOMAIN = 'https://pielarmonia.com';
 const DEFAULT_STAGE = 'stable';
 const DEFAULT_REPORT_PATH = 'verification/last-admin-ui-rollout-gate.json';
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
 const VALID_STAGES = new Set([
     'stable',
     'internal',
@@ -34,6 +35,7 @@ function parseCliArgs(argv = process.argv.slice(2)) {
         domain: DEFAULT_DOMAIN,
         stage: DEFAULT_STAGE,
         requireOpenClawAuth: false,
+        requireOperatorAuth: false,
         allowFeatureApiFailure: false,
         allowMissingAdminFlag: false,
         skipRuntimeSmoke: false,
@@ -52,6 +54,16 @@ function parseCliArgs(argv = process.argv.slice(2)) {
             raw === '-RequireOpenClawAuth'
         ) {
             options.requireOpenClawAuth = true;
+            options.requireOperatorAuth = true;
+            continue;
+        }
+
+        if (
+            raw === '--require-operator-auth' ||
+            raw === '--requireOperatorAuth' ||
+            raw === '-RequireOperatorAuth'
+        ) {
+            options.requireOperatorAuth = true;
             continue;
         }
 
@@ -178,6 +190,7 @@ function createOperatorAuthReport(base) {
         transport: '',
         status: '',
         configured: false,
+        recommended_mode: '',
         helper_base_url: '',
         bridge_token_configured: false,
         bridge_secret_configured: false,
@@ -263,6 +276,7 @@ function applySnapshotToOperatorAuth(target, snapshot, source) {
     target.transport = stringValue(snapshot.transport);
     target.status = stringValue(snapshot.status);
     target.configured = snapshot.configured === true;
+    target.recommended_mode = stringValue(snapshot.recommended_mode);
     target.helper_base_url = stringValue(snapshot.helper_base_url);
     target.bridge_token_configured = snapshot.bridge_token_configured === true;
     target.bridge_secret_configured =
@@ -613,7 +627,7 @@ async function buildGateReport(options = {}) {
                 );
             } else {
                 process.stdout.write(
-                    '[WARN] operator_auth-status respondio, pero no expone el contrato OpenClaw esperado.\n'
+                    '[WARN] operator_auth-status respondio, pero no expone el contrato auth canonico esperado.\n'
                 );
             }
         } else {
@@ -659,7 +673,7 @@ async function buildGateReport(options = {}) {
                         'admin-auth-facade-legacy'
                     );
                     process.stdout.write(
-                        '[WARN] admin-auth facade respondio, pero sigue en contrato legacy sin mode/status OpenClaw.\n'
+                        '[WARN] admin-auth facade respondio, pero sigue en contrato legacy sin mode/status auth.\n'
                     );
                 }
             } else {
@@ -674,7 +688,7 @@ async function buildGateReport(options = {}) {
         }
     }
 
-    if (options.requireOpenClawAuth) {
+    if (options.requireOperatorAuth) {
         const brokerTrustReady =
             report.operator_auth.transport !== 'web_broker' ||
             (report.operator_auth.broker_trust_configured === true &&
@@ -684,15 +698,42 @@ async function buildGateReport(options = {}) {
                 report.operator_auth.broker_email_verified_required === true);
         if (
             report.operator_auth.contract_valid &&
-            report.operator_auth.mode === 'openclaw_chatgpt' &&
+            report.operator_auth.mode === CANONICAL_OPERATOR_AUTH_MODE &&
+            report.operator_auth.recommended_mode ===
+                CANONICAL_OPERATOR_AUTH_MODE &&
+            report.operator_auth.transport === 'web_broker' &&
             report.operator_auth.configured &&
             brokerTrustReady
         ) {
-            process.stdout.write('[OK]  operator auth OpenClaw configurado\n');
+            process.stdout.write(
+                '[OK]  operator auth Google web_broker configurado\n'
+            );
         } else {
             if (!report.operator_auth.contract_valid) {
                 process.stdout.write(
-                    `[WARN] operator auth sin contrato OpenClaw valido. source=${report.operator_auth.source}\n`
+                    `[WARN] operator auth sin contrato valido. source=${report.operator_auth.source}\n`
+                );
+            }
+            if (
+                report.operator_auth.mode &&
+                report.operator_auth.mode !== CANONICAL_OPERATOR_AUTH_MODE
+            ) {
+                process.stdout.write(
+                    `[WARN] operator auth expone mode=${report.operator_auth.mode}; esperado ${CANONICAL_OPERATOR_AUTH_MODE}.\n`
+                );
+            }
+            if (
+                report.operator_auth.recommended_mode &&
+                report.operator_auth.recommended_mode !==
+                    CANONICAL_OPERATOR_AUTH_MODE
+            ) {
+                process.stdout.write(
+                    `[WARN] operator auth expone recommended_mode=${report.operator_auth.recommended_mode}; esperado ${CANONICAL_OPERATOR_AUTH_MODE}.\n`
+                );
+            }
+            if (report.operator_auth.transport !== 'web_broker') {
+                process.stdout.write(
+                    `[WARN] operator auth expone transport=${report.operator_auth.transport || 'none'}; esperado web_broker.\n`
                 );
             }
             if (
@@ -704,7 +745,7 @@ async function buildGateReport(options = {}) {
                 );
             }
             process.stdout.write(
-                '[FAIL] operator auth OpenClaw no esta configurado para este rollout\n'
+                '[FAIL] operator auth Google no esta configurado para este rollout\n'
             );
             failures += 1;
         }
@@ -724,7 +765,7 @@ async function buildGateReport(options = {}) {
                 specs: ['tests/admin-v3-canary-runtime.spec.js'],
             },
             {
-                name: 'admin-openclaw-auth',
+                name: 'admin-auth',
                 specs: ['tests/admin-openclaw-login.spec.js'],
             },
         ];

@@ -35,6 +35,7 @@ async function handleRuntimeCommand(ctx) {
         invokeOpenClawRuntime,
         parseExpectedBoardRevisionFlag,
         OPENCLAW_PROVIDER,
+        PILOT_RUNTIME_PROVIDER,
         getGovernancePolicy,
         rootPath,
         fetchImpl,
@@ -47,15 +48,15 @@ async function handleRuntimeCommand(ctx) {
 
     if (!['verify', 'invoke'].includes(subcommand)) {
         throw new Error(
-            'Uso: node agent-orchestrator.js runtime <verify|invoke> [openclaw_chatgpt|task_id] [--expect-rev n] [--json]'
+            'Uso: node agent-orchestrator.js runtime <verify|invoke> [pilot_runtime|openclaw_chatgpt|task_id] [--expect-rev n] [--json]'
         );
     }
 
     if (subcommand === 'verify') {
-        const provider = String(positionals[0] || OPENCLAW_PROVIDER)
+        const provider = String(positionals[0] || PILOT_RUNTIME_PROVIDER)
             .trim()
             .toLowerCase();
-        if (provider !== OPENCLAW_PROVIDER) {
+        if (![PILOT_RUNTIME_PROVIDER, OPENCLAW_PROVIDER].includes(provider)) {
             const error = new Error(
                 `runtime verify: provider invalido (${provider})`
             );
@@ -67,6 +68,7 @@ async function handleRuntimeCommand(ctx) {
             fetchImpl,
             governancePolicy: getGovernancePolicy(),
             rootPath,
+            provider,
         });
         const report = {
             version: 1,
@@ -94,8 +96,9 @@ async function handleRuntimeCommand(ctx) {
                 }`
             );
         }
+        const runtimeState = String(runtime?.summary?.state || 'healthy').trim();
         console.log(
-            `OK: ${provider} healthy en ${
+            `OK: ${provider} ${runtimeState === 'healthy' ? 'healthy' : `ready (${runtimeState})`} en ${
                 String(runtime?.summary?.message || '').trim() ||
                 runtime.surfaces
                     .map((surface) => `${surface.surface}=${surface.state}`)

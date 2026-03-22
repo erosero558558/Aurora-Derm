@@ -593,8 +593,11 @@ function buildTaskFromSignal(signal, options = {}) {
         updated_at: String(nowIso).slice(0, 10),
     };
     if (scope === 'openclaw_runtime') {
-        task.provider_mode = 'openclaw_chatgpt';
         task.runtime_surface = inferOpenClawSurfaceFromText(scopeCorpus);
+        task.provider_mode =
+            task.runtime_surface === 'operator_auth'
+                ? 'google_oauth'
+                : 'openclaw_chatgpt';
         task.runtime_transport = 'hybrid_http_cli';
         task.runtime_last_transport = '';
     }

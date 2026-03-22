@@ -29,7 +29,7 @@ Luego abre:
 - API health: `http://127.0.0.1:8011/api.php?resource=health`
 - Bot endpoint: `http://127.0.0.1:8011/figo-chat.php`
 
-## Login OpenClaw local
+## Login Operator Auth local
 
 El login canonico de `admin.html` y `operador-turnos.html` requiere dos
 procesos vivos en local:
@@ -97,7 +97,7 @@ modo OpenClaw.
 
 Notas:
 
-- En produccion con `AURORADERM_INTERNAL_CONSOLE_AUTH_PRIMARY=openclaw_chatgpt`,
+- En produccion con `AURORADERM_OPERATOR_AUTH_MODE=google_oauth`,
   la clave solo funciona como contingencia si tambien hay `2FA`.
 - `admin.html` mantiene OpenClaw como acceso principal del operador local y
   solo muestra `clave + 2FA` cuando el backend anuncia el fallback como
@@ -117,4 +117,3 @@ Notas generales:
   y puede responder `404`.
 - Las rutas legacy como `/index.html` o `/telemedicina.html` forman parte del
   contrato de redirects en Apache/Nginx (`.htaccess`), no del entrypoint local.
-

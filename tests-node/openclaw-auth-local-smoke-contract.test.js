@@ -47,7 +47,7 @@ test('smoke local OpenClaw reutiliza fachada admin-auth y helper canonico', () =
     }
 });
 
-test('package y docs exponen el smoke local de OpenClaw auth', () => {
+test('package y docs exponen el smoke local de Operator Auth con alias legacy', () => {
     const pkg = JSON.parse(load(PACKAGE_JSON_PATH));
     const script = load(SCRIPT_PATH);
     const readme = load(README_PATH);
@@ -55,11 +55,16 @@ test('package y docs exponen el smoke local de OpenClaw auth', () => {
     const leadopsDoc = load(LEADOPS_DOC_PATH);
 
     assert.equal(
-        String(pkg.scripts?.['smoke:admin:openclaw-auth:local'] || '').includes(
+        String(pkg.scripts?.['smoke:admin:auth:local'] || '').includes(
             './scripts/ops/admin/SMOKE-OPENCLAW-AUTH-LOCAL.ps1'
         ),
         true,
-        'package.json debe exponer smoke:admin:openclaw-auth:local'
+        'package.json debe exponer smoke:admin:auth:local'
+    );
+    assert.equal(
+        String(pkg.scripts?.['smoke:admin:openclaw-auth:local'] || '').trim(),
+        'npm run smoke:admin:auth:local',
+        'package.json debe mantener smoke:admin:openclaw-auth:local como alias legacy'
     );
     assert.equal(
         script.includes('bin/openclaw-auth-local-smoke.js'),
@@ -69,7 +74,7 @@ test('package y docs exponen el smoke local de OpenClaw auth', () => {
 
     for (const snippet of [
         'SMOKE-OPENCLAW-AUTH-LOCAL.ps1',
-        'smoke:admin:openclaw-auth:local',
+        'smoke:admin:auth:local',
     ]) {
         assert.equal(
             readme.includes(snippet),

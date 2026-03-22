@@ -239,6 +239,17 @@ test.describe('Turnero runtime smoke', () => {
                 '[data-turnero-operator-surface-package="true"] .turnero-surface-ops__chip'
             )
         ).toHaveCount(3);
+        await expect(page.locator('#operatorSurfaceExecutiveReviewHost')).toBeVisible();
+        await expect(
+            page.locator(
+                '#operatorSurfaceExecutiveReviewHost [data-surface="operator"].turnero-surface-executive-review-banner'
+            )
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '#operatorSurfaceExecutiveReviewHost .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
     });
 
     test('kiosk renders the integrity banner and checkpoint chips', async ({
@@ -281,6 +292,17 @@ test.describe('Turnero runtime smoke', () => {
         await expect(
             page.locator(
                 '[data-turnero-kiosk-surface-package="true"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
+        await expect(page.locator('#kioskSurfaceExecutiveReviewHost')).toBeVisible();
+        await expect(
+            page.locator(
+                '#kioskSurfaceExecutiveReviewHost [data-surface="kiosk"].turnero-surface-executive-review-banner'
+            )
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '#kioskSurfaceExecutiveReviewHost .turnero-surface-ops__chip'
             )
         ).toHaveCount(3);
     });
@@ -327,6 +349,17 @@ test.describe('Turnero runtime smoke', () => {
                 '[data-turnero-display-surface-package="true"] .turnero-surface-ops__chip'
             )
         ).toHaveCount(3);
+        await expect(page.locator('#displaySurfaceExecutiveReviewHost')).toBeVisible();
+        await expect(
+            page.locator(
+                '#displaySurfaceExecutiveReviewHost [data-surface="display"].turnero-surface-executive-review-banner'
+            )
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '#displaySurfaceExecutiveReviewHost .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
     });
 
     test('admin queue renders the integrity console inside the queue hub', async ({
@@ -370,5 +403,36 @@ test.describe('Turnero runtime smoke', () => {
                 '#queueSurfacePackageConsoleHost > .turnero-admin-queue-surface-package-console'
             )
         ).toContainText('Surface Package Standardization');
+        await expect(page.locator('#queueSurfaceExecutiveReviewConsoleHost')).toBeVisible();
+        await expect(
+            page.locator(
+                '#queueSurfaceExecutiveReviewConsoleHost .turnero-admin-queue-surface-executive-review-console'
+            )
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '#queueSurfaceExecutiveReviewConsoleHost .turnero-admin-queue-surface-executive-review-console'
+            )
+        ).toContainText('Surface Executive Review Console');
+        await expect(
+            page.locator(
+                '#queueSurfaceExecutiveReviewConsoleHost [data-surface="queue-admin"].turnero-surface-executive-review-banner'
+            )
+        ).toBeVisible();
+        await expect(
+            page.locator(
+                '#queueSurfaceExecutiveReviewConsoleHost [data-surface-key="operator"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
+        await expect(
+            page.locator(
+                '#queueSurfaceExecutiveReviewConsoleHost [data-surface-key="kiosk"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
+        await expect(
+            page.locator(
+                '#queueSurfaceExecutiveReviewConsoleHost [data-surface-key="display"] .turnero-surface-ops__chip'
+            )
+        ).toHaveCount(3);
     });
 });

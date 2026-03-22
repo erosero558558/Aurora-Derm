@@ -1,4 +1,5 @@
 // @ts-check
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
 
 function fulfillJson(route, payload, status = 200) {
     return route.fulfill({
@@ -165,12 +166,12 @@ function buildOperatorOpenClawAnonymousPayload(overrides = {}) {
     return {
         ok: true,
         authenticated: false,
-        mode: 'openclaw_chatgpt',
+        mode: CANONICAL_OPERATOR_AUTH_MODE,
         transport: Object.prototype.hasOwnProperty.call(overrides, 'transport')
             ? resolveMockTransport(overrides.transport)
             : 'local_helper',
         status: 'anonymous',
-        recommendedMode: 'openclaw_chatgpt',
+        recommendedMode: CANONICAL_OPERATOR_AUTH_MODE,
         csrfToken: 'csrf_operator_auth',
         fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
@@ -181,12 +182,12 @@ function buildOperatorOpenClawPendingPayload(challenge, overrides = {}) {
     const payload = {
         ok: true,
         authenticated: false,
-        mode: 'openclaw_chatgpt',
+        mode: CANONICAL_OPERATOR_AUTH_MODE,
         transport: Object.prototype.hasOwnProperty.call(overrides, 'transport')
             ? resolveMockTransport(overrides.transport)
             : 'local_helper',
         status: 'pending',
-        recommendedMode: 'openclaw_chatgpt',
+        recommendedMode: CANONICAL_OPERATOR_AUTH_MODE,
         csrfToken: 'csrf_operator_auth',
         fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
@@ -203,16 +204,16 @@ function buildOperatorOpenClawAuthenticatedPayload(overrides = {}) {
     return {
         ok: true,
         authenticated: true,
-        mode: 'openclaw_chatgpt',
+        mode: CANONICAL_OPERATOR_AUTH_MODE,
         transport: Object.prototype.hasOwnProperty.call(overrides, 'transport')
             ? resolveMockTransport(overrides.transport)
             : 'local_helper',
         status: 'autenticado',
-        recommendedMode: 'openclaw_chatgpt',
+        recommendedMode: CANONICAL_OPERATOR_AUTH_MODE,
         csrfToken: 'csrf_operator_auth',
         operator: {
             email: 'operator@example.com',
-            source: 'openclaw_chatgpt',
+            source: CANONICAL_OPERATOR_AUTH_MODE,
         },
         fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
@@ -365,7 +366,7 @@ async function installOperatorOpenClawAuthMock(target, options = {}) {
     let authState = {
         authenticated: false,
         status: 'anonymous',
-        mode: 'openclaw_chatgpt',
+        mode: CANONICAL_OPERATOR_AUTH_MODE,
         transport: initialTransport,
         csrfToken: '',
         operator: null,
@@ -388,8 +389,8 @@ async function installOperatorOpenClawAuthMock(target, options = {}) {
                           : 'anonymous')
             ).trim(),
             mode:
-                String(payload?.mode || 'openclaw_chatgpt').trim() ||
-                'openclaw_chatgpt',
+                String(payload?.mode || CANONICAL_OPERATOR_AUTH_MODE).trim() ||
+                CANONICAL_OPERATOR_AUTH_MODE,
             transport: resolveMockTransport(payload?.transport),
             csrfToken: authenticated ? String(payload?.csrfToken || '') : '',
             operator: authenticated ? payload?.operator || null : null,
@@ -588,7 +589,7 @@ function buildOpenClawAdminOperator(overrides = {}) {
         email: 'operator@example.com',
         profileId: 'profile-test',
         accountId: 'acct-test',
-        source: 'openclaw_chatgpt',
+        source: CANONICAL_OPERATOR_AUTH_MODE,
         ...overrides,
     };
 }
@@ -602,11 +603,11 @@ function buildOpenClawAdminAuthPayload(overrides = {}) {
         ok: true,
         authenticated,
         configured: true,
-        mode: 'openclaw_chatgpt',
+        mode: CANONICAL_OPERATOR_AUTH_MODE,
         transport: Object.prototype.hasOwnProperty.call(overrides, 'transport')
             ? resolveMockTransport(overrides.transport)
             : 'local_helper',
-        recommendedMode: 'openclaw_chatgpt',
+        recommendedMode: CANONICAL_OPERATOR_AUTH_MODE,
         status: authenticated ? 'autenticado' : 'pending',
         fallbacks: buildLegacyFallbackPayload(overrides.fallbacks),
         ...overrides,
@@ -699,7 +700,7 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
                     route,
                     buildLegacyAdminAuthPayload({
                         authenticated: true,
-                        recommendedMode: 'openclaw_chatgpt',
+                        recommendedMode: CANONICAL_OPERATOR_AUTH_MODE,
                         twoFactorEnabled: true,
                         fallbacks: fallbackPayload,
                         ...options.fallbackAuthenticatedPayload,
@@ -713,7 +714,7 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
                     buildLegacyAdminAuthPayload({
                         authenticated: false,
                         status: 'two_factor_required',
-                        recommendedMode: 'openclaw_chatgpt',
+                        recommendedMode: CANONICAL_OPERATOR_AUTH_MODE,
                         twoFactorEnabled: true,
                         fallbacks: fallbackPayload,
                     })
@@ -866,7 +867,7 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
                     status: fallbackTwoFactorRequired
                         ? 'two_factor_required'
                         : 'authenticated',
-                    recommendedMode: 'openclaw_chatgpt',
+                    recommendedMode: CANONICAL_OPERATOR_AUTH_MODE,
                     twoFactorEnabled: true,
                     twoFactorRequired: fallbackTwoFactorRequired,
                     csrfToken: fallbackTwoFactorRequired
@@ -885,7 +886,7 @@ async function installOpenClawAdminAuthMock(page, options = {}) {
                 route,
                 buildLegacyAdminAuthPayload({
                     authenticated: true,
-                    recommendedMode: 'openclaw_chatgpt',
+                    recommendedMode: CANONICAL_OPERATOR_AUTH_MODE,
                     twoFactorEnabled: true,
                     csrfToken: 'csrf-openclaw-fallback',
                     fallbacks: fallbackPayload,

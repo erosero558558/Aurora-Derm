@@ -20,7 +20,6 @@ const DEPLOY_AUTHORED_FILES = [
     'js/admin-preboot-shortcuts.js',
     'js/admin-runtime.js',
     'js/monitoring-loader.js',
-    'js/queue-operator.js',
     'admin.html',
     'admin-v3.css',
     'queue-ops.css',

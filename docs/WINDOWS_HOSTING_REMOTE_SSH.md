@@ -58,6 +58,6 @@ Criterio de cierre del wrapper mutante:
 - `hosting-supervisor-status.json` presente
 - `hosting-supervisor-status.json.supervisor_state = running | recovering`
 - `http://127.0.0.1/admin-auth.php?action=status` con
-  `mode=openclaw_chatgpt` y `transport=web_broker`
+  `mode=google_oauth` y `transport=web_broker`
 - `https://pielarmonia.com/admin-auth.php?action=status` con
-  `transport=web_broker`
+  `mode=google_oauth` y `transport=web_broker`

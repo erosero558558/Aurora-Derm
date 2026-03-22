@@ -363,6 +363,18 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
         decision_ref: String(rawTask.decision_ref || '').trim(),
         rework_parent: String(rawTask.rework_parent || '').trim(),
         rework_reason: String(rawTask.rework_reason || '').trim(),
+        workspace_machine_id: String(
+            rawTask.workspace_machine_id || ''
+        ).trim(),
+        workspace_branch: String(rawTask.workspace_branch || '').trim(),
+        workspace_head: String(rawTask.workspace_head || '').trim(),
+        workspace_origin_main_head: String(
+            rawTask.workspace_origin_main_head || ''
+        ).trim(),
+        workspace_sync_state: String(rawTask.workspace_sync_state || '').trim(),
+        workspace_sync_checked_at: String(
+            rawTask.workspace_sync_checked_at || ''
+        ).trim(),
         files: Array.isArray(rawTask.files)
             ? rawTask.files.map((v) => String(v || '').trim()).filter(Boolean)
             : [],
@@ -417,7 +429,11 @@ function normalizeTaskForCreateApply(rawTask, options = {}) {
             task.runtime_transport ||
             task.runtime_last_transport)
     ) {
-        task.provider_mode = 'openclaw_chatgpt';
+        task.provider_mode =
+            String(task.runtime_surface || '').trim().toLowerCase() ===
+            'operator_auth'
+                ? 'google_oauth'
+                : 'openclaw_chatgpt';
     }
 
     if (!/^AG-\d+$/.test(task.id)) {

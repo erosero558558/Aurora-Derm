@@ -133,7 +133,7 @@ Add-ChecklistCommandBlock @(
 Add-ChecklistSection 'Variables criticas del host'
 Add-ChecklistBullet 'Valida presencia, no valores secretos. El objetivo es detectar misconfiguracion real del host.'
 Add-ChecklistCommandBlock @(
-    'php -r ''foreach (["AURORADERM_DATA_ENCRYPTION_KEY","AURORADERM_REQUIRE_DATA_ENCRYPTION","AURORADERM_OPERATOR_AUTH_MODE","AURORADERM_ADMIN_2FA_SECRET"] as $k) { $v = getenv($k); echo $k, "=", (($v === false || $v === "") ? "missing" : "set"), PHP_EOL; }''',
+    'php -r ''foreach (["PIELARMONIA_DATA_ENCRYPTION_KEY","PIELARMONIA_REQUIRE_DATA_ENCRYPTION","AURORADERM_DATA_ENCRYPTION_KEY","AURORADERM_REQUIRE_DATA_ENCRYPTION","AURORADERM_OPERATOR_AUTH_MODE","AURORADERM_ADMIN_2FA_SECRET"] as $k) { $v = getenv($k); echo $k, "=", (($v === false || $v === "") ? "missing" : "set"), PHP_EOL; }''',
     "curl -s $DiagnosticsUrl | jq '{publicSync: .checks.publicSync, storage: .checks.storage, auth: .checks.auth}'"
 )
 
@@ -143,7 +143,7 @@ Add-ChecklistBullet 'health publico sin checks.publicSync o sin jobId: desplegar
 Add-ChecklistBullet 'failureReason=working_tree_dirty + dirtyPathsCount>0 + telemetryGap=false: el cron tiene suficiente telemetria; limpia drift tracked en el VPS antes de culpar al workflow.'
 Add-ChecklistBullet 'si dirtyPathsSample solo muestra `.generated/site-root/**` o `_deploy_bundle/**` despues de una corrida forzada, el wrapper del host probablemente sigue desalineado con la politica canonica de higiene.'
 Add-ChecklistBullet 'currentHead != remoteHead: hay head drift real; no es solo working tree dirty.'
-Add-ChecklistBullet 'encryptionStatus=plaintext o encryptionCompliant=false: falta configurar o aplicar AURORADERM_DATA_ENCRYPTION_KEY / AURORADERM_REQUIRE_DATA_ENCRYPTION en el host.'
+Add-ChecklistBullet 'encryptionStatus=plaintext o encryptionCompliant=false: falta configurar o aplicar PIELARMONIA_DATA_ENCRYPTION_KEY / PIELARMONIA_REQUIRE_DATA_ENCRYPTION en el host (AURORADERM_* sigue disponible como alias).'
 Add-ChecklistBullet 'mode=legacy_password + twoFactorEnabled=false: auth sigue por debajo del baseline recomendado aunque el runtime este operativo.'
 Add-ChecklistLine
 
@@ -170,4 +170,3 @@ if (-not [string]::IsNullOrWhiteSpace($OutputPath)) {
 }
 
 Write-Output $output
-

@@ -24,7 +24,10 @@ const DEFAULT_ALLOWED_DOMAIN_LANES = new Set([
     'transversal_runtime',
 ]);
 const DEFAULT_ALLOWED_LANE_LOCKS = new Set(['strict', 'handoff_allowed']);
-const DEFAULT_ALLOWED_PROVIDER_MODES = new Set(['openclaw_chatgpt']);
+const DEFAULT_ALLOWED_PROVIDER_MODES = new Set([
+    'openclaw_chatgpt',
+    'google_oauth',
+]);
 const DEFAULT_ALLOWED_RUNTIME_SURFACES = new Set([
     'figo_queue',
     'leadops_worker',
@@ -153,6 +156,12 @@ function mapLaneToCodexInstance(domainLane) {
     if (lane === 'frontend_content') return 'codex_frontend';
     if (lane === 'transversal_runtime') return 'codex_transversal';
     return 'codex_backend_ops';
+}
+
+function expectedProviderModeForSurface(runtimeSurface) {
+    return normalizeOptionalToken(runtimeSurface) === 'operator_auth'
+        ? 'google_oauth'
+        : 'openclaw_chatgpt';
 }
 
 function isOpenClawRuntimeTask(task) {
@@ -400,14 +409,16 @@ function ensureTaskDualCodexDefaults(task, options = {}) {
     if (runtimeTask) {
         task.domain_lane = 'transversal_runtime';
         task.codex_instance = 'codex_transversal';
+        if (!task.runtime_surface) {
+            task.runtime_surface = inferOpenClawRuntimeSurface(task);
+        }
         if (!task.provider_mode) {
-            task.provider_mode = 'openclaw_chatgpt';
+            task.provider_mode = expectedProviderModeForSurface(
+                task.runtime_surface
+            );
         }
         if (!task.runtime_transport) {
             task.runtime_transport = 'hybrid_http_cli';
-        }
-        if (!task.runtime_surface) {
-            task.runtime_surface = inferOpenClawRuntimeSurface(task);
         }
     }
     return task;
@@ -507,6 +518,140 @@ function isActiveHandoff(handoff, options = {}) {
     return (
         String(handoff?.status || '').toLowerCase() === 'active' &&
         !isExpiredFn(handoff?.expires_at)
+    );
+}
+
+function isActiveTaskStatus(task, activeStatuses = DEFAULT_ACTIVE_STATUSES) {
+    return activeStatuses.has(
+        String(task?.status || '')
+            .trim()
+            .toLowerCase()
+    );
+}
+
+function isCodexMirrorTaskId(taskId) {
+    return /^CDX-\d+$/i.test(String(taskId || '').trim());
+}
+
+function isAgentCodexTaskId(taskId) {
+    return /^AG-\d+$/i.test(String(taskId || '').trim());
+}
+
+function isAlignedCodexMirrorTask(task, candidate) {
+    if (!task || !candidate) return false;
+    if (!isCodexMirrorTaskId(candidate.id)) return false;
+    if (
+        normalizeOptionalToken(candidate.executor) !== 'codex' ||
+        normalizeOptionalToken(task.executor) !== 'codex'
+    ) {
+        return false;
+    }
+
+    const taskInstance = normalizeOptionalToken(task.codex_instance);
+    const candidateInstance = normalizeOptionalToken(candidate.codex_instance);
+    if (taskInstance && candidateInstance && taskInstance !== candidateInstance) {
+        return false;
+    }
+
+    const taskLane = normalizeOptionalToken(task.domain_lane);
+    const candidateLane = normalizeOptionalToken(candidate.domain_lane);
+    if (taskLane && candidateLane && taskLane !== candidateLane) {
+        return false;
+    }
+
+    const taskStrategyId = String(task.strategy_id || '').trim();
+    const candidateStrategyId = String(candidate.strategy_id || '').trim();
+    if (
+        (taskStrategyId || candidateStrategyId) &&
+        taskStrategyId !== candidateStrategyId
+    ) {
+        return false;
+    }
+
+    const taskSubfrontId = String(task.subfront_id || '').trim();
+    const candidateSubfrontId = String(candidate.subfront_id || '').trim();
+    if (
+        (taskSubfrontId || candidateSubfrontId) &&
+        taskSubfrontId !== candidateSubfrontId
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+function findAlignedActiveCodexMirrorTasks(board, task, options = {}) {
+    const activeStatuses = options.activeStatuses || DEFAULT_ACTIVE_STATUSES;
+    return (Array.isArray(board?.tasks) ? board.tasks : []).filter(
+        (candidate) =>
+            isActiveTaskStatus(candidate, activeStatuses) &&
+            isAlignedCodexMirrorTask(task, candidate)
+    );
+}
+
+function validateTaskCodexMirrorDependency(board, task, options = {}) {
+    const activeStatuses = options.activeStatuses || DEFAULT_ACTIVE_STATUSES;
+    const taskId = String(task?.id || '').trim();
+    if (!isAgentCodexTaskId(taskId)) {
+        return;
+    }
+    if (normalizeOptionalToken(task?.executor) !== 'codex') {
+        return;
+    }
+    if (!isActiveTaskStatus(task, activeStatuses)) {
+        return;
+    }
+
+    const shouldEnforce =
+        Boolean(domainStrategy.getActiveStrategy(board)) ||
+        Boolean(String(task?.strategy_id || '').trim()) ||
+        Boolean(String(task?.subfront_id || '').trim());
+    if (!shouldEnforce) {
+        return;
+    }
+
+    const dependsOn = Array.isArray(task?.depends_on) ? task.depends_on : [];
+    const declaredCdxIds = dependsOn
+        .map((value) => String(value || '').trim())
+        .filter((value) => isCodexMirrorTaskId(value));
+    const alignedActiveMirrors = findAlignedActiveCodexMirrorTasks(
+        board,
+        task,
+        {
+            activeStatuses,
+        }
+    );
+    const alignedMirrorIds = alignedActiveMirrors.map((candidate) =>
+        String(candidate.id || '').trim()
+    );
+    const matchedMirrorIds = alignedMirrorIds.filter((candidateId) =>
+        declaredCdxIds.includes(candidateId)
+    );
+
+    if (matchedMirrorIds.length > 0) {
+        return;
+    }
+
+    const strategyRole = normalizeOptionalToken(task?.strategy_role);
+    if (alignedMirrorIds.length === 0) {
+        if (strategyRole === 'support') {
+            throw new Error(
+                `task ${taskId}: soporte Codex activo requiere al menos una CDX-* activa alineada por lane/subfront`
+            );
+        }
+        throw new Error(
+            `task ${taskId}: AG activa con executor=codex requiere CDX-* activa alineada por lane/subfront`
+        );
+    }
+
+    if (declaredCdxIds.length === 0) {
+        throw new Error(
+            `task ${taskId}: AG activa con executor=codex requiere depends_on apuntando a CDX-* activa alineada (${alignedMirrorIds.join(', ')})`
+        );
+    }
+
+    throw new Error(
+        `task ${taskId}: depends_on debe apuntar a CDX-* activa alineada (${alignedMirrorIds.join(', ')})`
     );
 }
 
@@ -619,9 +764,12 @@ function validateTaskDualCodexGuard(board, task, options = {}) {
 
     const runtimeTask = isOpenClawRuntimeTask(task);
     if (runtimeTask) {
-        if (providerMode !== 'openclaw_chatgpt') {
+        const expectedProviderMode = expectedProviderModeForSurface(
+            runtimeSurface
+        );
+        if (providerMode !== expectedProviderMode) {
             throw new Error(
-                `task ${taskId || '(sin id)'}: runtime OpenClaw requiere provider_mode=openclaw_chatgpt`
+                `task ${taskId || '(sin id)'}: runtime ${runtimeSurface || 'surface'} requiere provider_mode=${expectedProviderMode}`
             );
         }
         if (domainLane !== 'transversal_runtime') {
@@ -795,6 +943,7 @@ function validateTaskGovernancePrechecks(board, task, options = {}) {
     validateTaskExecutorScopeGuard(task, options);
     validateTaskDependsOn(board, task, options);
     validateTaskDualCodexGuard(board, task, options);
+    validateTaskCodexMirrorDependency(board, task, options);
     domainStrategy.validateTaskStrategyAlignment(board, task, {
         ...options,
         activeStatuses,
@@ -835,9 +984,15 @@ module.exports = {
     inferOpenClawRuntimeSurface,
     isFrontendPublicReleaseSupportTask,
     isFrontendPublicReleaseSupportFile,
+    isActiveTaskStatus,
+    isCodexMirrorTaskId,
+    isAgentCodexTaskId,
+    isAlignedCodexMirrorTask,
+    findAlignedActiveCodexMirrorTasks,
     ensureTaskDualCodexDefaults,
     validateTaskExecutorScopeGuard,
     validateTaskDependsOn,
     validateTaskDualCodexGuard,
+    validateTaskCodexMirrorDependency,
     validateTaskGovernancePrechecks,
 };

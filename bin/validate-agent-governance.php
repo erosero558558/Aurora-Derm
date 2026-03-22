@@ -1414,7 +1414,7 @@ $retiredExecutors = ['claude', 'kimi', 'jules'];
 $allowedCodexInstances = ['codex_backend_ops', 'codex_frontend', 'codex_transversal'];
 $allowedDomainLanes = ['backend_ops', 'frontend_content', 'transversal_runtime'];
 $allowedLaneLocks = ['strict', 'handoff_allowed'];
-$allowedProviderModes = ['openclaw_chatgpt'];
+$allowedProviderModes = ['openclaw_chatgpt', 'google_oauth'];
 $allowedRuntimeSurfaces = ['figo_queue', 'leadops_worker', 'operator_auth'];
 $allowedRuntimeTransports = ['hybrid_http_cli', 'http_bridge', 'cli_helper'];
 $criticalScopes = ['payments', 'auth', 'calendar', 'deploy', 'env', 'security'];
@@ -1539,10 +1539,13 @@ foreach ($board['tasks'] as $idx => $task) {
     $runtimeSurface = strtolower(trim((string) ($task['runtime_surface'] ?? '')));
     $runtimeTransport = strtolower(trim((string) ($task['runtime_transport'] ?? '')));
     $runtimeLastTransport = strtolower(trim((string) ($task['runtime_last_transport'] ?? '')));
-    $isRuntimeTask = $providerMode === 'openclaw_chatgpt'
+    $isRuntimeTask = in_array($providerMode, $allowedProviderModes, true)
         || $runtimeSurface !== ''
         || $runtimeTransport !== ''
         || $runtimeLastTransport !== '';
+    $expectedProviderMode = $runtimeSurface === 'operator_auth'
+        ? 'google_oauth'
+        : 'openclaw_chatgpt';
 
     $shouldValidateDual = $requiresDualTaskKeys || $hasAnyDualKey;
     if ($shouldValidateDual && !in_array($codexInstance, $allowedCodexInstances, true)) {
@@ -1581,8 +1584,8 @@ foreach ($board['tasks'] as $idx => $task) {
             $errors[] = "Task critica {$id} requiere codex_instance=codex_backend_ops";
         }
         if ($isRuntimeTask) {
-            if ($providerMode !== 'openclaw_chatgpt') {
-                $errors[] = "Task {$id} runtime requiere provider_mode=openclaw_chatgpt";
+            if ($providerMode !== $expectedProviderMode) {
+                $errors[] = "Task {$id} runtime requiere provider_mode={$expectedProviderMode}";
             }
             if ($domainLane !== 'transversal_runtime') {
                 $errors[] = "Task {$id} runtime requiere domain_lane=transversal_runtime";

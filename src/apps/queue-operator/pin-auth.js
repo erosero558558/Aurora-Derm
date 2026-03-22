@@ -13,6 +13,9 @@ import {
     logoutSession as logoutOpenClawSession,
 } from '../admin-v3/shared/modules/auth.js';
 
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
+const LEGACY_OPERATOR_AUTH_MODE = 'openclaw_chatgpt';
+
 const DEFAULT_FALLBACKS = Object.freeze({
     legacy_password: {
         enabled: false,
@@ -62,8 +65,11 @@ function normalizeMode(mode, fallback = '') {
     const raw = String(mode || '')
         .trim()
         .toLowerCase();
-    if (raw === 'openclaw_chatgpt') {
-        return 'openclaw_chatgpt';
+    if (
+        raw === CANONICAL_OPERATOR_AUTH_MODE ||
+        raw === LEGACY_OPERATOR_AUTH_MODE
+    ) {
+        return CANONICAL_OPERATOR_AUTH_MODE;
     }
     if (raw === 'operator_pin') {
         return 'operator_pin';
@@ -191,7 +197,10 @@ function inferOpenClawTransport(payload = {}, currentAuth = getState().auth || {
         return 'local_helper';
     }
 
-    if (mode === 'openclaw_chatgpt' || recommendedMode === 'openclaw_chatgpt') {
+    if (
+        mode === CANONICAL_OPERATOR_AUTH_MODE ||
+        recommendedMode === CANONICAL_OPERATOR_AUTH_MODE
+    ) {
         return previousTransport || 'local_helper';
     }
 
@@ -271,7 +280,7 @@ function applyOpenClawPayload(payload = {}) {
     const currentState = getState();
     const currentAuth = currentState.auth || {};
     const authenticated = payload?.authenticated === true;
-    const mode = 'openclaw_chatgpt';
+    const mode = CANONICAL_OPERATOR_AUTH_MODE;
     const transport = inferOpenClawTransport(payload, currentAuth);
     const nextChallenge = normalizeChallenge(payload?.challenge);
     const challenge =
@@ -395,8 +404,8 @@ function payloadPrefersOpenClaw(payload) {
     const mode = normalizeMode(payload.mode);
     const recommendedMode = normalizeMode(payload.recommendedMode, mode);
     return (
-        mode === 'openclaw_chatgpt' ||
-        recommendedMode === 'openclaw_chatgpt'
+        mode === CANONICAL_OPERATOR_AUTH_MODE ||
+        recommendedMode === CANONICAL_OPERATOR_AUTH_MODE
     );
 }
 

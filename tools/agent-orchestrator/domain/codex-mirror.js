@@ -1,6 +1,10 @@
 'use strict';
 
 const {
+    findAlignedActiveCodexMirrorTasks,
+    isAgentCodexTaskId,
+    isActiveTaskStatus,
+    isCodexMirrorTaskId,
     isOpenClawRuntimeTask,
     mapLaneToCodexInstance,
 } = require('./task-guards');
@@ -181,6 +185,113 @@ function upsertCodexActiveBlock(planRaw, block, deps = {}) {
     ).replace(/\n{3,}/g, '\n\n');
 }
 
+function collectActiveCodexSupportCoverage(board, options = {}) {
+    const activeStatuses = normalizeStatusesSet(
+        options.activeStatuses,
+        DEFAULT_SLOT_STATUSES
+    );
+    const tasks = Array.isArray(board?.tasks) ? board.tasks : [];
+    const rows = [];
+
+    for (const task of tasks) {
+        if (!isAgentCodexTaskId(task?.id)) continue;
+        if (
+            String(task?.executor || '')
+                .trim()
+                .toLowerCase() !== 'codex'
+        ) {
+            continue;
+        }
+        if (!isActiveTaskStatus(task, activeStatuses)) continue;
+
+        const taskId = String(task?.id || '').trim();
+        const dependsOn = Array.isArray(task?.depends_on) ? task.depends_on : [];
+        const declaredCdxIds = dependsOn
+            .map((value) => String(value || '').trim())
+            .filter((value) => isCodexMirrorTaskId(value));
+        const alignedActiveMirrorTasks = findAlignedActiveCodexMirrorTasks(
+            board,
+            task,
+            {
+                activeStatuses,
+            }
+        );
+        const alignedActiveMirrorIds = alignedActiveMirrorTasks.map(
+            (candidate) => String(candidate?.id || '').trim()
+        );
+        const matchedMirrorIds = alignedActiveMirrorIds.filter((candidateId) =>
+            declaredCdxIds.includes(candidateId)
+        );
+
+        if (matchedMirrorIds.length > 0) {
+            continue;
+        }
+
+        const strategyRole = String(task?.strategy_role || '')
+            .trim()
+            .toLowerCase();
+        let code = 'codex_active_without_cdx_mirror';
+        let message = `${taskId}: AG activa con executor=codex requiere depends_on a CDX-* activa alineada`;
+        if (alignedActiveMirrorIds.length > 0) {
+            if (declaredCdxIds.length > 0) {
+                message = `${taskId}: depends_on debe apuntar a CDX-* activa alineada (${alignedActiveMirrorIds.join(', ')})`;
+            } else {
+                message = `${taskId}: AG activa con executor=codex requiere depends_on a CDX-* activa alineada (${alignedActiveMirrorIds.join(', ')})`;
+            }
+        } else if (strategyRole === 'support') {
+            code = 'codex_support_without_active_cdx';
+            message = `${taskId}: soporte Codex activo requiere al menos una CDX-* activa alineada por lane/subfront`;
+        } else {
+            message = `${taskId}: AG activa con executor=codex requiere CDX-* activa alineada por lane/subfront`;
+        }
+
+        rows.push({
+            task_id: taskId,
+            code,
+            message,
+            strategy_role: strategyRole,
+            codex_instance: String(task?.codex_instance || 'codex_backend_ops')
+                .trim()
+                .toLowerCase(),
+            domain_lane: String(task?.domain_lane || 'backend_ops')
+                .trim()
+                .toLowerCase(),
+            strategy_id: String(task?.strategy_id || '').trim(),
+            subfront_id: String(task?.subfront_id || '').trim(),
+            declared_cdx_ids: declaredCdxIds,
+            aligned_active_cdx_ids: alignedActiveMirrorIds,
+        });
+    }
+
+    const byCode = rows.reduce((acc, row) => {
+        const key = String(row?.code || 'unknown');
+        acc[key] = Number(acc[key] || 0) + 1;
+        return acc;
+    }, {});
+
+    return {
+        rows,
+        total: rows.length,
+        by_code: byCode,
+        active_ag_codex_tasks_total: tasks.filter(
+            (task) =>
+                isAgentCodexTaskId(task?.id) &&
+                String(task?.executor || '')
+                    .trim()
+                    .toLowerCase() === 'codex' &&
+                isActiveTaskStatus(task, activeStatuses)
+        ).length,
+        active_cdx_tasks_total: tasks.filter(
+            (task) =>
+                isCodexMirrorTaskId(task?.id) &&
+                String(task?.executor || '')
+                    .trim()
+                    .toLowerCase() === 'codex' &&
+                isActiveTaskStatus(task, activeStatuses)
+        ).length,
+    };
+}
+
 function buildCodexCheckReport(input = {}, deps = {}) {
     const {
         board,
@@ -255,6 +366,9 @@ function buildCodexCheckReport(input = {}, deps = {}) {
                 .trim()
                 .toLowerCase() === 'codex'
     );
+    const supportCoverage = collectActiveCodexSupportCoverage(board, {
+        activeStatuses,
+    });
     const codexSlotTasksByInstance = codexExecutionTasks
         .filter((task) =>
             slotStatusesSet.has(String(task?.status || '').trim())
@@ -402,6 +516,10 @@ function buildCodexCheckReport(input = {}, deps = {}) {
                 `${taskId || '(sin id)'}: cross_domain activo requiere handoff activo`
             );
         }
+    }
+
+    for (const row of supportCoverage.rows) {
+        errors.push(row.message);
     }
 
     const blockByTaskId = new Map(
@@ -714,6 +832,18 @@ function buildCodexCheckReport(input = {}, deps = {}) {
                 })
             ),
             slot_statuses: normalizedParallelism.slot_statuses,
+            active_ag_codex_tasks: supportCoverage.active_ag_codex_tasks_total,
+            active_cdx_tasks: supportCoverage.active_cdx_tasks_total,
+            codex_support_without_active_cdx:
+                Number(
+                    supportCoverage.by_code?.codex_support_without_active_cdx ||
+                        0
+                ),
+            codex_active_without_cdx_mirror:
+                Number(
+                    supportCoverage.by_code?.codex_active_without_cdx_mirror ||
+                        0
+                ),
         },
         strategy: {
             configured: strategySummary.configured,
@@ -770,6 +900,7 @@ function buildCodexCheckReport(input = {}, deps = {}) {
         codex_in_progress_ids: codexInProgress.map((task) => String(task.id)),
         codex_active_ids: activeCodexTasks.map((task) => String(task.id)),
         codex_slot_task_ids: slotCodexTasks.map((task) => String(task.id)),
+        codex_support_rows: supportCoverage.rows,
         plan_blocks: codexBlocks.map((block) => ({
             codex_instance: String(block.codex_instance || ''),
             block: String(block.block || ''),
@@ -807,5 +938,6 @@ function buildCodexCheckReport(input = {}, deps = {}) {
 module.exports = {
     buildCodexActiveComment: serializeBlock,
     upsertCodexActiveBlock,
+    collectActiveCodexSupportCoverage,
     buildCodexCheckReport,
 };

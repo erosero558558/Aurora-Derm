@@ -443,7 +443,9 @@ class HealthController
      */
     private static function collectAuthSnapshot(): array
     {
-        $recommendedMode = defined('OPERATOR_AUTH_SOURCE') ? (string) OPERATOR_AUTH_SOURCE : 'openclaw_chatgpt';
+        $recommendedMode = function_exists('operator_auth_recommended_mode')
+            ? (string) operator_auth_recommended_mode()
+            : (defined('OPERATOR_AUTH_SOURCE') ? (string) OPERATOR_AUTH_SOURCE : 'google_oauth');
         $operatorAuthConfig = function_exists('operator_auth_configuration_snapshot')
             ? operator_auth_configuration_snapshot()
             : [];

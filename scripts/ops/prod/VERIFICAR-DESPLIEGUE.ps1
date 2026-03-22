@@ -113,6 +113,12 @@ function Resolve-RequireOperatorAuthFlag {
     }
 
     $explicitCandidates = @(
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_PRECHECK_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_INPUT,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST,
+        $env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH,
         $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_EFFECTIVE,
         $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_PRECHECK_EFFECTIVE,
         $env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_INPUT,
@@ -356,7 +362,7 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $reportPath *> $null
 
         if (-not (Test-Path $reportPath)) {
-            throw 'No se genero reporte del diagnostico OpenClaw.'
+            throw 'No se genero reporte del diagnostico Operator Auth.'
         }
 
         $raw = Get-Content -Path $reportPath -Raw
@@ -377,7 +383,7 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
             available = $true
             ok = $false
             diagnosis = 'diagnostic_script_failed'
-            nextAction = 'No se pudo interpretar el diagnostico OpenClaw del admin.'
+            nextAction = 'No se pudo interpretar el diagnostico Operator Auth del admin.'
             source = ''
             mode = ''
             configured = $false
@@ -1551,7 +1557,7 @@ try {
         $authStatus = 'unknown'
         $authConfigured = $false
         $authHardeningCompliant = $false
-        $authRecommendedMode = 'openclaw_chatgpt'
+        $authRecommendedMode = 'google_oauth'
         $authRecommendedModeActive = $false
         $authOperatorAuthEnabled = $false
         $authOperatorAuthConfigured = $false
@@ -1562,7 +1568,7 @@ try {
         try { $authStatus = [string]$authNode.status } catch { $authStatus = 'unknown' }
         try { $authConfigured = [bool]$authNode.configured } catch { $authConfigured = $false }
         try { $authHardeningCompliant = [bool]$authNode.hardeningCompliant } catch { $authHardeningCompliant = $false }
-        try { $authRecommendedMode = [string]$authNode.recommendedMode } catch { $authRecommendedMode = 'openclaw_chatgpt' }
+        try { $authRecommendedMode = [string]$authNode.recommendedMode } catch { $authRecommendedMode = 'google_oauth' }
         try { $authRecommendedModeActive = [bool]$authNode.recommendedModeActive } catch { $authRecommendedModeActive = $false }
         try { $authOperatorAuthEnabled = [bool]$authNode.operatorAuthEnabled } catch { $authOperatorAuthEnabled = $false }
         try { $authOperatorAuthConfigured = [bool]$authNode.operatorAuthConfigured } catch { $authOperatorAuthConfigured = $false }
@@ -1624,7 +1630,7 @@ try {
                 $results += [PSCustomObject]@{
                     Asset = 'operator-auth-rollout'
                     Match = $false
-                    LocalHash = 'openclaw_ready'
+                    LocalHash = 'operator_auth_ready'
                     RemoteHash = "diagnosis=$($operatorAuthRollout.diagnosis);mode=$($operatorAuthRollout.mode);configured=$($operatorAuthRollout.configured)"
                     RemoteUrl = "$base/admin-auth.php?action=status"
                     Detail = [string]$operatorAuthRollout.nextAction

@@ -2,6 +2,8 @@
 'use strict';
 
 const { resolveOperatorChallenge } = require('../openclaw-auth-helper.js');
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
+const LEGACY_OPERATOR_AUTH_MODE = 'openclaw_chatgpt';
 
 function trimTrailingSlash(value) {
     return String(value || '').replace(/\/+$/, '');
@@ -281,9 +283,12 @@ async function loginWithLegacyPassword(baseUrl, password, options = {}) {
 async function loginWithOpenClaw(baseUrl, options = {}) {
     const statusResponse = await fetchAdminAuthStatus(baseUrl, options);
     const status = normalizeAuthStatusPayload(statusResponse);
-    if (status.mode !== 'openclaw_chatgpt') {
+    if (
+        status.mode !== CANONICAL_OPERATOR_AUTH_MODE &&
+        status.mode !== LEGACY_OPERATOR_AUTH_MODE
+    ) {
         throw new Error(
-            `OpenClaw auth no disponible. El servidor expone ${status.mode || 'legacy_password'} como modo primario.`
+            `Operator auth no disponible. El servidor expone ${status.mode || 'legacy_password'} como modo primario.`
         );
     }
 
@@ -292,7 +297,7 @@ async function loginWithOpenClaw(baseUrl, options = {}) {
         status.configured === false
     ) {
         throw new Error(
-            'OpenClaw auth no configurado en el servidor objetivo. Verifica bridge token, bridge secret y allowlist.'
+            'Operator auth no configurado en el servidor objetivo. Verifica broker OAuth/OIDC, bridge y allowlist.'
         );
     }
 
@@ -306,7 +311,7 @@ async function loginWithOpenClaw(baseUrl, options = {}) {
             ? start.json.challenge
             : null;
     if (!challenge) {
-        throw new Error('challenge OpenClaw ausente');
+        throw new Error('challenge operator auth ausente');
     }
 
     const helperResult = await resolveOperatorChallenge(
@@ -329,7 +334,7 @@ async function loginWithOpenClaw(baseUrl, options = {}) {
         throw new Error(
             String(
                 helperResult.error ||
-                    'El helper local no pudo completar la autenticacion OpenClaw.'
+                    'El helper local no pudo completar la autenticacion operator auth.'
             )
         );
     }
@@ -344,14 +349,14 @@ async function loginWithOpenClaw(baseUrl, options = {}) {
         ? options.cookieJar.header()
         : session.cookieHeader;
     if (!csrfToken) {
-        throw new Error('csrf token OpenClaw vacio');
+        throw new Error('csrf token operator auth vacio');
     }
     if (!cookie) {
-        throw new Error('cookie de sesion OpenClaw vacia');
+        throw new Error('cookie de sesion operator auth vacia');
     }
 
     return {
-        mode: 'openclaw_chatgpt',
+        mode: status.mode || CANONICAL_OPERATOR_AUTH_MODE,
         csrfToken,
         cookie,
         status,
@@ -366,7 +371,10 @@ async function loginAdmin(baseUrl, options = {}) {
     const statusResponse = await fetchAdminAuthStatus(baseUrl, options);
     const status = normalizeAuthStatusPayload(statusResponse);
 
-    if (status.mode === 'openclaw_chatgpt') {
+    if (
+        status.mode === CANONICAL_OPERATOR_AUTH_MODE ||
+        status.mode === LEGACY_OPERATOR_AUTH_MODE
+    ) {
         return loginWithOpenClaw(baseUrl, options);
     }
 

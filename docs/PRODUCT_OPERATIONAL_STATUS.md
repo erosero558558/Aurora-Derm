@@ -26,7 +26,7 @@ Actualizado: 2026-03-21
 
 - Plan canonico: `docs/FLOW_OS_RECOVERY_PLAN.md`
 - Ritual diario canonico: `npm run flow-os:recovery:daily`
-- Slice permitida: `admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy`
+- Slice permitida: `admin v3 + queue/turnero + auth Google + readiness + deploy`
 - Frentes aparcados: superficies nativas nuevas, expansion LeadOps, ampliacion de estados, rediseno grande de la web publica, nuevas lineas comerciales y cualquier trabajo multi-sede.
 - Si el ritual diario o `verification/runtime/prod-readiness-summary.md` siguen en `RED`, no reabrir scope lateral aunque haya trabajo listo en otras superficies.
 

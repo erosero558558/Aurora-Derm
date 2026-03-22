@@ -47,7 +47,8 @@ function createRuntimeIntakeCommands(ctx = {}) {
         const provider = String(task?.provider_mode || '').toLowerCase();
         return scope === 'openclaw_runtime' ||
             lane === 'transversal_runtime' ||
-            provider === 'openclaw_chatgpt'
+            provider === 'openclaw_chatgpt' ||
+            provider === 'google_oauth'
             ? 1
             : 0;
     }
@@ -67,6 +68,7 @@ function createRuntimeIntakeCommands(ctx = {}) {
         return (
             normalizeDispatchToken(task?.provider_mode) ===
                 'openclaw_chatgpt' ||
+            normalizeDispatchToken(task?.provider_mode) === 'google_oauth' ||
             normalizeDispatchToken(task?.scope) === 'openclaw_runtime' ||
             normalizeDispatchToken(task?.domain_lane) ===
                 'transversal_runtime'

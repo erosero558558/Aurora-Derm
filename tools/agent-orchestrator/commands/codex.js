@@ -337,6 +337,7 @@ async function handleCodexPremiumRecordCommand(ctx) {
 async function handleCodexCheckCommand(ctx) {
     const {
         args = [],
+        parseFlags,
         buildCodexCheckReport,
         attachDiagnostics,
         buildWarnFirstDiagnostics,
@@ -351,8 +352,17 @@ async function handleCodexCheckCommand(ctx) {
         buildModelUsageSummary,
         collectPremiumGateBlockers,
         getGovernancePolicy,
+        buildWorkspaceComplianceDiagnostics,
+        collectWorkspaceTruth,
+        buildWorkspaceTruthDiagnostics,
     } = ctx;
     const wantsJson = args.includes('--json');
+    const { flags = {} } =
+        typeof parseFlags === 'function' ? parseFlags(args) : { flags: {} };
+    const workspaceOptions =
+        args.includes('--current-only') || Boolean(flags['current-only']) || Boolean(flags.current_only)
+            ? { currentOnly: true, allWorktrees: false }
+            : { allWorktrees: true, currentOnly: false };
     const board = parseBoard();
     const report = buildCodexCheckReport();
     const focusData =
@@ -375,7 +385,7 @@ async function handleCodexCheckCommand(ctx) {
                       status
                   ) &&
                   codexInstance === 'codex_transversal' &&
-                  providerMode === 'openclaw_chatgpt'
+                  ['openclaw_chatgpt', 'google_oauth'].includes(providerMode)
               );
           })
         : false;
@@ -454,17 +464,50 @@ async function handleCodexCheckCommand(ctx) {
         : typeof loadJobsSnapshot === 'function'
           ? await loadJobsSnapshot()
           : null;
+    const workspaceReport =
+        typeof collectWorkspaceTruth === 'function'
+            ? collectWorkspaceTruth(workspaceOptions)
+            : null;
+    report.workspace_hygiene = workspaceReport?.workspace_hygiene || null;
+    report.workspace_truth = workspaceReport?.workspace_truth || null;
     const reportWithDiagnostics = attachDiagnostics(
         report,
-        buildWarnFirstDiagnostics({
-            source: 'codex-check',
-            board,
-            handoffData: parseHandoffs(),
-            focusSummary: focusData?.summary || null,
-            metricsSnapshot,
-            jobsSnapshot,
-        })
+        [
+            ...buildWarnFirstDiagnostics({
+                source: 'codex-check',
+                board,
+                handoffData: parseHandoffs(),
+                focusSummary: focusData?.summary || null,
+                metricsSnapshot,
+                jobsSnapshot,
+            }),
+            ...(
+                typeof buildWorkspaceComplianceDiagnostics === 'function'
+                    ? buildWorkspaceComplianceDiagnostics(board.tasks, {
+                          source: 'codex-check',
+                      })
+                    : []
+            ),
+            ...(
+                typeof buildWorkspaceTruthDiagnostics === 'function'
+                    ? buildWorkspaceTruthDiagnostics(workspaceReport, {
+                          source: 'codex-check',
+                      })
+                    : []
+            ),
+        ]
     );
+    if (workspaceReport?.workspace_truth?.ok === false) {
+        report.ok = false;
+        report.error_count = Number(report.error_count || 0) + 1;
+        report.errors = [
+            ...(Array.isArray(report.errors) ? report.errors : []),
+            `workspace truth bloqueado: ${workspaceReport.workspace_truth.blocking_reasons.join(', ') || 'workspace_truth_blocked'}`,
+        ];
+        reportWithDiagnostics.ok = false;
+        reportWithDiagnostics.error_count = Number(report.error_count || 0);
+        reportWithDiagnostics.errors = report.errors;
+    }
 
     if (wantsJson) {
         console.log(JSON.stringify(reportWithDiagnostics, null, 2));
@@ -504,6 +547,10 @@ async function handleCodexCommand(ctx) {
         buildBoardWipLimitDiagnostics,
         runCodexCheck,
         getGovernancePolicy,
+        collectWorkspaceTruth,
+        assertWorkspaceTruthOk,
+        ensureTaskWorktree,
+        applyWorkspaceTaskSnapshot,
     } = ctx;
     const subcommand = args[0];
     const { positionals, flags } = parseFlags(args.slice(1));
@@ -530,6 +577,18 @@ async function handleCodexCommand(ctx) {
     const task = ensureCodexTask(ensureTask(board, taskId), taskId);
 
     if (subcommand === 'start') {
+        const workspaceReport =
+            typeof collectWorkspaceTruth === 'function'
+                ? collectWorkspaceTruth({
+                      allWorktrees: true,
+                      currentOnly: false,
+                  })
+                : null;
+        if (typeof assertWorkspaceTruthOk === 'function') {
+            assertWorkspaceTruthOk(workspaceReport, {
+                commandLabel: 'codex start',
+            });
+        }
         const requestedRootThreadModel = String(
             flags['root-thread-model-tier'] ||
                 flags.root_thread_model_tier ||
@@ -612,6 +671,13 @@ async function handleCodexCommand(ctx) {
             });
         }
         task.model_tier_default = 'gpt-5.4-mini';
+        let workspaceCapture = null;
+        if (typeof ensureTaskWorktree === 'function') {
+            workspaceCapture = ensureTaskWorktree(taskId);
+            if (typeof applyWorkspaceTaskSnapshot === 'function') {
+                applyWorkspaceTaskSnapshot(task, workspaceCapture);
+            }
+        }
         writeBoard(board, {
             command: 'codex start',
             actor: task.owner || task.executor || '',
@@ -636,7 +702,9 @@ async function handleCodexCommand(ctx) {
             updated_at: currentDate(),
         });
         await runCodexCheck();
-        console.log(`Codex start OK: ${taskId} (${block})`);
+        console.log(
+            `Codex start OK: ${taskId} (${block})${workspaceCapture?.worktree_path ? ` | worktree=${workspaceCapture.worktree_path}` : ''}`
+        );
         for (const diag of wipDiagnostics) {
             console.log(`WARN [${diag.code}] ${diag.message}`);
         }

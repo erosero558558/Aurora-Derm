@@ -142,7 +142,7 @@ function Invoke-LocalAuthContract {
     $payload = $response.Payload
     $ok =
         $response.Ok -and
-        ([string]$payload.mode -eq 'openclaw_chatgpt') -and
+        ([string]$payload.mode -eq 'google_oauth') -and
         ([string]$payload.transport -eq 'web_broker') -and
         ([string]$payload.status -ne 'transport_misconfigured')
 
@@ -159,7 +159,7 @@ function Invoke-LocalAuthContract {
         if (-not [string]::IsNullOrWhiteSpace($response.Error)) {
             $authError = $response.Error
         } else {
-            $authError = 'Contrato OpenClaw invalido.'
+            $authError = 'Contrato Operator Auth invalido.'
         }
     }
 
@@ -217,7 +217,7 @@ function Invoke-LocalSmoke {
             '-ExecutionPolicy', 'Bypass',
             '-File', $ScriptPath,
             '-BaseUrl', 'http://127.0.0.1',
-            '-ExpectedAuthMode', 'openclaw_chatgpt',
+            '-ExpectedAuthMode', 'google_oauth',
             '-ExpectedTransport', 'web_broker',
             '-Quiet'
         ) `

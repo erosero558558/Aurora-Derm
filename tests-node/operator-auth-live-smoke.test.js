@@ -95,7 +95,7 @@ function createStubPair(mode = 'success') {
                         ok: true,
                         authenticated: false,
                         status: 'anonymous',
-                        mode: 'openclaw_chatgpt',
+                        mode: 'google_oauth',
                     })
                 );
                 return;
@@ -110,7 +110,7 @@ function createStubPair(mode = 'success') {
                         ok: true,
                         authenticated: false,
                         status: 'pending',
-                        mode: 'openclaw_chatgpt',
+                        mode: 'google_oauth',
                         challenge: {
                             ...session.challenge,
                             status: 'pending',
@@ -131,7 +131,7 @@ function createStubPair(mode = 'success') {
                         ok: true,
                         authenticated: true,
                         status: 'autenticado',
-                        mode: 'openclaw_chatgpt',
+                        mode: 'google_oauth',
                         csrfToken: 'csrf-test-token',
                         operator: session.operator,
                     })
@@ -147,10 +147,10 @@ function createStubPair(mode = 'success') {
                     ok: true,
                     authenticated: false,
                     status: session.status,
-                    mode: 'openclaw_chatgpt',
+                    mode: 'google_oauth',
                     error:
                         session.status === 'openclaw_no_logueado'
-                            ? 'OpenClaw no devolvio una sesion OAuth util.'
+                            ? 'Operator auth no devolvio una sesion OAuth util.'
                             : 'Error terminal',
                     challenge: {
                         ...session.challenge,
@@ -184,7 +184,7 @@ function createStubPair(mode = 'success') {
                     ok: true,
                     authenticated: false,
                     status: 'pending',
-                    mode: 'openclaw_chatgpt',
+                    mode: 'google_oauth',
                     challenge: {
                         ...challenge,
                         status: 'pending',
@@ -211,7 +211,7 @@ function createStubPair(mode = 'success') {
                     ok: true,
                     authenticated: false,
                     status: 'logout',
-                    mode: 'openclaw_chatgpt',
+                    mode: 'google_oauth',
                 })
             );
             return;
@@ -254,7 +254,7 @@ function createStubPair(mode = 'success') {
                         email: 'operator@example.com',
                         profileId: 'openai-codex:operator@example.com',
                         accountId: 'acct-test-operator',
-                        source: 'openclaw_chatgpt',
+                        source: 'google_oauth',
                     };
                 } else {
                     session.status = 'openclaw_no_logueado';
@@ -354,7 +354,7 @@ function createWebBrokerBackend() {
                         session.status === 'autenticado'
                             ? 'autenticado'
                             : 'anonymous',
-                    mode: 'openclaw_chatgpt',
+                    mode: 'google_oauth',
                     transport: 'web_broker',
                     operator: session.operator,
                 })
@@ -377,7 +377,7 @@ function createWebBrokerBackend() {
                               ok: true,
                               authenticated: false,
                               status: 'pending',
-                              mode: 'openclaw_chatgpt',
+                              mode: 'google_oauth',
                               transport: 'web_broker',
                               redirectUrl: session.redirectUrl,
                               expiresAt: new Date(
@@ -389,7 +389,7 @@ function createWebBrokerBackend() {
                                 ok: true,
                                 authenticated: true,
                                 status: 'autenticado',
-                                mode: 'openclaw_chatgpt',
+                                mode: 'google_oauth',
                                 transport: 'web_broker',
                                 csrfToken: 'csrf-web-broker',
                                 operator: session.operator,
@@ -398,7 +398,7 @@ function createWebBrokerBackend() {
                                 ok: true,
                                 authenticated: false,
                                 status: 'anonymous',
-                                mode: 'openclaw_chatgpt',
+                                mode: 'google_oauth',
                                 transport: 'web_broker',
                             }
                 )
@@ -432,7 +432,7 @@ function createWebBrokerBackend() {
                     ok: true,
                     authenticated: false,
                     status: 'pending',
-                    mode: 'openclaw_chatgpt',
+                    mode: 'google_oauth',
                     transport: 'web_broker',
                     redirectUrl: session.redirectUrl,
                     expiresAt: new Date(Date.now() + 60000).toISOString(),
@@ -453,7 +453,7 @@ function createWebBrokerBackend() {
                     email: 'operator@example.com',
                     profileId: 'openclaw-web-broker:operator@example.com',
                     accountId: 'acct-test-web-broker',
-                    source: 'openclaw_chatgpt',
+                    source: 'google_oauth',
                 };
                 response.writeHead(302, {
                     Location:
@@ -488,7 +488,7 @@ function createWebBrokerBackend() {
                     ok: true,
                     authenticated: false,
                     status: 'logout',
-                    mode: 'openclaw_chatgpt',
+                    mode: 'google_oauth',
                     transport: 'web_broker',
                 })
             );
@@ -536,7 +536,7 @@ test('runSmoke completa preflight, resolve y logout con backend/helper vivos', a
     }
 });
 
-test('runSmoke propaga estado terminal cuando OpenClaw no esta logueado', async () => {
+test('runSmoke propaga estado terminal cuando operator auth no queda logueado', async () => {
     const pair = createStubPair('terminal_error');
     const backendAddress = await listen(pair.backend);
     const helperAddress = await listen(pair.helper);

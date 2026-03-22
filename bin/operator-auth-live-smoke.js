@@ -28,7 +28,7 @@ const DEFAULT_HELPER_BASE_URL =
     'http://127.0.0.1:4173';
 const DEFAULT_JSON_OUT =
     'verification/operator-auth-live-smoke/operator-auth-live-smoke-last.json';
-const DEFAULT_EXPECTED_MODE = 'openclaw_chatgpt';
+const DEFAULT_EXPECTED_MODE = 'google_oauth';
 const DEFAULT_REQUEST_TIMEOUT_MS = 10000;
 const DEFAULT_POLL_TIMEOUT_MS = 25000;
 const DEFAULT_RETURN_TO =
@@ -672,9 +672,9 @@ async function clickSubmit(page) {
     ]);
 
     if (!locator) {
-        throw new Error(
-            'No se encontro un boton submit visible en el broker OpenClaw.'
-        );
+            throw new Error(
+                'No se encontro un boton submit visible en el broker OAuth.'
+            );
     }
 
     await locator.click();
@@ -767,7 +767,7 @@ async function performBrokerBrowserLogin(contextOptions = {}) {
             ]);
             if (!usernameField) {
                 throw new Error(
-                    'No se encontro un campo usuario/email visible en el broker OpenClaw.'
+                    'No se encontro un campo usuario/email visible en el broker OAuth.'
                 );
             }
 
@@ -782,7 +782,7 @@ async function performBrokerBrowserLogin(contextOptions = {}) {
             ]);
             if (!passwordField) {
                 throw new Error(
-                    'No se encontro un campo password visible en el broker OpenClaw.'
+                    'No se encontro un campo password visible en el broker OAuth.'
                 );
             }
 
@@ -1175,7 +1175,7 @@ async function runWebBrokerSmoke(options, report) {
             report,
             'broker_login',
             report.brokerLogin.error ||
-                'No se pudo completar el login en el broker OpenClaw.'
+                'No se pudo completar el login en el broker OAuth.'
         );
     }
 
@@ -1214,7 +1214,7 @@ async function runWebBrokerSmoke(options, report) {
                 report,
                 'callback_status',
                 report.finalStatus.error ||
-                    `OpenClaw devolvio estado terminal ${report.finalStatus.status}.`,
+                    `Operator auth devolvio estado terminal ${report.finalStatus.status}.`,
                 {
                     status: report.finalStatus.status,
                 }
@@ -1416,7 +1416,7 @@ function printHelp() {
             'Opciones:',
             `  --transport=MODE           local_helper|web_broker (default ${DEFAULT_TRANSPORT})`,
             `  --server-base-url=URL      Backend PHP (default ${DEFAULT_SERVER_BASE_URL})`,
-            `  --helper-base-url=URL      Helper OpenClaw (default ${DEFAULT_HELPER_BASE_URL})`,
+            `  --helper-base-url=URL      Helper local (default ${DEFAULT_HELPER_BASE_URL})`,
             `  --return-to=PATH           ReturnTo para web_broker (default ${DEFAULT_RETURN_TO})`,
             `  --expected-mode=MODE       Modo esperado (default ${DEFAULT_EXPECTED_MODE})`,
             '  --expected-email=EMAIL     Email esperado para el smoke web_broker',

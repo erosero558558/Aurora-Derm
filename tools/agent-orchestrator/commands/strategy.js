@@ -115,6 +115,9 @@ async function handleStrategyCommand(ctx) {
         mapLaneToCodexInstance,
         parseExpectedBoardRevisionFlag,
         parseCodexStrategyBlocks,
+        findAlignedActiveCodexMirrorTasks,
+        collectWorkspaceTruth,
+        assertWorkspaceTruthOk,
         printJson = (value) => console.log(JSON.stringify(value, null, 2)),
     } = ctx;
     const wantsJson = args.includes('--json');
@@ -512,6 +515,18 @@ async function handleStrategyCommand(ctx) {
         parseExpectedBoardRevisionFlag,
         { required: true, commandLabel: 'strategy intake' }
     );
+    const workspaceReport =
+        typeof collectWorkspaceTruth === 'function'
+            ? collectWorkspaceTruth({
+                  allWorktrees: true,
+                  currentOnly: false,
+              })
+            : null;
+    if (typeof assertWorkspaceTruthOk === 'function') {
+        assertWorkspaceTruthOk(workspaceReport, {
+            commandLabel: 'strategy intake',
+        });
+    }
     const files = parseCsvList(flags.files || '');
     const { task, subfront, intake_defaults } = buildStrategyIntakeTask(
         board,
@@ -534,6 +549,28 @@ async function handleStrategyCommand(ctx) {
             mapLaneToCodexInstance,
         }
     );
+    if (
+        /^AG-\d+$/i.test(String(task.id || '').trim()) &&
+        String(task.executor || '')
+            .trim()
+            .toLowerCase() === 'codex' &&
+        typeof findAlignedActiveCodexMirrorTasks === 'function'
+    ) {
+        const alignedMirrors = findAlignedActiveCodexMirrorTasks(board, task, {
+            activeStatuses: new Set(['ready', 'in_progress', 'review', 'blocked']),
+        }).map((candidate) => String(candidate?.id || '').trim());
+        if (alignedMirrors.length === 0) {
+            throw new Error(
+                `strategy intake requiere CDX-* activa alineada antes de abrir soporte AG para ${task.id}`
+            );
+        }
+        task.depends_on = Array.from(
+            new Set([
+                ...(Array.isArray(task.depends_on) ? task.depends_on : []),
+                alignedMirrors[0],
+            ])
+        );
+    }
     const handoffs = parseHandoffs();
     validateTaskGovernancePrechecks(board, task, {
         handoffs: handoffs.handoffs,

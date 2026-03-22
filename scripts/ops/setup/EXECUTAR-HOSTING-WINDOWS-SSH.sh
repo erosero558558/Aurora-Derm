@@ -176,7 +176,7 @@ function Get-AuthValidation {
     $result.transport = [string]$payload.transport
     $result.status = [string]$payload.status
     $result.ok =
-        [string]::Equals($result.mode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -and
+        [string]::Equals($result.mode, 'google_oauth', [System.StringComparison]::OrdinalIgnoreCase) -and
         [string]::Equals($result.transport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase) -and
         (-not [string]::Equals($result.status, 'transport_misconfigured', [System.StringComparison]::OrdinalIgnoreCase))
 

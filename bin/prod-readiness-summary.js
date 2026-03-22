@@ -37,7 +37,7 @@ const FLOW_OS_RECOVERY_CYCLE = Object.freeze({
     endsAt: '2026-04-20',
     objective: 'stabilize_production',
     allowedSlice:
-        'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy',
+        'admin v3 + queue/turnero + auth Google + readiness + deploy',
     parkedFronts: Object.freeze([
         'superficies nativas nuevas',
         'expansion LeadOps',
@@ -50,7 +50,7 @@ const FLOW_OS_RECOVERY_CYCLE = Object.freeze({
     planDoc: 'docs/FLOW_OS_RECOVERY_PLAN.md',
     dailyRitualCommands: Object.freeze([
         'npm run flow-os:recovery:daily',
-        'npm run gate:admin:rollout:openclaw:node',
+        'npm run gate:admin:rollout:auth:node',
         'npm run verify:prod:turnero:web-pilot',
         'npm run monitor:prod',
     ]),
@@ -1558,7 +1558,7 @@ function readOperatorAuthEvidence() {
         return {
             available: false,
             found: false,
-            source: 'openclaw_auth_rollout',
+            source: 'operator_auth_rollout',
             path,
             command: response.command,
             error: response.error,
@@ -1575,7 +1575,7 @@ function readOperatorAuthEvidence() {
         return {
             available: true,
             found: false,
-            source: 'openclaw_auth_rollout',
+            source: 'operator_auth_rollout',
             path,
             command: response.command,
             error:
@@ -1587,7 +1587,7 @@ function readOperatorAuthEvidence() {
     return {
         available: true,
         found: false,
-        source: 'openclaw_auth_rollout',
+        source: 'operator_auth_rollout',
         path,
         command: response.command,
         error: 'No se pudo parsear JSON de operator_auth',
@@ -1616,8 +1616,11 @@ function describeOperatorAuthFailure(evidence) {
             evidence?.mode || 'unknown'
         }, transport=${evidence?.transport || 'none'}) en operator-auth-status/admin-auth`;
     }
-    if (failureToken === 'openclaw_mode_disabled') {
-        return 'operator_auth remoto no esta en modo openclaw_chatgpt';
+    if (failureToken === 'operator_auth_mode_mismatch') {
+        return 'operator_auth remoto no esta en modo google_oauth';
+    }
+    if (failureToken === 'operator_auth_not_configured') {
+        return 'operator_auth remoto sigue sin configuracion Google/OIDC completa';
     }
     if (evidence?.nextAction) {
         return evidence.nextAction;
@@ -2353,7 +2356,7 @@ function computeSuggestedActions({
             id: 'ACT-P0-OPERATOR-AUTH',
             priority: 'P0',
             blocking: true,
-            title: 'Alinear operator_auth remoto al contrato OpenClaw',
+            title: 'Alinear operator_auth remoto al contrato Google OAuth',
             reason: describeOperatorAuthFailure(operatorAuthEvidence),
             command:
                 operatorAuthEvidence.command ||

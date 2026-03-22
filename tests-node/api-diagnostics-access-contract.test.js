@@ -54,7 +54,10 @@ test('ApiKernel autoriza carril diagnostics antes del gate admin y audita scope 
         '$diagnosticsAuthorized = false;',
         'diagnostics_request_authorized([',
         "'reason' => 'diagnostics_required'",
-        "'scope' => $isAdmin ? 'admin' : ($diagnosticsAuthorized ? 'diagnostics' : 'public')",
+        "'scope' => $isAdmin",
+        "? 'admin'",
+        "? 'queue_operator'",
+        ": ($diagnosticsAuthorized ? 'diagnostics' : 'public')",
         "'diagnosticsAuthorized' => $diagnosticsAuthorized,",
     ]) {
         assert.equal(

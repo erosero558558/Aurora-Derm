@@ -13,7 +13,7 @@ graph LR
     CI -->|Lint + QA + Build| Build[Astro and PHP Artifacts]
     Build -->|Canary + Prod Deploy| Server[Servidor Produccion]
     Server -->|Routing + Conversion Smoke| Valid[Validacion]
-    Server -->|Fallback Manual| VPS[OpenClaw Web Broker or SSH]
+    Server -->|Fallback Manual| VPS[Operator Auth Web Broker or SSH]
 ```
 
 ## 2. Estrategia de Despliegue (Deployment Strategy)
@@ -34,7 +34,7 @@ El workflow `.github/workflows/deploy-hosting.yml` se encarga de:
 5.  Publicación a producción por bundle canónico (`_deploy_bundle/`) y deploy
     hosting/self-hosted según la configuración activa.
 6.  Smoke post-deploy de routing público, conversión pública y manifiesto de cutover.
-7.  Dispatch opcional de post-deploy (`post-deploy-fast.yml` y `post-deploy-gate.yml`) con propagación de `admin_rollout_stage`, flags del gate admin UI y politica efectiva de OpenClaw (`require_openclaw_auth`, `require_openclaw_live_smoke`).
+7.  Dispatch opcional de post-deploy (`post-deploy-fast.yml` y `post-deploy-gate.yml`) con propagación de `admin_rollout_stage`, flags del gate admin UI y politica efectiva de Operator Auth (`require_operator_auth`, `require_operator_auth_live_smoke`).
 
 Cuando la estrategia activa es `git-sync`, el host solo hace sync del source y
 mantiene `public_main_sync` como telemetría/fallback host-side; la fuente
@@ -171,9 +171,9 @@ php bin/verify-gate.php
 5.  [ ] La portada V6 expone las tres rutas maestras (`primera consulta`, `tratamientos`, `teledermatologia`) y muestra un siguiente paso claro.
 6.  [ ] Los CTA públicos redirigen correctamente a la ruta esperada (`/es/servicios/`, `/es/telemedicina/` y equivalentes en `en/`) sin depender de anchors legacy.
 7.  [ ] `admin.html` arranca en `sony_v3` aunque reciba params legacy (`admin_ui`, `admin_ui_reset`).
-8.  [ ] `GATE-ADMIN-ROLLOUT.ps1 -RequireOpenClawAuth` valida shell `sony_v3`, ausencia de CSS legacy y contrato OpenClaw `web_broker`.
+8.  [ ] `GATE-ADMIN-ROLLOUT.ps1 -RequireOperatorAuth` valida shell `sony_v3`, ausencia de CSS legacy y contrato Operator Auth `web_broker`.
         Implementacion canonica: `scripts/ops/admin/GATE-ADMIN-ROLLOUT.ps1`.
-9.  [ ] `npm run smoke:admin:openclaw-auth:live:node` valida broker sandbox, shared session admin/turnero y logout.
+9.  [ ] `npm run smoke:admin:auth:live:node` valida broker sandbox, shared session admin/turnero y logout.
 10. [ ] Chunks admin sin residuos:
     - `npm run chunks:admin:prune` (incluido en `npm run build`)
     - opcional: `npm run chunks:admin:check`

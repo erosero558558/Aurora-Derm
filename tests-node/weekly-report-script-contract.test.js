@@ -84,7 +84,7 @@ test('weekly report script publica recoveryCycle en markdown y JSON', () => {
         '## Recovery Cycle',
         '$recoveryCycleState = [pscustomobject]@{',
         "Id = 'flow-os-recovery-2026-03-21'",
-        "AllowedSlice = 'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy'",
+        "AllowedSlice = 'admin v3 + queue/turnero + auth Google + readiness + deploy'",
         "DailyRitualCommand = 'npm run flow-os:recovery:daily'",
         'PilotRecommendationEligible = [bool]($weeklyCycleReady -and $warningCountsCritical -eq 0)',
         '# $recoveryCyclePayload = [ordered]@{}',

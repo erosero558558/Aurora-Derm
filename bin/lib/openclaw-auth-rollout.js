@@ -3,6 +3,9 @@
 const { mkdirSync, writeFileSync } = require('fs');
 const { dirname } = require('path');
 
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
+const LEGACY_OPERATOR_AUTH_MODE = 'openclaw_chatgpt';
+
 function trimTrailingSlash(value) {
     return String(value || '').replace(/\/+$/, '');
 }
@@ -50,7 +53,7 @@ async function fetchText(url, options = {}) {
                     'application/json,text/html;q=0.8,*/*;q=0.5',
                 'User-Agent':
                     String(options.userAgent || '').trim() ||
-                    'OpenClawRolloutNode/1.0',
+                    'OperatorAuthRolloutNode/1.0',
                 'Cache-Control': 'no-cache',
                 ...(options.headers || {}),
             },
@@ -97,7 +100,9 @@ function looksLikeOpenClawTransportDrift(snapshot) {
     return (
         snapshot.reachable === true &&
         snapshot.json_valid === true &&
-        stringValue(snapshot.mode) === 'openclaw_chatgpt' &&
+        [CANONICAL_OPERATOR_AUTH_MODE, LEGACY_OPERATOR_AUTH_MODE].includes(
+            stringValue(snapshot.mode)
+        ) &&
         stringValue(snapshot.transport) === '' &&
         stringValue(snapshot.status) !== ''
     );
@@ -203,7 +208,7 @@ function addDiagnosticWarning(report, message) {
 
 function formatMissingOperatorAuthEnv(missing) {
     const labels = {
-        mode: 'AURORADERM_OPERATOR_AUTH_MODE',
+        mode: 'AURORADERM_OPERATOR_AUTH_MODE=google_oauth',
         bridge_token: 'AURORADERM_OPERATOR_AUTH_BRIDGE_TOKEN',
         bridge_secret: 'AURORADERM_OPERATOR_AUTH_BRIDGE_SECRET',
         allowlist: 'AURORADERM_OPERATOR_AUTH_ALLOWLIST',
@@ -252,36 +257,31 @@ function resolveOpenClawRolloutState(report) {
         if (!primaryValid && facadeValid) {
             report.diagnosis = 'facade_only_rollout';
             report.next_action =
-                'Desplegar y estabilizar api.php?resource=operator-auth-status; la fachada admin-auth ya expone contrato OpenClaw, pero el surface canonico aun no.';
+                'Desplegar y estabilizar api.php?resource=operator-auth-status; la fachada admin-auth ya expone contrato auth, pero el surface canonico aun no.';
             return report;
         }
 
-        if (resolved.mode !== 'openclaw_chatgpt') {
-            report.diagnosis = 'openclaw_mode_disabled';
+        if (resolved.mode !== CANONICAL_OPERATOR_AUTH_MODE) {
+            report.diagnosis = 'operator_auth_mode_mismatch';
             report.next_action =
-                'Activar AURORADERM_OPERATOR_AUTH_MODE=openclaw_chatgpt en el entorno remoto.';
+                'Activar AURORADERM_OPERATOR_AUTH_MODE=google_oauth en el entorno remoto.';
             return report;
         }
 
-        if (
-            resolved.transport !== 'web_broker' &&
-            resolved.transport !== 'local_helper'
-        ) {
+        if (resolved.transport !== 'web_broker') {
             report.diagnosis = 'transport_misconfigured';
             report.next_action =
-                'Corregir el contrato OpenClaw para que admin-auth.php?action=status y operator-auth-status publiquen transport=web_broker o transport=local_helper.';
+                'Corregir el contrato auth para que admin-auth.php?action=status y operator-auth-status publiquen transport=web_broker en produccion.';
             return report;
         }
 
         if (resolved.configured !== true) {
             const missingEnv = formatMissingOperatorAuthEnv(resolved.missing);
-            report.diagnosis = 'openclaw_not_configured';
+            report.diagnosis = 'operator_auth_not_configured';
             report.next_action =
                 missingEnv.length > 0
                     ? `Completar configuracion remota: ${missingEnv.join(', ')}.`
-                    : resolved.transport === 'web_broker'
-                      ? 'Completar broker OAuth/OpenID y callback remoto del rollout OpenClaw en el entorno remoto.'
-                      : 'Completar bridge, helper y allowlist del rollout OpenClaw en el entorno remoto.';
+                    : 'Completar broker OAuth/OpenID y callback remoto del rollout Google en el entorno remoto.';
             return report;
         }
 
@@ -293,25 +293,23 @@ function resolveOpenClawRolloutState(report) {
                 resolved.broker_jwks_configured !== true ||
                 resolved.broker_email_verified_required !== true)
         ) {
-            report.diagnosis = 'openclaw_not_configured';
+            report.diagnosis = 'operator_auth_not_configured';
             report.next_action =
-                'Completar trust OIDC del broker: JWKS, issuer, audience y email verificado obligatorio antes de pasar a openclaw_ready.';
+                'Completar trust OIDC del broker: JWKS, issuer, audience y email verificado obligatorio antes de pasar a operator_auth_ready.';
             return report;
         }
 
         if (ensureArray(report.warnings).length > 0) {
             report.diagnosis = 'surface_mismatch';
             report.next_action =
-                'Alinear operator-auth-status y admin-auth.php?action=status para que publiquen el mismo contrato OpenClaw.';
+                'Alinear operator-auth-status y admin-auth.php?action=status para que publiquen el mismo contrato auth.';
             report.ok = false;
             return report;
         }
 
-        report.diagnosis = 'openclaw_ready';
+        report.diagnosis = 'operator_auth_ready';
         report.next_action =
-            resolved.transport === 'web_broker'
-                ? 'El rollout OpenClaw web_broker ya esta listo; continuar con smoke web y gate admin.'
-                : 'El rollout OpenClaw ya esta listo; continuar con smoke humano y gate admin.';
+            'El rollout Google web_broker ya esta listo; continuar con smoke web y gate admin.';
         report.ok = true;
         return report;
     }
@@ -322,7 +320,7 @@ function resolveOpenClawRolloutState(report) {
     ) {
         report.diagnosis = 'transport_misconfigured';
         report.next_action =
-            'Corregir el contrato OpenClaw para que admin-auth.php?action=status y operator-auth-status publiquen transport=web_broker o transport=local_helper.';
+            'Corregir el contrato auth para que admin-auth.php?action=status y operator-auth-status publiquen transport=web_broker.';
         return report;
     }
 
@@ -333,7 +331,7 @@ function resolveOpenClawRolloutState(report) {
     ) {
         report.diagnosis = 'admin_auth_legacy_facade';
         report.next_action =
-            'Desplegar la fachada admin-auth.php con contrato OpenClaw (mode/status/configured) y alinear operator-auth-status.';
+            'Desplegar la fachada admin-auth.php con contrato auth (mode/status/configured) y alinear operator-auth-status.';
         return report;
     }
 
@@ -362,7 +360,7 @@ function resolveOpenClawRolloutState(report) {
         report.diagnosis = 'operator_auth_edge_failure';
         report.next_action = hasCloudflare1033
             ? `Revisar Cloudflare/origen para ${affectedSurfaces.join(' y ')}; el edge esta devolviendo HTTP ${statusLabel} con error code 1033 en lugar del JSON canonico.`
-            : `Revisar Cloudflare/origen y el routing de ${affectedSurfaces.join(' y ')}; el edge esta devolviendo HTTP ${statusLabel} antes de llegar al contrato OpenClaw.`;
+            : `Revisar Cloudflare/origen y el routing de ${affectedSurfaces.join(' y ')}; el edge esta devolviendo HTTP ${statusLabel} antes de llegar al contrato auth canonico.`;
         return report;
     }
 

@@ -39,6 +39,12 @@ function printCloseJsonError(error) {
     if (error?.branch_alignment) {
         payload.branch_alignment = error.branch_alignment;
     }
+    if (error?.workspace_truth) {
+        payload.workspace_truth = error.workspace_truth;
+    }
+    if (error?.workspace_hygiene) {
+        payload.workspace_hygiene = error.workspace_hygiene;
+    }
     console.log(JSON.stringify(payload, null, 2));
     process.exitCode = 1;
     return payload;
@@ -108,6 +114,11 @@ async function handleCloseCommand(ctx) {
         parseExpectedBoardRevisionFlag,
         loadModelUsageLedger,
         buildTaskModelUsageSummary,
+        captureTaskWorkspace,
+        applyWorkspaceTaskSnapshot,
+        runWorkspaceSync,
+        collectWorkspaceTruth,
+        assertWorkspaceTruthOk,
     } = ctx;
     const { positionals, flags } = parseFlags(args);
     const wantsJson = args.includes('--json');
@@ -116,6 +127,18 @@ async function handleCloseCommand(ctx) {
         throw new Error(
             'Uso: node agent-orchestrator.js close <task_id> [--evidence path] [--json]'
         );
+    }
+    const workspaceReport =
+        typeof collectWorkspaceTruth === 'function'
+            ? collectWorkspaceTruth({
+                  allWorktrees: true,
+                  currentOnly: false,
+              })
+            : null;
+    if (typeof assertWorkspaceTruthOk === 'function') {
+        assertWorkspaceTruthOk(workspaceReport, {
+            commandLabel: 'close',
+        });
     }
 
     const evidencePath = resolveTaskEvidencePath(taskId, flags);
@@ -156,6 +179,13 @@ async function handleCloseCommand(ctx) {
         String(task.executor || '')
             .trim()
             .toLowerCase() === 'codex';
+    let workspaceCapture = null;
+    if (isCodexTask && typeof captureTaskWorkspace === 'function') {
+        workspaceCapture = captureTaskWorkspace(taskId);
+        if (typeof applyWorkspaceTaskSnapshot === 'function') {
+            applyWorkspaceTaskSnapshot(task, workspaceCapture);
+        }
+    }
 
     if (isCodexTask) {
         let focusSummary = null;
@@ -322,6 +352,9 @@ async function handleCloseCommand(ctx) {
                         command: 'close',
                     }
                 );
+            if (typeof runWorkspaceSync === 'function') {
+                runWorkspaceSync();
+            }
         } catch (error) {
             if (wantsJson) {
                 return printCloseJsonError(error);
@@ -371,6 +404,14 @@ async function handleCloseCommand(ctx) {
                     command: 'close',
                     action: 'close',
                     task: toTaskJson(task),
+                    workspace: workspaceCapture
+                        ? {
+                              snapshot_checked_at:
+                                  workspaceCapture.snapshot?.checked_at || null,
+                              sync_state:
+                                  workspaceCapture.task_row?.sync_state || null,
+                          }
+                        : null,
                     evidence_path: toRelativeRepoPath(evidencePath),
                     lease_action: leaseMeta?.lease_action || 'none',
                     lease: leaseMeta?.lease || null,

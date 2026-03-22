@@ -517,6 +517,8 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
             const boardDoctor = enforcement.board_doctor;
             const wipLimits = enforcement.wip_limits;
             const codexParallelism = enforcement.codex_parallelism;
+            const workspaceSync = enforcement.workspace_sync;
+            const workspaceHygiene = enforcement.workspace_hygiene;
             if (
                 !branchProfiles ||
                 typeof branchProfiles !== 'object' ||
@@ -611,6 +613,146 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
                         `enforcement.warning_policies.${policyName}`
                     );
                 }
+            }
+            if (
+                workspaceSync !== undefined &&
+                (!workspaceSync ||
+                    typeof workspaceSync !== 'object' ||
+                    Array.isArray(workspaceSync))
+            ) {
+                errors.push('enforcement.workspace_sync debe ser objeto');
+            } else if (
+                workspaceSync &&
+                typeof workspaceSync === 'object' &&
+                !Array.isArray(workspaceSync)
+            ) {
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        workspaceSync,
+                        'enabled'
+                    ) &&
+                    typeof workspaceSync.enabled !== 'boolean'
+                ) {
+                    errors.push(
+                        'enforcement.workspace_sync.enabled debe ser boolean'
+                    );
+                }
+                for (const key of ['ttl_minutes', 'watcher_interval_seconds']) {
+                    if (Object.prototype.hasOwnProperty.call(workspaceSync, key)) {
+                        const n = Number(workspaceSync[key]);
+                        if (!Number.isFinite(n) || n <= 0) {
+                            errors.push(
+                                `enforcement.workspace_sync.${key} invalido (${workspaceSync[key]})`
+                            );
+                        }
+                    }
+                }
+                for (const key of [
+                    'remote',
+                    'root_branch',
+                    'task_branch_prefix',
+                    'local_dir',
+                    'worktrees_dir',
+                    'machine_id_filename',
+                    'sync_status_filename',
+                    'watcher_task_name',
+                    'watcher_script_path',
+                ]) {
+                    if (
+                        Object.prototype.hasOwnProperty.call(workspaceSync, key) &&
+                        typeof workspaceSync[key] !== 'string'
+                    ) {
+                        errors.push(
+                            `enforcement.workspace_sync.${key} debe ser string`
+                        );
+                    }
+                }
+                warnUnknownKeys(
+                    sourcePolicy?.enforcement?.workspace_sync,
+                    [
+                        'enabled',
+                        'ttl_minutes',
+                        'watcher_interval_seconds',
+                        'remote',
+                        'root_branch',
+                        'task_branch_prefix',
+                        'local_dir',
+                        'worktrees_dir',
+                        'machine_id_filename',
+                        'sync_status_filename',
+                        'watcher_task_name',
+                        'watcher_script_path',
+                    ],
+                    'enforcement.workspace_sync'
+                );
+            }
+            if (
+                workspaceHygiene !== undefined &&
+                (!workspaceHygiene ||
+                    typeof workspaceHygiene !== 'object' ||
+                    Array.isArray(workspaceHygiene))
+            ) {
+                errors.push('enforcement.workspace_hygiene debe ser objeto');
+            } else if (
+                workspaceHygiene &&
+                typeof workspaceHygiene === 'object' &&
+                !Array.isArray(workspaceHygiene)
+            ) {
+                for (const key of ['enabled', 'allow_unavailable']) {
+                    if (
+                        Object.prototype.hasOwnProperty.call(
+                            workspaceHygiene,
+                            key
+                        ) &&
+                        typeof workspaceHygiene[key] !== 'boolean'
+                    ) {
+                        errors.push(
+                            `enforcement.workspace_hygiene.${key} debe ser boolean`
+                        );
+                    }
+                }
+                for (const key of ['default_scope', 'mutation_scope']) {
+                    if (
+                        Object.prototype.hasOwnProperty.call(
+                            workspaceHygiene,
+                            key
+                        ) &&
+                        !['all-worktrees', 'current-only'].includes(
+                            String(workspaceHygiene[key] || '').trim()
+                        )
+                    ) {
+                        errors.push(
+                            `enforcement.workspace_hygiene.${key} invalido (${workspaceHygiene[key]})`
+                        );
+                    }
+                }
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        workspaceHygiene,
+                        'block_states'
+                    )
+                ) {
+                    if (!Array.isArray(workspaceHygiene.block_states)) {
+                        errors.push(
+                            'enforcement.workspace_hygiene.block_states debe ser array'
+                        );
+                    } else if (workspaceHygiene.block_states.length === 0) {
+                        errors.push(
+                            'enforcement.workspace_hygiene.block_states no puede ser vacio'
+                        );
+                    }
+                }
+                warnUnknownKeys(
+                    sourcePolicy?.enforcement?.workspace_hygiene,
+                    [
+                        'enabled',
+                        'default_scope',
+                        'mutation_scope',
+                        'block_states',
+                        'allow_unavailable',
+                    ],
+                    'enforcement.workspace_hygiene'
+                );
             }
             if (
                 boardLeases !== undefined &&
@@ -907,6 +1049,8 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
                     'board_doctor',
                     'wip_limits',
                     'codex_parallelism',
+                    'workspace_sync',
+                    'workspace_hygiene',
                 ],
                 'enforcement'
             );
@@ -1075,6 +1219,19 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
                               !Array.isArray(enforcement.wip_limits)
                                   ? enforcement.wip_limits
                                   : {},
+                          workspace_sync:
+                              enforcement.workspace_sync &&
+                              typeof enforcement.workspace_sync === 'object' &&
+                              !Array.isArray(enforcement.workspace_sync)
+                                  ? enforcement.workspace_sync
+                                  : {},
+                          workspace_hygiene:
+                              enforcement.workspace_hygiene &&
+                              typeof enforcement.workspace_hygiene ===
+                                  'object' &&
+                              !Array.isArray(enforcement.workspace_hygiene)
+                                  ? enforcement.workspace_hygiene
+                                  : {},
                           codex_parallelism:
                               enforcement.codex_parallelism &&
                               typeof enforcement.codex_parallelism ===
@@ -1089,6 +1246,8 @@ function validateGovernancePolicy(rawPolicy, options = {}) {
                           board_leases: {},
                           board_doctor: {},
                           wip_limits: {},
+                          workspace_sync: {},
+                          workspace_hygiene: {},
                           codex_parallelism: {},
                       },
         },

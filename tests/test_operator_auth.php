@@ -91,7 +91,7 @@ try {
             assert_true($login['ok'], 'operator auth should succeed');
             assert_true(strlen((string) ($login['csrfToken'] ?? '')) > 10, 'csrf token missing');
             assert_equals('operator@example.com', $login['operator']['email'] ?? '', 'operator email mismatch');
-            assert_equals('openclaw_chatgpt', $login['operator']['source'] ?? '', 'operator source mismatch');
+            assert_equals('google_oauth', $login['operator']['source'] ?? '', 'operator source mismatch');
         } finally {
             operator_auth_test_cleanup_cookie($cookieFile);
         }

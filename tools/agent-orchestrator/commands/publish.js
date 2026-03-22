@@ -770,6 +770,8 @@ async function handlePublishCommand(ctx) {
         printJson = (value) => console.log(JSON.stringify(value, null, 2)),
         rootPath,
         publishEventsPath,
+        collectWorkspaceTruth,
+        assertWorkspaceTruthOk,
     } = ctx;
     const subcommand = String(args[0] || '')
         .trim()
@@ -782,6 +784,18 @@ async function handlePublishCommand(ctx) {
     }
 
     const { flags, positionals } = parseFlags(args.slice(1));
+    const workspaceReport =
+        typeof collectWorkspaceTruth === 'function'
+            ? collectWorkspaceTruth({
+                  allWorktrees: true,
+                  currentOnly: false,
+              })
+            : null;
+    if (typeof assertWorkspaceTruthOk === 'function') {
+        assertWorkspaceTruthOk(workspaceReport, {
+            commandLabel: 'publish checkpoint',
+        });
+    }
     const taskId = String(positionals[0] || flags.id || '').trim();
     if (!isSupportedPublishTaskId(taskId)) {
         const error = new Error(

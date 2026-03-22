@@ -51,7 +51,7 @@ function boardWithActiveStrategy() {
                 focus_next_step: 'admin_queue_pilot_cut',
                 focus_required_checks: [
                     'job:public_main_sync',
-                    'runtime:openclaw_chatgpt',
+                    'runtime:operator_auth',
                 ],
                 focus_non_goals: ['rediseno_publico'],
                 focus_owner: 'ernesto',
@@ -91,7 +91,36 @@ function boardWithActiveStrategy() {
                 ],
             },
         },
-        tasks: [{ id: 'AG-001' }],
+        tasks: [
+            { id: 'AG-001' },
+            {
+                id: 'CDX-101',
+                status: 'in_progress',
+                executor: 'codex',
+                codex_instance: 'codex_backend_ops',
+                domain_lane: 'backend_ops',
+                strategy_id: 'STRAT-2026-03-admin-operativo',
+                subfront_id: 'SF-backend-admin-operativo',
+            },
+            {
+                id: 'CDX-102',
+                status: 'in_progress',
+                executor: 'codex',
+                codex_instance: 'codex_frontend',
+                domain_lane: 'frontend_content',
+                strategy_id: 'STRAT-2026-03-admin-operativo',
+                subfront_id: 'SF-frontend-admin-operativo',
+            },
+            {
+                id: 'CDX-103',
+                status: 'in_progress',
+                executor: 'codex',
+                codex_instance: 'codex_transversal',
+                domain_lane: 'transversal_runtime',
+                strategy_id: 'STRAT-2026-03-admin-operativo',
+                subfront_id: 'SF-transversal-admin-operativo',
+            },
+        ],
     };
 }
 
@@ -136,7 +165,18 @@ function boardWithFrontendPublicBlockedStrategy() {
                 ],
             },
         },
-        tasks: [{ id: 'AG-001' }],
+        tasks: [
+            { id: 'AG-001' },
+            {
+                id: 'CDX-201',
+                status: 'in_progress',
+                executor: 'codex',
+                codex_instance: 'codex_frontend',
+                domain_lane: 'frontend_content',
+                strategy_id: 'STRAT-2026-03-turnero-web-pilot',
+                subfront_id: 'SF-frontend-turnero-web-pilot',
+            },
+        ],
     };
 }
 
@@ -259,7 +299,7 @@ test('task-guards exige campos de foco para tarea activa bajo estrategia con foc
                     lane_lock: 'strict',
                     cross_domain: false,
                     files: ['controllers/AdminController.php'],
-                    depends_on: ['AG-001'],
+                    depends_on: ['AG-001', 'CDX-101'],
                     strategy_id: 'STRAT-2026-03-admin-operativo',
                     subfront_id: 'SF-backend-admin-operativo',
                     strategy_role: 'primary',
@@ -294,7 +334,7 @@ test('task-guards bloquea integration_slice invalido para su lane', () => {
                     lane_lock: 'strict',
                     cross_domain: false,
                     files: ['controllers/AdminController.php'],
-                    depends_on: ['AG-001'],
+                    depends_on: ['AG-001', 'CDX-101'],
                     strategy_id: 'STRAT-2026-03-admin-operativo',
                     subfront_id: 'SF-backend-admin-operativo',
                     strategy_role: 'primary',
@@ -333,7 +373,7 @@ test('task-guards bloquea scope bloqueado por subfrente en flujo normal', () => 
                     lane_lock: 'strict',
                     cross_domain: false,
                     files: ['controllers/AdminController.php'],
-                    depends_on: ['AG-001'],
+                    depends_on: ['AG-001', 'CDX-101'],
                     strategy_id: 'STRAT-2026-03-admin-operativo',
                     subfront_id: 'SF-backend-admin-operativo',
                     strategy_role: 'primary',
@@ -371,7 +411,7 @@ test('task-guards permite release-publish validado sobre scope bloqueado', () =>
                 lane_lock: 'strict',
                 cross_domain: false,
                 files: ['controllers/AdminController.php'],
-                depends_on: ['AG-001'],
+                depends_on: ['AG-001', 'CDX-101'],
                 strategy_id: 'STRAT-2026-03-admin-operativo',
                 subfront_id: 'SF-backend-admin-operativo',
                 strategy_role: 'exception',
@@ -410,7 +450,7 @@ test('task-guards mantiene bloqueado cualquier exception no release sobre blocke
                     lane_lock: 'strict',
                     cross_domain: false,
                     files: ['controllers/AdminController.php'],
-                    depends_on: ['AG-001'],
+                    depends_on: ['AG-001', 'CDX-101'],
                     strategy_id: 'STRAT-2026-03-admin-operativo',
                     subfront_id: 'SF-backend-admin-operativo',
                     strategy_role: 'exception',
@@ -460,7 +500,7 @@ test('task-guards permite archivos de soporte acotados en release-publish fronte
                     'tests/public-v6-news-strip.spec.js',
                     'verification/public-v6-canonical/artifact-drift.json',
                 ],
-                depends_on: ['AG-001'],
+                depends_on: ['AG-001', 'CDX-201'],
                 strategy_id: 'STRAT-2026-03-turnero-web-pilot',
                 subfront_id: 'SF-frontend-turnero-web-pilot',
                 strategy_role: 'exception',
@@ -539,7 +579,7 @@ test('task-guards exige razon de retrabajo para work_type fix o refactor', () =>
                     lane_lock: 'strict',
                     cross_domain: false,
                     files: ['controllers/AdminController.php'],
-                    depends_on: ['AG-001'],
+                    depends_on: ['AG-001', 'CDX-101'],
                     strategy_id: 'STRAT-2026-03-admin-operativo',
                     subfront_id: 'SF-backend-admin-operativo',
                     strategy_role: 'primary',
@@ -780,6 +820,15 @@ test('task-guards exige campos explicitos de estrategia para tareas activas', ()
 
 test('task-guards bloquea subfrente ajeno al codex_instance de la tarea', () => {
     const board = boardWithActiveStrategy();
+    board.tasks.push({
+        id: 'CDX-104',
+        status: 'in_progress',
+        executor: 'codex',
+        codex_instance: 'codex_frontend',
+        domain_lane: 'frontend_content',
+        strategy_id: 'STRAT-2026-03-admin-operativo',
+        subfront_id: 'SF-backend-admin-operativo',
+    });
 
     assert.throws(
         () =>
@@ -794,7 +843,7 @@ test('task-guards bloquea subfrente ajeno al codex_instance de la tarea', () => 
                     subfront_id: 'SF-backend-admin-operativo',
                     strategy_role: 'primary',
                     files: ['src/apps/admin-v3/app.js'],
-                    depends_on: [],
+                    depends_on: ['CDX-104'],
                     runtime_impact: 'low',
                     critical_zone: false,
                 },
@@ -823,7 +872,7 @@ test('task-guards exige strategy_reason para exception activa', () => {
                     subfront_id: 'SF-frontend-admin-operativo',
                     strategy_role: 'exception',
                     files: ['src/apps/admin-v3/app.js'],
-                    depends_on: [],
+                    depends_on: ['CDX-102'],
                     runtime_impact: 'low',
                     critical_zone: false,
                 },

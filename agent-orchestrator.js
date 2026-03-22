@@ -52,6 +52,8 @@ const domainBoardDoctor = require('./tools/agent-orchestrator/domain/board-docto
 const domainBoardEvents = require('./tools/agent-orchestrator/domain/board-events');
 const domainBoardSync = require('./tools/agent-orchestrator/domain/board-sync');
 const domainGitHubSignals = require('./tools/agent-orchestrator/domain/github-signals');
+const domainWorkspace = require('./tools/agent-orchestrator/domain/workspace');
+const domainWorkspaceTruth = require('./tools/agent-orchestrator/domain/workspace-truth');
 const statusCommandHandlers = require('./tools/agent-orchestrator/commands/status');
 const conflictsCommandHandlers = require('./tools/agent-orchestrator/commands/conflicts');
 const policyCommandHandlers = require('./tools/agent-orchestrator/commands/policy');
@@ -63,6 +65,7 @@ const closeCommandHandlers = require('./tools/agent-orchestrator/commands/close'
 const taskCommandHandlers = require('./tools/agent-orchestrator/commands/task');
 const leasesCommandHandlers = require('./tools/agent-orchestrator/commands/leases');
 const boardCommandHandlers = require('./tools/agent-orchestrator/commands/board');
+const workspaceCommandHandlers = require('./tools/agent-orchestrator/commands/workspace');
 const strategyCommandHandlers = require('./tools/agent-orchestrator/commands/strategy');
 const focusCommandHandlers = require('./tools/agent-orchestrator/commands/focus');
 const decisionCommandHandlers = require('./tools/agent-orchestrator/commands/decision');
@@ -253,6 +256,15 @@ const DEFAULT_GOVERNANCE_POLICY = {
                 enabled: true,
                 hours_threshold: 4,
             },
+            workspace_board_fork: { severity: 'error', enabled: true },
+            workspace_mixed_lane_authored: {
+                severity: 'error',
+                enabled: true,
+            },
+            workspace_out_of_scope_authored: {
+                severity: 'error',
+                enabled: true,
+            },
             metrics_baseline_missing: { severity: 'warning', enabled: true },
             from_files_fallback_default_scope: {
                 severity: 'warning',
@@ -315,6 +327,40 @@ const DEFAULT_GOVERNANCE_POLICY = {
                 severity: 'warning',
                 enabled: true,
             },
+            codex_active_without_cdx_mirror: {
+                severity: 'error',
+                enabled: true,
+            },
+            codex_support_without_active_cdx: {
+                severity: 'error',
+                enabled: true,
+            },
+            workspace_sync_stale: { severity: 'error', enabled: true },
+            workspace_main_behind: { severity: 'error', enabled: true },
+            workspace_branch_invalid: { severity: 'error', enabled: true },
+            workspace_root_dirty: { severity: 'error', enabled: true },
+            workspace_task_mixed_lane: { severity: 'error', enabled: true },
+        },
+        workspace_sync: {
+            enabled: true,
+            ttl_minutes: 3,
+            watcher_interval_seconds: 60,
+            remote: 'origin',
+            root_branch: 'main',
+            task_branch_prefix: 'codex/',
+            local_dir: '.codex-local',
+            worktrees_dir: '.codex-worktrees',
+            machine_id_filename: 'machine-id',
+            sync_status_filename: 'workspace-sync.json',
+            watcher_task_name: 'PielArmonia Codex Workspace Sync',
+            watcher_script_path: 'scripts/ops/codex/RUN-CODEX-WORKSPACE-SYNC.ps1',
+        },
+        workspace_hygiene: {
+            enabled: true,
+            default_scope: 'all-worktrees',
+            mutation_scope: 'all-worktrees',
+            block_states: ['blocked', 'error'],
+            allow_unavailable: true,
         },
         board_leases: {
             enabled: true,
@@ -1568,9 +1614,11 @@ function buildWarnFirstDiagnostics({
     jobsSnapshot = null,
     publishEvents = null,
 }) {
-    return domainDiagnostics.buildWarnFirstDiagnostics({
+    const policy = getGovernancePolicy();
+    const warnPolicyMap = domainDiagnostics.getWarnPolicyMap(policy);
+    const diagnostics = domainDiagnostics.buildWarnFirstDiagnostics({
         source,
-        policy: getGovernancePolicy(),
+        policy,
         board,
         handoffData,
         decisionsData,
@@ -1582,6 +1630,191 @@ function buildWarnFirstDiagnostics({
         publishEvents,
         activeStatuses: ACTIVE_STATUSES,
     });
+    const codexSupportCoverage =
+        board && typeof board === 'object'
+            ? domainCodexMirror.collectActiveCodexSupportCoverage(board, {
+                  activeStatuses: ACTIVE_STATUSES,
+              })
+            : { by_code: {}, rows: [] };
+    if (
+        domainDiagnostics.warnPolicyEnabled(
+            warnPolicyMap,
+            'codex_active_without_cdx_mirror'
+        ) &&
+        Number(codexSupportCoverage?.by_code?.codex_active_without_cdx_mirror || 0) > 0
+    ) {
+        diagnostics.push(
+            domainDiagnostics.makeDiagnostic({
+                code: 'warn.codex.active_without_cdx_mirror',
+                severity: domainDiagnostics.warnPolicySeverity(
+                    warnPolicyMap,
+                    'codex_active_without_cdx_mirror'
+                ),
+                source,
+                message: `Hay ${codexSupportCoverage.by_code.codex_active_without_cdx_mirror} tarea(s) AG activas de Codex sin CDX-* alineada`,
+                task_ids: codexSupportCoverage.rows
+                    .filter(
+                        (row) =>
+                            String(row.code || '') ===
+                            'codex_active_without_cdx_mirror'
+                    )
+                    .map((row) => String(row.task_id || '')),
+                meta: {
+                    rows: codexSupportCoverage.rows.filter(
+                        (row) =>
+                            String(row.code || '') ===
+                            'codex_active_without_cdx_mirror'
+                    ),
+                },
+            })
+        );
+    }
+    if (
+        domainDiagnostics.warnPolicyEnabled(
+            warnPolicyMap,
+            'codex_support_without_active_cdx'
+        ) &&
+        Number(codexSupportCoverage?.by_code?.codex_support_without_active_cdx || 0) > 0
+    ) {
+        diagnostics.push(
+            domainDiagnostics.makeDiagnostic({
+                code: 'warn.codex.support_without_active_cdx',
+                severity: domainDiagnostics.warnPolicySeverity(
+                    warnPolicyMap,
+                    'codex_support_without_active_cdx'
+                ),
+                source,
+                message: `Hay ${codexSupportCoverage.by_code.codex_support_without_active_cdx} soporte(s) AG de Codex sin CDX-* activa alineada`,
+                task_ids: codexSupportCoverage.rows
+                    .filter(
+                        (row) =>
+                            String(row.code || '') ===
+                            'codex_support_without_active_cdx'
+                    )
+                    .map((row) => String(row.task_id || '')),
+                meta: {
+                    rows: codexSupportCoverage.rows.filter(
+                        (row) =>
+                            String(row.code || '') ===
+                            'codex_support_without_active_cdx'
+                    ),
+                },
+            })
+        );
+    }
+    return diagnostics;
+}
+
+function collectWorkspaceTruth(options = {}) {
+    return domainWorkspaceTruth.collectWorkspaceTruth(ROOT, options);
+}
+
+function normalizeWorkspaceSyncPolicy(policy = getGovernancePolicy()) {
+    return domainWorkspace.normalizeWorkspaceSyncPolicy(policy);
+}
+
+function runWorkspaceSync(options = {}) {
+    return domainWorkspace.runWorkspaceSync({
+        cwd: options.cwd || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
+function loadWorkspaceSnapshot(options = {}) {
+    return domainWorkspace.loadWorkspaceSnapshot({
+        cwd: options.cwd || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
+function buildWorkspaceBootstrapReport(options = {}) {
+    return domainWorkspace.buildBootstrapReport({
+        cwd: options.cwd || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
+function installWorkspaceWatcherTask(options = {}) {
+    return domainWorkspace.installWorkspaceWatcherTask({
+        rootPath: options.rootPath || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
+function repairWorkspace(options = {}) {
+    return domainWorkspace.repairWorkspace({
+        cwd: options.cwd || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
+function ensureTaskWorktree(taskId, options = {}) {
+    return domainWorkspace.ensureTaskWorktree(taskId, {
+        cwd: options.cwd || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
+function captureTaskWorkspace(taskId, options = {}) {
+    return domainWorkspace.captureTaskWorkspace(taskId, {
+        cwd: options.cwd || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
+function applyWorkspaceTaskSnapshot(task, capture) {
+    return domainWorkspace.applyWorkspaceTaskSnapshot(task, capture);
+}
+
+function collectWorkspaceComplianceFindings(tasks, options = {}) {
+    return domainWorkspace.collectWorkspaceComplianceFindings(tasks, {
+        cwd: options.cwd || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
+function buildWorkspaceComplianceDiagnostics(tasks, options = {}) {
+    return domainWorkspace.buildWorkspaceComplianceDiagnostics(tasks, {
+        cwd: options.cwd || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        makeDiagnostic: domainDiagnostics.makeDiagnostic,
+        ...options,
+    });
+}
+
+function buildWorkspaceTruthDiagnostics(workspaceReport, options = {}) {
+    const policy = getGovernancePolicy();
+    const warnPolicyMap = domainDiagnostics.getWarnPolicyMap(policy);
+    return domainWorkspaceTruth.buildWorkspaceTruthDiagnostics(
+        workspaceReport,
+        {
+            ...options,
+            warnPolicyMap,
+            makeDiagnostic: domainDiagnostics.makeDiagnostic,
+            warnPolicyEnabled: domainDiagnostics.warnPolicyEnabled,
+            warnPolicySeverity: domainDiagnostics.warnPolicySeverity,
+        }
+    );
+}
+
+function assertWorkspaceTruthOk(workspaceReport, options = {}) {
+    return domainWorkspaceTruth.assertWorkspaceTruthOk(workspaceReport, options);
+}
+
+function buildBoardReconcileReport(options = {}) {
+    return domainWorkspaceTruth.buildBoardReconcileReport(ROOT, options);
+}
+
+function applySafeBoardReconcile(options = {}) {
+    return domainWorkspaceTruth.applySafeBoardReconcile(ROOT, options);
 }
 
 function attachDiagnostics(report, diagnostics) {
@@ -1598,6 +1831,7 @@ function buildTaskCreateWarnDiagnostics(input = {}) {
 async function cmdStatus(args) {
     return statusCommandHandlers.handleStatusCommand({
         args,
+        parseFlags,
         parseBoard,
         parseHandoffs,
         analyzeConflicts,
@@ -1634,6 +1868,10 @@ async function cmdStatus(args) {
         loadModelUsageLedger,
         buildModelUsageSummary,
         collectPremiumGateBlockers,
+        collectWorkspaceComplianceFindings,
+        buildWorkspaceComplianceDiagnostics,
+        collectWorkspaceTruth,
+        buildWorkspaceTruthDiagnostics,
     });
 }
 
@@ -1729,7 +1967,7 @@ function getHandoffLintErrors() {
 
 function buildCodexCheckReport() {
     const codexParallelism = getCodexParallelismPolicy();
-    return domainCodexMirror.buildCodexCheckReport(
+    const report = domainCodexMirror.buildCodexCheckReport(
         {
             board: parseBoard(),
             blocks: parseCodexActiveBlocks(),
@@ -1746,6 +1984,20 @@ function buildCodexCheckReport() {
             codexParallelism,
         }
     );
+    const workspaceSyncFindings = collectWorkspaceComplianceFindings(
+        parseBoard().tasks
+    );
+    if (workspaceSyncFindings.length > 0) {
+        report.ok = false;
+        report.error_count =
+            Number(report.error_count || 0) + workspaceSyncFindings.length;
+        report.errors = [
+            ...(Array.isArray(report.errors) ? report.errors : []),
+            ...workspaceSyncFindings.map((finding) => finding.message),
+        ];
+    }
+    report.workspace_sync_findings = workspaceSyncFindings;
+    return report;
 }
 
 function cmdLeases(args) {
@@ -1766,6 +2018,8 @@ function cmdLeases(args) {
         parseExpectedBoardRevisionFlag,
         summarizeDiagnostics: domainDiagnostics.summarizeDiagnostics,
         makeDiagnostic: domainDiagnostics.makeDiagnostic,
+        captureTaskWorkspace,
+        applyWorkspaceTaskSnapshot,
         printJson: coreOutput.printJson,
     });
 }
@@ -1806,6 +2060,28 @@ function cmdBoard(args) {
         applyBoardSync,
         writeBoardAndSync,
         parseExpectedBoardRevisionFlag,
+        collectWorkspaceComplianceFindings,
+        buildWorkspaceComplianceDiagnostics,
+        collectWorkspaceTruth,
+        buildWorkspaceTruthDiagnostics,
+        buildBoardReconcileReport,
+        applySafeBoardReconcile,
+    });
+}
+
+function cmdWorkspace(args) {
+    return workspaceCommandHandlers.handleWorkspaceCommand({
+        args,
+        parseFlags,
+        printJson: coreOutput.printJson,
+        rootPath: ROOT,
+        getGovernancePolicy,
+        normalizeWorkspaceSyncPolicy,
+        runWorkspaceSync,
+        buildBootstrapReport: buildWorkspaceBootstrapReport,
+        loadWorkspaceSnapshot,
+        installWorkspaceWatcherTask,
+        repairWorkspace,
     });
 }
 
@@ -1837,9 +2113,13 @@ async function cmdStrategy(args) {
         toTaskJson,
         toTaskFullJson,
         mapLaneToCodexInstance: domainTaskGuards.mapLaneToCodexInstance,
+        findAlignedActiveCodexMirrorTasks:
+            domainTaskGuards.findAlignedActiveCodexMirrorTasks,
         parseExpectedBoardRevisionFlag,
         parseCodexStrategyBlocks,
         printJson: coreOutput.printJson,
+        collectWorkspaceTruth,
+        assertWorkspaceTruthOk,
     });
 }
 
@@ -1898,6 +2178,11 @@ async function cmdTask(args) {
         parseExpectedBoardRevisionFlag,
         buildBoardWipLimitDiagnostics,
         printJson: coreOutput.printJson,
+        ensureTaskWorktree,
+        captureTaskWorkspace,
+        applyWorkspaceTaskSnapshot,
+        collectWorkspaceTruth,
+        assertWorkspaceTruthOk,
     });
 }
 
@@ -1997,6 +2282,7 @@ async function cmdRuntime(args) {
         invokeOpenClawRuntime,
         parseExpectedBoardRevisionFlag,
         OPENCLAW_PROVIDER: domainRuntime.OPENCLAW_PROVIDER,
+        PILOT_RUNTIME_PROVIDER: domainRuntime.PILOT_RUNTIME_PROVIDER,
         getGovernancePolicy,
         rootPath: ROOT,
         fetchImpl: typeof fetch === 'function' ? fetch : null,
@@ -2019,6 +2305,9 @@ async function cmdPublish(args) {
         printJson: coreOutput.printJson,
         rootPath: ROOT,
         publishEventsPath: PUBLISH_EVENTS_PATH,
+        runWorkspaceSync,
+        collectWorkspaceTruth,
+        assertWorkspaceTruthOk,
     });
 }
 
@@ -2054,6 +2343,11 @@ async function cmdClose(args) {
         parseExpectedBoardRevisionFlag,
         loadModelUsageLedger,
         buildTaskModelUsageSummary,
+        captureTaskWorkspace,
+        applyWorkspaceTaskSnapshot,
+        runWorkspaceSync,
+        collectWorkspaceTruth,
+        assertWorkspaceTruthOk,
     });
 }
 
@@ -2522,12 +2816,18 @@ const governanceRuntime =
         loadModelUsageLedger,
         buildModelUsageSummary,
         collectPremiumGateBlockers,
+        buildWorkspaceComplianceDiagnostics,
+        collectWorkspaceTruth,
+        buildWorkspaceTruthDiagnostics,
+        assertWorkspaceTruthOk,
         appendModelUsageLedgerEntries,
         syncTaskModelRoutingState,
         buildTaskModelUsageSummary,
         validateDecisionPacketFile,
         printJson: coreOutput.printJson,
         toTaskJson,
+        ensureTaskWorktree,
+        applyWorkspaceTaskSnapshot,
     });
 
 async function main() {
@@ -2554,6 +2854,7 @@ async function main() {
         jobs: () => cmdJobs(args),
         runtime: () => cmdRuntime(args),
         publish: () => cmdPublish(args),
+        workspace: () => cmdWorkspace(args),
         sync: () => cmdSync(),
         close: () => cmdClose(args),
         metrics: () => cmdMetrics(args),
@@ -2601,6 +2902,11 @@ main().catch((error) => {
             'expected',
             'actual',
         ]) {
+            if (Object.prototype.hasOwnProperty.call(error || {}, key)) {
+                payload[key] = error[key];
+            }
+        }
+        for (const key of ['branch_alignment', 'workspace_truth', 'workspace_hygiene']) {
             if (Object.prototype.hasOwnProperty.call(error || {}, key)) {
                 payload[key] = error[key];
             }

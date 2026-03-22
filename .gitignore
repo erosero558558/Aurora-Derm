@@ -26,6 +26,7 @@ js/admin-chunks/
 js/booking-calendar.js
 js/queue-kiosk.js
 js/queue-display.js
+js/queue-operator.js
 verification/
 !verification/
 verification/*

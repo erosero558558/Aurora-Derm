@@ -69,7 +69,7 @@ Compatibilidad opcional:
 
 2. Verifica variables de entorno:
 
-- `AURORADERM_OPERATOR_AUTH_MODE=openclaw_chatgpt`
+- `AURORADERM_OPERATOR_AUTH_MODE=google_oauth`
 - `AURORADERM_OPERATOR_AUTH_TRANSPORT=web_broker`
 - `AURORADERM_ADMIN_EMAIL=<correo_operativo>`
 - `AURORADERM_OPERATOR_AUTH_ALLOWLIST=<correo_operativo>`
@@ -138,19 +138,19 @@ Compatibilidad opcional:
 1. Abre `https://TU_DOMINIO/admin.html`.
 2. Sin sesion, verifica el gate del modo activo:
 
-- Esperado por defecto: CTA `Continuar con OpenClaw` con redirect same-tab al broker remoto.
+- Esperado por defecto: CTA `Continuar con Google` con redirect same-tab al broker remoto.
 - No deben aparecer helper local, codigo manual ni polling local en `web_broker`.
 - Solo si activaste la contingencia legacy: formulario `Clave + 2FA de contingencia`.
 
 3. Ejecuta el gate remoto del rollout auth:
 
-- `npm run gate:admin:rollout:openclaw:node`
-- `npm run diagnose:admin:openclaw-auth:rollout:node`
-- Esperado: gate verde y diagnostico `openclaw_ready`.
+- `npm run gate:admin:rollout:auth:node`
+- `npm run diagnose:admin:auth:rollout:node`
+- Esperado: gate verde y diagnostico `operator_auth_ready`.
 
 4. Ejecuta el smoke live del broker sandbox:
 
-- `npm run smoke:admin:openclaw-auth:live:node`
+- `npm run smoke:admin:auth:live:node`
 - o `node bin/operator-auth-live-smoke.js --transport web_broker --server-base-url https://TU_DOMINIO`
 - Esperado: `callback_ok=true`, `shared_session_ok=true`, `logout_ok=true`.
 
@@ -162,7 +162,7 @@ Compatibilidad opcional:
 
 - Esperado: carga dashboard.
 
-7. Si el entorno esta en modo OpenClaw `web_broker`, valida `start -> redirectUrl -> callback -> status authenticated -> logout`:
+7. Si el entorno esta en modo `google_oauth` con `web_broker`, valida `start -> redirectUrl -> callback -> status authenticated -> logout`:
 
 - `POST /admin-auth.php?action=start`
 - redireccion al broker remoto (`redirectUrl`)
@@ -383,4 +383,3 @@ Opcional automatizado (PowerShell):
 
 3. Revisa permisos de `data/`.
 4. Verifica variables de entorno.
-

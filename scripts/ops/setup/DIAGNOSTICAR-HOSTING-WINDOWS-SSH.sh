@@ -102,7 +102,7 @@ function Test-AuthPayload {
     }
 
     return
-        [string]::Equals([string]$payload.mode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -and
+        [string]::Equals([string]$payload.mode, 'google_oauth', [System.StringComparison]::OrdinalIgnoreCase) -and
         [string]::Equals([string]$payload.transport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase) -and
         (-not [string]::Equals([string]$payload.status, 'transport_misconfigured', [System.StringComparison]::OrdinalIgnoreCase))
 }

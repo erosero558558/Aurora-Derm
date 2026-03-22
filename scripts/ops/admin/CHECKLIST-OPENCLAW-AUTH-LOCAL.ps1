@@ -53,10 +53,10 @@ function Add-ChecklistCommandBlock {
 }
 
 if ($Format -eq 'markdown') {
-    Add-ChecklistLine '# Local Checklist - OpenClaw Admin Auth'
+    Add-ChecklistLine '# Local Checklist - Operator Auth'
     Add-ChecklistLine
 } else {
-    Add-ChecklistLine 'LOCAL CHECKLIST - OPENCLAW ADMIN AUTH'
+    Add-ChecklistLine 'LOCAL CHECKLIST - OPERATOR AUTH'
     Add-ChecklistLine
 }
 
@@ -91,7 +91,7 @@ Add-ChecklistCommandBlock -Commands @(
 )
 
 Add-ChecklistSection 'Smoke manual del operador'
-Add-ChecklistBullet 'El shell no debe renderizar password ni 2FA cuando mode=openclaw_chatgpt.'
+Add-ChecklistBullet 'El shell no debe renderizar password ni 2FA cuando mode=google_oauth.'
 Add-ChecklistCommandBlock -Commands @(
     'Start-Process "' + $base + '/admin.html"',
     '# En el panel: click en "Continuar con OpenClaw"',
@@ -105,24 +105,24 @@ Add-ChecklistBullet 'Usa estas respuestas para distinguir fallo local del laptop
 Add-ChecklistCommandBlock -Commands @(
     'curl.exe -s "' + $base + '/admin-auth.php?action=status" | jq ".mode, .status, .authenticated"',
     'curl.exe -s "' + $base + '/api.php?resource=operator-auth-status" | jq ".mode, .status, .configured"',
-    'node agent-orchestrator.js runtime verify openclaw_chatgpt --json'
+    'node agent-orchestrator.js runtime verify pilot_runtime --json'
 )
 
 Add-ChecklistSection 'Interpretacion rapida'
 Add-ChecklistBullet 'preflight ok=false: falta bridge local o el runtime OpenClaw no responde en el laptop.'
 Add-ChecklistBullet 'preflight ok=true + readyForLogin=false: el helper puede correr, pero el operador aun no inicio sesion OpenClaw.'
 Add-ChecklistBullet 'status=operator_auth_not_configured o mode=disabled: el bloqueo real esta en el servidor, no en el helper local.'
-Add-ChecklistBullet 'admin-auth status=anonymous con mode=openclaw_chatgpt: el servidor esta listo y falta iniciar challenge desde el panel.'
+Add-ChecklistBullet 'admin-auth status=anonymous con mode=google_oauth: el servidor esta listo y falta iniciar challenge desde el panel.'
 Add-ChecklistBullet 'admin-auth status=pending: el challenge ya existe y el helper o el operador aun no completan el bridge.'
 Add-ChecklistBullet 'admin-auth status=autenticado: el login OpenClaw quedo operativo.'
 Add-ChecklistLine
 
 Add-ChecklistSection 'Criterio de cierre'
-Add-ChecklistBullet 'AURORADERM_OPERATOR_AUTH_MODE=openclaw_chatgpt'
+Add-ChecklistBullet 'AURORADERM_OPERATOR_AUTH_MODE=google_oauth'
 Add-ChecklistBullet 'openclaw:auth-preflight -> ok=true'
 Add-ChecklistBullet 'openclaw:auth-preflight -> readyForLogin=true o nextAction explicita de login pendiente'
 Add-ChecklistBullet 'api.php?resource=operator-auth-status -> configured=true'
-Add-ChecklistBullet 'admin-auth.php?action=status -> mode=openclaw_chatgpt'
+Add-ChecklistBullet 'admin-auth.php?action=status -> mode=google_oauth'
 Add-ChecklistBullet 'admin.html no muestra password ni 2FA'
 Add-ChecklistBullet 'El panel llega a status=autenticado con email allowlisted'
 Add-ChecklistLine

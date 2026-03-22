@@ -1,6 +1,9 @@
 import { authRequest, setApiCsrfToken } from '../core/api-client.js';
 import { getState, updateState } from '../core/store.js';
 
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
+const LEGACY_OPERATOR_AUTH_MODE = 'openclaw_chatgpt';
+
 function snapshotAuthState() {
     return {
         ...getState().auth,
@@ -35,8 +38,11 @@ function normalizeAuthMode(payload, fallback = 'legacy_password') {
     const raw = String(payload?.mode || '')
         .trim()
         .toLowerCase();
-    if (raw === 'openclaw_chatgpt') {
-        return 'openclaw_chatgpt';
+    if (
+        raw === CANONICAL_OPERATOR_AUTH_MODE ||
+        raw === LEGACY_OPERATOR_AUTH_MODE
+    ) {
+        return CANONICAL_OPERATOR_AUTH_MODE;
     }
     if (raw === 'legacy_password') {
         return 'legacy_password';
@@ -218,7 +224,10 @@ function inferOpenClawTransport(payload = {}, currentAuth = getState().auth) {
         return 'local_helper';
     }
 
-    if (mode === 'openclaw_chatgpt' || recommendedMode === 'openclaw_chatgpt') {
+    if (
+        mode === CANONICAL_OPERATOR_AUTH_MODE ||
+        recommendedMode === CANONICAL_OPERATOR_AUTH_MODE
+    ) {
         return previousTransport || 'local_helper';
     }
 
@@ -228,7 +237,7 @@ function inferOpenClawTransport(payload = {}, currentAuth = getState().auth) {
 export function getVisibleOpenClawState(auth = getState().auth) {
     if (
         normalizeAuthMode(auth, auth?.recommendedMode || 'legacy_password') ===
-        'openclaw_chatgpt'
+        CANONICAL_OPERATOR_AUTH_MODE
     ) {
         return buildOpenClawSnapshot(
             auth.status,
@@ -266,12 +275,12 @@ function resolveLoginSurfaceMode({
         return 'legacy_password';
     }
 
-    if (recommendedMode === 'openclaw_chatgpt') {
+    if (recommendedMode === CANONICAL_OPERATOR_AUTH_MODE) {
         if (fallbackAvailable && preferLegacySurface) {
             return 'legacy_password';
         }
 
-        return 'openclaw_chatgpt';
+        return CANONICAL_OPERATOR_AUTH_MODE;
     }
 
     return 'legacy_password';
@@ -305,7 +314,7 @@ export function getActiveLoginSurfaceMode(auth = getState().auth) {
                     mode: auth?.recommendedMode,
                 },
                 'legacy_password'
-            ) === 'openclaw_chatgpt',
+            ) === CANONICAL_OPERATOR_AUTH_MODE,
     });
 }
 
@@ -335,7 +344,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     const recommendedMode = normalizeRecommendedMode(payload, mode);
     const currentAuth = getState().auth;
     const transport =
-        mode === 'openclaw_chatgpt'
+        mode === CANONICAL_OPERATOR_AUTH_MODE
             ? inferOpenClawTransport(payload, currentAuth)
             : '';
     const csrfToken = authenticated ? String(payload?.csrfToken || '') : '';
@@ -349,13 +358,13 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
     const nextChallenge = normalizeChallenge(payload?.challenge);
     const challenge =
         authenticated ||
-        mode !== 'openclaw_chatgpt' ||
+        mode !== CANONICAL_OPERATOR_AUTH_MODE ||
         transport !== 'local_helper'
             ? null
             : nextChallenge || getPersistedOpenClawChallenge(currentAuth);
     const redirectUrl =
         authenticated ||
-        mode !== 'openclaw_chatgpt' ||
+        mode !== CANONICAL_OPERATOR_AUTH_MODE ||
         transport !== 'web_broker'
             ? ''
             : String(
@@ -365,7 +374,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
                       ''
               ).trim();
     const attemptExpiresAt =
-        authenticated || mode !== 'openclaw_chatgpt'
+        authenticated || mode !== CANONICAL_OPERATOR_AUTH_MODE
             ? ''
             : String(
                   payload?.expiresAt ||
@@ -378,7 +387,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
         ? ''
         : String(payload?.error || '').trim();
     const openClawSnapshot =
-        mode === 'openclaw_chatgpt'
+        mode === CANONICAL_OPERATOR_AUTH_MODE
             ? buildOpenClawSnapshot(
                   status,
                   challenge,
@@ -406,7 +415,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
         getState().auth.capabilities
     );
     const authMethod = authenticated
-        ? mode === 'openclaw_chatgpt'
+        ? mode === CANONICAL_OPERATOR_AUTH_MODE
             ? 'openclaw'
             : getState().auth.authMethod || 'session'
         : '';
@@ -433,7 +442,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
                     mode: currentAuth.recommendedMode,
                 },
                 'legacy_password'
-            ) === 'openclaw_chatgpt',
+            ) === CANONICAL_OPERATOR_AUTH_MODE,
     });
 
     setApiCsrfToken(csrfToken);
@@ -458,7 +467,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
             attemptExpiresAt,
             helperUrlOpened:
                 authenticated ||
-                mode !== 'openclaw_chatgpt' ||
+                mode !== CANONICAL_OPERATOR_AUTH_MODE ||
                 transport !== 'local_helper'
                     ? false
                     : currentAuth.helperUrlOpened === true,
@@ -484,7 +493,7 @@ function applyAuthPayload(payload, fallbackMode = 'legacy_password') {
 export function isOperatorAuthMode(auth = getState().auth) {
     return (
         normalizeAuthMode(auth, getState().auth.mode || 'legacy_password') ===
-        'openclaw_chatgpt'
+        CANONICAL_OPERATOR_AUTH_MODE
     );
 }
 
@@ -532,7 +541,7 @@ export function usePrimaryLoginSurface() {
         auth.mode || 'legacy_password'
     );
 
-    if (recommendedMode !== 'openclaw_chatgpt') {
+    if (recommendedMode !== CANONICAL_OPERATOR_AUTH_MODE) {
         updateState((state) => ({
             ...state,
             auth: {
@@ -550,7 +559,7 @@ export function usePrimaryLoginSurface() {
         ...state,
         auth: {
             ...state.auth,
-            loginSurfaceMode: 'openclaw_chatgpt',
+            loginSurfaceMode: CANONICAL_OPERATOR_AUTH_MODE,
             requires2FA: false,
             status: snapshot.status,
             challenge: snapshot.challenge,
@@ -583,7 +592,7 @@ export async function startOpenClawLogin() {
         body: {},
     });
 
-    return applyAuthPayload(payload, 'openclaw_chatgpt');
+    return applyAuthPayload(payload, CANONICAL_OPERATOR_AUTH_MODE);
 }
 
 export async function startOperatorAuth(options = {}) {
@@ -594,7 +603,7 @@ export async function startOperatorAuth(options = {}) {
         method: 'POST',
         body: forceNew ? { forceNew: true } : {},
     });
-    applyAuthPayload(payload, 'openclaw_chatgpt');
+    applyAuthPayload(payload, CANONICAL_OPERATOR_AUTH_MODE);
 
     const helperUrl = String(getState().auth.challenge?.helperUrl || '').trim();
     const helperUrlOpened = openHelper ? openHelperWindow(helperUrl) : false;

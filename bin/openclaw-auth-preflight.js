@@ -73,7 +73,7 @@ function deriveNextAction(report) {
     }
 
     if (!report.bridge.tokenConfigured || !report.bridge.secretConfigured) {
-        return 'Configura AURORADERM_OPERATOR_AUTH_BRIDGE_TOKEN y AURORADERM_OPERATOR_AUTH_BRIDGE_SECRET. Los aliases PIELARMONIA_* siguen disponibles temporalmente.';
+        return 'Configura AURORADERM_OPERATOR_AUTH_BRIDGE_TOKEN y AURORADERM_OPERATOR_AUTH_BRIDGE_SECRET. Los aliases PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN y PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET siguen disponibles temporalmente.';
     }
 
     if (!report.runtime.reachable) {

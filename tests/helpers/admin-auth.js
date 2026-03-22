@@ -6,6 +6,8 @@ const {
     operatorAuthSignaturePayload,
     signOperatorAuthPayload,
 } = require('../../bin/lib/operator-auth-signature.js');
+const CANONICAL_OPERATOR_AUTH_MODE = 'google_oauth';
+const LEGACY_OPERATOR_AUTH_MODE = 'openclaw_chatgpt';
 
 function envCandidates(name) {
     const normalized = String(name || '').trim();
@@ -114,7 +116,7 @@ function getOperatorAuthTestConfig(overrides = {}) {
     );
 
     return {
-        mode: 'openclaw_chatgpt',
+        mode: CANONICAL_OPERATOR_AUTH_MODE,
         allowlist,
         email: email || 'operator@example.com',
         profileId: firstNonEmpty(
@@ -228,10 +230,13 @@ async function requireOpenClawMode(request) {
         };
     }
 
-    if (snapshot.mode !== 'openclaw_chatgpt') {
+    if (
+        snapshot.mode !== CANONICAL_OPERATOR_AUTH_MODE &&
+        snapshot.mode !== LEGACY_OPERATOR_AUTH_MODE
+    ) {
         return {
             ok: false,
-            reason: `Este entorno usa ${snapshot.mode || 'legacy_password'} como acceso primario. Activa OpenClaw para este flujo.`,
+            reason: `Este entorno usa ${snapshot.mode || 'legacy_password'} como acceso primario. Activa operator auth para este flujo.`,
         };
     }
 
@@ -241,7 +246,7 @@ async function requireOpenClawMode(request) {
     ) {
         return {
             ok: false,
-            reason: 'OpenClaw auth no configurado. Define bridge token, bridge secret y allowlist para este entorno.',
+            reason: 'Operator auth no configurado. Define broker OAuth/OIDC, bridge y allowlist para este entorno.',
         };
     }
 
@@ -311,7 +316,7 @@ async function startOpenClawChallenge(request) {
     if (!csrfToken) {
         return {
             ok: false,
-            reason: 'admin-auth status no devolvio csrfToken para iniciar OpenClaw.',
+            reason: 'admin-auth status no devolvio csrfToken para iniciar operator auth.',
         };
     }
 
@@ -328,7 +333,7 @@ async function startOpenClawChallenge(request) {
             ok: false,
             reason:
                 body.error ||
-                `No se pudo iniciar challenge OpenClaw (HTTP ${response.status()}).`,
+                `No se pudo iniciar challenge operator auth (HTTP ${response.status()}).`,
             body,
         };
     }
@@ -340,7 +345,7 @@ async function startOpenClawChallenge(request) {
     if (!challenge) {
         return {
             ok: false,
-            reason: 'Challenge OpenClaw ausente en la respuesta del backend.',
+            reason: 'Challenge operator auth ausente en la respuesta del backend.',
             body,
         };
     }
@@ -368,7 +373,7 @@ async function completeOpenClawChallenge(request, challenge, overrides = {}) {
     if (!payload.challengeId || !payload.nonce) {
         return {
             ok: false,
-            reason: 'Challenge OpenClaw invalido: faltan challengeId o nonce.',
+            reason: 'Challenge operator auth invalido: faltan challengeId o nonce.',
         };
     }
 
@@ -392,7 +397,7 @@ async function completeOpenClawChallenge(request, challenge, overrides = {}) {
             ok: false,
             reason:
                 body.error ||
-                `No se pudo completar challenge OpenClaw (HTTP ${response.status()}).`,
+                `No se pudo completar challenge operator auth (HTTP ${response.status()}).`,
             body,
             payload,
         };
@@ -416,7 +421,7 @@ async function consumeOpenClawSession(request, { retries = 4 } = {}) {
             if (!csrfToken) {
                 return {
                     ok: false,
-                    reason: 'Sesion OpenClaw autenticada sin CSRF token.',
+                    reason: 'Sesion operator auth autenticada sin CSRF token.',
                     body,
                 };
             }
@@ -438,8 +443,7 @@ async function consumeOpenClawSession(request, { retries = 4 } = {}) {
             return {
                 ok: false,
                 reason:
-                    body.error ||
-                    `OpenClaw devolvio estado terminal ${status}.`,
+                    body.error || `Operator auth devolvio estado terminal ${status}.`,
                 body,
             };
         }
@@ -447,7 +451,7 @@ async function consumeOpenClawSession(request, { retries = 4 } = {}) {
 
     return {
         ok: false,
-        reason: 'OpenClaw no llego a estado autenticado dentro del polling esperado.',
+        reason: 'Operator auth no llego a estado autenticado dentro del polling esperado.',
     };
 }
 
@@ -488,7 +492,10 @@ async function adminLogin(request, overrides = {}) {
         };
     }
 
-    if (snapshot.mode === 'openclaw_chatgpt') {
+    if (
+        snapshot.mode === CANONICAL_OPERATOR_AUTH_MODE ||
+        snapshot.mode === LEGACY_OPERATOR_AUTH_MODE
+    ) {
         return adminOpenClawLogin(request, overrides);
     }
 

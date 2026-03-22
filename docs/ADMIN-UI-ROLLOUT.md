@@ -8,7 +8,7 @@ La politica canonica de source-vs-output para bundles versionados vive en
 El admin opera en modo `sony_v3 only`.
 
 Mientras `docs/PRODUCT_OPERATIONAL_STATUS.md` siga en `RED`, el rollout admin
-queda congelado en la slice `admin v3 + queue/turnero + auth/OpenClaw +
+queda congelado en la slice `admin v3 + queue/turnero + auth Google +
 readiness + deploy`. Los paneles de `expansion`, `renewal`, `commercial` y
 `executive review` no forman parte del gate operativo del piloto durante este
 ciclo.
@@ -47,9 +47,9 @@ npm run check:runtime:artifacts
 npm run test:admin:runtime-smoke
 npm run test:frontend:qa:admin
 npm run gate:admin:rollout
-npm run gate:admin:rollout:openclaw
-npm run diagnose:admin:openclaw-auth:rollout
-npm run smoke:admin:openclaw-auth:live:node
+npm run gate:admin:rollout:auth
+npm run diagnose:admin:auth:rollout
+npm run smoke:admin:auth:live:node
 ```
 
 `npm run test:frontend:qa:admin` ya incluye `tests/admin-openclaw-login.spec.js`
@@ -60,10 +60,10 @@ Para local QA:
 - Playwright usa `127.0.0.1:8011` como servidor fresco por defecto.
 - Si ya existe un servidor levantado, usar `TEST_BASE_URL=http://127.0.0.1:8011`.
 - `TEST_REUSE_EXISTING_SERVER` queda como opt-in explicito.
-- El perfil productivo canonico de auth es `AURORADERM_OPERATOR_AUTH_MODE=openclaw_chatgpt` + `AURORADERM_OPERATOR_AUTH_TRANSPORT=web_broker`.
+- El perfil productivo canonico de auth es `AURORADERM_OPERATOR_AUTH_MODE=google_oauth` + `AURORADERM_OPERATOR_AUTH_TRANSPORT=web_broker`.
 - En `web_broker`, el login ocurre en la misma pestana y ya no requiere helper local, codigo manual ni polling.
-- Usa `npm run openclaw:auth:start` solo cuando quieras validar `local_helper` en el laptop del operador.
-- Si hace falta contingencia legacy, habilitar `AURORADERM_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `AURORADERM_ADMIN_PASSWORD` o `AURORADERM_ADMIN_PASSWORD_HASH` y `AURORADERM_ADMIN_2FA_SECRET`.
+- Usa `npm run openclaw:auth:start` solo como alias de compatibilidad cuando quieras validar `local_helper` en el laptop del operador.
+- Si hace falta contingencia legacy, habilitar `AURORADERM_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` (alias: `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK`) junto con `AURORADERM_ADMIN_PASSWORD` o `AURORADERM_ADMIN_PASSWORD_HASH` y `AURORADERM_ADMIN_2FA_SECRET` (alias: `PIELARMONIA_ADMIN_2FA_SECRET`).
 - La UI solo debe mostrar `Clave + 2FA de contingencia` cuando el backend anuncie `fallbacks.legacy_password.available=true`.
 
 ## Gate operativo
@@ -76,12 +76,12 @@ Para local QA:
 - el shell no referencia `styles.min.css`, `admin.min.css`, `admin.css` ni `admin-v2.css`
 - la CSP sigue endurecida
 - las suites `admin-ui-runtime-smoke` y `admin-v3-runtime` pasan
-- la suite `admin-openclaw-login` pasa como parte del gate cuando el shell usa el contrato OpenClaw
+- la suite `admin-openclaw-login` pasa como parte del gate cuando el shell usa el contrato Operator Auth
 - las suites Playwright se ejecutan contra el `-Domain` solicitado via `TEST_BASE_URL`
-- `gate:admin:rollout:openclaw` endurece el gate para exigir `operator-auth-status` con `mode=openclaw_chatgpt`, `configured=true` y perfil `web_broker` sano cuando ese transporte es el activo
-- si `operator-auth-status` falla o sigue en `503/502`, el gate consulta `admin-auth.php?action=status` para distinguir entre contrato OpenClaw valido, fachada legacy o edge roto
-- `diagnose:admin:openclaw-auth:rollout` devuelve `diagnosis` y `nextAction` para separar rapido si el entorno esta en `facade_only_rollout`, `admin_auth_legacy_facade`, `openclaw_not_configured`, `operator_auth_edge_failure` o `openclaw_ready`
-- `smoke:admin:openclaw-auth:live:node` valida el flujo real `start -> redirectUrl -> callback -> shared session admin/turnero -> logout`
+- `gate:admin:rollout:auth` endurece el gate para exigir `operator-auth-status` con `mode=google_oauth`, `recommendedMode=google_oauth`, `transport=web_broker` y `configured=true`
+- si `operator-auth-status` falla o sigue en `503/502`, el gate consulta `admin-auth.php?action=status` para distinguir entre contrato auth valido, fachada legacy o edge roto
+- `diagnose:admin:auth:rollout` devuelve `diagnosis` y `nextAction` para separar rapido si el entorno esta en `facade_only_rollout`, `admin_auth_legacy_facade`, `operator_auth_not_configured`, `operator_auth_edge_failure` u `operator_auth_ready`
+- `smoke:admin:auth:live:node` valida el flujo real `start -> redirectUrl -> callback -> shared session admin/turnero -> logout`
 - cualquier `5xx` en `operator-auth-status` o `admin-auth.php?action=status` bloquea el piloto operativo aunque la shell `admin.html` siga cargando
 
 ## Rollback

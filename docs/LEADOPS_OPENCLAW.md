@@ -46,7 +46,7 @@ Objetivos IA permitidos:
 
 Comandos utiles:
 
-- `node agent-orchestrator.js runtime verify openclaw_chatgpt --json`
+- `node agent-orchestrator.js runtime verify pilot_runtime --json`
 - `node agent-orchestrator.js runtime invoke <AG-ID> --expect-rev <n> --json`
 
 Chequeos por surface:
@@ -132,8 +132,8 @@ $env:AURORADERM_OPERATOR_AUTH_HELPER_BASE_URL = "http://127.0.0.1:4173"
 $env:AURORADERM_OPERATOR_AUTH_BRIDGE_TOKEN = "token_bridge_largo_rotado"
 $env:AURORADERM_OPERATOR_AUTH_BRIDGE_SECRET = "secret_hmac_rotado"
 $env:OPENCLAW_RUNTIME_BASE_URL = "http://127.0.0.1:4141"
-npm run checklist:admin:openclaw-auth:local
-npm run smoke:admin:openclaw-auth:local
+npm run checklist:admin:auth:local
+npm run smoke:admin:auth:local
 npm run openclaw:auth:start
 ```
 
@@ -143,13 +143,13 @@ Interpretacion rapida del preflight:
 - `ok=true` y `readyForLogin=false`: la maquina ya puede completar el bridge, pero el operador aun no inicio sesion en OpenClaw.
 - `readyForLogin=true`: el laptop ya esta listo para abrir `admin.html`.
 - El reporte incluye `nextAction` para indicar el siguiente paso recomendado.
-- `checklist:admin:openclaw-auth:local` imprime el smoke manual canonico para el laptop del operador.
+- `checklist:admin:auth:local` imprime el smoke manual canonico para el laptop del operador.
 - Implementacion canonica del checklist local: `scripts/ops/admin/CHECKLIST-OPENCLAW-AUTH-LOCAL.ps1`.
-- `smoke:admin:openclaw-auth:local` ejecuta el smoke no interactivo `start -> helper -> status -> logout`.
+- `smoke:admin:auth:local` ejecuta el smoke no interactivo `start -> helper -> status -> logout`.
 - Implementacion canonica del smoke local: `scripts/ops/admin/SMOKE-OPENCLAW-AUTH-LOCAL.ps1`.
 - `npm run openclaw:auth:start` usa la implementacion canonica en `scripts/ops/admin/INICIAR-OPENCLAW-AUTH-HELPER.ps1`, corre `openclaw:auth-preflight` y solo despues levanta `openclaw:auth-helper`.
 - OpenClaw sigue siendo el acceso primario del operador local.
-- Si hace falta contingencia web desde cualquier PC, habilitar `AURORADERM_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` junto con `AURORADERM_ADMIN_PASSWORD` o `AURORADERM_ADMIN_PASSWORD_HASH` y `AURORADERM_ADMIN_2FA_SECRET`.
+- Si hace falta contingencia web desde cualquier PC, habilitar `AURORADERM_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true` (alias: `PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK`) junto con `AURORADERM_ADMIN_PASSWORD` o `AURORADERM_ADMIN_PASSWORD_HASH` y `AURORADERM_ADMIN_2FA_SECRET` (alias: `PIELARMONIA_ADMIN_2FA_SECRET`).
 - La UI solo debe mostrar `Clave + 2FA de contingencia` cuando el backend anuncie `fallbacks.legacy_password.available=true`.
 
 Flujo esperado:
@@ -200,4 +200,3 @@ Admin y reporte:
 5. Ejecutar el worker local y revisar que `lead-ai-result` cierre el job.
 6. Validar que `health` y metricas reflejan el modo `online`, `degraded` u `offline`.
 7. Registrar el outcome comercial en admin para alimentar el reporte semanal.
-

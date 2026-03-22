@@ -13,7 +13,7 @@ Slice permitida durante este ciclo:
 
 - `admin v3`
 - `queue/turnero`
-- `auth/OpenClaw`
+- `auth Google`
 - `readiness`
 - `deploy`
 
@@ -33,7 +33,7 @@ scope lateral.
 ## Ritual diario
 
 1. `npm run flow-os:recovery:daily`
-2. `npm run gate:admin:rollout:openclaw:node`
+2. `npm run gate:admin:rollout:auth:node`
 3. `npm run verify:prod:turnero:web-pilot`
 4. `npm run monitor:prod`
 
@@ -62,7 +62,7 @@ El corte diario debe dejar evidencia en:
 
 ### Semana 3
 
-- pasar `admin v3 + queue/turnero + auth/OpenClaw` como una sola slice
+- pasar `admin v3 + queue/turnero + auth Google` como una sola slice
 - fijar gates obligatorios del admin y del piloto web por clinica
 - bajar claims publicos que el runtime todavia no sostenga
 
@@ -79,5 +79,5 @@ El producto solo pasa a "recomendable para piloto" cuando coinciden:
 
 - `docs/PRODUCT_OPERATIONAL_STATUS.md`
 - `verification/runtime/prod-readiness-summary.md`
-- gates del admin/OpenClaw
+- gates del admin/Operator Auth
 - verify/smoke/gate del piloto web por clinica

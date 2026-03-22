@@ -239,7 +239,7 @@ Notas:
 
 Configura estas variables en tu hosting:
 
-- `AURORADERM_OPERATOR_AUTH_MODE=openclaw_chatgpt`
+- `AURORADERM_OPERATOR_AUTH_MODE=google_oauth`
 - `AURORADERM_OPERATOR_AUTH_TRANSPORT=web_broker`
 - `AURORADERM_ADMIN_EMAIL=<correo_operativo>`
 - `AURORADERM_OPERATOR_AUTH_ALLOWLIST=<correo_operativo>`
@@ -291,7 +291,7 @@ Configura estas variables en tu hosting:
 Importante:
 
 - Ya no existe fallback `admin123`, incluso en local.
-- En produccion, el login admin/turnero debe entrar por OpenClaw `web_broker`.
+- En produccion, el login admin/turnero debe entrar por Google Operator Auth `web_broker`.
 - `AURORADERM_ADMIN_PASSWORD` o `AURORADERM_ADMIN_PASSWORD_HASH` solo son obligatorios si vas a exponer la contingencia legacy.
 - En el perfil restringido recomendado, `AURORADERM_OPERATOR_AUTH_ALLOWLIST` debe contener la cuenta operativa autorizada.
 - `AURORADERM_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL=true` queda solo como opt-in para entornos que quieran permitir cualquier identidad verificada por el broker.
@@ -331,12 +331,12 @@ Ejemplo recomendado de `data/figo-config.json`:
 
 - `https://pielarmonia.com/admin-auth.php?action=status`
 - `https://pielarmonia.com/api.php?resource=operator-auth-status`
-- Esperado en perfil productivo: `mode=openclaw_chatgpt`, `transport=web_broker`,
-  `configured=true` y diagnostico remoto `openclaw_ready`.
+- Esperado en perfil productivo: `mode=google_oauth`, `recommendedMode=google_oauth`,
+  `transport=web_broker`, `configured=true` y diagnostico remoto `operator_auth_ready`.
 
-    2.1 Smoke live OpenClaw web broker:
+    2.1 Smoke live Operator Auth web broker:
 
-- `npm run smoke:admin:openclaw-auth:live:node`
+- `npm run smoke:admin:auth:live:node`
 - o `node bin/operator-auth-live-smoke.js --transport web_broker --server-base-url https://pielarmonia.com`
 - Esperado: `callback_ok=true`, `shared_session_ok=true`, `logout_ok=true`.
 
@@ -483,4 +483,3 @@ Archivos de manifiesto en carpeta `k8s/`:
         ```bash
         kubectl apply -f k8s/ingress.yaml
         ```
-

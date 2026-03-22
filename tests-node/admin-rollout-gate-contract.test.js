@@ -180,9 +180,14 @@ test('admin rollout gate expone stage estable y contrato v3-only', () => {
     const raw = loadScript();
 
     assert.equal(
-        raw.includes('[switch]$RequireOpenClawAuth'),
+        raw.includes("[Alias('RequireOpenClawAuth')]"),
         true,
-        'falta flag RequireOpenClawAuth para endurecer el gate'
+        'falta alias RequireOpenClawAuth para compatibilidad del gate'
+    );
+    assert.equal(
+        raw.includes('[switch]$RequireOperatorAuth'),
+        true,
+        'falta flag RequireOperatorAuth para endurecer el gate'
     );
     assert.equal(
         raw.includes(
@@ -412,15 +417,15 @@ test('package.json expone check canonico para chunks admin', () => {
     );
 });
 
-test('package.json expone gate endurecido para rollout OpenClaw del admin', () => {
+test('package.json expone gate endurecido para rollout Operator Auth del admin', () => {
     const packageJson = loadFile(PACKAGE_JSON_PATH);
 
     assert.equal(
         packageJson.includes(
-            '"gate:admin:rollout:openclaw": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage general -RequireOpenClawAuth"'
+            '"gate:admin:rollout:auth": "powershell -NoProfile -ExecutionPolicy Bypass -File ./GATE-ADMIN-ROLLOUT.ps1 -Domain https://pielarmonia.com -Stage general -RequireOperatorAuth"'
         ),
         true,
-        'package.json debe exponer gate:admin:rollout:openclaw'
+        'package.json debe exponer gate:admin:rollout:auth'
     );
 });
 
@@ -448,7 +453,7 @@ test('package.json expone agent:gate:release para el carril duro de cierre/publi
 
     assert.equal(
         packageJson.includes(
-            '"agent:gate:release": "npm run agent:gate && node agent-orchestrator.js focus check --enforce-required-checks --json && node agent-orchestrator.js jobs verify public_main_sync --json && node agent-orchestrator.js runtime verify openclaw_chatgpt --json"'
+            '"agent:gate:release": "npm run agent:gate && node agent-orchestrator.js focus check --enforce-required-checks --json && node agent-orchestrator.js jobs verify public_main_sync --json && node agent-orchestrator.js runtime verify pilot_runtime --json"'
         ),
         true,
         'agent:gate:release debe endurecer focus, jobs verify y runtime verify para release'
@@ -568,9 +573,9 @@ test('admin rollout gate registra suites runtime v3-only', () => {
         'falta spec estable de runtime V3'
     );
     assert.equal(
-        raw.includes("Name = 'admin-openclaw-auth'"),
+        raw.includes("Name = 'admin-auth'"),
         true,
-        'falta suite de login OpenClaw en el gate admin'
+        'falta suite de login Operator Auth en el gate admin'
     );
     assert.equal(
         raw.includes("Specs = @('tests/admin-openclaw-login.spec.js')"),
@@ -579,7 +584,7 @@ test('admin rollout gate registra suites runtime v3-only', () => {
     );
 });
 
-test('admin rollout gate captura la surface operator-auth-status y puede endurecer OpenClaw', () => {
+test('admin rollout gate captura la surface operator-auth-status y puede endurecer Operator Auth', () => {
     const raw = loadScript();
 
     assert.equal(
@@ -600,7 +605,7 @@ test('admin rollout gate captura la surface operator-auth-status y puede endurec
     assert.equal(
         raw.includes('contract_valid = $false'),
         true,
-        'falta flag contract_valid para endurecer el rollout OpenClaw'
+        'falta flag contract_valid para endurecer el rollout Operator Auth'
     );
     assert.equal(
         raw.includes('authenticated = $false'),
@@ -640,32 +645,32 @@ test('admin rollout gate captura la surface operator-auth-status y puede endurec
         'falta lista de missing config en operator_auth'
     );
     assert.equal(
-        raw.includes('if ($RequireOpenClawAuth) {'),
+        raw.includes('if ($RequireOperatorAuth) {'),
         true,
-        'falta endurecimiento opcional del gate para OpenClaw'
+        'falta endurecimiento opcional del gate para Operator Auth'
     );
     assert.equal(
-        raw.includes('[OK]  operator auth OpenClaw configurado'),
+        raw.includes('[OK]  operator auth Google web_broker configurado'),
         true,
         'falta feedback positivo del gate endurecido'
     );
     assert.equal(
         raw.includes(
-            'admin-auth facade respondio, pero sigue en contrato legacy sin mode/status OpenClaw.'
+            'admin-auth facade respondio, pero sigue en contrato legacy sin mode/status auth.'
         ),
         true,
         'falta warning cuando la fachada admin-auth responde en contrato legacy'
     );
     assert.equal(
         raw.includes(
-            '[WARN] operator auth sin contrato OpenClaw valido. source=$($report.operator_auth.source)'
+            '[WARN] operator auth sin contrato auth valido. source=$($report.operator_auth.source)'
         ),
         true,
-        'falta warning cuando RequireOpenClawAuth detecta contrato invalido'
+        'falta warning cuando RequireOperatorAuth detecta contrato invalido'
     );
 });
 
-test('admin rollout gate intenta resolver snapshot OpenClaw via fallback de la fachada admin-auth', () => {
+test('admin rollout gate intenta resolver snapshot auth via fallback de la fachada admin-auth', () => {
     const raw = loadScript();
 
     assert.equal(
@@ -697,14 +702,14 @@ test('admin rollout gate intenta resolver snapshot OpenClaw via fallback de la f
             "Set-OperatorAuthReportFromPayload -Report $report.operator_auth -Payload $facadePayload -Source 'admin-auth-facade'"
         ),
         true,
-        'falta capturar el contrato OpenClaw desde la fachada admin-auth'
+        'falta capturar el contrato auth desde la fachada admin-auth'
     );
     assert.equal(
         raw.includes(
             "Set-OperatorAuthReportFromPayload -Report $report.operator_auth -Payload $facadePayload -Source 'admin-auth-facade-legacy'"
         ),
         true,
-        'falta marcar la fachada admin-auth como legacy cuando no expone contrato OpenClaw'
+        'falta marcar la fachada admin-auth como legacy cuando no expone contrato auth'
     );
     assert.equal(
         raw.includes('[WARN] admin-auth facade no respondio correctamente'),

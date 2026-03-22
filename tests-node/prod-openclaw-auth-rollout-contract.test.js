@@ -27,7 +27,7 @@ function load(filePath) {
     return readFileSync(filePath, 'utf8');
 }
 
-test('prod verify reutiliza el diagnostico OpenClaw del admin cuando RequireOperatorAuth esta activo', () => {
+test('prod verify reutiliza el diagnostico Operator Auth del admin cuando RequireOperatorAuth esta activo', () => {
     const raw = load(VERIFY_PATH);
     const requiredSnippets = [
         'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1',
@@ -50,12 +50,12 @@ test('prod verify reutiliza el diagnostico OpenClaw del admin cuando RequireOper
         assert.equal(
             raw.includes(snippet),
             true,
-            `falta wiring OpenClaw rollout en VERIFICAR-DESPLIEGUE.ps1: ${snippet}`
+            `falta wiring Operator Auth rollout en VERIFICAR-DESPLIEGUE.ps1: ${snippet}`
         );
     }
 });
 
-test('prod monitor reutiliza el diagnostico OpenClaw del admin cuando RequireOperatorAuth esta activo', () => {
+test('prod monitor reutiliza el diagnostico Operator Auth del admin cuando RequireOperatorAuth esta activo', () => {
     const raw = load(MONITOR_PATH);
     const requiredSnippets = [
         'scripts/ops/admin/DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1',
@@ -76,27 +76,27 @@ test('prod monitor reutiliza el diagnostico OpenClaw del admin cuando RequireOpe
         assert.equal(
             raw.includes(snippet),
             true,
-            `falta wiring OpenClaw rollout en MONITOR-PRODUCCION.ps1: ${snippet}`
+            `falta wiring Operator Auth rollout en MONITOR-PRODUCCION.ps1: ${snippet}`
         );
     }
 });
 
-test('prod ops readme documenta el diagnostico OpenClaw embebido en verify y monitor', () => {
+test('prod ops readme documenta el diagnostico Operator Auth embebido en verify y monitor', () => {
     const raw = load(README_PATH);
     const requiredSnippets = [
         'DIAGNOSTICAR-OPENCLAW-AUTH-ROLLOUT.ps1',
         'operator auth rollout diagnosis',
-        'openclaw_mode_disabled',
+        'operator_auth_mode_mismatch',
         'admin_auth_legacy_facade',
         'facade_only_rollout',
-        'openclaw_not_configured',
+        'operator_auth_not_configured',
     ];
 
     for (const snippet of requiredSnippets) {
         assert.equal(
             raw.includes(snippet),
             true,
-            `falta documentacion OpenClaw rollout en scripts/ops/prod/README.md: ${snippet}`
+            `falta documentacion Operator Auth rollout en scripts/ops/prod/README.md: ${snippet}`
         );
     }
 });

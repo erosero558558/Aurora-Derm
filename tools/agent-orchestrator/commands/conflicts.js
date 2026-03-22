@@ -3,6 +3,7 @@
 async function handleConflictsCommand(ctx) {
     const {
         args,
+        parseFlags,
         parseBoard,
         parseHandoffs,
         analyzeConflicts,
@@ -12,9 +13,17 @@ async function handleConflictsCommand(ctx) {
         buildLiveFocusSummary,
         loadMetricsSnapshot,
         loadJobsSnapshot,
+        collectWorkspaceTruth,
+        buildWorkspaceTruthDiagnostics,
     } = ctx;
     const strict = args.includes('--strict');
     const wantsJson = args.includes('--json');
+    const { flags = {} } =
+        typeof parseFlags === 'function' ? parseFlags(args) : { flags: {} };
+    const workspaceOptions =
+        args.includes('--current-only') || Boolean(flags['current-only']) || Boolean(flags.current_only)
+            ? { currentOnly: true, allWorktrees: false }
+            : { allWorktrees: true, currentOnly: false };
     const board = parseBoard();
     const handoffData = parseHandoffs();
     const analysis = analyzeConflicts(board.tasks, handoffData.handoffs);
@@ -34,6 +43,7 @@ async function handleConflictsCommand(ctx) {
 
     const report = {
         version: 1,
+        ok: analysis.blocking.length === 0,
         strict,
         totals: {
             pairs: analysis.all.length,
@@ -41,23 +51,44 @@ async function handleConflictsCommand(ctx) {
             handoff: analysis.handoffCovered.length,
         },
         conflicts: analysis.all.map(toConflictJsonRecord),
+        workspace_hygiene: null,
+        workspace_truth: null,
     };
+    const workspaceReport =
+        typeof collectWorkspaceTruth === 'function'
+            ? collectWorkspaceTruth(workspaceOptions)
+            : null;
+    report.workspace_hygiene = workspaceReport?.workspace_hygiene || null;
+    report.workspace_truth = workspaceReport?.workspace_truth || null;
     const reportWithDiagnostics = attachDiagnostics(
         report,
-        buildWarnFirstDiagnostics({
-            source: 'conflicts',
-            board,
-            handoffData,
-            conflictAnalysis: analysis,
-            focusSummary: focusData?.summary || null,
-            metricsSnapshot,
-            jobsSnapshot,
-        })
+        [
+            ...buildWarnFirstDiagnostics({
+                source: 'conflicts',
+                board,
+                handoffData,
+                conflictAnalysis: analysis,
+                focusSummary: focusData?.summary || null,
+                metricsSnapshot,
+                jobsSnapshot,
+            }),
+            ...(
+                typeof buildWorkspaceTruthDiagnostics === 'function'
+                    ? buildWorkspaceTruthDiagnostics(workspaceReport, {
+                          source: 'conflicts',
+                      })
+                    : []
+            ),
+        ]
     );
+    reportWithDiagnostics.ok =
+        analysis.blocking.length === 0 &&
+        reportWithDiagnostics.errors_count === 0 &&
+        workspaceReport?.workspace_truth?.ok !== false;
 
     if (wantsJson) {
         console.log(JSON.stringify(reportWithDiagnostics, null, 2));
-        if (strict && analysis.blocking.length > 0) {
+        if (strict && !reportWithDiagnostics.ok) {
             process.exitCode = 1;
         }
         return;
@@ -90,7 +121,7 @@ async function handleConflictsCommand(ctx) {
         }
     }
 
-    if (strict && analysis.blocking.length > 0) {
+    if (strict && !reportWithDiagnostics.ok) {
         process.exitCode = 1;
     }
 }

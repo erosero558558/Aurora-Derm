@@ -39,7 +39,7 @@ test('checklist local de OpenClaw auth expone comandos canonicos de smoke operad
         'npm run openclaw:auth:start',
         '/api.php?resource=operator-auth-status',
         '/admin-auth.php?action=status',
-        'node agent-orchestrator.js runtime verify openclaw_chatgpt --json',
+        'node agent-orchestrator.js runtime verify pilot_runtime --json',
         'admin.html no muestra password ni 2FA',
         'status=autenticado',
     ];
@@ -53,23 +53,28 @@ test('checklist local de OpenClaw auth expone comandos canonicos de smoke operad
     }
 });
 
-test('package y docs publican el checklist local de OpenClaw auth', () => {
+test('package y docs publican el checklist local de Operator Auth con alias legacy', () => {
     const pkg = JSON.parse(load(PACKAGE_JSON_PATH));
     const adminReadme = load(ADMIN_README_PATH);
     const operationsIndex = load(OPERATIONS_INDEX_PATH);
     const leadopsDoc = load(LEADOPS_DOC_PATH);
 
     assert.equal(
-        String(
-            pkg.scripts?.['checklist:admin:openclaw-auth:local'] || ''
-        ).includes('./scripts/ops/admin/CHECKLIST-OPENCLAW-AUTH-LOCAL.ps1'),
+        String(pkg.scripts?.['checklist:admin:auth:local'] || '').includes(
+            './scripts/ops/admin/CHECKLIST-OPENCLAW-AUTH-LOCAL.ps1'
+        ),
         true,
-        'package.json debe exponer checklist:admin:openclaw-auth:local'
+        'package.json debe exponer checklist:admin:auth:local'
+    );
+    assert.equal(
+        String(pkg.scripts?.['checklist:admin:openclaw-auth:local'] || '').trim(),
+        'npm run checklist:admin:auth:local',
+        'package.json debe mantener checklist:admin:openclaw-auth:local como alias legacy'
     );
 
     for (const snippet of [
         'CHECKLIST-OPENCLAW-AUTH-LOCAL.ps1',
-        'checklist:admin:openclaw-auth:local',
+        'checklist:admin:auth:local',
     ]) {
         assert.equal(
             adminReadme.includes(snippet),

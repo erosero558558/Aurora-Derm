@@ -106,7 +106,7 @@ function Invoke-AuthSnapshotRequest {
     try {
         $response = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec 20 -UseBasicParsing -Headers @{
             'Accept' = 'application/json,text/html;q=0.8,*/*;q=0.5'
-            'User-Agent' = 'OpenClawAuthRolloutDiagnostic/1.0'
+            'User-Agent' = 'OperatorAuthRolloutDiagnostic/1.0'
             'Cache-Control' = 'no-cache'
         }
 
@@ -338,27 +338,27 @@ function Resolve-OpenClawRolloutState {
     if ([bool]$resolved.contract_valid) {
         if ((-not $primaryValid) -and $facadeValid) {
             $Report.diagnosis = 'facade_only_rollout'
-            $Report.next_action = 'Desplegar y estabilizar api.php?resource=operator-auth-status; la fachada admin-auth ya expone contrato OpenClaw, pero el surface canonico aun no.'
+            $Report.next_action = 'Desplegar y estabilizar api.php?resource=operator-auth-status; la fachada admin-auth ya expone contrato auth, pero el surface canonico aun no.'
             return
         }
 
-        if ([string]$resolved.mode -ne 'openclaw_chatgpt') {
-            $Report.diagnosis = 'openclaw_mode_disabled'
-            $Report.next_action = 'Activar AURORADERM_OPERATOR_AUTH_MODE=openclaw_chatgpt en el entorno remoto.'
+        if ([string]$resolved.mode -ne 'google_oauth') {
+            $Report.diagnosis = 'operator_auth_mode_mismatch'
+            $Report.next_action = 'Activar AURORADERM_OPERATOR_AUTH_MODE=google_oauth en el entorno remoto.'
             return
         }
 
         if (-not [bool]$resolved.configured) {
             $missingEnv = Format-MissingOperatorAuthEnv -Missing @($resolved.missing)
             if ($missingEnv.Count -gt 0) {
-                $Report.diagnosis = 'openclaw_not_configured'
+                $Report.diagnosis = 'operator_auth_not_configured'
                 $Report.next_action = 'Completar configuracion remota: ' + ($missingEnv -join ', ') + '.'
             } else {
-                $Report.diagnosis = 'openclaw_not_configured'
+                $Report.diagnosis = 'operator_auth_not_configured'
                 $Report.next_action = if ([string]$resolved.transport -eq 'web_broker') {
-                    'Completar broker OAuth/OpenID y callback remoto del rollout OpenClaw en el entorno remoto.'
+                    'Completar broker OAuth/OpenID y callback remoto del rollout Google en el entorno remoto.'
                 } else {
-                    'Completar bridge, helper y allowlist del rollout OpenClaw en el entorno remoto.'
+                    'Completar bridge, helper y allowlist del rollout auth en el entorno remoto.'
                 }
             }
             return
@@ -373,23 +373,23 @@ function Resolve-OpenClawRolloutState {
                 -not [bool]$resolved.broker_email_verified_required
             )
         ) {
-            $Report.diagnosis = 'openclaw_not_configured'
-            $Report.next_action = 'Completar trust OIDC del broker: JWKS, issuer, audience y email verificado obligatorio antes de pasar a openclaw_ready.'
+            $Report.diagnosis = 'operator_auth_not_configured'
+            $Report.next_action = 'Completar trust OIDC del broker: JWKS, issuer, audience y email verificado obligatorio antes de pasar a operator_auth_ready.'
             return
         }
 
         if (@($Report.warnings).Count -gt 0) {
             $Report.diagnosis = 'surface_mismatch'
-            $Report.next_action = 'Alinear operator-auth-status y admin-auth.php?action=status para que publiquen el mismo contrato OpenClaw.'
+            $Report.next_action = 'Alinear operator-auth-status y admin-auth.php?action=status para que publiquen el mismo contrato auth.'
             $Report.ok = $false
             return
         }
 
-        $Report.diagnosis = 'openclaw_ready'
+        $Report.diagnosis = 'operator_auth_ready'
         $Report.next_action = if ([string]$resolved.transport -eq 'web_broker') {
-            'El rollout OpenClaw web_broker ya esta listo; continuar con smoke web y gate admin.'
+            'El rollout Google web_broker ya esta listo; continuar con smoke web y gate admin.'
         } else {
-            'El rollout OpenClaw ya esta listo; continuar con smoke humano y gate admin.'
+            'El rollout auth ya esta listo; continuar con smoke humano y gate admin.'
         }
         $Report.ok = $true
         return
@@ -397,7 +397,7 @@ function Resolve-OpenClawRolloutState {
 
     if ([bool]$facade.reachable -and [bool]$facade.json_valid -and -not [bool]$facade.contract_valid) {
         $Report.diagnosis = 'admin_auth_legacy_facade'
-        $Report.next_action = 'Desplegar la fachada admin-auth.php con contrato OpenClaw (mode/status/configured) y alinear operator-auth-status.'
+        $Report.next_action = 'Desplegar la fachada admin-auth.php con contrato auth (mode/status/configured) y alinear operator-auth-status.'
         return
     }
 
@@ -433,7 +433,7 @@ function Resolve-OpenClawRolloutState {
                 'Revisar Cloudflare/origen y el routing de ' +
                 ($affectedSurfaces -join ' y ') +
                 '; el edge esta devolviendo HTTP ' + $statusLabel +
-                ' antes de llegar al contrato OpenClaw.'
+                ' antes de llegar al contrato auth canonico.'
         }
         return
     }
@@ -464,7 +464,7 @@ $report.operator_auth_status = Normalize-OperatorAuthSnapshot -Url $report.opera
 $report.admin_auth_facade = Normalize-OperatorAuthSnapshot -Url $report.admin_auth_facade.url -Name 'admin-auth-facade'
 Resolve-OpenClawRolloutState -Report $report
 
-Write-Host '== Diagnostico OpenClaw Auth Rollout =='
+Write-Host '== Diagnostico Operator Auth Rollout =='
 Write-Host "Dominio: $base"
 Write-Host "[INFO] operator-auth-status http=$($report.operator_auth_status.http_status) reachable=$($report.operator_auth_status.reachable) contract=$($report.operator_auth_status.contract_valid) mode=$($report.operator_auth_status.mode) transport=$($report.operator_auth_status.transport) status=$($report.operator_auth_status.status) configured=$($report.operator_auth_status.configured)"
 if (-not [string]::IsNullOrWhiteSpace([string]$report.operator_auth_status.error)) {
@@ -487,7 +487,7 @@ foreach ($warning in @($report.warnings)) {
 }
 
 if ($report.ok) {
-    Write-Host "[OK]  rollout OpenClaw listo (source=$($report.resolved.source), helper=$($report.resolved.helper_base_url))"
+    Write-Host "[OK]  rollout operator auth listo (source=$($report.resolved.source), helper=$($report.resolved.helper_base_url))"
 } else {
     Write-Host "[FAIL] diagnostico=$($report.diagnosis)"
 }
@@ -512,4 +512,3 @@ if ($report.ok -or $AllowNotReady) {
 }
 
 exit 1
-

@@ -24,7 +24,6 @@ $runtimeRoot = [string]$runtimePaths.RuntimeRoot
 $logRoot = [string]$runtimePaths.LogsRoot
 $pidRoot = [string]$runtimePaths.PidRoot
 $mirrorEnvPath = Join-Path $repoRoot 'env.php'
-$mirrorEnvOverridePath = Join-Path $repoRoot 'data\runtime\hosting\env.runtime-overrides.inc.php'
 $caddyTemplatePath = [string]$runtimePaths.CaddyTemplatePath
 $caddyRuntimeConfigPath = [string]$runtimePaths.CaddyRuntimeConfigPath
 $caddyAccessLogPath = [string]$runtimePaths.CaddyAccessLogPath
@@ -144,6 +143,14 @@ function Read-PhpEnvFileValues {
     return $parsed
 }
 
+function Test-OperatorAuthBootstrapMode {
+    param([string]$Mode)
+
+    return
+        [string]::Equals($Mode, 'google_oauth', [System.StringComparison]::OrdinalIgnoreCase) -or
+        [string]::Equals($Mode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase)
+}
+
 function Get-EffectiveOperatorAuthBootstrapConfig {
     $envSources = @()
     foreach ($candidatePath in @($mirrorEnvPath, $externalEnvPathResolved)) {
@@ -191,45 +198,13 @@ function Sync-ExternalEnvFile {
 
     $sourceHash = Get-HostingFileSha256 -Path $SourcePath
     $destinationHash = Get-HostingFileSha256 -Path $DestinationPath
-    $copied = $false
-    if ($sourceHash -ne $destinationHash) {
-        Ensure-HostingParentDirectory -Path $DestinationPath
-        Copy-Item -LiteralPath $SourcePath -Destination $DestinationPath -Force
-        Write-Info ("env.php externo sincronizado: {0} -> {1}" -f $SourcePath, $DestinationPath)
-        $copied = $true
-    }
-
-    $overlayApplied = Apply-RuntimeEnvOverlay -DestinationPath $DestinationPath -OverridePath $mirrorEnvOverridePath
-    return ($copied -or $overlayApplied)
-}
-
-function Apply-RuntimeEnvOverlay {
-    param(
-        [string]$DestinationPath,
-        [string]$OverridePath
-    )
-
-    if (-not (Test-Path -LiteralPath $OverridePath -PathType Leaf)) {
+    if ($sourceHash -eq $destinationHash) {
         return $false
     }
 
-    $overrideRaw = Get-Content -LiteralPath $OverridePath -Raw -ErrorAction Stop
-    if ([string]::IsNullOrWhiteSpace($overrideRaw)) {
-        return $false
-    }
-
-    $destinationRaw = ''
-    if (Test-Path -LiteralPath $DestinationPath -PathType Leaf) {
-        $destinationRaw = Get-Content -LiteralPath $DestinationPath -Raw -ErrorAction Stop
-    }
-
-    $normalizedOverride = $overrideRaw.Trim()
-    if (-not [string]::IsNullOrWhiteSpace($destinationRaw) -and $destinationRaw.Contains($normalizedOverride)) {
-        return $false
-    }
-
-    Add-Content -LiteralPath $DestinationPath -Value ([Environment]::NewLine + $normalizedOverride + [Environment]::NewLine) -Encoding ASCII
-    Write-Info ("env runtime overlay aplicado: {0}" -f $OverridePath)
+    Ensure-HostingParentDirectory -Path $DestinationPath
+    Copy-Item -LiteralPath $SourcePath -Destination $DestinationPath -Force
+    Write-Info ("env.php externo sincronizado: {0} -> {1}" -f $SourcePath, $DestinationPath)
     return $true
 }
 
@@ -273,14 +248,14 @@ function Refresh-OperatorAuthRuntime {
     }
 
     $bootstrapWebBroker =
-        [string]::Equals($BootstrapMode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -and
+        (Test-OperatorAuthBootstrapMode -Mode $BootstrapMode) -and
         [string]::Equals($BootstrapTransport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)
 
     if (-not $bootstrapWebBroker) {
         return $payload
     }
 
-    Write-Info 'Contrato OpenClaw local sin transport; se reinicia PHP-CGI para refrescar env.'
+    Write-Info 'Contrato local de Operator Auth sin transport; se reinicia PHP-CGI para refrescar env.'
     Stop-ProcessesByNeedle -Needles @('php-cgi.exe', '-b 127.0.0.1:9000') -Label 'PHP-CGI auth refresh'
     Ensure-PhpCgiListener `
         -PhpCgiExecutable $PhpCgiExecutable `
@@ -292,7 +267,7 @@ function Refresh-OperatorAuthRuntime {
         return $payload
     }
 
-    Write-Info 'Contrato OpenClaw local sigue sin transport; se reinicia Caddy y se reconsulta.'
+    Write-Info 'Contrato local de Operator Auth sigue sin transport; se reinicia Caddy y se reconsulta.'
     Stop-ProcessesByNeedle -Needles @('caddy.exe', 'run') -Label 'Caddy auth refresh'
     Ensure-CaddyAndBackendReady `
         -CaddyExecutable $CaddyExecutable `
@@ -335,18 +310,18 @@ function Resolve-OperatorAuthTransport {
         $mode = [string]($payload.mode)
         $status = [string]($payload.status)
         if (
-            [string]::Equals($mode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -or
+            (Test-OperatorAuthBootstrapMode -Mode $mode) -or
             [string]::Equals($status, 'transport_misconfigured', [System.StringComparison]::OrdinalIgnoreCase)
         ) {
             if (
-                [string]::Equals($BootstrapMode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -and
+                (Test-OperatorAuthBootstrapMode -Mode $BootstrapMode) -and
                 [string]::Equals($BootstrapTransport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)
             ) {
                 Write-Info 'Se asume web_broker desde env.php efectivo durante bootstrap.'
                 return 'web_broker'
             }
 
-            throw 'admin-auth.php?action=status no publico un transport valido para OpenClaw. Corrige el runtime antes de iniciar el stack.'
+            throw 'admin-auth.php?action=status no publico un transport valido para Operator Auth. Corrige el runtime antes de iniciar el stack.'
         }
 
         Start-Sleep -Milliseconds $DelayMs
@@ -361,7 +336,7 @@ function Resolve-OperatorAuthTransport {
         $envMode = [string]$env:PIELARMONIA_OPERATOR_AUTH_MODE
     }
     if (
-        [string]::Equals($BootstrapMode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -and
+        (Test-OperatorAuthBootstrapMode -Mode $BootstrapMode) -and
         [string]::Equals($BootstrapTransport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)
     ) {
         return 'web_broker'
@@ -369,8 +344,8 @@ function Resolve-OperatorAuthTransport {
     if ([string]::Equals($envTransport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)) {
         return 'web_broker'
     }
-    if ([string]::Equals($envMode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw 'AURORADERM_OPERATOR_AUTH_TRANSPORT no esta declarado explicitamente para OpenClaw. Configure web_broker o local_helper antes de iniciar el stack.'
+    if (Test-OperatorAuthBootstrapMode -Mode $envMode) {
+        throw 'AURORADERM_OPERATOR_AUTH_TRANSPORT no esta declarado explicitamente para Operator Auth. Configure web_broker o local_helper antes de iniciar el stack.'
     }
 
     return $Fallback
@@ -752,7 +727,7 @@ $finalStatusPayload = Get-OperatorAuthStatusPayload
 $bootstrapContractDeferred = $false
 if (
     ($null -eq $finalStatusPayload -or [string]::IsNullOrWhiteSpace([string]$finalStatusPayload.transport)) -and
-    [string]::Equals([string]$bootstrapConfig.Mode, 'openclaw_chatgpt', [System.StringComparison]::OrdinalIgnoreCase) -and
+    (Test-OperatorAuthBootstrapMode -Mode ([string]$bootstrapConfig.Mode)) -and
     [string]::Equals([string]$bootstrapConfig.Transport, 'web_broker', [System.StringComparison]::OrdinalIgnoreCase)
 ) {
     $bootstrapContractDeferred = $true

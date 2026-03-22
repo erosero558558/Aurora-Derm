@@ -82,8 +82,8 @@ test('post-deploy-gate expone inputs de admin rollout y public_v4 rollout', () =
         'admin_rollout_skip_runtime_smoke',
         'admin_rollout_allow_feature_api_failure',
         'admin_rollout_allow_missing_flag',
-        'admin_rollout_require_openclaw_auth',
-        'admin_rollout_require_openclaw_live_smoke',
+        'admin_rollout_require_operator_auth',
+        'admin_rollout_require_operator_auth_live_smoke',
         'enable_public_v4_rollout_monitor',
         'public_v4_rollout_stage',
         'public_v4_rollout_surface_test',
@@ -133,14 +133,14 @@ test('post-deploy-gate ejecuta gate admin rollout y lo reporta en summary', () =
         'falta variable efectiva de stage profile para admin rollout gate'
     );
     assert.equal(
-        raw.includes('ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_EFFECTIVE'),
+        raw.includes('ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_EFFECTIVE'),
         true,
-        'falta variable efectiva de require OpenClaw auth para admin rollout gate'
+        'falta variable efectiva de require Operator Auth para admin rollout gate'
     );
     assert.equal(
-        raw.includes('ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_EFFECTIVE'),
+        raw.includes('ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_EFFECTIVE'),
         true,
-        'falta variable efectiva de require OpenClaw live smoke para admin rollout gate'
+        'falta variable efectiva de require Operator Auth live smoke para admin rollout gate'
     );
     assert.equal(
         raw.includes('Admin rollout policy source (effective):'),
@@ -153,14 +153,14 @@ test('post-deploy-gate ejecuta gate admin rollout y lo reporta en summary', () =
         'falta linea de stage profile en summary del gate'
     );
     assert.equal(
-        raw.includes('Admin rollout require OpenClaw auth (effective):'),
+        raw.includes('Admin rollout require Operator Auth (effective):'),
         true,
-        'falta linea require OpenClaw auth en summary del gate'
+        'falta linea require Operator Auth en summary del gate'
     );
     assert.equal(
-        raw.includes('Admin rollout require OpenClaw live smoke (effective):'),
+        raw.includes('Admin rollout require Operator Auth live smoke (effective):'),
         true,
-        'falta linea require OpenClaw live smoke en summary del gate'
+        'falta linea require Operator Auth live smoke en summary del gate'
     );
     assert.equal(
         raw.includes('Public V4 rollout stage (effective):'),
@@ -193,9 +193,9 @@ test('post-deploy-gate ejecuta gate admin rollout y lo reporta en summary', () =
         'falta step para publicar reporte admin rollout en post-deploy-gate'
     );
     assert.equal(
-        stepNames.includes('Publicar reporte smoke live OpenClaw'),
+        stepNames.includes('Publicar reporte smoke live Operator Auth'),
         true,
-        'falta step para publicar reporte smoke live OpenClaw en post-deploy-gate'
+        'falta step para publicar reporte smoke live Operator Auth en post-deploy-gate'
     );
     assert.equal(
         stepNames.includes('Escribir reporte rollout publico V4'),
@@ -238,14 +238,14 @@ test('post-deploy-gate ejecuta gate admin rollout y lo reporta en summary', () =
         'falta propagacion de allow missing admin flag al gate admin rollout'
     );
     assert.equal(
-        raw.includes('-RequireOpenClawAuth:$requireOpenClawAuth'),
+        raw.includes('-RequireOperatorAuth:$requireOperatorAuth'),
         true,
-        'falta propagacion de RequireOpenClawAuth al gate admin rollout'
+        'falta propagacion de RequireOperatorAuth al gate admin rollout'
     );
     assert.equal(
-        stepNames.includes('Ejecutar smoke live OpenClaw web broker'),
+        stepNames.includes('Ejecutar smoke live Operator Auth web broker'),
         true,
-        'falta step de smoke live OpenClaw en post-deploy-gate'
+        'falta step de smoke live Operator Auth en post-deploy-gate'
     );
     assert.equal(
         raw.includes('REQUIRE_TELEMEDICINE_READY_INPUT'),
@@ -536,17 +536,17 @@ test('post-deploy-gate usa resolver central de politica admin rollout con trazab
     );
     assert.equal(
         raw.includes(
-            '--require-openclaw-auth "$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_INPUT"'
+            '--require-operator-auth "$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_INPUT"'
         ),
         true,
-        'falta propagacion de require_openclaw_auth al resolver politica en post-deploy-gate'
+        'falta propagacion de require_operator_auth al resolver politica en post-deploy-gate'
     );
     assert.equal(
         raw.includes(
-            '--require-openclaw-live-smoke "$env:ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_INPUT"'
+            '--require-operator-auth-live-smoke "$env:ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_INPUT"'
         ),
         true,
-        'falta propagacion de require_openclaw_live_smoke al resolver politica en post-deploy-gate'
+        'falta propagacion de require_operator_auth_live_smoke al resolver politica en post-deploy-gate'
     );
     assert.equal(
         raw.includes('node ./bin/resolve-public-v4-rollout-policy.js'),

@@ -48,13 +48,13 @@ test('deploy-hosting expone inputs de dispatch post-deploy', () => {
         'admin_rollout_skip_runtime_smoke_fast',
         'admin_rollout_allow_feature_api_failure_fast',
         'admin_rollout_allow_missing_flag_fast',
-        'admin_rollout_require_openclaw_auth_fast',
-        'admin_rollout_require_openclaw_live_smoke_fast',
+        'admin_rollout_require_operator_auth_fast',
+        'admin_rollout_require_operator_auth_live_smoke_fast',
         'admin_rollout_skip_runtime_smoke_gate',
         'admin_rollout_allow_feature_api_failure_gate',
         'admin_rollout_allow_missing_flag_gate',
-        'admin_rollout_require_openclaw_auth_gate',
-        'admin_rollout_require_openclaw_live_smoke_gate',
+        'admin_rollout_require_operator_auth_gate',
+        'admin_rollout_require_operator_auth_live_smoke_gate',
     ];
 
     for (const inputName of requiredInputs) {
@@ -731,17 +731,17 @@ test('deploy-hosting aplica guardrail de dispatch por tipo de evento', () => {
     );
     assert.equal(
         raw.includes(
-            'admin_rollout_require_openclaw_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_FAST_EFFECTIVE'
+            'admin_rollout_require_operator_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_FAST_EFFECTIVE'
         ),
         true,
-        'falta propagacion de require_openclaw_auth al dispatch fast'
+        'falta propagacion de require_operator_auth al dispatch fast'
     );
     assert.equal(
         raw.includes(
-            'admin_rollout_require_openclaw_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_FAST_EFFECTIVE'
+            'admin_rollout_require_operator_auth_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_FAST_EFFECTIVE'
         ),
         true,
-        'falta propagacion de require_openclaw_live_smoke al dispatch fast'
+        'falta propagacion de require_operator_auth_live_smoke al dispatch fast'
     );
     assert.equal(
         raw.includes(
@@ -766,17 +766,17 @@ test('deploy-hosting aplica guardrail de dispatch por tipo de evento', () => {
     );
     assert.equal(
         raw.includes(
-            'admin_rollout_require_openclaw_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_AUTH_GATE_EFFECTIVE'
+            'admin_rollout_require_operator_auth: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_GATE_EFFECTIVE'
         ),
         true,
-        'falta propagacion de require_openclaw_auth al dispatch gate'
+        'falta propagacion de require_operator_auth al dispatch gate'
     );
     assert.equal(
         raw.includes(
-            'admin_rollout_require_openclaw_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPENCLAW_LIVE_SMOKE_GATE_EFFECTIVE'
+            'admin_rollout_require_operator_auth_live_smoke: process.env.ADMIN_ROLLOUT_REQUIRE_OPERATOR_AUTH_LIVE_SMOKE_GATE_EFFECTIVE'
         ),
         true,
-        'falta propagacion de require_openclaw_live_smoke al dispatch gate'
+        'falta propagacion de require_operator_auth_live_smoke al dispatch gate'
     );
 });
 

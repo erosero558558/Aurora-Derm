@@ -33,13 +33,13 @@ test('package.json expone el ritual diario canonico de recovery', () => {
     );
 });
 
-test('flow-os-recovery-daily orquesta readiness summary y diagnostico OpenClaw', () => {
+test('flow-os-recovery-daily orquesta readiness summary y diagnostico Operator Auth', () => {
     const raw = load(SCRIPT_PATH);
     const requiredSnippets = [
         'flow-os-recovery-2026-03-21',
         '2026-03-21',
         '2026-04-20',
-        'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy',
+        'admin v3 + queue/turnero + auth Google + readiness + deploy',
         'docs/PRODUCT_OPERATIONAL_STATUS.md',
         'docs/FLOW_OS_RECOVERY_PLAN.md',
         'verification/runtime/flow-os-recovery-daily.json',
@@ -70,7 +70,7 @@ test('la documentacion viva referencia el recovery cycle como corte operativo', 
                 'npm run flow-os:recovery:daily',
                 'admin v3',
                 'queue/turnero',
-                'auth/OpenClaw',
+                'auth Google',
             ],
         ],
         [
@@ -94,7 +94,7 @@ test('la documentacion viva referencia el recovery cycle como corte operativo', 
             [
                 'docs/FLOW_OS_RECOVERY_PLAN.md',
                 'npm run flow-os:recovery:daily',
-                'freeze duro en `admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy`',
+                'freeze duro en `admin v3 + queue/turnero + auth Google + readiness + deploy`',
             ],
         ],
         [

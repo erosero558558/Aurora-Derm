@@ -86,7 +86,7 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -Domain $BaseUrl -AllowNotReady -ReportPath $reportPath *> $null
 
         if (-not (Test-Path $reportPath)) {
-            throw 'No se genero reporte del diagnostico OpenClaw.'
+            throw 'No se genero reporte del diagnostico Operator Auth.'
         }
 
         $raw = Get-Content -Path $reportPath -Raw
@@ -110,7 +110,7 @@ function Invoke-OpenClawAuthRolloutDiagnostic {
             available = $true
             ok = $false
             diagnosis = 'diagnostic_script_failed'
-            nextAction = 'No se pudo interpretar el diagnostico OpenClaw del admin.'
+            nextAction = 'No se pudo interpretar el diagnostico Operator Auth del admin.'
             source = ''
             mode = ''
             status = ''
@@ -735,7 +735,7 @@ $authMode = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'mode
 $authStatus = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'status' -DefaultValue 'unknown')
 $authConfigured = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'configured' -DefaultValue $false)
 $authHardeningCompliant = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'hardeningCompliant' -DefaultValue $false)
-$authRecommendedMode = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'recommendedMode' -DefaultValue 'openclaw_chatgpt')
+$authRecommendedMode = [string](Get-ObjectValueOrDefault -Object $authCheck -Property 'recommendedMode' -DefaultValue 'google_oauth')
 $authRecommendedModeActive = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'recommendedModeActive' -DefaultValue $false)
 $authLegacyPasswordConfigured = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'legacyPasswordConfigured' -DefaultValue $false)
 $authTwoFactorEnabled = [bool](Get-ObjectValueOrDefault -Object $authCheck -Property 'twoFactorEnabled' -DefaultValue $false)
@@ -1377,7 +1377,7 @@ $recoveryCycleState = [pscustomobject]@{
     StartsAt = '2026-03-21'
     EndsAt = '2026-04-20'
     FreezeActive = $true
-    AllowedSlice = 'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy'
+    AllowedSlice = 'admin v3 + queue/turnero + auth Google + readiness + deploy'
     ParkedFronts = @($recoveryCycleParkedFronts)
     ParkedFrontsBlock = $recoveryCycleParkedFrontsBlock
     StatusDoc = 'docs/PRODUCT_OPERATIONAL_STATUS.md'
@@ -1388,7 +1388,7 @@ $recoveryCycleState = [pscustomobject]@{
 }
 # ## Recovery Cycle
 # $recoveryCyclePayload = [ordered]@{}
-# $recoveryCyclePayload.allowedSlice = 'admin v3 + queue/turnero + auth/OpenClaw + readiness + deploy'
+# $recoveryCyclePayload.allowedSlice = 'admin v3 + queue/turnero + auth Google + readiness + deploy'
 # $reportPayload.recoveryCycle = $recoveryCyclePayload
 
 $null = Write-WeeklyReportArtifacts `

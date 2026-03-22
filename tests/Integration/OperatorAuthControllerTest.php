@@ -13,6 +13,7 @@ use PHPUnit\Framework\TestCase;
 class OperatorAuthControllerTest extends TestCase
 {
     private string $tempDir;
+    private ?string $originalOpenSslConf = null;
     /** @var array{privateKey:string,kid:string,jwk:array<string,mixed>} */
     private array $brokerKeyMaterial;
 
@@ -33,30 +34,36 @@ class OperatorAuthControllerTest extends TestCase
             mkdir($this->tempDir, 0777, true);
         }
 
-        putenv('PIELARMONIA_DATA_DIR=' . $this->tempDir);
-        putenv('PIELARMONIA_SKIP_ENV_FILE=true');
-        putenv('PIELARMONIA_OPERATOR_AUTH_MODE=openclaw_chatgpt');
-        putenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT=local_helper');
-        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST=operator@example.com');
-        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN=operator-auth-bridge-test-token');
-        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET=operator-auth-bridge-test-secret');
-        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER=Authorization');
-        putenv('PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL=http://127.0.0.1:8011');
-        putenv('PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL=http://127.0.0.1:4173');
-        putenv('PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS=300');
-        putenv('PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS=1800');
-        putenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT=local_helper');
-        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL');
-        putenv('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL');
-        putenv('OPENCLAW_AUTH_BROKER_TOKEN_URL');
-        putenv('OPENCLAW_AUTH_BROKER_USERINFO_URL');
-        putenv('OPENCLAW_AUTH_BROKER_CLIENT_ID');
-        putenv('OPENCLAW_AUTH_BROKER_CLIENT_SECRET');
-        putenv('OPENCLAW_AUTH_BROKER_JWKS_URL');
-        putenv('OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER');
-        putenv('OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE');
-        putenv('OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED');
-        putenv('OPENCLAW_AUTH_BROKER_CLOCK_SKEW_SECONDS');
+        $this->applyProcessEnv([
+            'PIELARMONIA_DATA_DIR' => $this->tempDir,
+            'PIELARMONIA_SKIP_ENV_FILE' => 'true',
+            'PIELARMONIA_OPERATOR_AUTH_MODE' => 'google_oauth',
+            'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => 'local_helper',
+            'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST' => 'operator@example.com',
+            'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN' => 'operator-auth-bridge-test-token',
+            'PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET' => 'operator-auth-bridge-test-secret',
+            'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER' => 'Authorization',
+            'PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL' => 'http://127.0.0.1:8011',
+            'PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL' => 'http://127.0.0.1:4173',
+            'PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS' => '300',
+            'PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS' => '1800',
+            'PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL' => null,
+            'PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK' => null,
+            'PIELARMONIA_ADMIN_PASSWORD' => null,
+            'PIELARMONIA_ADMIN_PASSWORD_HASH' => null,
+            'PIELARMONIA_ADMIN_2FA_SECRET' => null,
+            'OPENCLAW_AUTH_BROKER_AUTHORIZE_URL' => null,
+            'OPENCLAW_AUTH_BROKER_TOKEN_URL' => null,
+            'OPENCLAW_AUTH_BROKER_USERINFO_URL' => null,
+            'OPENCLAW_AUTH_BROKER_CLIENT_ID' => null,
+            'OPENCLAW_AUTH_BROKER_CLIENT_SECRET' => null,
+            'OPENCLAW_AUTH_BROKER_JWKS_URL' => null,
+            'OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER' => null,
+            'OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE' => null,
+            'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED' => null,
+            'OPENCLAW_AUTH_BROKER_CLOCK_SKEW_SECONDS' => null,
+        ]);
+        $this->configureOpenSslForTests();
 
         $this->brokerKeyMaterial = $this->generateBrokerKeyMaterial();
 
@@ -70,33 +77,40 @@ class OperatorAuthControllerTest extends TestCase
 
     protected function tearDown(): void
     {
-        putenv('PIELARMONIA_DATA_DIR');
-        putenv('PIELARMONIA_SKIP_ENV_FILE');
-        putenv('PIELARMONIA_OPERATOR_AUTH_MODE');
-        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOWLIST');
-        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN');
-        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET');
-        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER');
-        putenv('PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL');
-        putenv('PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL');
-        putenv('PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS');
-        putenv('PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS');
-        putenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT');
-        putenv('PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL');
-        putenv('OPENCLAW_AUTH_BROKER_AUTHORIZE_URL');
-        putenv('OPENCLAW_AUTH_BROKER_TOKEN_URL');
-        putenv('OPENCLAW_AUTH_BROKER_USERINFO_URL');
-        putenv('OPENCLAW_AUTH_BROKER_CLIENT_ID');
-        putenv('OPENCLAW_AUTH_BROKER_CLIENT_SECRET');
-        putenv('OPENCLAW_AUTH_BROKER_JWKS_URL');
-        putenv('OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER');
-        putenv('OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE');
-        putenv('OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED');
-        putenv('OPENCLAW_AUTH_BROKER_CLOCK_SKEW_SECONDS');
-        putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK');
-        putenv('PIELARMONIA_ADMIN_PASSWORD');
-        putenv('PIELARMONIA_ADMIN_PASSWORD_HASH');
-        putenv('PIELARMONIA_ADMIN_2FA_SECRET');
+        $this->applyProcessEnv([
+            'PIELARMONIA_DATA_DIR' => null,
+            'PIELARMONIA_SKIP_ENV_FILE' => null,
+            'PIELARMONIA_OPERATOR_AUTH_MODE' => null,
+            'PIELARMONIA_OPERATOR_AUTH_ALLOWLIST' => null,
+            'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN' => null,
+            'PIELARMONIA_OPERATOR_AUTH_BRIDGE_SECRET' => null,
+            'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN_HEADER' => null,
+            'PIELARMONIA_OPERATOR_AUTH_SERVER_BASE_URL' => null,
+            'PIELARMONIA_OPERATOR_AUTH_HELPER_BASE_URL' => null,
+            'PIELARMONIA_OPERATOR_AUTH_CHALLENGE_TTL_SECONDS' => null,
+            'PIELARMONIA_OPERATOR_AUTH_SESSION_TTL_SECONDS' => null,
+            'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => null,
+            'PIELARMONIA_OPERATOR_AUTH_ALLOW_ANY_AUTHENTICATED_EMAIL' => null,
+            'PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK' => null,
+            'PIELARMONIA_ADMIN_PASSWORD' => null,
+            'PIELARMONIA_ADMIN_PASSWORD_HASH' => null,
+            'PIELARMONIA_ADMIN_2FA_SECRET' => null,
+            'OPENCLAW_AUTH_BROKER_AUTHORIZE_URL' => null,
+            'OPENCLAW_AUTH_BROKER_TOKEN_URL' => null,
+            'OPENCLAW_AUTH_BROKER_USERINFO_URL' => null,
+            'OPENCLAW_AUTH_BROKER_CLIENT_ID' => null,
+            'OPENCLAW_AUTH_BROKER_CLIENT_SECRET' => null,
+            'OPENCLAW_AUTH_BROKER_JWKS_URL' => null,
+            'OPENCLAW_AUTH_BROKER_EXPECTED_ISSUER' => null,
+            'OPENCLAW_AUTH_BROKER_EXPECTED_AUDIENCE' => null,
+            'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED' => null,
+            'OPENCLAW_AUTH_BROKER_CLOCK_SKEW_SECONDS' => null,
+        ]);
+        if ($this->originalOpenSslConf === null) {
+            putenv('OPENSSL_CONF');
+        } else {
+            putenv('OPENSSL_CONF=' . $this->originalOpenSslConf);
+        }
         unset(
             $GLOBALS['__TEST_RESPONSE'],
             $GLOBALS['__TEST_JSON_BODY'],
@@ -113,6 +127,67 @@ class OperatorAuthControllerTest extends TestCase
         }
 
         $this->removeDirectory($this->tempDir);
+    }
+
+    /**
+     * @param array<string,?string> $env
+     */
+    private function applyProcessEnv(array $env): void
+    {
+        foreach ($env as $name => $value) {
+            foreach ($this->envAliases($name) as $candidate) {
+                if ($value === null) {
+                    putenv($candidate);
+                    unset($_ENV[$candidate], $_SERVER[$candidate]);
+                    continue;
+                }
+
+                putenv($candidate . '=' . $value);
+                $_ENV[$candidate] = $value;
+                $_SERVER[$candidate] = $value;
+            }
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function envAliases(string $name): array
+    {
+        if (str_starts_with($name, 'PIELARMONIA_')) {
+            return [
+                $name,
+                'AURORADERM_' . substr($name, strlen('PIELARMONIA_')),
+            ];
+        }
+
+        if (str_starts_with($name, 'AURORADERM_')) {
+            return [
+                $name,
+                'PIELARMONIA_' . substr($name, strlen('AURORADERM_')),
+            ];
+        }
+
+        return [$name];
+    }
+
+    private function configureOpenSslForTests(): void
+    {
+        $current = getenv('OPENSSL_CONF');
+        $this->originalOpenSslConf = ($current === false || $current === '') ? null : (string) $current;
+        if ($this->originalOpenSslConf !== null) {
+            return;
+        }
+
+        foreach ([
+            'C:\\Program Files\\Git\\mingw64\\etc\\ssl\\openssl.cnf',
+            'C:\\Program Files\\Git\\usr\\ssl\\openssl.cnf',
+        ] as $candidate) {
+            if (is_file($candidate)) {
+                putenv('OPENSSL_CONF=' . $candidate);
+                return;
+            }
+        }
     }
 
     public function testStartCompleteAndStatusAuthenticateAllowedOperator(): void
@@ -209,7 +284,9 @@ class OperatorAuthControllerTest extends TestCase
 
     public function testStartReturnsSetupPayloadWhenConfigIsIncomplete(): void
     {
-        putenv('PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN');
+        $this->applyProcessEnv([
+            'PIELARMONIA_OPERATOR_AUTH_BRIDGE_TOKEN' => null,
+        ]);
 
         $response = $this->captureResponse(static fn () => \OperatorAuthController::start([]), 'POST');
 
@@ -228,15 +305,17 @@ class OperatorAuthControllerTest extends TestCase
 
     public function testStatusAdvertisesLegacyContingencyWhenEnabledAndConfigured(): void
     {
-        putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true');
-        putenv('PIELARMONIA_ADMIN_PASSWORD_HASH=' . password_hash('contingencia-segura', PASSWORD_DEFAULT));
-        putenv('PIELARMONIA_ADMIN_2FA_SECRET=JBSWY3DPEHPK3PXP');
+        $this->applyProcessEnv([
+            'PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK' => 'true',
+            'PIELARMONIA_ADMIN_PASSWORD_HASH' => password_hash('contingencia-segura', PASSWORD_DEFAULT),
+            'PIELARMONIA_ADMIN_2FA_SECRET' => 'JBSWY3DPEHPK3PXP',
+        ]);
 
         $status = $this->captureResponse(static fn () => \OperatorAuthController::status([]));
 
         self::assertSame(200, $status['status']);
-        self::assertSame('openclaw_chatgpt', (string) ($status['payload']['mode'] ?? ''));
-        self::assertSame('openclaw_chatgpt', (string) ($status['payload']['recommendedMode'] ?? ''));
+        self::assertSame('google_oauth', (string) ($status['payload']['mode'] ?? ''));
+        self::assertSame('google_oauth', (string) ($status['payload']['recommendedMode'] ?? ''));
         self::assertFalse((bool) ($status['payload']['authenticated'] ?? true));
 
         $fallback = $status['payload']['fallbacks']['legacy_password'] ?? [];
@@ -249,9 +328,11 @@ class OperatorAuthControllerTest extends TestCase
 
     public function testStatusDoesNotAdvertiseLegacyContingencyWhenTwoFactorIsMissing(): void
     {
-        putenv('PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK=true');
-        putenv('PIELARMONIA_ADMIN_PASSWORD_HASH=' . password_hash('contingencia-segura', PASSWORD_DEFAULT));
-        putenv('PIELARMONIA_ADMIN_2FA_SECRET');
+        $this->applyProcessEnv([
+            'PIELARMONIA_INTERNAL_CONSOLE_AUTH_ALLOW_LEGACY_FALLBACK' => 'true',
+            'PIELARMONIA_ADMIN_PASSWORD_HASH' => password_hash('contingencia-segura', PASSWORD_DEFAULT),
+            'PIELARMONIA_ADMIN_2FA_SECRET' => null,
+        ]);
 
         $status = $this->captureResponse(static fn () => \OperatorAuthController::status([]));
 
@@ -410,7 +491,9 @@ class OperatorAuthControllerTest extends TestCase
 
     public function testMissingExplicitTransportFailsClosed(): void
     {
-        putenv('PIELARMONIA_OPERATOR_AUTH_TRANSPORT=');
+        $this->applyProcessEnv([
+            'PIELARMONIA_OPERATOR_AUTH_TRANSPORT' => '',
+        ]);
 
         $status = $this->captureResponse(static fn () => \OperatorAuthController::status([]));
 
@@ -419,7 +502,7 @@ class OperatorAuthControllerTest extends TestCase
         self::assertSame('transport_misconfigured', (string) ($status['payload']['status'] ?? ''));
         self::assertSame('', (string) ($status['payload']['transport'] ?? ''));
         self::assertStringContainsString(
-            'PIELARMONIA_OPERATOR_AUTH_TRANSPORT',
+            'AURORADERM_OPERATOR_AUTH_TRANSPORT',
             (string) ($status['payload']['error'] ?? '')
         );
     }
@@ -949,10 +1032,7 @@ class OperatorAuthControllerTest extends TestCase
             'OPENCLAW_AUTH_BROKER_REQUIRE_EMAIL_VERIFIED' => 'true',
             'OPENCLAW_AUTH_BROKER_CLOCK_SKEW_SECONDS' => '120',
         ], $overrides);
-
-        foreach ($env as $key => $value) {
-            putenv($key . '=' . $value);
-        }
+        $this->applyProcessEnv($env);
     }
 
     /**
@@ -960,14 +1040,23 @@ class OperatorAuthControllerTest extends TestCase
      */
     private function generateBrokerKeyMaterial(): array
     {
-        $resource = openssl_pkey_new([
+        $opensslConfig = [
             'private_key_bits' => 2048,
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
-        ]);
+        ];
+        $configPath = getenv('OPENSSL_CONF');
+        if (is_string($configPath) && $configPath !== '' && is_file($configPath)) {
+            $opensslConfig['config'] = $configPath;
+        }
+
+        $resource = openssl_pkey_new($opensslConfig);
         self::assertNotFalse($resource, 'No se pudo generar la llave RSA de test.');
 
         $privateKey = '';
-        self::assertTrue(openssl_pkey_export($resource, $privateKey), 'No se pudo exportar la llave privada de test.');
+        self::assertTrue(
+            openssl_pkey_export($resource, $privateKey, null, $opensslConfig),
+            'No se pudo exportar la llave privada de test.'
+        );
 
         $details = openssl_pkey_get_details($resource);
         self::assertIsArray($details, 'No se pudieron leer los detalles de la llave RSA.');

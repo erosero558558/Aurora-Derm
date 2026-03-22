@@ -127,7 +127,7 @@ try {
             assert_equals(200, $status['code'], 'status should respond 200');
             assert_true($status['body']['ok'] ?? false, 'status payload should be ok');
             assert_false($status['body']['authenticated'] ?? true, 'anonymous operator should not authenticate');
-            assert_equals('openclaw_chatgpt', $status['body']['mode'] ?? '', 'mode should expose openclaw_chatgpt');
+            assert_equals('google_oauth', $status['body']['mode'] ?? '', 'mode should expose google_oauth');
             assert_equals('anonymous', $status['body']['status'] ?? '', 'status should remain anonymous before challenge');
             assert_false(
                 $status['body']['capabilities']['adminAgent'] ?? true,
@@ -151,7 +151,7 @@ try {
             );
             assert_equals(202, $start['code'], 'start should create challenge');
             assert_equals('pending', $start['body']['status'] ?? '', 'start should leave challenge pending');
-            assert_equals('openclaw_chatgpt', $start['body']['mode'] ?? '', 'start should report openclaw mode');
+            assert_equals('google_oauth', $start['body']['mode'] ?? '', 'start should report google_oauth mode');
 
             $challenge = is_array($start['body']['challenge'] ?? null) ? $start['body']['challenge'] : [];
             assert_true(isset($challenge['helperUrl']), 'challenge should expose helperUrl');
@@ -182,7 +182,7 @@ try {
             assert_equals(200, $logout['code'], 'logout should respond 200');
             assert_false($logout['body']['authenticated'] ?? true, 'logout should clear authentication');
             assert_equals('logout', $logout['body']['status'] ?? '', 'logout should expose logout status');
-            assert_equals('openclaw_chatgpt', $logout['body']['mode'] ?? '', 'logout should preserve auth mode');
+            assert_equals('google_oauth', $logout['body']['mode'] ?? '', 'logout should preserve auth mode');
             assert_false(
                 $logout['body']['capabilities']['adminAgent'] ?? true,
                 'logout should clear admin agent capabilities'
@@ -230,7 +230,7 @@ try {
             try {
                 $status = admin_auth_openclaw_request('GET', $baseUrl, 'status', null, $cookieFile);
                 assert_equals(200, $status['code'], 'status should respond 200');
-                assert_equals('openclaw_chatgpt', $status['body']['mode'] ?? '', 'openclaw should remain primary');
+                assert_equals('google_oauth', $status['body']['mode'] ?? '', 'google oauth should remain primary');
                 assert_true(
                     $status['body']['fallbacks']['legacy_password']['available'] ?? false,
                     'fallback should be advertised when it is fully configured'
@@ -242,7 +242,7 @@ try {
                 assert_equals(200, $login['code'], 'legacy contingency should reach the 2FA stage');
                 assert_true($login['body']['twoFactorRequired'] ?? false, 'fallback should require 2FA');
                 assert_equals('legacy_password', $login['body']['mode'] ?? '', 'login step should switch to legacy mode');
-                assert_equals('openclaw_chatgpt', $login['body']['recommendedMode'] ?? '', 'openclaw should remain the recommended mode');
+                assert_equals('google_oauth', $login['body']['recommendedMode'] ?? '', 'google oauth should remain the recommended mode');
 
                 $login2fa = admin_auth_openclaw_request('POST', $baseUrl, 'login-2fa', [
                     'code' => admin_auth_current_totp_code($totpSecret),
@@ -250,7 +250,7 @@ try {
                 assert_equals(200, $login2fa['code'], '2FA should complete the fallback login');
                 assert_true($login2fa['body']['authenticated'] ?? false, '2FA should authenticate the legacy fallback session');
                 assert_equals('legacy_password', $login2fa['body']['mode'] ?? '', 'authenticated fallback should expose legacy mode');
-                assert_equals('openclaw_chatgpt', $login2fa['body']['recommendedMode'] ?? '', 'authenticated fallback should preserve openclaw as primary');
+                assert_equals('google_oauth', $login2fa['body']['recommendedMode'] ?? '', 'authenticated fallback should preserve google oauth as primary');
                 assert_true(
                     $login2fa['body']['capabilities']['adminAgent'] ?? false,
                     'authenticated fallback should still expose admin capabilities'
@@ -260,7 +260,7 @@ try {
                 assert_equals(200, $statusAfterLogin['code'], 'status should respond after fallback login');
                 assert_true($statusAfterLogin['body']['authenticated'] ?? false, 'status should restore the fallback session');
                 assert_equals('legacy_password', $statusAfterLogin['body']['mode'] ?? '', 'status should expose the active fallback session mode');
-                assert_equals('openclaw_chatgpt', $statusAfterLogin['body']['recommendedMode'] ?? '', 'status should preserve openclaw as the recommended mode');
+                assert_equals('google_oauth', $statusAfterLogin['body']['recommendedMode'] ?? '', 'status should preserve google oauth as the recommended mode');
             } finally {
                 admin_auth_openclaw_cleanup_cookie($cookieFile);
             }
@@ -418,7 +418,7 @@ try {
                 $status = admin_auth_openclaw_request('GET', $overrideServer['base_url'], 'status', null, $cookieFile);
                 assert_equals(200, $status['code'], 'status should respond 200');
                 assert_true($status['body']['configured'] ?? false, 'web broker should remain configured with explicit allowlist');
-                assert_equals('openclaw_chatgpt', $status['body']['mode'] ?? '', 'status should preserve openclaw mode');
+                assert_equals('google_oauth', $status['body']['mode'] ?? '', 'status should preserve google oauth mode');
                 assert_equals('web_broker', $status['body']['transport'] ?? '', 'status should preserve web_broker transport');
                 assert_false($status['body']['authenticated'] ?? true, 'anonymous status should remain unauthenticated before redirect');
                 assert_equals('anonymous', $status['body']['status'] ?? '', 'restricted profile should remain anonymous until redirect starts');

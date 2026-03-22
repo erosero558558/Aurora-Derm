@@ -352,6 +352,10 @@ function boardForRuntimeTaskFixture(options = {}) {
     const title = String(options.title || 'Runtime OpenClaw fixture');
     const runtimeSurface = String(options.runtimeSurface || 'figo_queue');
     const runtimeTransport = String(options.runtimeTransport || 'http_bridge');
+    const providerMode =
+        runtimeSurface === 'operator_auth'
+            ? 'google_oauth'
+            : 'openclaw_chatgpt';
     const files = Array.isArray(options.files)
         ? options.files
         : runtimeSurface === 'leadops_worker'
@@ -399,7 +403,7 @@ tasks:
     domain_lane: transversal_runtime
     lane_lock: strict
     cross_domain: false
-    provider_mode: openclaw_chatgpt
+    provider_mode: ${providerMode}
     runtime_surface: ${runtimeSurface}
     runtime_transport: ${runtimeTransport}
     runtime_last_transport: ""
@@ -583,7 +587,10 @@ async function startRuntimeJsonServer(options = {}) {
                     ok: true,
                     authenticated: false,
                     status: 'anonymous',
-                    mode: 'openclaw_chatgpt',
+                    mode: 'google_oauth',
+                    recommendedMode: 'google_oauth',
+                    transport: 'web_broker',
+                    configured: true,
                     ...(options.operatorPayload || {}),
                 })
             );
@@ -1651,7 +1658,7 @@ signals:
         assert.equal(listed.tasks[0].domain_lane, 'transversal_runtime');
         assert.equal(listed.tasks[0].lane_lock, 'strict');
         assert.equal(listed.tasks[0].cross_domain, false);
-        assert.equal(listed.tasks[0].provider_mode, 'openclaw_chatgpt');
+        assert.equal(listed.tasks[0].provider_mode, 'google_oauth');
         assert.equal(listed.tasks[0].runtime_surface, 'operator_auth');
         assert.equal(listed.tasks[0].runtime_transport, 'hybrid_http_cli');
         assert.deepEqual(listed.tasks[0].files, [
@@ -2164,7 +2171,7 @@ test('JSON contract minimo estable para runtime verify/invoke', async () => {
 
         const verifyPayload = await runJsonExpectStatusWithOptionsAsync(
             dir,
-            ['runtime', 'verify', 'openclaw_chatgpt'],
+            ['runtime', 'verify', 'pilot_runtime'],
             0,
             {
                 env: {
@@ -2174,9 +2181,9 @@ test('JSON contract minimo estable para runtime verify/invoke', async () => {
         );
         assertVersionLike(verifyPayload.version);
         assert.equal(verifyPayload.command, 'runtime verify');
-        assert.equal(verifyPayload.provider, 'openclaw_chatgpt');
+        assert.equal(verifyPayload.provider, 'pilot_runtime');
         assert.equal(Array.isArray(verifyPayload.runtime.surfaces), true);
-        assert.equal(verifyPayload.runtime.provider, 'openclaw_chatgpt');
+        assert.equal(verifyPayload.runtime.provider, 'pilot_runtime');
 
         const invokePayload = await runJsonExpectStatusWithOptionsAsync(
             dir,
@@ -2191,7 +2198,7 @@ test('JSON contract minimo estable para runtime verify/invoke', async () => {
         assertVersionLike(invokePayload.version);
         assert.equal(invokePayload.command, 'runtime invoke');
         assert.equal(invokePayload.ok, false);
-        assert.equal(invokePayload.result.provider, 'openclaw_chatgpt');
+        assert.equal(invokePayload.result.provider, 'google_oauth');
         assert.equal(
             invokePayload.result.errorCode,
             'invoke_unsupported_surface'
