@@ -63,6 +63,15 @@ const DEFAULT_GOVERNANCE_POLICY = {
                 enabled: true,
                 hours_threshold: 4,
             },
+            workspace_board_fork: { severity: 'error', enabled: true },
+            workspace_mixed_lane_authored: {
+                severity: 'error',
+                enabled: true,
+            },
+            workspace_out_of_scope_authored: {
+                severity: 'error',
+                enabled: true,
+            },
             metrics_baseline_missing: { severity: 'warning', enabled: true },
             from_files_fallback_default_scope: {
                 severity: 'warning',
@@ -113,6 +122,21 @@ const DEFAULT_GOVERNANCE_POLICY = {
             },
             wip_limit_executor: { severity: 'warning', enabled: true },
             wip_limit_scope: { severity: 'warning', enabled: true },
+            codex_active_without_cdx_mirror: {
+                severity: 'error',
+                enabled: true,
+            },
+            codex_support_without_active_cdx: {
+                severity: 'error',
+                enabled: true,
+            },
+        },
+        workspace_hygiene: {
+            enabled: true,
+            default_scope: 'all-worktrees',
+            mutation_scope: 'all-worktrees',
+            block_states: ['blocked', 'error'],
+            allow_unavailable: true,
         },
         board_leases: {
             enabled: true,
@@ -681,6 +705,18 @@ function summarize(resultMap) {
         domainHealth,
         domainHealthHistory,
     });
+    const workspaceHygiene =
+        status?.workspace_hygiene ||
+        boardDoctor?.workspace_hygiene ||
+        conflicts?.workspace_hygiene ||
+        codexCheck?.workspace_hygiene ||
+        null;
+    const workspaceTruth =
+        status?.workspace_truth ||
+        boardDoctor?.workspace_truth ||
+        conflicts?.workspace_truth ||
+        codexCheck?.workspace_truth ||
+        null;
 
     const baseReport = {
         version: 1,
@@ -712,6 +748,8 @@ function summarize(resultMap) {
         policy: policyLint || null,
         codex_check: codexCheck || null,
         board_doctor: boardDoctor || null,
+        workspace_hygiene: workspaceHygiene,
+        workspace_truth: workspaceTruth,
         metrics: metrics || null,
         contribution: contribution || null,
         contribution_history: contributionHistory || null,
@@ -812,6 +850,11 @@ function toMarkdown(report) {
                 : 'none'
         }`
     );
+    if (report.workspace_truth) {
+        lines.push(
+            `- Workspace truth: \`${report.workspace_truth.overall_state || 'n/a'}\` | canon=\`${report.workspace_truth.canonical_root || 'n/a'}\` | forks=\`${report.workspace_truth.board_forks_total ?? 'n/a'}\``
+        );
+    }
     if (report.overall.acknowledged_external_blocker) {
         lines.push(
             `- Acknowledged external blocker: \`${report.overall.acknowledged_external_blocker}\`${Array.isArray(report.overall.external_blocker_task_ids) && report.overall.external_blocker_task_ids.length > 0 ? ` (${report.overall.external_blocker_task_ids.map((id) => `\`${id}\``).join(', ')})` : ''}`

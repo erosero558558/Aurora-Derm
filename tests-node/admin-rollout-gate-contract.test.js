@@ -441,7 +441,7 @@ test('package.json mueve el preflight de chunks admin a agent:test y deja agent:
     );
     assert.equal(
         packageJson.includes(
-            '"agent:gate": "node agent-orchestrator.js board doctor --strict --json && npm run agent:test'
+            '"agent:gate": "npm run workspace:hygiene:doctor -- --json --strict && node agent-orchestrator.js board doctor --strict --json && npm run agent:test'
         ),
         true,
         'agent:gate debe quedarse como carril diario/local sin duplicar el preflight de chunks'

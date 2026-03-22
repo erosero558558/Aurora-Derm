@@ -264,6 +264,102 @@ test('codex-mirror engine detecta drift de status y file no reservado', () => {
     );
 });
 
+test('codex-mirror engine reporta soporte AG sin CDX activa alineada', () => {
+    const report = buildCodexCheckReport(
+        {
+            board: {
+                strategy: buildValidStrategyState(),
+                tasks: [
+                    {
+                        id: 'AG-200',
+                        executor: 'codex',
+                        status: 'in_progress',
+                        scope: 'backend',
+                        codex_instance: 'codex_backend_ops',
+                        domain_lane: 'backend_ops',
+                        strategy_id: 'STRAT-2026-03-admin-operativo',
+                        subfront_id: 'SF-backend-admin-operativo',
+                        strategy_role: 'support',
+                        depends_on: [],
+                        files: ['controllers/AdminController.php'],
+                    },
+                ],
+            },
+            blocks: [],
+            codexPlanPath: 'PLAN_MAESTRO_CODEX_2026.md',
+        },
+        {
+            normalizePathToken,
+            activeStatuses: ACTIVE_STATUSES,
+        }
+    );
+
+    assert.equal(report.ok, false);
+    assert.equal(report.summary.codex_support_without_active_cdx, 1);
+    assert.equal(report.summary.codex_active_without_cdx_mirror, 0);
+    assert.equal(Array.isArray(report.codex_support_rows), true);
+    assert.equal(report.codex_support_rows[0].task_id, 'AG-200');
+    assert.equal(
+        report.codex_support_rows[0].code,
+        'codex_support_without_active_cdx'
+    );
+    assert.match(
+        String(report.codex_support_rows[0].message || ''),
+        /soporte Codex activo/i
+    );
+});
+
+test('codex-mirror engine acepta AG cuando depende de CDX activa alineada', () => {
+    const report = buildCodexCheckReport(
+        {
+            board: {
+                strategy: buildValidStrategyState(),
+                tasks: [
+                    {
+                        id: 'CDX-101',
+                        executor: 'codex',
+                        status: 'in_progress',
+                        scope: 'backend',
+                        codex_instance: 'codex_backend_ops',
+                        domain_lane: 'backend_ops',
+                        strategy_id: 'STRAT-2026-03-admin-operativo',
+                        subfront_id: 'SF-backend-admin-operativo',
+                        files: ['controllers/AdminController.php'],
+                    },
+                    {
+                        id: 'AG-201',
+                        executor: 'codex',
+                        status: 'review',
+                        scope: 'backend',
+                        codex_instance: 'codex_backend_ops',
+                        domain_lane: 'backend_ops',
+                        strategy_id: 'STRAT-2026-03-admin-operativo',
+                        subfront_id: 'SF-backend-admin-operativo',
+                        strategy_role: 'support',
+                        depends_on: ['CDX-101'],
+                        files: ['controllers/AdminController.php'],
+                    },
+                ],
+            },
+            blocks: [],
+            codexPlanPath: 'PLAN_MAESTRO_CODEX_2026.md',
+        },
+        {
+            normalizePathToken,
+            activeStatuses: ACTIVE_STATUSES,
+        }
+    );
+
+    assert.equal(report.summary.codex_support_without_active_cdx, 0);
+    assert.equal(report.summary.codex_active_without_cdx_mirror, 0);
+    assert.equal(
+        report.errors.some((entry) =>
+            /sin CDX-\* activa alineada/i.test(String(entry))
+        ),
+        false
+    );
+});
+
 test('codex-mirror engine detecta cuando un lane excede sus 2 slots', () => {
     const report = buildCodexCheckReport(
         {

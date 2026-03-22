@@ -212,7 +212,7 @@
         "agent:metrics": "node agent-orchestrator.js metrics",
         "agent:metrics:baseline": "node agent-orchestrator.js metrics baseline",
         "agent:validate": "php bin/validate-agent-governance.php",
-        "agent:gate": "node agent-orchestrator.js board doctor --strict --json && npm run agent:test && npm run agent:board:legacy:check && npm run agent:board:sync:check && npm run agent:conflicts && npm run agent:handoffs:lint && npm run agent:policy:lint && npm run agent:codex-check && node agent-orchestrator.js focus check --json && npm run agent:validate",
+        "agent:gate": "npm run workspace:hygiene:doctor -- --json --strict && node agent-orchestrator.js board doctor --strict --json && npm run agent:test && npm run agent:board:legacy:check && npm run agent:board:sync:check && npm run agent:conflicts && npm run agent:handoffs:lint && npm run agent:policy:lint && npm run agent:codex-check && node agent-orchestrator.js focus check --json && npm run agent:validate",
         "agent:gate:release": "npm run agent:gate && node agent-orchestrator.js focus check --enforce-required-checks --json && node agent-orchestrator.js jobs verify public_main_sync --json && node agent-orchestrator.js runtime verify pilot_runtime --json",
         "prepare": "husky",
         "content:public-v4:validate": "node bin/validate-public-v4-catalog.js",

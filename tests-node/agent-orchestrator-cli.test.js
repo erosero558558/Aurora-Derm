@@ -17,11 +17,18 @@ const { tmpdir } = require('os');
 const { join, resolve } = require('path');
 const { spawn, spawnSync } = require('child_process');
 const http = require('http');
+const {
+    parseBoardContent,
+} = require('../tools/agent-orchestrator/core/parsers.js');
+const {
+    serializeBoard,
+} = require('../tools/agent-orchestrator/core/serializers.js');
 
 const REPO_ROOT = resolve(__dirname, '..');
 const ORCHESTRATOR_SOURCE = join(REPO_ROOT, 'agent-orchestrator.js');
 const ORCHESTRATOR_TOOLS_DIR = join(REPO_ROOT, 'tools', 'agent-orchestrator');
 const GOVERNANCE_POLICY_SOURCE = join(REPO_ROOT, 'governance-policy.json');
+const GITIGNORE_SOURCE = join(REPO_ROOT, '.gitignore');
 const WORKSPACE_HYGIENE_SOURCE = join(
     REPO_ROOT,
     'bin',
@@ -50,7 +57,15 @@ const LEADOPS_HELPER_SOURCE = join(
     'lib',
     'lead-ai-worker.js'
 );
+const WORKSPACE_WATCHER_SCRIPT_SOURCE = join(
+    REPO_ROOT,
+    'scripts',
+    'ops',
+    'codex',
+    'RUN-CODEX-WORKSPACE-SYNC.ps1'
+);
 const DATE = '2026-02-24';
+const FIXTURE_GIT_ORIGINS = new Map();
 const CODEX_MODEL_ROUTING_FIELDS = `
     model_tier_default: "gpt-5.4-mini"
     premium_budget: 0
@@ -66,7 +81,9 @@ function createFixtureDir() {
         recursive: true,
     });
     copyFileSync(GOVERNANCE_POLICY_SOURCE, join(dir, 'governance-policy.json'));
+    copyFileSync(GITIGNORE_SOURCE, join(dir, '.gitignore'));
     mkdirSync(join(dir, 'bin', 'lib'), { recursive: true });
+    mkdirSync(join(dir, 'scripts', 'ops', 'codex'), { recursive: true });
     copyFileSync(
         WORKSPACE_HYGIENE_SOURCE,
         join(dir, 'bin', 'lib', 'workspace-hygiene.js')
@@ -79,10 +96,19 @@ function createFixtureDir() {
         CLEAN_LOCAL_ARTIFACTS_SOURCE,
         join(dir, 'bin', 'clean-local-artifacts.js')
     );
+    copyFileSync(
+        WORKSPACE_WATCHER_SCRIPT_SOURCE,
+        join(dir, 'scripts', 'ops', 'codex', 'RUN-CODEX-WORKSPACE-SYNC.ps1')
+    );
     return dir;
 }
 
 function cleanupFixtureDir(dir) {
+    const originDir = FIXTURE_GIT_ORIGINS.get(dir);
+    if (originDir) {
+        rmSync(originDir, { recursive: true, force: true });
+        FIXTURE_GIT_ORIGINS.delete(dir);
+    }
     rmSync(dir, { recursive: true, force: true });
 }
 
@@ -117,6 +143,51 @@ function writeFixtureFiles(dir, { board, handoffs, plan, decisions = null }) {
             'utf8'
         );
     }
+}
+
+function runGitFixture(dir, args) {
+    const result = spawnSync('git', args, {
+        cwd: dir,
+        encoding: 'utf8',
+    });
+    assert.equal(
+        result.status,
+        0,
+        `git ${args.join(' ')} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+    );
+    return result;
+}
+
+function ensureGitFixtureInitialized(dir) {
+    if (existsSync(join(dir, '.git'))) {
+        return;
+    }
+    runGitFixture(dir, ['init']);
+    runGitFixture(dir, ['branch', '-M', 'main']);
+    runGitFixture(dir, ['config', 'user.email', 'fixture@example.com']);
+    runGitFixture(dir, ['config', 'user.name', 'Fixture']);
+    runGitFixture(dir, ['add', '.']);
+    runGitFixture(dir, ['commit', '-m', 'fixture init']);
+    const originDir = mkdtempSync(join(tmpdir(), 'agent-orchestrator-origin-'));
+    FIXTURE_GIT_ORIGINS.set(dir, originDir);
+    runGitFixture(originDir, ['init', '--bare']);
+    runGitFixture(dir, ['remote', 'add', 'origin', originDir]);
+    runGitFixture(dir, ['push', '-u', 'origin', 'main']);
+}
+
+function commandNeedsGitRepo(args = []) {
+    const command = String(args[0] || '').trim().toLowerCase();
+    const subcommand = String(args[1] || '').trim().toLowerCase();
+    if (['codex', 'workspace', 'publish', 'close'].includes(command)) {
+        return true;
+    }
+    if (command === 'leases') {
+        return ['heartbeat', 'clear', 'status'].includes(subcommand);
+    }
+    if (command === 'task' && subcommand === 'start') {
+        return true;
+    }
+    return false;
 }
 
 function writePublicSyncJobsFixture(dir, options = {}) {
@@ -200,6 +271,9 @@ function writePublishEventsFixture(dir, events = []) {
 }
 
 function runCli(dir, args, expectedStatus = 0) {
+    if (commandNeedsGitRepo(args)) {
+        ensureGitFixtureInitialized(dir);
+    }
     const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const result = spawnSync(
         process.execPath,
@@ -224,6 +298,9 @@ function runCli(dir, args, expectedStatus = 0) {
 }
 
 function runCliWithEnv(dir, args, envPatch, expectedStatus = 0) {
+    if (commandNeedsGitRepo(args)) {
+        ensureGitFixtureInitialized(dir);
+    }
     const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const result = spawnSync(
         process.execPath,
@@ -249,6 +326,9 @@ function runCliWithEnv(dir, args, envPatch, expectedStatus = 0) {
 }
 
 async function runCliWithEnvAsync(dir, args, envPatch, expectedStatus = 0) {
+    if (commandNeedsGitRepo(args)) {
+        ensureGitFixtureInitialized(dir);
+    }
     const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const child = spawn(
         process.execPath,
@@ -299,6 +379,9 @@ function runCliWithInput(
     expectedStatus = 0,
     envPatch = null
 ) {
+    if (commandNeedsGitRepo(args)) {
+        ensureGitFixtureInitialized(dir);
+    }
     const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const result = spawnSync(
         process.execPath,
@@ -397,6 +480,83 @@ function parseJsonStdout(result) {
 
 function readBoard(dir) {
     return readFileSync(join(dir, 'AGENT_BOARD.yaml'), 'utf8');
+}
+
+function runGit(dir, args, expectedStatus = 0) {
+    const result = spawnSync('git', args, {
+        cwd: dir,
+        encoding: 'utf8',
+    });
+    assert.equal(
+        result.status,
+        expectedStatus,
+        `Unexpected git exit for ${args.join(' ')}\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+    );
+    return result;
+}
+
+function initGitFixtureRepo(dir) {
+    runGit(dir, ['init']);
+    runGit(dir, ['branch', '-M', 'main']);
+    runGit(dir, ['config', 'user.email', 'fixture@example.com']);
+    runGit(dir, ['config', 'user.name', 'Fixture']);
+    runGit(dir, ['add', '.']);
+    runGit(dir, ['commit', '-m', 'fixture init']);
+}
+
+function addGitWorktree(dir, branchName = 'cleanup-board-fork') {
+    const worktreeDir = mkdtempSync(join(tmpdir(), 'agent-worktree-'));
+    runGit(dir, ['worktree', 'add', '-b', branchName, worktreeDir]);
+    return worktreeDir;
+}
+
+function removeGitWorktree(dir, worktreeDir) {
+    if (!worktreeDir || !existsSync(worktreeDir)) {
+        return;
+    }
+    try {
+        runGit(dir, ['worktree', 'remove', '--force', worktreeDir]);
+    } catch {
+        // noop; best-effort cleanup for temp fixtures
+    }
+    rmSync(worktreeDir, { recursive: true, force: true });
+}
+
+function writeMetadataOnlyBoardDrift(worktreeDir, nextRevision = 7) {
+    const boardPath = join(worktreeDir, 'AGENT_BOARD.yaml');
+    const board = parseBoardContent(readFileSync(boardPath, 'utf8'));
+    board.policy = board.policy || {};
+    board.policy.revision = nextRevision;
+    board.policy.updated_at = `${DATE}-drift`;
+    writeFileSync(boardPath, serializeBoard(board), 'utf8');
+}
+
+function canonicalizeBoardFile(dir) {
+    const boardPath = join(dir, 'AGENT_BOARD.yaml');
+    const board = parseBoardContent(readFileSync(boardPath, 'utf8'));
+    writeFileSync(boardPath, serializeBoard(board), 'utf8');
+}
+
+function appendFunctionalBoardFork(worktreeDir, taskId = 'AG-099') {
+    const boardPath = join(worktreeDir, 'AGENT_BOARD.yaml');
+    const raw = readFileSync(boardPath, 'utf8');
+    const next = `${raw.trimEnd()}
+  - id: ${taskId}
+    title: "Forked task"
+    owner: ernesto
+    executor: ci
+    status: ready
+    risk: low
+    scope: docs
+    files: ["docs/forked-task.md"]
+    acceptance: "Fixture fork"
+    acceptance_ref: ""
+    depends_on: []
+    prompt: "fork"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`;
+    writeFileSync(boardPath, next, 'utf8');
 }
 
 function readStrategyEvents(dir) {
@@ -899,6 +1059,72 @@ tasks:
 `;
 }
 
+function boardForStrategyGuardFixtureWithFrontendMirror() {
+    return `
+version: 1
+policy:
+  canonical: AGENTS.md
+  autonomy: semi_autonomous_guardrails
+  kpi: reduce_rework
+  revision: 0
+  updated_at: ${DATE}
+${activeAdminStrategyYaml().trim()}
+tasks:
+  - id: CDX-001
+    title: "Frontend mirror fixture"
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    risk: medium
+    scope: frontend-admin
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-frontend-admin-operativo
+    strategy_role: primary
+${CODEX_MODEL_ROUTING_FIELDS}
+    files: ["src/apps/admin-v3/mirror-fixture.js"]
+    acceptance: "Fixture"
+    acceptance_ref: "verification/agent-runs/CDX-001.md"
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`;
+}
+
+function boardForStrategyGuardFixtureWithDualMirrors() {
+    return `
+${boardForStrategyGuardFixtureWithFrontendMirror().trimEnd()}
+  - id: CDX-002
+    title: "Backend mirror fixture"
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    risk: medium
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: primary
+${CODEX_MODEL_ROUTING_FIELDS}
+    files: ["controllers/StrategyMirrorController.php"]
+    acceptance: "Fixture"
+    acceptance_ref: "verification/agent-runs/CDX-002.md"
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Fixture"
+    created_at: ${DATE}
+    updated_at: ${DATE}
+`;
+}
+
 function boardForBoardSyncFixture(
     tasksYaml,
     strategyYaml = activeAdminStrategyYaml()
@@ -946,6 +1172,29 @@ policy:
   updated_at: ${DATE}
 ${activeAdminStrategyYaml().trim()}
 tasks:
+  - id: CDX-256
+    title: "Release publish mirror"
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    risk: medium
+    scope: backend
+    codex_instance: codex_backend_ops
+    domain_lane: backend_ops
+    lane_lock: strict
+    cross_domain: false
+    strategy_id: STRAT-2026-03-admin-operativo
+    subfront_id: SF-backend-admin-operativo
+    strategy_role: primary
+${CODEX_MODEL_ROUTING_FIELDS}
+    files: ["lib/release-publish-mirror.php"]
+    acceptance: "Mirror"
+    acceptance_ref: "verification/agent-runs/CDX-256.md"
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Mirror"
+    created_at: ${DATE}
+    updated_at: ${DATE}
   - id: AG-256
     title: "Release publish fixture"
     owner: ernesto
@@ -958,7 +1207,7 @@ tasks:
     lane_lock: strict
     cross_domain: false
     files: ["controllers/AdminController.php"]
-    depends_on: []
+    depends_on: ["CDX-256"]
     critical_zone: false
     runtime_impact: low
     updated_at: ${DATE}
@@ -1017,6 +1266,29 @@ strategy:
   next: null
   updated_at: "2026-03-14"
 tasks:
+  - id: CDX-256
+    title: "Frontend release mirror"
+    owner: ernesto
+    executor: codex
+    status: in_progress
+    risk: medium
+    scope: turnero
+    codex_instance: codex_frontend
+    domain_lane: frontend_content
+    lane_lock: strict
+    cross_domain: false
+    strategy_id: STRAT-2026-03-turnero-web-pilot
+    subfront_id: SF-frontend-turnero-web-pilot
+    strategy_role: primary
+${CODEX_MODEL_ROUTING_FIELDS}
+    files: ["src/apps/turnero/pilot-entry.js"]
+    acceptance: "Mirror"
+    acceptance_ref: "verification/agent-runs/CDX-256.md"
+    evidence_ref: ""
+    depends_on: []
+    prompt: "Mirror"
+    created_at: ${DATE}
+    updated_at: ${DATE}
   - id: AG-256
     title: "Public release fixture"
     owner: ernesto
@@ -1029,7 +1301,7 @@ tasks:
     lane_lock: strict
     cross_domain: false
     files: ["content/public-v6/es/home.json"]
-    depends_on: []
+    depends_on: ["CDX-256"]
     critical_zone: false
     runtime_impact: low
     updated_at: ${DATE}
@@ -1230,7 +1502,7 @@ policy:
   updated_at: ${DATE}
 tasks:
   - id: AG-001
-    executor: codex
+    executor: ci
     status: in_progress
     model_tier_default: "gpt-5.4-mini"
     premium_budget: 0
@@ -1687,6 +1959,15 @@ test('strategy preview/set-next/activate-next/intake mantienen draft, mirror y d
     assert.match(plan, /<!-- CODEX_STRATEGY_ACTIVE/);
     assert.doesNotMatch(plan, /<!-- CODEX_STRATEGY_NEXT/);
 
+    writeFixtureFiles(dir, {
+        board: boardForStrategyGuardFixtureWithFrontendMirror().replace(
+            'revision: 0',
+            'revision: 2'
+        ),
+        handoffs: baseHandoffs(),
+        plan,
+    });
+
     result = runCli(dir, [
         'strategy',
         'intake',
@@ -1751,6 +2032,15 @@ test('strategy intake exige --subfront-id cuando el scope same-lane es ambiguo',
         '0',
         '--json',
     ]);
+
+    writeFixtureFiles(dir, {
+        board: boardForStrategyGuardFixtureWithFrontendMirror().replace(
+            'revision: 0',
+            'revision: 1'
+        ),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithStrategyBlock(),
+    });
 
     let result = runCli(
         dir,
@@ -1908,7 +2198,7 @@ test('task create exige campos de estrategia cuando hay estrategia activa', (t) 
     t.after(() => cleanupFixtureDir(dir));
 
     writeFixtureFiles(dir, {
-        board: boardForStrategyGuardFixture(),
+        board: boardForStrategyGuardFixtureWithFrontendMirror(),
         handoffs: baseHandoffs(),
         plan: basePlanWithStrategyBlock(),
     });
@@ -1961,6 +2251,8 @@ test('task create exige campos de estrategia cuando hay estrategia activa', (t) 
             'SF-frontend-admin-operativo',
             '--strategy-role',
             'primary',
+            '--depends-on',
+            'CDX-001',
             '--json',
         ],
         1
@@ -1998,6 +2290,8 @@ test('task create exige campos de estrategia cuando hay estrategia activa', (t) 
         'frontend_runtime',
         '--work-type',
         'forward',
+        '--depends-on',
+        'CDX-001',
         '--json',
     ]);
     json = parseJsonStdout(result);
@@ -2015,7 +2309,7 @@ test('task create exige campos de estrategia cuando hay estrategia activa', (t) 
         statusJson.strategy.active.id,
         'STRAT-2026-03-admin-operativo'
     );
-    assert.equal(statusJson.strategy.aligned_tasks, 1);
+    assert.equal(statusJson.strategy.aligned_tasks, 2);
 });
 
 test('focus status expone foco activo y checks requeridos', (t) => {
@@ -2023,7 +2317,7 @@ test('focus status expone foco activo y checks requeridos', (t) => {
     t.after(() => cleanupFixtureDir(dir));
 
     writeFixtureFiles(dir, {
-        board: boardForStrategyGuardFixture(),
+        board: boardForStrategyGuardFixtureWithDualMirrors(),
         handoffs: baseHandoffs(),
         plan: basePlanWithStrategyBlock(),
     });
@@ -3023,7 +3317,7 @@ test('decision open/ls/close mantiene ledger separado del board', (t) => {
     t.after(() => cleanupFixtureDir(dir));
 
     writeFixtureFiles(dir, {
-        board: boardForStrategyGuardFixture(),
+        board: boardForStrategyGuardFixtureWithDualMirrors(),
         handoffs: baseHandoffs(),
         plan: basePlanWithStrategyBlock(),
     });
@@ -3074,7 +3368,7 @@ test('task create bloquea subfrente ajeno y excepciones sin reason', (t) => {
     t.after(() => cleanupFixtureDir(dir));
 
     writeFixtureFiles(dir, {
-        board: boardForStrategyGuardFixture(),
+        board: boardForStrategyGuardFixtureWithDualMirrors(),
         handoffs: baseHandoffs(),
         plan: basePlanWithStrategyBlock(),
     });
@@ -3102,6 +3396,8 @@ test('task create bloquea subfrente ajeno y excepciones sin reason', (t) => {
             'SF-backend-admin-operativo',
             '--strategy-role',
             'primary',
+            '--depends-on',
+            'CDX-002',
             '--focus-id',
             'FOCUS-2026-03-admin-operativo-cut-1',
             '--focus-step',
@@ -3118,7 +3414,7 @@ test('task create bloquea subfrente ajeno y excepciones sin reason', (t) => {
     assert.equal(json.ok, false);
     assert.match(
         json.error || '',
-        /requiere codex_instance=codex_backend_ops/i
+        /requiere codex_instance=codex_backend_ops|requiere CDX-\* activa alineada por lane\/subfront/i
     );
 
     result = runCli(
@@ -3144,6 +3440,8 @@ test('task create bloquea subfrente ajeno y excepciones sin reason', (t) => {
             'SF-frontend-admin-operativo',
             '--strategy-role',
             'exception',
+            '--depends-on',
+            'CDX-001',
             '--focus-id',
             'FOCUS-2026-03-admin-operativo-cut-1',
             '--focus-step',
@@ -3224,7 +3522,7 @@ test('task claim/start/finish actualiza board y evidencia sin editar YAML manual
     t.after(() => cleanupFixtureDir(dir));
 
     writeFixtureFiles(dir, {
-        board: boardForTaskOpsFixture(),
+        board: boardForTaskOpsFixture().replace('executor: codex', 'executor: ci'),
         handoffs: baseHandoffs(),
         plan: basePlanWithoutCodexBlock(),
     });
@@ -3275,6 +3573,145 @@ test('task claim/start/finish actualiza board y evidencia sin editar YAML manual
         readFileSync(join(dir, 'KIMI_TASKS.md'), 'utf8'),
         /Retired Derived Queue/
     );
+});
+
+test('board reconcile bloquea forks funcionales y apply-safe corrige drift solo de metadata', (t) => {
+    const functionalDir = createFixtureDir();
+    const metadataDir = createFixtureDir();
+    let functionalForkDir = null;
+    let metadataDriftDir = null;
+    t.after(() => {
+        removeGitWorktree(functionalDir, functionalForkDir);
+        removeGitWorktree(metadataDir, metadataDriftDir);
+        cleanupFixtureDir(functionalDir);
+        cleanupFixtureDir(metadataDir);
+    });
+
+    writeFixtureFiles(functionalDir, {
+        board: boardForCodexLifecycle(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+    initGitFixtureRepo(functionalDir);
+
+    functionalForkDir = addGitWorktree(functionalDir, 'cleanup-functional-fork');
+    appendFunctionalBoardFork(functionalForkDir);
+
+    let result = runCli(functionalDir, ['board', 'reconcile', '--json'], 1);
+    let json = parseJsonStdout(result);
+    assert.equal(json.ok, false);
+    assert.equal(json.workspace_truth.board_forks_total >= 1, true);
+    assert.equal(json.summary.blocking_candidates >= 1, true);
+
+    writeFixtureFiles(metadataDir, {
+        board: boardForCodexLifecycle(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+    canonicalizeBoardFile(metadataDir);
+    initGitFixtureRepo(metadataDir);
+    metadataDriftDir = addGitWorktree(metadataDir, 'cleanup-metadata-drift');
+    writeMetadataOnlyBoardDrift(metadataDriftDir, 7);
+    assert.match(
+        readFileSync(join(metadataDriftDir, 'AGENT_BOARD.yaml'), 'utf8'),
+        /revision:\s+7/
+    );
+
+    result = runCli(metadataDir, ['board', 'reconcile', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, true);
+    assert.equal(json.summary.metadata_only_candidates, 1);
+
+    result = runCli(metadataDir, ['board', 'reconcile', '--apply-safe', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, true);
+    assert.equal(json.applied_total, 1);
+
+    result = runCli(metadataDir, ['board', 'reconcile', '--json']);
+    json = parseJsonStdout(result);
+    assert.equal(json.ok, true);
+    assert.equal(json.summary.metadata_only_candidates, 0);
+    assert.equal(json.summary.blocking_candidates, 0);
+});
+
+test('workspace truth bloquea task start cuando existe un board fork entre worktrees', (t) => {
+    const dir = createFixtureDir();
+    let forkDir = null;
+    t.after(() => {
+        removeGitWorktree(dir, forkDir);
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: boardForTaskOpsFixture(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+    initGitFixtureRepo(dir);
+    forkDir = addGitWorktree(dir, 'cleanup-task-fork');
+    appendFunctionalBoardFork(forkDir, 'AG-011');
+
+    const result = runCli(
+        dir,
+        ['task', 'start', 'AG-010', '--status', 'in_progress', '--json'],
+        1
+    );
+    const json = parseJsonStdout(result);
+    assert.equal(json.ok, false);
+    assert.equal(json.error_code, 'workspace_truth_blocked');
+    assert.equal(json.action, 'start');
+    assert.equal(json.workspace_truth.board_forks_total >= 1, true);
+});
+
+test('workspace truth bloquea codex start, publish checkpoint y close cuando existe un board fork entre worktrees', (t) => {
+    const dir = createFixtureDir();
+    let forkDir = null;
+    t.after(() => {
+        removeGitWorktree(dir, forkDir);
+        cleanupFixtureDir(dir);
+    });
+
+    writeFixtureFiles(dir, {
+        board: boardForCodexLifecycle(),
+        handoffs: baseHandoffs(),
+        plan: basePlanWithoutCodexBlock(),
+    });
+    mkdirSync(join(dir, 'verification', 'agent-runs'), { recursive: true });
+    writeFileSync(
+        join(dir, 'verification', 'agent-runs', 'CDX-001.md'),
+        '# fixture evidence\n',
+        'utf8'
+    );
+    initGitFixtureRepo(dir);
+    forkDir = addGitWorktree(dir, 'cleanup-codex-fork');
+    appendFunctionalBoardFork(forkDir, 'AG-012');
+
+    for (const args of [
+        ['codex', 'start', 'CDX-001', '--block', 'C1', '--json'],
+        [
+            'publish',
+            'checkpoint',
+            'CDX-001',
+            '--summary',
+            'fixture publish',
+            '--expect-rev',
+            '0',
+            '--json',
+        ],
+        [
+            'close',
+            'CDX-001',
+            '--evidence',
+            'verification/agent-runs/CDX-001.md',
+            '--json',
+        ],
+    ]) {
+        const result = runCli(dir, args, 1);
+        const json = parseJsonStdout(result);
+        assert.equal(json.ok, false);
+        assert.equal(json.error_code, 'workspace_truth_blocked');
+        assert.equal(json.workspace_truth.board_forks_total >= 1, true);
+    }
 });
 
 test('task claim/start soportan blocked_reason y evitan blocked sin contexto', (t) => {
@@ -3393,7 +3830,10 @@ test('task start --release-publish fija el preset de excepcion formal de release
     });
 
     writeFixtureFiles(dir, {
-        board: boardForReleasePublishFixture(),
+        board: boardForReleasePublishFixture().replace(
+            'focus_required_checks: ["job:public_main_sync", "runtime:openclaw_chatgpt"]',
+            'focus_required_checks: ["job:public_main_sync"]'
+        ),
         handoffs: baseHandoffs(),
         plan: basePlanWithStrategyBlock(),
     });

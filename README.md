@@ -100,6 +100,10 @@ Higiene local:
 
 - `npm run check:local:artifacts`
 - `npm run clean:local:artifacts`
+- `node agent-orchestrator.js workspace bootstrap --no-install-watcher --json`
+- `node agent-orchestrator.js workspace sync --once --json`
+- `node agent-orchestrator.js workspace status --json`
+- `node agent-orchestrator.js workspace repair --json`
 - `npm run workspace:hygiene:doctor`
 - `npm run workspace:hygiene:status`
 - `npm run workspace:hygiene:fix`
@@ -132,6 +136,16 @@ Higiene local:
   tarea explicita; `--scope-pattern <glob>` permite acotar el scope manualmente
   y `--show-candidates` expande la vista humana con las mejores tareas
   sugeridas.
+- El flujo Codex ahora asume dos niveles locales: el checkout raiz en `main`
+  funciona como espejo limpio de `origin/main`, y cada tarea `AG-*`/`CDX-*`
+  con `executor=codex` vive en `.codex-worktrees/<task_id>` sobre la rama
+  `codex/<task_id>`.
+- `workspace bootstrap` crea `.codex-local/`, `.codex-worktrees/`, genera
+  `machine-id` estable y en Windows puede refrescar la tarea programada que
+  ejecuta `workspace sync --once` cada minuto.
+- `codex start`, `task start` para tareas Codex, `leases heartbeat` y `close`
+  escriben `workspace_*` en `AGENT_BOARD.yaml` para bloquear sesiones atrasadas,
+  ramas invalidas, `root_dirty` o `blocked_mixed_lane`.
 - `legacy:generated-root:*` inspecciona y desindexa solo las copias trackeadas
   legacy de `es/**`, `en/**`, `_astro/**`, `script.js`, `admin.js`,
   `js/chunks/**`, `js/engines/**`, `js/admin-chunks/**`,

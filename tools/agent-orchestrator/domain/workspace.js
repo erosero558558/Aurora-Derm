@@ -14,6 +14,21 @@ const {
 const DEFAULT_TTL_MINUTES = 3;
 const DEFAULT_WATCHER_INTERVAL_SECONDS = 60;
 const ACTIVE_TASK_STATUSES = new Set(['ready', 'in_progress', 'review', 'blocked']);
+const ROOT_NON_BLOCKING_DIRTY_CATEGORIES = new Set([
+    'generated_stage',
+    'deploy_bundle',
+    'local_artifact',
+    'derived_queue',
+    'prunable_worktree',
+]);
+const ROOT_MANAGED_DIRTY_PATHS = new Set([
+    'AGENT_BOARD.yaml',
+    'AGENT_HANDOFFS.yaml',
+    'AGENT_JOBS.yaml',
+    'AGENT_SIGNALS.yaml',
+    'PLAN_MAESTRO_CODEX_2026.md',
+]);
+const ROOT_MANAGED_DIRTY_PREFIXES = ['verification/'];
 
 function normalizePathValue(value) {
     return String(value || '').trim().replace(/\\/g, '/');
@@ -253,6 +268,70 @@ function countAuthoredEntries(entries = []) {
     ).length;
 }
 
+function isManagedRootDirtyPath(pathValue) {
+    const normalized = normalizePathValue(pathValue).replace(/^\.\//, '');
+    if (!normalized) {
+        return false;
+    }
+    if (ROOT_MANAGED_DIRTY_PATHS.has(normalized)) {
+        return true;
+    }
+    return ROOT_MANAGED_DIRTY_PREFIXES.some(
+        (prefix) =>
+            normalized === prefix.slice(0, -1) || normalized.startsWith(prefix)
+    );
+}
+
+function isBlockingRootDirtyEntry(entry) {
+    if (!entry || typeof entry !== 'object') {
+        return false;
+    }
+    const category = String(entry.category || '').trim();
+    if (ROOT_NON_BLOCKING_DIRTY_CATEGORIES.has(category)) {
+        return false;
+    }
+    if (category !== 'authored') {
+        return true;
+    }
+    return !isManagedRootDirtyPath(entry.path);
+}
+
+function isBlockingTaskDirtyEntry(entry) {
+    if (!entry || typeof entry !== 'object') {
+        return false;
+    }
+    const category = String(entry.category || '').trim();
+    if (ROOT_NON_BLOCKING_DIRTY_CATEGORIES.has(category)) {
+        return false;
+    }
+    if (category !== 'authored') {
+        return true;
+    }
+    return !isManagedRootDirtyPath(entry.path);
+}
+
+function hasBlockingTaskLaneDrift(entries = []) {
+    return (Array.isArray(entries) ? entries : []).some((entry) => {
+        if (String(entry?.category || '').trim() !== 'authored') {
+            return true;
+        }
+        const scopeDisposition = String(
+            entry?.scope_disposition || ''
+        ).trim();
+        const strategyDisposition = String(
+            entry?.strategy_disposition || ''
+        ).trim();
+        const laneDisposition = String(entry?.lane_disposition || '').trim();
+        return (
+            scopeDisposition === 'out_of_scope' ||
+            strategyDisposition === 'blocked_scope' ||
+            strategyDisposition === 'outside_strategy' ||
+            strategyDisposition === 'mixed_subfronts' ||
+            laneDisposition === 'mixed_lane'
+        );
+    });
+}
+
 function hasMixedLaneDiagnosis(diagnosis) {
     const laneResolution = String(
         diagnosis?.lane_context?.resolution || ''
@@ -280,16 +359,23 @@ function alignMainRoot(mainRoot, policy) {
     const branch = readCurrentBranch(mainRoot);
     const head = readHeadSha(mainRoot);
     const originHead = readHeadSha(mainRoot, `refs/remotes/${remoteRef}`);
-    const authoredCount = countAuthoredEntries(diagnosis?.dirtyEntries);
+    const dirtyEntries = Array.isArray(diagnosis?.dirtyEntries)
+        ? diagnosis.dirtyEntries
+        : [];
+    const blockingDirtyEntries = dirtyEntries.filter(isBlockingRootDirtyEntry);
+    const managedDirtyEntries = dirtyEntries.filter(
+        (entry) => !isBlockingRootDirtyEntry(entry)
+    );
+    const authoredCount = countAuthoredEntries(blockingDirtyEntries);
     const aheadBehind = getAheadBehind(mainRoot, remoteRef);
     let state = 'ready';
     let resetApplied = false;
 
     if (branch !== policy.root_branch) {
         state = 'root_dirty';
-    } else if (authoredCount > 0 || Number(diagnosis?.dirty_total || 0) > 0) {
+    } else if (blockingDirtyEntries.length > 0) {
         state = 'root_dirty';
-    } else {
+    } else if (managedDirtyEntries.length === 0) {
         runGit(mainRoot, ['reset', '--hard', remoteRef]);
         resetApplied = true;
     }
@@ -304,6 +390,7 @@ function alignMainRoot(mainRoot, policy) {
         sync_state: state,
         dirty_total: Number(diagnosis?.dirty_total || 0),
         authored_total: authoredCount,
+        managed_dirty_total: managedDirtyEntries.length,
         ahead: aheadBehind.ahead,
         behind: aheadBehind.behind,
         reset_applied: resetApplied,
@@ -325,8 +412,15 @@ function alignTaskWorktree(worktreePath, taskId, branch, policy) {
         scopeTaskId: taskId,
     });
     diagnosis = cleanupWorktreeIfFixable(worktreePath, diagnosis, taskId);
-    const authoredCount = countAuthoredEntries(diagnosis?.dirtyEntries);
-    const mixedLane = hasMixedLaneDiagnosis(diagnosis);
+    const dirtyEntries = Array.isArray(diagnosis?.dirtyEntries)
+        ? diagnosis.dirtyEntries
+        : [];
+    const blockingDirtyEntries = dirtyEntries.filter(isBlockingTaskDirtyEntry);
+    const authoredCount = countAuthoredEntries(blockingDirtyEntries);
+    const blockingNonAuthoredTotal = blockingDirtyEntries.filter(
+        (entry) => String(entry?.category || '').trim() !== 'authored'
+    ).length;
+    const mixedLane = hasBlockingTaskLaneDrift(blockingDirtyEntries);
     let aheadBehind = getAheadBehind(worktreePath, remoteRef);
     let state = 'ready';
     let rebaseApplied = false;
@@ -334,6 +428,8 @@ function alignTaskWorktree(worktreePath, taskId, branch, policy) {
 
     if (branch !== expectedBranch) {
         state = 'branch_invalid';
+    } else if (blockingNonAuthoredTotal > 0) {
+        state = 'blocked_mixed_lane';
     } else if (mixedLane) {
         state = 'blocked_mixed_lane';
     } else if (authoredCount > 0 && aheadBehind.behind > 0) {
@@ -414,6 +510,17 @@ function buildWorkspaceSnapshot(rootInfo, mainRow, taskRows, policy, machineId) 
     };
 }
 
+function listManagedTaskWorktrees(rootInfo, policy) {
+    return listWorktrees(rootInfo.main_root)
+        .filter((row) => !row.prunable)
+        .filter(
+            (row) =>
+                isPathWithin(rootInfo.worktrees_dir, row.path) ||
+                String(row.branch || '').trim().startsWith(policy.task_branch_prefix)
+        )
+        .map((row) => path.resolve(row.path));
+}
+
 function runWorkspaceSync(options = {}) {
     const cwd = path.resolve(options.cwd || process.cwd());
     const governancePolicy = options.governancePolicy || null;
@@ -461,6 +568,47 @@ function runWorkspaceSync(options = {}) {
         snapshot
     );
     return snapshot;
+}
+
+function mirrorBoardAcrossManagedWorktrees(options = {}) {
+    const cwd = path.resolve(options.cwd || process.cwd());
+    const sourceRoot = path.resolve(options.sourceRoot || cwd);
+    const boardPath = String(options.boardPath || 'AGENT_BOARD.yaml').trim();
+    const governancePolicy = options.governancePolicy || null;
+    const policy = normalizeWorkspaceSyncPolicy(governancePolicy);
+    const rootInfo = resolveWorkspaceRoots(cwd, policy);
+    const sourceBoardPath = path.resolve(sourceRoot, boardPath);
+    if (!fs.existsSync(sourceBoardPath)) {
+        return {
+            ok: false,
+            mirrored_total: 0,
+            mirrored_paths: [],
+            source_board_path: normalizePathValue(sourceBoardPath),
+        };
+    }
+    const boardContent = fs.readFileSync(sourceBoardPath, 'utf8');
+    const targetRoots = [
+        rootInfo.main_root,
+        ...listManagedTaskWorktrees(rootInfo, policy),
+    ];
+    const mirroredPaths = [];
+    for (const targetRoot of targetRoots) {
+        if (
+            normalizePathValue(path.resolve(targetRoot)) ===
+            normalizePathValue(sourceRoot)
+        ) {
+            continue;
+        }
+        const targetBoardPath = path.resolve(targetRoot, boardPath);
+        fs.writeFileSync(targetBoardPath, boardContent, 'utf8');
+        mirroredPaths.push(normalizePathValue(targetBoardPath));
+    }
+    return {
+        ok: true,
+        mirrored_total: mirroredPaths.length,
+        mirrored_paths: mirroredPaths,
+        source_board_path: normalizePathValue(sourceBoardPath),
+    };
 }
 
 function ensureTaskWorktree(taskId, options = {}) {
@@ -849,6 +997,7 @@ module.exports = {
     getWorkspaceStatusPath,
     installWorkspaceWatcherTask,
     loadWorkspaceSnapshot,
+    mirrorBoardAcrossManagedWorktrees,
     normalizeWorkspaceSyncPolicy,
     readWorkspaceStatus,
     repairWorkspace,

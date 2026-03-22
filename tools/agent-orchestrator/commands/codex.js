@@ -551,6 +551,7 @@ async function handleCodexCommand(ctx) {
         assertWorkspaceTruthOk,
         ensureTaskWorktree,
         applyWorkspaceTaskSnapshot,
+        mirrorWorkspaceBoard,
     } = ctx;
     const subcommand = args[0];
     const { positionals, flags } = parseFlags(args.slice(1));
@@ -683,6 +684,9 @@ async function handleCodexCommand(ctx) {
             actor: task.owner || task.executor || '',
             expectRevision,
         });
+        if (typeof mirrorWorkspaceBoard === 'function') {
+            mirrorWorkspaceBoard();
+        }
         const wipDiagnostics =
             typeof buildBoardWipLimitDiagnostics === 'function'
                 ? buildBoardWipLimitDiagnostics(board, {
@@ -735,6 +739,9 @@ async function handleCodexCommand(ctx) {
         actor: task.owner || task.executor || '',
         expectRevision,
     });
+    if (typeof mirrorWorkspaceBoard === 'function') {
+        mirrorWorkspaceBoard();
+    }
 
     if (codexParallelism.slot_statuses_set.has(nextStatus)) {
         const taskInstance = String(task.codex_instance || 'codex_backend_ops')

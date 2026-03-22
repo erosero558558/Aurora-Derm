@@ -73,8 +73,10 @@ Reglas:
 
 1. Revisar estado:
    `node agent-orchestrator.js task ls --active --json`
+   `node agent-orchestrator.js status --json`
    `node agent-orchestrator.js conflicts --json`
    `node agent-orchestrator.js codex-check --json`
+   `node agent-orchestrator.js board reconcile --json`
 2. Verificar runtime OpenClaw si la tarea es transversal:
    `node agent-orchestrator.js runtime verify openclaw_chatgpt --json`
 3. Tomar tarea con lane fija y `subfront_id` valido:
@@ -94,6 +96,14 @@ Reglas:
    `node agent-orchestrator.js handoffs lint --json`
    `npm run agent:test`
    `npm run agent:gate`
+
+## Verdad canonica entre worktrees
+
+- El board canonico vive en el worktree canonico; cualquier fork de `AGENT_BOARD.yaml` entre worktrees bloquea mutaciones y publish.
+- `main` no puede conservar authored `mixed_lane`, authored fuera de scope ni boards paralelos activos.
+- `status`, `board doctor`, `conflicts` y `codex-check` corren en `all-worktrees` por defecto y deben tratar `workspace_truth.ok=false` como bloqueo fuerte.
+- `board reconcile --apply-safe` solo alinea revision, heartbeats, leases y metadata equivalente; nunca auto-mergea tareas activas divergentes.
+- Las `AG-*` activas con `executor=codex` solo pueden existir como soporte de una `CDX-*` activa alineada por lane/subfront.
 
 ## Ejemplos
 

@@ -10925,7 +10925,7 @@ tasks:
     updated_at: 2026-03-17
 
   - id: AG-251
-    title: "Operator auth runtime: recuperar modo openclaw_chatgpt en host"
+    title: "Operator auth runtime: recuperar contrato google_oauth en host"
     owner: deck
     executor: codex
     status: done
@@ -10936,7 +10936,7 @@ tasks:
     domain_lane: transversal_runtime
     lane_lock: strict
     cross_domain: false
-    provider_mode: openclaw_chatgpt
+    provider_mode: google_oauth
     runtime_surface: operator_auth
     runtime_transport: hybrid_http_cli
     runtime_last_transport: 
@@ -10958,7 +10958,7 @@ tasks:
     lease_cleared_reason: "terminal:done"
     runtime_impact: low
     critical_zone: false
-    acceptance: "Operator auth runtime: recuperar modo openclaw_chatgpt en host"
+    acceptance: "Operator auth runtime: recuperar contrato google_oauth en host"
     acceptance_ref: "verification/agent-runs/AG-251.md"
     evidence_ref: "verification/agent-runs/AG-251.md"
     strategy_id: "STRAT-2026-03-admin-operativo"
@@ -10968,12 +10968,12 @@ tasks:
     focus_step: "feedback_trim"
     integration_slice: "runtime_support"
     work_type: "support"
-    expected_outcome: "runtime verify openclaw_chatgpt vuelve a reportar operator_auth healthy y el modo expuesto coincide con openclaw_chatgpt en host."
+    expected_outcome: "runtime verify pilot_runtime vuelve a reportar operator_auth healthy y el modo expuesto coincide con google_oauth en host."
     decision_ref: ""
     rework_parent: ""
     rework_reason: ""
     depends_on: []
-    prompt: "Operator auth runtime: recuperar modo openclaw_chatgpt en host"
+    prompt: "Operator auth runtime: recuperar contrato google_oauth en host"
     created_at: 2026-03-14
     updated_at: 2026-03-14
 

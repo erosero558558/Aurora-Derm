@@ -207,6 +207,26 @@
                 "severity": "warning",
                 "enabled": true
             },
+            "workspace_board_fork": {
+                "severity": "error",
+                "enabled": true
+            },
+            "workspace_mixed_lane_authored": {
+                "severity": "error",
+                "enabled": true
+            },
+            "workspace_out_of_scope_authored": {
+                "severity": "error",
+                "enabled": true
+            },
+            "codex_active_without_cdx_mirror": {
+                "severity": "error",
+                "enabled": true
+            },
+            "codex_support_without_active_cdx": {
+                "severity": "error",
+                "enabled": true
+            },
             "publish_live_verification_pending": {
                 "severity": "warning",
                 "enabled": true
@@ -305,6 +325,13 @@
                 "codex_frontend": 2,
                 "codex_transversal": 2
             }
+        },
+        "workspace_hygiene": {
+            "enabled": true,
+            "default_scope": "all-worktrees",
+            "mutation_scope": "all-worktrees",
+            "block_states": ["blocked", "error"],
+            "allow_unavailable": true
         }
     }
 }

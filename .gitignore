@@ -71,3 +71,5 @@ styles-deferred.min.css
 Thumbs.db
 php_server.log
 %TEMP%/
+.codex-local/
+.codex-worktrees/

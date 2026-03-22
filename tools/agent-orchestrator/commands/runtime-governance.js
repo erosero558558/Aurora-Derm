@@ -128,6 +128,7 @@ function createRuntimeGovernanceCommands(ctx = {}) {
                 assertWorkspaceTruthOk: ctx.assertWorkspaceTruthOk,
                 ensureTaskWorktree: ctx.ensureTaskWorktree,
                 applyWorkspaceTaskSnapshot: ctx.applyWorkspaceTaskSnapshot,
+                mirrorWorkspaceBoard: ctx.mirrorWorkspaceBoard,
             });
         },
     };

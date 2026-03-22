@@ -150,10 +150,7 @@ function Invoke-LocalAuth {
     $payload = $response.Payload
     $ok =
         $response.Ok -and
-        (
-            ([string]$payload.mode -eq 'openclaw_chatgpt') -or
-            ([string]$payload.mode -eq 'google_oauth')
-        ) -and
+        ([string]$payload.mode -eq 'google_oauth') -and
         ([string]$payload.transport -eq 'web_broker') -and
         ([string]$payload.status -ne 'transport_misconfigured')
 
@@ -202,7 +199,7 @@ function Invoke-HostingSmoke {
                 '-ExecutionPolicy', 'Bypass',
                 '-File', $ScriptPath,
                 '-BaseUrl', 'http://127.0.0.1',
-                '-ExpectedAuthMode', 'openclaw_chatgpt,google_oauth',
+                '-ExpectedAuthMode', 'google_oauth',
                 '-ExpectedTransport', 'web_broker',
                 '-ReportPath', $reportPath,
                 '-Quiet'

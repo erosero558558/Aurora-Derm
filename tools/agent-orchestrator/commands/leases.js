@@ -38,6 +38,17 @@ function printLeasesJsonError(printJson, error, action = null) {
     return payload;
 }
 
+function createBoardRevisionMismatchError(expectedRevision, actualRevision) {
+    const error = new Error(
+        `board revision mismatch: expected ${expectedRevision}, actual ${actualRevision}`
+    );
+    error.code = 'board_revision_mismatch';
+    error.error_code = 'board_revision_mismatch';
+    error.expected_revision = expectedRevision;
+    error.actual_revision = actualRevision;
+    return error;
+}
+
 function handleLeasesCommand(ctx) {
     const {
         args = [],
@@ -56,6 +67,10 @@ function handleLeasesCommand(ctx) {
         parseExpectedBoardRevisionFlag,
         summarizeDiagnostics,
         makeDiagnostic,
+        ensureTaskWorktree,
+        captureTaskWorkspace,
+        applyWorkspaceTaskSnapshot,
+        mirrorWorkspaceBoard,
         printJson = (v) => console.log(JSON.stringify(v, null, 2)),
     } = ctx;
     const subcommand = String(args[0] || 'status')
@@ -177,14 +192,65 @@ function handleLeasesCommand(ctx) {
             leaseOwner,
             reason: 'leases_heartbeat',
         });
-        task.updated_at = currentDate();
         const expectRevision = parseExpectedRevisionFromFlags(
             flags,
             parseExpectedBoardRevisionFlag,
             { required: true, commandLabel: 'leases heartbeat' }
         );
+        const currentRevisionRaw = Number(board?.policy?.revision);
+        const currentRevision =
+            Number.isInteger(currentRevisionRaw) && currentRevisionRaw >= 0
+                ? currentRevisionRaw
+                : 0;
+        if (
+            expectRevision !== null &&
+            expectRevision !== undefined &&
+            Number(expectRevision) !== currentRevision
+        ) {
+            const error = createBoardRevisionMismatchError(
+                Number(expectRevision),
+                currentRevision
+            );
+            if (wantsJson) {
+                return printLeasesJsonError(printJson, error, 'heartbeat');
+            }
+            throw error;
+        }
+        let workspaceCapture = null;
+        if (
+            String(task.executor || '')
+                .trim()
+                .toLowerCase() === 'codex' &&
+            typeof captureTaskWorkspace === 'function'
+        ) {
+            try {
+                workspaceCapture = captureTaskWorkspace(taskId);
+            } catch (error) {
+                if (
+                    String(error?.error_code || error?.code || '') ===
+                        'workspace_task_worktree_missing' &&
+                    typeof ensureTaskWorktree === 'function'
+                ) {
+                    workspaceCapture = ensureTaskWorktree(taskId);
+                } else {
+                    throw error;
+                }
+            }
+            if (typeof applyWorkspaceTaskSnapshot === 'function') {
+                applyWorkspaceTaskSnapshot(task, workspaceCapture);
+            }
+        }
+        task.updated_at = currentDate();
         try {
             writeBoardAndSync(board, { silentSync: wantsJson, expectRevision });
+            if (
+                String(task.executor || '')
+                    .trim()
+                    .toLowerCase() === 'codex' &&
+                typeof mirrorWorkspaceBoard === 'function'
+            ) {
+                mirrorWorkspaceBoard();
+            }
         } catch (error) {
             if (wantsJson) {
                 return printLeasesJsonError(printJson, error, 'heartbeat');
@@ -197,6 +263,14 @@ function handleLeasesCommand(ctx) {
             command: 'leases',
             action: 'heartbeat',
             task: toTaskJson(task),
+            workspace: workspaceCapture
+                ? {
+                      snapshot_checked_at:
+                          workspaceCapture.snapshot?.checked_at || null,
+                      sync_state:
+                          workspaceCapture.task_row?.sync_state || null,
+                  }
+                : null,
             lease_action: leaseResult.action,
             lease: leaseResult.lease,
         };

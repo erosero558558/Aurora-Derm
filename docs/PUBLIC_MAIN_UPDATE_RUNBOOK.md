@@ -20,6 +20,7 @@ Routine GitHub uploads should use a dedicated branch and the workflow documented
 - lock: `/tmp/sync-pielarmonia.lock`
 - log: `/var/log/sync-pielarmonia.log`
 - status: `/var/lib/pielarmonia/public-sync-status.json`
+- canonical workspace truth: `node agent-orchestrator.js status --json`, `board doctor --json`, `board reconcile --json`
 
 ## Recommended release flow
 
@@ -55,6 +56,11 @@ a `main` pero la telemetría todavía no confirma deploy, cualquiera de las dos
 rutas puede devolver `live_status=pending` con
 `warning_code=publish_live_verification_pending` sin revertir el publish.
 `bundle:deploy` es la ruta canónica del paquete de transporte.
+
+Antes de `close` o `publish checkpoint`, el workspace debe quedar sin fork de
+board entre worktrees. Si `workspace_truth.ok=false`, o si `main` conserva
+authored `mixed_lane`, authored fuera de scope o un board paralelo activo,
+el publish queda bloqueado hasta reconciliar con `node agent-orchestrator.js board reconcile --json`.
 
 3. Let deploy/post-deploy confirm the live state. Use `public_main_sync` only
    as host-side telemetry or when you intentionally need the legacy git-sync

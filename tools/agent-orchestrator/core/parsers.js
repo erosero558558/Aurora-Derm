@@ -472,6 +472,20 @@ function parseBoardContent(content, options = {}) {
         item.decision_ref = String(item.decision_ref || '').trim();
         item.rework_parent = String(item.rework_parent || '').trim();
         item.rework_reason = String(item.rework_reason || '').trim();
+        item.workspace_machine_id = String(
+            item.workspace_machine_id || ''
+        ).trim();
+        item.workspace_branch = String(item.workspace_branch || '').trim();
+        item.workspace_head = String(item.workspace_head || '').trim();
+        item.workspace_origin_main_head = String(
+            item.workspace_origin_main_head || ''
+        ).trim();
+        item.workspace_sync_state = String(
+            item.workspace_sync_state || ''
+        ).trim();
+        item.workspace_sync_checked_at = String(
+            item.workspace_sync_checked_at || ''
+        ).trim();
         item.status = String(item.status || '').trim();
         if (allowedStatuses.size > 0 && !allowedStatuses.has(item.status)) {
             throw new Error(

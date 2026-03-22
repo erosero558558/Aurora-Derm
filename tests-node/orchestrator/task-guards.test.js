@@ -12,6 +12,8 @@ const {
     validateTaskExecutorScopeGuard,
     validateTaskDependsOn,
     validateTaskDualCodexGuard,
+    findAlignedActiveCodexMirrorTasks,
+    validateTaskCodexMirrorDependency,
     validateTaskGovernancePrechecks,
 } = require('../../tools/agent-orchestrator/domain/task-guards');
 
@@ -254,6 +256,84 @@ test('task-guards valida depends_on (existencia, duplicados y formato)', () => {
         validateTaskDependsOn(board, {
             id: 'AG-010',
             depends_on: ['AG-001', 'CDX-001'],
+        })
+    );
+});
+
+test('task-guards encuentra CDX activas alineadas por lane y subfront', () => {
+    const board = boardWithActiveStrategy();
+    const task = {
+        id: 'AG-200',
+        executor: 'codex',
+        status: 'ready',
+        codex_instance: 'codex_backend_ops',
+        domain_lane: 'backend_ops',
+        strategy_id: 'STRAT-2026-03-admin-operativo',
+        subfront_id: 'SF-backend-admin-operativo',
+        strategy_role: 'support',
+    };
+
+    const mirrors = findAlignedActiveCodexMirrorTasks(board, task, {
+        activeStatuses: ACTIVE_STATUSES,
+    });
+
+    assert.deepEqual(mirrors.map((item) => item.id), ['CDX-101']);
+});
+
+test('task-guards bloquea AG activa codex sin depends_on a CDX activa alineada', () => {
+    const board = boardWithActiveStrategy();
+    const task = {
+        id: 'AG-201',
+        executor: 'codex',
+        status: 'ready',
+        scope: 'backend',
+        codex_instance: 'codex_backend_ops',
+        domain_lane: 'backend_ops',
+        strategy_id: 'STRAT-2026-03-admin-operativo',
+        subfront_id: 'SF-backend-admin-operativo',
+        strategy_role: 'support',
+        depends_on: [],
+    };
+
+    assert.throws(
+        () =>
+            validateTaskCodexMirrorDependency(board, task, {
+                activeStatuses: ACTIVE_STATUSES,
+            }),
+        /requires depends_on|requires depends_on|requiere depends_on|CDX-101/i
+    );
+});
+
+test('task-guards acepta AG activa codex cuando depends_on apunta a CDX activa alineada', () => {
+    const board = boardWithActiveStrategy();
+    const task = {
+        id: 'AG-202',
+        executor: 'codex',
+        status: 'ready',
+        scope: 'backend',
+        codex_instance: 'codex_backend_ops',
+        domain_lane: 'backend_ops',
+        strategy_id: 'STRAT-2026-03-admin-operativo',
+        subfront_id: 'SF-backend-admin-operativo',
+        strategy_role: 'primary',
+        depends_on: ['CDX-101'],
+        focus_id: 'FOCUS-2026-03-admin-operativo-cut-1',
+        focus_step: 'admin_queue_pilot_cut',
+        integration_slice: 'backend_readiness',
+        work_type: 'forward',
+        runtime_impact: 'low',
+        critical_zone: false,
+        files: ['controllers/AdminController.php'],
+        lane_lock: 'strict',
+        cross_domain: false,
+    };
+
+    assert.doesNotThrow(() =>
+        validateTaskGovernancePrechecks(board, task, {
+            criticalScopeKeywords: CRITICAL_SCOPE_KEYWORDS,
+            allowedExecutors: ALLOWED_EXECUTORS,
+            activeStatuses: ACTIVE_STATUSES,
+            handoffs: [],
         })
     );
 });

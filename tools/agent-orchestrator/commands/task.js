@@ -62,6 +62,7 @@ async function handleTaskCommand(ctx) {
         assertWorkspaceTruthOk,
         ensureTaskWorktree,
         applyWorkspaceTaskSnapshot,
+        mirrorWorkspaceBoard,
         printJson,
     } = ctx;
 
@@ -194,6 +195,9 @@ async function handleTaskCommand(ctx) {
             parseExpectedBoardRevisionFlag,
             collectWorkspaceTruth,
             assertWorkspaceTruthOk,
+            ensureTaskWorktree,
+            applyWorkspaceTaskSnapshot,
+            mirrorWorkspaceBoard,
             printJson,
         });
         return;
@@ -228,6 +232,9 @@ async function handleTaskCommand(ctx) {
             parseExpectedBoardRevisionFlag,
             collectWorkspaceTruth,
             assertWorkspaceTruthOk,
+            ensureTaskWorktree,
+            applyWorkspaceTaskSnapshot,
+            mirrorWorkspaceBoard,
             printJson,
         });
         return;
@@ -944,6 +951,7 @@ async function handleTaskStart(ctx) {
         assertWorkspaceTruthOk,
         ensureTaskWorktree,
         applyWorkspaceTaskSnapshot,
+        mirrorWorkspaceBoard,
         printJson,
     } = ctx;
 
@@ -1113,6 +1121,14 @@ async function handleTaskStart(ctx) {
             actor: task.owner || task.executor || '',
             expectRevision,
         });
+        if (
+            String(task.executor || '')
+                .trim()
+                .toLowerCase() === 'codex' &&
+            typeof mirrorWorkspaceBoard === 'function'
+        ) {
+            mirrorWorkspaceBoard();
+        }
     } catch (error) {
         if (wantsJson) {
             printTaskJsonError(printJson, error, 'start');

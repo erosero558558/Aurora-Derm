@@ -16,6 +16,7 @@
  *   node agent-orchestrator.js codex-check
  *   node agent-orchestrator.js codex <start|stop> <CDX-ID> [--block C1] [--to done]
  *   node agent-orchestrator.js task <ls|claim|start|finish> [<AG-ID>] [...]
+ *   node agent-orchestrator.js workspace <bootstrap|sync|watch|status|repair> [--json]
  *   node agent-orchestrator.js sync
  *   node agent-orchestrator.js close <task_id> [--evidence path]
  *   node agent-orchestrator.js metrics [--json] [--profile local|ci] [--write|--no-write] [--dry-run]
@@ -1790,6 +1791,15 @@ function buildWorkspaceComplianceDiagnostics(tasks, options = {}) {
     });
 }
 
+function mirrorWorkspaceBoard(options = {}) {
+    return domainWorkspace.mirrorBoardAcrossManagedWorktrees({
+        cwd: options.cwd || ROOT,
+        sourceRoot: options.sourceRoot || ROOT,
+        governancePolicy: getGovernancePolicy(),
+        ...options,
+    });
+}
+
 function buildWorkspaceTruthDiagnostics(workspaceReport, options = {}) {
     const policy = getGovernancePolicy();
     const warnPolicyMap = domainDiagnostics.getWarnPolicyMap(policy);
@@ -2018,8 +2028,10 @@ function cmdLeases(args) {
         parseExpectedBoardRevisionFlag,
         summarizeDiagnostics: domainDiagnostics.summarizeDiagnostics,
         makeDiagnostic: domainDiagnostics.makeDiagnostic,
+        ensureTaskWorktree,
         captureTaskWorkspace,
         applyWorkspaceTaskSnapshot,
+        mirrorWorkspaceBoard,
         printJson: coreOutput.printJson,
     });
 }
@@ -2181,6 +2193,7 @@ async function cmdTask(args) {
         ensureTaskWorktree,
         captureTaskWorkspace,
         applyWorkspaceTaskSnapshot,
+        mirrorWorkspaceBoard,
         collectWorkspaceTruth,
         assertWorkspaceTruthOk,
     });
@@ -2346,6 +2359,7 @@ async function cmdClose(args) {
         captureTaskWorkspace,
         applyWorkspaceTaskSnapshot,
         runWorkspaceSync,
+        mirrorWorkspaceBoard,
         collectWorkspaceTruth,
         assertWorkspaceTruthOk,
     });
@@ -2828,6 +2842,7 @@ const governanceRuntime =
         toTaskJson,
         ensureTaskWorktree,
         applyWorkspaceTaskSnapshot,
+        mirrorWorkspaceBoard,
     });
 
 async function main() {

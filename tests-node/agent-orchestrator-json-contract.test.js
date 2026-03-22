@@ -22,6 +22,7 @@ const REPO_ROOT = resolve(__dirname, '..');
 const ORCHESTRATOR_SOURCE = join(REPO_ROOT, 'agent-orchestrator.js');
 const ORCHESTRATOR_TOOLS_DIR = join(REPO_ROOT, 'tools', 'agent-orchestrator');
 const GOVERNANCE_POLICY_SOURCE = join(REPO_ROOT, 'governance-policy.json');
+const GITIGNORE_SOURCE = join(REPO_ROOT, '.gitignore');
 const OPENCLAW_RUNTIME_HELPER_SOURCE = join(
     REPO_ROOT,
     'bin',
@@ -50,6 +51,13 @@ const LEADOPS_HELPER_SOURCE = join(
     'lib',
     'lead-ai-worker.js'
 );
+const WORKSPACE_WATCHER_SCRIPT_SOURCE = join(
+    REPO_ROOT,
+    'scripts',
+    'ops',
+    'codex',
+    'RUN-CODEX-WORKSPACE-SYNC.ps1'
+);
 const DATE = '2026-02-25';
 const CODEX_MODEL_ROUTING_FIELDS = `
     model_tier_default: "gpt-5.4-mini"
@@ -68,7 +76,9 @@ function createFixtureDir() {
         recursive: true,
     });
     copyFileSync(GOVERNANCE_POLICY_SOURCE, join(dir, 'governance-policy.json'));
+    copyFileSync(GITIGNORE_SOURCE, join(dir, '.gitignore'));
     mkdirSync(join(dir, 'bin', 'lib'), { recursive: true });
+    mkdirSync(join(dir, 'scripts', 'ops', 'codex'), { recursive: true });
     copyFileSync(
         WORKSPACE_HYGIENE_SOURCE,
         join(dir, 'bin', 'lib', 'workspace-hygiene.js')
@@ -80,6 +90,10 @@ function createFixtureDir() {
     copyFileSync(
         CLEAN_LOCAL_ARTIFACTS_SOURCE,
         join(dir, 'bin', 'clean-local-artifacts.js')
+    );
+    copyFileSync(
+        WORKSPACE_WATCHER_SCRIPT_SOURCE,
+        join(dir, 'scripts', 'ops', 'codex', 'RUN-CODEX-WORKSPACE-SYNC.ps1')
     );
     return dir;
 }
@@ -175,6 +189,44 @@ Relacion con Operativo 2026:
     );
 }
 
+function runGitFixture(dir, args) {
+    const result = spawnSync('git', args, {
+        cwd: dir,
+        encoding: 'utf8',
+    });
+    assert.equal(
+        result.status,
+        0,
+        `git ${args.join(' ')} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`
+    );
+    return result;
+}
+
+function ensureGitFixtureInitialized(dir) {
+    if (existsSync(join(dir, '.git'))) {
+        return;
+    }
+    if (existsSync(join(dir, '.gitignore'))) {
+        const current = readFileSync(join(dir, '.gitignore'), 'utf8');
+        if (!current.includes('.origin.git/')) {
+            writeFileSync(
+                join(dir, '.gitignore'),
+                `${current.trimEnd()}\n.origin.git/\n`,
+                'utf8'
+            );
+        }
+    }
+    runGitFixture(dir, ['init']);
+    runGitFixture(dir, ['branch', '-M', 'main']);
+    runGitFixture(dir, ['config', 'user.email', 'fixture@example.com']);
+    runGitFixture(dir, ['config', 'user.name', 'Fixture']);
+    runGitFixture(dir, ['add', '.']);
+    runGitFixture(dir, ['commit', '-m', 'fixture init']);
+    runGitFixture(dir, ['init', '--bare', '.origin.git']);
+    runGitFixture(dir, ['remote', 'add', 'origin', join(dir, '.origin.git')]);
+    runGitFixture(dir, ['push', '-u', 'origin', 'main']);
+}
+
 function runJson(dir, args) {
     return runJsonExpectStatus(dir, args, 0);
 }
@@ -189,6 +241,7 @@ function runJsonExpectStatusWithOptions(
     expectedStatus,
     options = {}
 ) {
+    ensureGitFixtureInitialized(dir);
     const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const result = spawnSync(
         process.execPath,
@@ -219,6 +272,7 @@ async function runJsonExpectStatusWithOptionsAsync(
     expectedStatus,
     options = {}
 ) {
+    ensureGitFixtureInitialized(dir);
     const finalArgs = withExpectedRevisionArgIfNeeded(dir, args);
     const child = spawn(
         process.execPath,
@@ -654,6 +708,9 @@ test('JSON contract minimo estable para status/conflicts/handoffs/codex-check/le
         assert.equal(typeof status.warnings_count, 'number');
         assert.equal(typeof status.errors_count, 'number');
         assert.equal(status.warnings_count >= 1, true);
+        assert.equal(typeof status.workspace_hygiene, 'object');
+        assert.equal(typeof status.workspace_truth, 'object');
+        assert.equal(typeof status.workspace_truth.available, 'boolean');
 
         const conflicts = runJson(dir, ['conflicts', '--strict']);
         assertVersionLike(conflicts.version);
@@ -661,6 +718,8 @@ test('JSON contract minimo estable para status/conflicts/handoffs/codex-check/le
         assert.equal(typeof conflicts.totals, 'object');
         assert.equal(Array.isArray(conflicts.conflicts), true);
         assert.equal(Array.isArray(conflicts.diagnostics), true);
+        assert.equal(typeof conflicts.workspace_hygiene, 'object');
+        assert.equal(typeof conflicts.workspace_truth, 'object');
 
         const handoffsStatus = runJson(dir, ['handoffs', 'status']);
         assertVersionLike(handoffsStatus.version);
@@ -690,6 +749,8 @@ test('JSON contract minimo estable para status/conflicts/handoffs/codex-check/le
         assert.equal(typeof codexCheck.premium_budget_remaining, 'object');
         assert.equal(Array.isArray(codexCheck.premium_gate_blockers), true);
         assert.equal(Array.isArray(codexCheck.diagnostics), true);
+        assert.equal(typeof codexCheck.workspace_hygiene, 'object');
+        assert.equal(typeof codexCheck.workspace_truth, 'object');
 
         const leasesStatus = runJson(dir, ['leases', 'status']);
         assertVersionLike(leasesStatus.version);
@@ -714,6 +775,8 @@ test('JSON contract minimo estable para status/conflicts/handoffs/codex-check/le
         assert.equal(typeof boardDoctor.warnings_count, 'number');
         assert.equal(typeof boardDoctor.errors_count, 'number');
         assert.equal(boardDoctor.warnings_count >= 1, true);
+        assert.equal(typeof boardDoctor.workspace_hygiene, 'object');
+        assert.equal(typeof boardDoctor.workspace_truth, 'object');
     } finally {
         cleanupFixtureDir(dir);
     }

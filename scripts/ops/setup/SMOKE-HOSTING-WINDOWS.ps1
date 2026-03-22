@@ -1,6 +1,6 @@
 param(
     [string]$BaseUrl = 'http://127.0.0.1',
-    [string]$ExpectedAuthMode = 'openclaw_chatgpt,google_oauth',
+    [string]$ExpectedAuthMode = 'google_oauth',
     [string]$ExpectedTransport = 'web_broker',
     [string]$ReportPath = '',
     [switch]$Quiet

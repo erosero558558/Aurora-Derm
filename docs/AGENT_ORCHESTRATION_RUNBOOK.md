@@ -28,13 +28,17 @@ Operar el sistema en modo `codex-only` con tres lanes Codex activos:
 ## Operacion diaria
 
 1. Revisar salud:
+    - `node agent-orchestrator.js workspace status --json`
     - `node agent-orchestrator.js strategy status --json`
     - `node agent-orchestrator.js status --json --explain-red`
+    - `node agent-orchestrator.js board reconcile --json`
     - `node agent-orchestrator.js board sync check --json`
     - `node agent-orchestrator.js board doctor --json`
     - `node agent-orchestrator.js jobs verify public_main_sync --json`
 2. Reservar trabajo:
+    - Si la maquina todavia no esta bootstrappeada: `node agent-orchestrator.js workspace bootstrap --json`
     - `node agent-orchestrator.js codex start <CDX-ID> --block <BLOCK> --expect-rev <n>`
+    - `codex start` y `task start` para `executor=codex` crean o reutilizan `.codex-worktrees/<task_id>` desde `origin/main` y actualizan el snapshot `workspace_*` del board.
 3. Implementar y validar gates por superficie.
 4. Confirmar evidencia y cerrar:
     - `node agent-orchestrator.js close <AG-ID|CDX-ID> --evidence verification/agent-runs/<task_id>.md --expect-rev <n> --json` es el closeout canonico para tareas `executor=codex`
@@ -56,6 +60,13 @@ Operar el sistema en modo `codex-only` con tres lanes Codex activos:
 - No usar `dispatch --agent jules` ni `dispatch --agent kimi`.
 - `JULES_TASKS.md` y `KIMI_TASKS.md` quedan como tombstones historicos.
 - `public_main_sync` debe permanecer `healthy=true` y `ageSeconds <= 120`.
+- `AGENT_BOARD.yaml` del worktree canonico es la unica verdad operativa para mutaciones.
+- El checkout raiz debe permanecer en `main` como espejo limpio de `origin/main`; el authoring de Codex vive en ramas `codex/<task_id>` dentro de `.codex-worktrees/`.
+- `workspace sync --once` corre como watcher local cada 60s y marca `workspace_main_behind`, `workspace_branch_invalid`, `workspace_root_dirty` o `workspace_task_mixed_lane` antes de permitir nuevos heartbeats/cierres.
+- `main` no puede quedarse con authored `mixed_lane`, authored fuera de scope ni boards paralelos activos.
+- Si `status`, `board doctor`, `conflicts` o `codex-check` exponen `workspace_truth.ok=false`, no se debe seguir con `task start`, `strategy intake`, `codex start`, `publish checkpoint` ni `close`.
+- Si `status`, `board doctor` o `codex-check` exponen `workspace_sync_*` en error, primero ejecutar `node agent-orchestrator.js workspace sync --once --json` o `node agent-orchestrator.js workspace repair --json`.
+- `board reconcile --apply-safe` solo se usa para drift de metadata; si el preview muestra tareas activas divergentes, la reconciliacion es manual.
 
 ## SLA y escalamiento
 

@@ -281,6 +281,50 @@ function serializeBoard(board, options = {}) {
         lines.push(
             `    evidence_ref: ${quote(task.evidence_ref || task.acceptance_ref || '')}`
         );
+        const shouldEmitWorkspaceFields =
+            ['ready', 'in_progress', 'review', 'blocked'].includes(
+                String(task.status || '').trim()
+            ) ||
+            Boolean(
+                String(task.workspace_machine_id || '').trim() ||
+                    String(task.workspace_branch || '').trim() ||
+                    String(task.workspace_head || '').trim() ||
+                    String(task.workspace_origin_main_head || '').trim() ||
+                    String(task.workspace_sync_state || '').trim() ||
+                    String(task.workspace_sync_checked_at || '').trim()
+            );
+        if (shouldEmitWorkspaceFields) {
+            lines.push(
+                `    workspace_machine_id: ${quote(
+                    String(task.workspace_machine_id || '').trim()
+                )}`
+            );
+            lines.push(
+                `    workspace_branch: ${quote(
+                    String(task.workspace_branch || '').trim()
+                )}`
+            );
+            lines.push(
+                `    workspace_head: ${quote(
+                    String(task.workspace_head || '').trim()
+                )}`
+            );
+            lines.push(
+                `    workspace_origin_main_head: ${quote(
+                    String(task.workspace_origin_main_head || '').trim()
+                )}`
+            );
+            lines.push(
+                `    workspace_sync_state: ${quote(
+                    String(task.workspace_sync_state || '').trim()
+                )}`
+            );
+            lines.push(
+                `    workspace_sync_checked_at: ${quote(
+                    String(task.workspace_sync_checked_at || '').trim()
+                )}`
+            );
+        }
         const shouldEmitStrategyFields =
             ['ready', 'in_progress', 'review', 'blocked'].includes(
                 String(task.status || '').trim()

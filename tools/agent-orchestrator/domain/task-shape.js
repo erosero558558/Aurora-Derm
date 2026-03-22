@@ -35,6 +35,14 @@ function toTaskJson(task) {
         decision_ref: String(task?.decision_ref || ''),
         rework_parent: String(task?.rework_parent || ''),
         rework_reason: String(task?.rework_reason || ''),
+        workspace_machine_id: String(task?.workspace_machine_id || ''),
+        workspace_branch: String(task?.workspace_branch || ''),
+        workspace_head: String(task?.workspace_head || ''),
+        workspace_origin_main_head: String(
+            task?.workspace_origin_main_head || ''
+        ),
+        workspace_sync_state: String(task?.workspace_sync_state || ''),
+        workspace_sync_checked_at: String(task?.workspace_sync_checked_at || ''),
         files: Array.isArray(task?.files) ? task.files : [],
         acceptance_ref: String(task?.acceptance_ref || ''),
         updated_at: String(task?.updated_at || ''),
@@ -76,6 +84,14 @@ function toTaskFullJson(task) {
         decision_ref: String(task?.decision_ref || ''),
         rework_parent: String(task?.rework_parent || ''),
         rework_reason: String(task?.rework_reason || ''),
+        workspace_machine_id: String(task?.workspace_machine_id || ''),
+        workspace_branch: String(task?.workspace_branch || ''),
+        workspace_head: String(task?.workspace_head || ''),
+        workspace_origin_main_head: String(
+            task?.workspace_origin_main_head || ''
+        ),
+        workspace_sync_state: String(task?.workspace_sync_state || ''),
+        workspace_sync_checked_at: String(task?.workspace_sync_checked_at || ''),
         files: Array.isArray(task?.files) ? task.files : [],
         acceptance: String(task?.acceptance || ''),
         acceptance_ref: String(task?.acceptance_ref || ''),

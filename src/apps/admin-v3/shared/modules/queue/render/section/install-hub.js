@@ -110,12 +110,16 @@ import { mountTurneroAdminQueueSurfaceCommercialConsole } from '../../../../../.
 import { mountTurneroAdminQueueSurfaceRenewalConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-renewal-console.js';
 import { mountTurneroAdminQueueSurfaceSupportConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-support-console.js';
 import { mountTurneroAdminQueueSurfacePackageConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-package-console.js';
+import { mountTurneroAdminQueueSurfaceRoadmapConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-roadmap-console.js';
 import { mountTurneroAdminQueueSurfaceExecutiveReviewConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-executive-review-console.js';
 import { mountTurneroAdminQueueSurfaceSuccessConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-success-console.js';
 import { mountTurneroAdminQueueSurfaceExpansionConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-expansion-console.js';
+import { mountTurneroAdminQueueSurfaceDeliveryConsole } from '../../../../../../queue-shared/turnero-admin-queue-surface-delivery-console.js';
 import { buildTurneroSurfacePackageSnapshot } from '../../../../../../queue-shared/turnero-surface-package-snapshot.js';
+import { buildTurneroSurfaceRoadmapSnapshot } from '../../../../../../queue-shared/turnero-surface-roadmap-snapshot.js';
 import { buildTurneroSurfaceExecutiveReviewSnapshot } from '../../../../../../queue-shared/turnero-surface-executive-review-snapshot.js';
 import { buildTurneroSurfaceExpansionSnapshot } from '../../../../../../queue-shared/turnero-surface-expansion-snapshot.js';
+import { buildTurneroSurfaceDeliverySnapshot } from '../../../../../../queue-shared/turnero-surface-delivery-snapshot.js';
 import {
     getTurneroActiveClinicId as getTurneroClinicId,
     getTurneroActiveClinicProfile as getTurneroClinicProfile,
@@ -207,8 +211,10 @@ const QUEUE_ADMIN_BASIC_PANEL_IDS = Object.freeze([
     'queueSurfaceRenewalConsoleHost',
     'queueSurfaceSuccessConsoleHost',
     'queueSurfaceExpansionConsoleHost',
+    'queueSurfaceDeliveryConsoleHost',
     'queueSurfaceSupportConsoleHost',
     'queueSurfacePackageConsoleHost',
+    'queueSurfaceRoadmapConsoleHost',
     'queueSurfaceExecutiveReviewConsoleHost',
     'queueQuickTrays',
     'queueQuickConsole',
@@ -4215,6 +4221,77 @@ function buildSurfaceExpansionConsoleSnapshots() {
     ];
 }
 
+function buildSurfaceDeliveryConsoleSnapshots(manifest = {}) {
+    const clinicProfile = getTurneroClinicProfile();
+    const scope = getQueueSurfaceRecoveryScope();
+    const manifestReady = Boolean(
+        manifest && typeof manifest === 'object' && Object.keys(manifest).length > 0
+    );
+
+    return [
+        buildTurneroSurfaceDeliverySnapshot({
+            scope,
+            surfaceKey: 'operator-turnos',
+            clinicProfile,
+            runtimeState: manifestReady ? 'ready' : 'watch',
+            truth: 'watch',
+            targetWindow: '48h',
+            dependencyState: 'watch',
+            blockerState: 'clear',
+            deliveryOwner: 'ops-lead',
+            releaseOwner: 'release-lead',
+            opsOwner: 'operator-supervisor',
+            checklist: {
+                summary: {
+                    all: 5,
+                    pass: 4,
+                    fail: 1,
+                },
+            },
+        }),
+        buildTurneroSurfaceDeliverySnapshot({
+            scope,
+            surfaceKey: 'kiosco-turnos',
+            clinicProfile,
+            runtimeState: manifestReady ? 'watch' : 'blocked',
+            truth: 'watch',
+            targetWindow: '72h',
+            dependencyState: 'watch',
+            blockerState: 'blocked',
+            deliveryOwner: 'frontdesk-coordinator',
+            releaseOwner: '',
+            opsOwner: '',
+            checklist: {
+                summary: {
+                    all: 5,
+                    pass: 2,
+                    fail: 3,
+                },
+            },
+        }),
+        buildTurneroSurfaceDeliverySnapshot({
+            scope,
+            surfaceKey: 'sala-turnos',
+            clinicProfile,
+            runtimeState: manifestReady ? 'ready' : 'watch',
+            truth: 'aligned',
+            targetWindow: '24h',
+            dependencyState: 'ready',
+            blockerState: 'clear',
+            deliveryOwner: 'ops-display',
+            releaseOwner: 'release-lead',
+            opsOwner: 'av-ops',
+            checklist: {
+                summary: {
+                    all: 5,
+                    pass: 5,
+                    fail: 0,
+                },
+            },
+        }),
+    ];
+}
+
 function buildSurfaceRenewalConsolePacks() {
     const clinicProfile = getTurneroClinicProfile();
     return [
@@ -4337,6 +4414,58 @@ function buildSurfacePackageConsolePacks() {
             provisioningState: 'ready',
             onboardingKitState: 'ready',
             slaBand: 'ready',
+            updatedAt: new Date().toISOString(),
+        }),
+    ];
+}
+
+function buildSurfaceRoadmapConsolePacks() {
+    const clinicProfile = getTurneroClinicProfile();
+    const scope = getQueueSurfaceRecoveryScope();
+    return [
+        buildTurneroSurfaceRoadmapSnapshot({
+            scope,
+            surfaceKey: 'operator-turnos',
+            surfaceLabel: 'Turnero Operador',
+            surfaceRoute: '/operador-turnos.html',
+            clinicProfile,
+            runtimeState: 'ready',
+            truth: 'watch',
+            roadmapBand: 'core',
+            backlogState: 'curated',
+            nextAction: 'stabilize-operator-lane',
+            priorityBand: 'p1',
+            roadmapOwner: 'ops-lead',
+            updatedAt: new Date().toISOString(),
+        }),
+        buildTurneroSurfaceRoadmapSnapshot({
+            scope,
+            surfaceKey: 'kiosco-turnos',
+            surfaceLabel: 'Turnero Kiosco',
+            surfaceRoute: '/kiosco-turnos.html',
+            clinicProfile,
+            runtimeState: 'ready',
+            truth: 'watch',
+            roadmapBand: 'watch',
+            backlogState: 'draft',
+            nextAction: 'close-hardware-gaps',
+            priorityBand: 'p2',
+            roadmapOwner: '',
+            updatedAt: new Date().toISOString(),
+        }),
+        buildTurneroSurfaceRoadmapSnapshot({
+            scope,
+            surfaceKey: 'sala-turnos',
+            surfaceLabel: 'Turnero Sala TV',
+            surfaceRoute: '/sala-turnos.html',
+            clinicProfile,
+            runtimeState: 'ready',
+            truth: 'aligned',
+            roadmapBand: 'core',
+            backlogState: 'curated',
+            nextAction: 'analytics-board',
+            priorityBand: 'p1',
+            roadmapOwner: 'ops-display',
             updatedAt: new Date().toISOString(),
         }),
     ];
@@ -5565,9 +5694,11 @@ function renderSurfaceTelemetry(manifest, detectedPlatform) {
                 <div id="queueSurfaceRenewalConsoleHost" class="queue-surface-telemetry__sync-console-host" aria-live="polite"></div>
                 <div id="queueSurfaceSuccessConsoleHost" class="queue-surface-telemetry__sync-console-host" data-turnero-surface-success-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents" aria-live="polite"></div>
                 <div id="queueSurfaceExpansionConsoleHost" class="queue-surface-telemetry__sync-console-host" aria-live="polite"></div>
+                <div id="queueSurfaceDeliveryConsoleHost" class="queue-surface-telemetry__sync-console-host" aria-live="polite"></div>
                 <div id="queueSurfaceSupportConsoleHost" class="queue-surface-telemetry__sync-console-host" aria-live="polite"></div>
                 <div id="queueSurfaceExecutiveReviewConsoleHost" class="queue-surface-telemetry__sync-console-host" data-turnero-surface-executive-review-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents" aria-live="polite"></div>
                 <div id="queueSurfacePackageConsoleHost" class="queue-surface-telemetry__sync-console-host" data-turnero-surface-package-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents" aria-live="polite"></div>
+                <div id="queueSurfaceRoadmapConsoleHost" class="queue-surface-telemetry__sync-console-host" data-turnero-surface-roadmap-console data-focus-match="incidents operations" data-queue-domain-match="incidents" data-queue-basic-match="incidents" aria-live="polite"></div>
                 <div id="queueSurfaceTelemetryOptimizationHubHost" class="queue-surface-telemetry__optimization-host" aria-live="polite"></div>
             </section>
         `
@@ -6361,8 +6492,10 @@ function renderQueueHubCorePanels(manifest, detectedPlatform) {
     renderQueueSurfaceRenewalConsole(manifest, detectedPlatform);
     renderQueueSurfaceSuccessConsole(manifest, detectedPlatform);
     renderQueueSurfaceExpansionConsole(manifest, detectedPlatform);
+    renderQueueSurfaceDeliveryConsole(manifest, detectedPlatform);
     renderQueueSurfaceSupportConsole(manifest, detectedPlatform);
     renderQueueSurfacePackageConsole(manifest, detectedPlatform);
+    renderQueueSurfaceRoadmapConsole(manifest, detectedPlatform);
     renderQueueSurfaceExecutiveReviewConsole(manifest, detectedPlatform);
     renderQueueAssuranceControlPlane(manifest, detectedPlatform);
     renderQueueSafetyPrivacyCockpit(manifest, detectedPlatform);
@@ -23697,6 +23830,38 @@ function renderQueueSurfaceExpansionConsole(manifest, detectedPlatform) {
     });
 }
 
+function renderQueueSurfaceDeliveryConsole(manifest, detectedPlatform) {
+    const root = document.getElementById('queueSurfaceDeliveryConsoleHost');
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    if (isFlowOsRecoveryAdminPanelFrozen('queueSurfaceDeliveryConsoleHost')) {
+        hideFlowOsRecoveryHost(root, getFlowOsRecoveryFreezeNotice());
+        return null;
+    }
+
+    return mountTurneroAdminQueueSurfaceDeliveryConsole(root, {
+        scope: getQueueSurfaceRecoveryScope(),
+        clinicProfile: getTurneroClinicProfile(),
+        snapshots: buildSurfaceDeliveryConsoleSnapshots(manifest),
+        checklist: {
+            summary: {
+                all: 6,
+                pass: 4,
+                fail: 2,
+            },
+        },
+        releaseManifest: manifest,
+        surfaceRegistry:
+            manifest?.registry?.surfaces ||
+            manifest?.surfaces ||
+            manifest?.registry ||
+            {},
+        detectedPlatform,
+    });
+}
+
 function renderQueueSurfaceSupportConsole(manifest, detectedPlatform) {
     const root = document.getElementById('queueSurfaceSupportConsoleHost');
     if (!(root instanceof HTMLElement)) {
@@ -23720,6 +23885,28 @@ function renderQueueSurfacePackageConsole(manifest, detectedPlatform) {
         scope: getQueueSurfaceRecoveryScope(),
         clinicProfile: getTurneroClinicProfile(),
         snapshots: buildSurfacePackageConsolePacks(),
+        checklist: {
+            summary: {
+                all: 6,
+                pass: 4,
+                fail: 2,
+            },
+        },
+        releaseManifest: manifest,
+        detectedPlatform,
+    });
+}
+
+function renderQueueSurfaceRoadmapConsole(manifest, detectedPlatform) {
+    const root = document.getElementById('queueSurfaceRoadmapConsoleHost');
+    if (!(root instanceof HTMLElement)) {
+        return null;
+    }
+
+    return mountTurneroAdminQueueSurfaceRoadmapConsole(root, {
+        scope: getQueueSurfaceRecoveryScope(),
+        clinicProfile: getTurneroClinicProfile(),
+        snapshots: buildSurfaceRoadmapConsolePacks(),
         checklist: {
             summary: {
                 all: 6,

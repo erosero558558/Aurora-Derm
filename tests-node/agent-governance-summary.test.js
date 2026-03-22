@@ -833,6 +833,8 @@ function assertSummaryJsonContractShape(parsed) {
     assert.equal(typeof parsed.metrics, 'object');
     assert.equal(typeof parsed.domain_health, 'object');
     assert.equal(typeof parsed.contribution, 'object');
+    assert.equal(typeof parsed.workspace_hygiene, 'object');
+    assert.equal(typeof parsed.workspace_truth, 'object');
     assert.equal(typeof parsed.status.evidence_summary, 'object');
     assert.equal(typeof parsed.board_doctor.evidence_summary, 'object');
 }
@@ -892,6 +894,8 @@ test('agent-governance-summary genera JSON/Markdown y escribe artefactos', (t) =
     assert.equal(Array.isArray(parsed.domain_health_history.daily), true);
     assert.ok(Array.isArray(parsed.contribution.ranking));
     assert.ok(parsed.contribution.top_executor);
+    assert.equal(typeof parsed.workspace_hygiene, 'object');
+    assert.equal(typeof parsed.workspace_truth, 'object');
     assert.equal(
         typeof parsed.delta_summary.conflicts_blocking.delta,
         'number'

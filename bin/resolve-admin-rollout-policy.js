@@ -17,7 +17,7 @@ const STAGE_PROFILE_BY_STAGE = {
     rollback: 'rollback_strict',
 };
 
-const STAGE_OPENCLAW_REQUIREMENTS = {
+const STAGE_OPERATOR_AUTH_REQUIREMENTS = {
     stable: true,
     internal: false,
     canary: true,
@@ -68,19 +68,24 @@ function normalizeStage(rawStage, fallbackStage) {
 
 function resolveAdminRolloutPolicy(options = {}) {
     const stageInfo = normalizeStage(options.stage, options.defaultStage);
-    const stageRequiresOpenClaw =
-        STAGE_OPENCLAW_REQUIREMENTS[stageInfo.effective] === true;
+    const stageRequiresOperatorAuth =
+        STAGE_OPERATOR_AUTH_REQUIREMENTS[stageInfo.effective] === true;
     const skipRuntimeSmoke = parseBooleanLike(
         options.skipRuntimeSmoke,
         options.defaultSkipRuntimeSmoke
     );
     const requireOpenClawAuth = parseBooleanLike(
-        options.requireOpenClawAuth,
-        options.defaultRequireOpenClawAuth ?? stageRequiresOpenClaw
+        options.requireOperatorAuth ?? options.requireOpenClawAuth,
+        options.defaultRequireOperatorAuth ??
+            options.defaultRequireOpenClawAuth ??
+            stageRequiresOperatorAuth
     );
     const requireOpenClawLiveSmoke = parseBooleanLike(
-        options.requireOpenClawLiveSmoke,
-        options.defaultRequireOpenClawLiveSmoke ?? stageRequiresOpenClaw
+        options.requireOperatorAuthLiveSmoke ??
+            options.requireOpenClawLiveSmoke,
+        options.defaultRequireOperatorAuthLiveSmoke ??
+            options.defaultRequireOpenClawLiveSmoke ??
+            stageRequiresOperatorAuth
     );
     let allowFeatureApiFailure = parseBooleanLike(
         options.allowFeatureApiFailure,
@@ -121,6 +126,8 @@ function resolveAdminRolloutPolicy(options = {}) {
             STAGE_PROFILE_BY_STAGE[stageInfo.effective] ||
             STAGE_PROFILE_BY_STAGE.general,
         skip_runtime_smoke_effective: skipRuntimeSmoke,
+        require_operator_auth_effective: requireOpenClawAuth,
+        require_operator_auth_live_smoke_effective: requireOpenClawLiveSmoke,
         require_openclaw_auth_effective: requireOpenClawAuth,
         require_openclaw_live_smoke_effective: requireOpenClawLiveSmoke,
         allow_feature_api_failure_effective: allowFeatureApiFailure,
@@ -155,8 +162,14 @@ function parseArgs(argv) {
         defaultStage: args['default-stage'] || args.defaultStage,
         skipRuntimeSmoke: args['skip-runtime-smoke'],
         defaultSkipRuntimeSmoke: args['default-skip-runtime-smoke'],
+        requireOperatorAuth: args['require-operator-auth'],
+        defaultRequireOperatorAuth: args['default-require-operator-auth'],
         requireOpenClawAuth: args['require-openclaw-auth'],
         defaultRequireOpenClawAuth: args['default-require-openclaw-auth'],
+        requireOperatorAuthLiveSmoke:
+            args['require-operator-auth-live-smoke'],
+        defaultRequireOperatorAuthLiveSmoke:
+            args['default-require-operator-auth-live-smoke'],
         requireOpenClawLiveSmoke: args['require-openclaw-live-smoke'],
         defaultRequireOpenClawLiveSmoke:
             args['default-require-openclaw-live-smoke'],
