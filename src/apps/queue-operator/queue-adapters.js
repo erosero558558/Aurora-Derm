@@ -287,8 +287,22 @@ export function createRemoteQueueAdapter(_turneroDesktop, hooks = {}) {
         currentShellStatus: createDefaultShellStatus(),
         currentShellSnapshot: createDefaultShellSnapshot(),
     };
+    let postMutationRefreshTimerId = 0;
 
-    return {
+    function schedulePostMutationRefresh(adapter, delayMs = 1200) {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        if (postMutationRefreshTimerId) {
+            window.clearTimeout(postMutationRefreshTimerId);
+        }
+        postMutationRefreshTimerId = window.setTimeout(() => {
+            postMutationRefreshTimerId = 0;
+            void adapter.refreshQueueState();
+        }, delayMs);
+    }
+
+    const adapter = {
         kind: 'remote',
         getShellStatus() {
             return runtime.currentShellStatus;
@@ -317,6 +331,8 @@ export function createRemoteQueueAdapter(_turneroDesktop, hooks = {}) {
             };
         },
     };
+
+    return adapter;
 }
 
 export function createDesktopOfflineAdapter(turneroDesktop, hooks = {}) {
@@ -329,6 +345,20 @@ export function createDesktopOfflineAdapter(turneroDesktop, hooks = {}) {
         currentShellStatus: createDefaultShellStatus(),
         currentShellSnapshot: createDefaultShellSnapshot(),
     };
+    let postMutationRefreshTimerId = 0;
+
+    function schedulePostMutationRefresh(adapter, delayMs = 1200) {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        if (postMutationRefreshTimerId) {
+            window.clearTimeout(postMutationRefreshTimerId);
+        }
+        postMutationRefreshTimerId = window.setTimeout(() => {
+            postMutationRefreshTimerId = 0;
+            void adapter.refreshQueueState();
+        }, delayMs);
+    }
 
     function emitShellState() {
         hooks.onShellState?.(
@@ -467,7 +497,7 @@ export function createDesktopOfflineAdapter(turneroDesktop, hooks = {}) {
         return payload;
     }
 
-    return {
+    const adapter = {
         kind: 'desktop',
         getShellStatus() {
             return runtime.currentShellStatus;
@@ -617,6 +647,7 @@ export function createDesktopOfflineAdapter(turneroDesktop, hooks = {}) {
                 appendActivity(`Llamado C${target} ejecutado`);
                 await reportConnectivity('online');
                 await syncStateSnapshot({ healthy: true });
+                schedulePostMutationRefresh(adapter);
                 return payload;
             } catch (error) {
                 if (!isRecoverableOfflineError(error)) {
@@ -674,6 +705,7 @@ export function createDesktopOfflineAdapter(turneroDesktop, hooks = {}) {
                 appendActivity(`Accion ${targetAction} ticket ${targetId}`);
                 await reportConnectivity('online');
                 await syncStateSnapshot({ healthy: true });
+                schedulePostMutationRefresh(adapter);
                 return payload;
             } catch (error) {
                 const offlineType = mapQueueActionToOfflineType(targetAction);
@@ -709,6 +741,8 @@ export function createDesktopOfflineAdapter(turneroDesktop, hooks = {}) {
             }
         },
     };
+
+    return adapter;
 }
 
 export function resolveOperatorQueueAdapter(turneroDesktop, hooks = {}) {

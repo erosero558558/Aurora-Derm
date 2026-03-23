@@ -3826,7 +3826,7 @@ function renderFromSnapshot(snapshot, { mode = 'restore' } = {}) {
     }
     if (!snapshot?.data) return false;
 
-    renderState(snapshot.data);
+    renderState(snapshot.data, { suppressBell: true });
     const ageMs = Math.max(
         0,
         Date.now() - Date.parse(String(snapshot.savedAt || ''))
@@ -4087,8 +4087,9 @@ function computeCalledSignature(callingNow) {
             const code = normalizeTicketCodeForDisplay(
                 ticket.ticketCode || '--'
             );
+            const calledAt = String(ticket.calledAt || '');
             const key = id > 0 ? `id-${id}` : `code-${code}`;
-            return `${consultorio}:${key}`;
+            return `${consultorio}:${key}:${calledAt}`;
         })
         .sort()
         .join('|');
@@ -4187,7 +4188,6 @@ async function playBell({ source = 'new_call', force = false } = {}) {
     if (isDisplayPilotBlocked()) {
         return;
     }
-    triggerBellFlash();
     if (state.bellMuted && !force) {
         return;
     }
@@ -4209,6 +4209,7 @@ async function playBell({ source = 'new_call', force = false } = {}) {
             return;
         }
 
+        triggerBellFlash();
         const ctx = state.audioContext;
         const now = ctx.currentTime;
         const oscillator = ctx.createOscillator();
@@ -4280,7 +4281,7 @@ function computeDisplayRenderSignature(queueState) {
     return JSON.stringify({ updatedAt, callingNow, nextTickets });
 }
 
-function renderState(queueState) {
+function renderState(queueState, { suppressBell = false } = {}) {
     if (isDisplayPilotBlocked()) {
         renderDisplayPilotBlockedState();
         return;
@@ -4335,9 +4336,17 @@ function renderState(queueState) {
     notifyDisplayHeartbeat('queue_state');
 
     const nextSignature = computeCalledSignature(callingNow);
-    if (!state.callBaselineReady) {
+    if (!state.callBaselineReady || suppressBell) {
+        const previousSignature = state.lastCalledSignature;
         state.lastCalledSignature = nextSignature;
         state.callBaselineReady = true;
+        if (suppressBell && nextSignature !== previousSignature) {
+            emitQueueOpsEvent('called_signature_changed', {
+                signature: nextSignature,
+                added_count: 0,
+                suppressed: true,
+            });
+        }
         return;
     }
 
@@ -4401,8 +4410,10 @@ async function refreshDisplayState() {
         const payload = await apiRequest('queue-state');
         const queueState = normalizeQueueStatePayload(payload.data || {});
         renderState(queueState);
-        persistLastSnapshot(queueState);
         const freshness = evaluateQueueFreshness(queueState);
+        if (!freshness.stale && !freshness.missingTimestamp) {
+            persistLastSnapshot(queueState);
+        }
         return {
             ok: true,
             stale: Boolean(freshness.stale),
@@ -4415,10 +4426,9 @@ async function refreshDisplayState() {
             mode: 'restore',
         });
         if (!snapshotRestored) {
-            const list = getById('displayNextList');
-            if (list) {
-                list.innerHTML = `<li class="display-empty">Sin conexion: ${escapeHtml(error.message)}</li>`;
-            }
+            renderNoDataFallback(
+                `Sin conexion: ${escapeHtml(error.message)}`
+            );
         }
         return {
             ok: false,
@@ -4548,6 +4558,7 @@ async function runDisplayManualRefresh() {
 
 function startDisplayPolling({ immediate = true } = {}) {
     state.pollingEnabled = true;
+    clearPollingTimer();
     if (immediate) {
         setConnectionStatus('live', 'Sincronizando...');
         void runDisplayPollTick();

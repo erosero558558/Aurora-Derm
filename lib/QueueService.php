@@ -44,10 +44,16 @@ class QueueService
         $store = $this->normalizeStore($store);
         $store = $this->priorityPolicy->refreshWaitingAppointmentPriorities($store);
         $store = $this->hydratePatientFlowStore($store);
+
+        $updatedAt = trim((string) ($store['updatedAt'] ?? ''));
+        if ($updatedAt === '') {
+            $updatedAt = local_date('c');
+        }
+
         return $this->summaryBuilder->buildQueueState(
             $store['queue_tickets'] ?? [],
             $store['queue_help_requests'] ?? [],
-            local_date('c')
+            $updatedAt
         );
     }
 
@@ -722,7 +728,10 @@ class QueueService
                 $ticket['needsAssistance'] = false;
                 $ticket['assistanceRequestStatus'] = '';
                 $ticket['activeHelpRequestId'] = null;
-                $ticket['assistanceReason'] = (string) ($ticket['assistanceReason'] ?? '');
+                $ticket['assistanceReason'] = '';
+                $ticket['specialPriority'] = false;
+                $ticket['lateArrival'] = false;
+                $ticket['reprintRequestedAt'] = '';
             }
 
             $store['queue_tickets'][$idx] = normalize_queue_ticket($ticket);
@@ -965,7 +974,7 @@ class QueueService
                 continue;
             }
             $status = (string) ($ticket['status'] ?? '');
-            if (in_array($status, [self::STATUS_WAITING, self::STATUS_CALLED, self::STATUS_COMPLETED], true)) {
+            if (in_array($status, [self::STATUS_WAITING, self::STATUS_CALLED], true)) {
                 return normalize_queue_ticket($ticket);
             }
         }

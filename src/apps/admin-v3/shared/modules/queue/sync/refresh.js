@@ -6,19 +6,35 @@ import { appendActivity } from '../state.js';
 import { applyQueueStateResponse } from './apply.js';
 import { applyQueueSnapshotFallback, getQueueSnapshot } from './fallbacks.js';
 
+let refreshQueueStateInFlight = null;
+
 export async function refreshQueueState() {
-    const commandAdapter = getQueueCommandAdapter();
-    if (typeof commandAdapter?.refreshQueueState === 'function') {
-        return commandAdapter.refreshQueueState();
+    if (refreshQueueStateInFlight) {
+        return refreshQueueStateInFlight;
     }
 
+    refreshQueueStateInFlight = (async () => {
+        const commandAdapter = getQueueCommandAdapter();
+        if (typeof commandAdapter?.refreshQueueState === 'function') {
+            return commandAdapter.refreshQueueState();
+        }
+
+        try {
+            const payload = await apiRequest('queue-state');
+            applyQueueStateResponse(payload, { syncMode: 'live' });
+            appendActivity('Queue refresh realizado');
+            return payload;
+        } catch (_error) {
+            appendActivity('Queue refresh con error');
+            applyQueueSnapshotFallback(getQueueSnapshot());
+            return null;
+        }
+    })();
+
     try {
-        const payload = await apiRequest('queue-state');
-        applyQueueStateResponse(payload, { syncMode: 'live' });
-        appendActivity('Queue refresh realizado');
-    } catch (_error) {
-        appendActivity('Queue refresh con error');
-        applyQueueSnapshotFallback(getQueueSnapshot());
+        return await refreshQueueStateInFlight;
+    } finally {
+        refreshQueueStateInFlight = null;
     }
 }
 

@@ -7,6 +7,7 @@ import {
     applyQueueRuntimeDefaults,
     hydrateQueueFromData,
     refreshQueueState,
+    renderQueueSection,
     shouldRefreshQueueOnSectionEnter,
     syncQueueAutoRefresh,
 } from '../../../shared/modules/queue.js';
@@ -26,7 +27,7 @@ function syncAdminThemeForSection(section) {
     setThemeMode(nextTheme, { persist: false });
 }
 
-export function showSection(section) {
+export async function showSection(section) {
     const normalized = normalizeSection(section, 'queue');
     updateState((state) => ({
         ...state,
@@ -39,6 +40,12 @@ export function showSection(section) {
     syncAdminThemeForSection(normalized);
     renderAdminChrome(getState());
     setSectionHash(normalized);
+    if (normalized === 'queue') {
+        if (shouldRefreshQueueOnSectionEnter()) {
+            await refreshQueueState();
+        }
+        renderQueueSection();
+    }
     persistUiPrefs();
 }
 
@@ -63,18 +70,7 @@ export async function navigateToSection(section, options = {}) {
         if (!confirmed) return false;
     }
 
-    showSection(normalized);
-    syncQueueAutoRefresh({
-        immediate: normalized === 'queue',
-        reason: normalized === 'queue' ? 'section-enter' : 'section-exit',
-    });
-    if (
-        normalized === 'queue' &&
-        previousSection !== 'queue' &&
-        shouldRefreshQueueOnSectionEnter()
-    ) {
-        await refreshQueueState();
-    }
+    await showSection(normalized);
     if (normalized === 'clinical-history') {
         await openClinicalHistorySession();
     }

@@ -2,6 +2,10 @@ import { attachKeyboardShortcuts } from '../shared/core/keyboard.js';
 import { getState } from '../shared/core/store.js';
 import { checkAuthStatus } from '../shared/modules/auth.js';
 import {
+    queueNumpadAction,
+    toggleQueueHelpPanel,
+} from '../shared/modules/queue.js';
+import {
     hideCommandPalette,
     renderV3Frame,
     setActiveSection,

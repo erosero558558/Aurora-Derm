@@ -3,6 +3,7 @@ import { getQueryParam, setHash } from './persistence.js';
 const VALID_SECTIONS = new Set([
     'queue',
     'dashboard',
+    'queue',
     'clinical-history',
     'appointments',
     'callbacks',
